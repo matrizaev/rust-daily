@@ -1,0 +1,12 @@
+[
+  {
+    "id": "error-enum-design",
+    "name": "Error enum design",
+    "description": "Model distinct parser failure modes with a typed Rust enum instead of stringly typed errors.",
+    "prerequisites": ["enums-basic", "result-basic"],
+    "difficulty": ["easy", "medium"],
+    "lessonIds": ["error-enum-parse-user-001"],
+    "tags": ["enums", "errors", "api-design", "parsing"],
+    "masteryThreshold": 3
+  }
+]
