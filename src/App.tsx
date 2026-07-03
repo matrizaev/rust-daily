@@ -3,11 +3,13 @@ import conceptsData from "./content/concepts.json";
 import lessonsData from "./content/lessons.json";
 import DailyHome from "./components/DailyHome";
 import LessonScreen from "./components/LessonScreen";
+import PwaStatus from "./components/PwaStatus";
 import { getProgressSummary } from "./progress/progressSelectors";
 import {
   loadProgress,
   resetProgress,
 } from "./progress/progressStore";
+import { registerServiceWorker } from "./pwa/registerServiceWorker";
 import type { Concept, Lesson } from "./types/lesson";
 
 const lessons = lessonsData as Lesson[];
@@ -32,6 +34,10 @@ const getValidLessonId = () => {
 const findConcept = (lesson: Lesson) =>
   concepts.find((concept) => concept.id === lesson.conceptId) ?? null;
 
+const getIsOffline = () => !navigator.onLine;
+
+type UpdateServiceWorker = () => Promise<void>;
+
 const useActiveLessonId = () => {
   const [activeLessonId, setActiveLessonId] = useState<string | null>(() => {
     return getValidLessonId();
@@ -50,10 +56,53 @@ const useActiveLessonId = () => {
   return [activeLessonId, setActiveLessonId] as const;
 };
 
+const usePwaState = () => {
+  const [isOffline, setIsOffline] = useState(getIsOffline);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateServiceWorker, setUpdateServiceWorker] =
+    useState<UpdateServiceWorker | null>(null);
+
+  useEffect(() => {
+    const updateOnlineState = () => setIsOffline(getIsOffline());
+
+    window.addEventListener("online", updateOnlineState);
+    window.addEventListener("offline", updateOnlineState);
+
+    return () => {
+      window.removeEventListener("online", updateOnlineState);
+      window.removeEventListener("offline", updateOnlineState);
+    };
+  }, []);
+
+  useEffect(() => {
+    return registerServiceWorker({
+      onOfflineReady: () => undefined,
+      onUpdateAvailable: (update) => setUpdateServiceWorker(() => update),
+    });
+  }, []);
+
+  const handleReloadUpdate = useCallback(() => {
+    if (!updateServiceWorker) {
+      return;
+    }
+
+    setIsUpdating(true);
+    void updateServiceWorker().catch(() => setIsUpdating(false));
+  }, [updateServiceWorker]);
+
+  return {
+    isOffline,
+    isUpdating,
+    updateAvailable: updateServiceWorker !== null,
+    handleReloadUpdate,
+  };
+};
+
 function App() {
   const todayLesson = lessons[0];
   const [activeLessonId, setActiveLessonId] = useActiveLessonId();
   const [progress, setProgress] = useState(() => loadProgress());
+  const pwa = usePwaState();
 
   const activeLesson = useMemo(
     () =>
@@ -87,24 +136,40 @@ function App() {
 
   if (activeLesson) {
     return (
-      <LessonScreen
-        concept={activeConcept}
-        lesson={activeLesson}
-        onProgressChange={handleProgressChange}
-        onReturnHome={handleReturnHome}
-        progress={progress}
-      />
+      <>
+        <PwaStatus
+          isOffline={pwa.isOffline}
+          isUpdating={pwa.isUpdating}
+          updateAvailable={pwa.updateAvailable}
+          onReloadUpdate={pwa.handleReloadUpdate}
+        />
+        <LessonScreen
+          concept={activeConcept}
+          lesson={activeLesson}
+          onProgressChange={handleProgressChange}
+          onReturnHome={handleReturnHome}
+          progress={progress}
+        />
+      </>
     );
   }
 
   return (
-    <DailyHome
-      concept={activeConcept}
-      lesson={todayLesson}
-      onContinue={handleContinue}
-      onResetProgress={handleResetProgress}
-      summary={getProgressSummary(progress)}
-    />
+    <>
+      <PwaStatus
+        isOffline={pwa.isOffline}
+        isUpdating={pwa.isUpdating}
+        updateAvailable={pwa.updateAvailable}
+        onReloadUpdate={pwa.handleReloadUpdate}
+      />
+      <DailyHome
+        concept={activeConcept}
+        lesson={todayLesson}
+        onContinue={handleContinue}
+        onResetProgress={handleResetProgress}
+        summary={getProgressSummary(progress)}
+      />
+    </>
   );
 }
 
