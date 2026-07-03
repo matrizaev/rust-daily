@@ -2,15 +2,31 @@ import { CheckCircle2, Lightbulb, RotateCcw } from "lucide-react";
 
 type LessonActionsProps = {
   canRevealHint: boolean;
+  canCheck: boolean;
+  isChecking: boolean;
+  onCheck: () => void;
   onReset: () => void;
   onRevealHint: () => void;
 };
 
+const getCheckLabel = (canCheck: boolean, isChecking: boolean) => {
+  if (isChecking) {
+    return "Checking...";
+  }
+
+  return canCheck ? "Check" : "Check unavailable";
+};
+
 function LessonActions({
+  canCheck,
   canRevealHint,
+  isChecking,
+  onCheck,
   onReset,
   onRevealHint,
 }: LessonActionsProps) {
+  const checkLabel = getCheckLabel(canCheck, isChecking);
+
   return (
     <div className="lesson-actions" aria-label="Lesson actions">
       <button className="secondary-button" type="button" onClick={onReset}>
@@ -28,9 +44,15 @@ function LessonActions({
         Hint
       </button>
 
-      <button className="check-button" type="button" disabled>
+      <button
+        className="check-button"
+        type="button"
+        onClick={onCheck}
+        disabled={!canCheck || isChecking}
+        aria-busy={isChecking}
+      >
         <CheckCircle2 size={19} aria-hidden="true" />
-        Validation arrives in Milestone 2
+        {checkLabel}
       </button>
     </div>
   );

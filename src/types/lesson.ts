@@ -1,3 +1,5 @@
+import type { LessonValidation } from "./validation";
+
 export type Difficulty = "easy" | "medium" | "advanced";
 
 export type Concept = {
@@ -25,4 +27,5 @@ export type Lesson = {
   instructions: string;
   starterCode: string;
   hints: string[];
+  validation?: LessonValidation;
 };

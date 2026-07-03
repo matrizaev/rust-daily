@@ -359,6 +359,102 @@ p {
   border-top: 1px solid var(--border);
 }
 
+.validation-panel {
+  padding: 16px 18px;
+  border-top: 1px solid var(--border);
+  background: #fffdf8;
+}
+
+.validation-heading,
+.validation-title-row {
+  display: flex;
+  align-items: center;
+}
+
+.validation-heading {
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.validation-title-row {
+  gap: 8px;
+}
+
+.validation-heading h2,
+.validation-panel p {
+  margin-bottom: 0;
+}
+
+.validation-heading span {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.validation-panel p {
+  color: var(--ink);
+}
+
+.validation-idle,
+.validation-unsupported {
+  background: #fffdf8;
+}
+
+.validation-running {
+  background: #edf4f2;
+}
+
+.validation-passed {
+  background: #edf7f1;
+}
+
+.validation-failed,
+.validation-timeout,
+.validation-internal_error {
+  background: #fff4ec;
+}
+
+.validation-passed .validation-title-row {
+  color: var(--green-strong);
+}
+
+.validation-failed .validation-title-row,
+.validation-timeout .validation-title-row,
+.validation-internal_error .validation-title-row {
+  color: var(--rust-strong);
+}
+
+.validation-stale {
+  margin-top: 8px;
+  color: var(--rust-strong) !important;
+  font-weight: 800;
+}
+
+.validation-failures {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding-left: 22px;
+}
+
+.validation-failures li {
+  color: var(--ink);
+  line-height: 1.45;
+}
+
+.validation-diagnostics {
+  max-height: 180px;
+  margin: 12px 0 0;
+  overflow: auto;
+  border-radius: 8px;
+  padding: 12px;
+  background: #111815;
+  color: #f2efe7;
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+}
+
 .hint-heading {
   justify-content: space-between;
   gap: 12px;

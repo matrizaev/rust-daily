@@ -16,6 +16,22 @@
       "The parser already names every failure case it wants to return.",
       "Each distinct failure mode should usually become its own enum variant.",
       "For this first lesson, simple unit-like variants are enough; later lessons can add formatting and source errors."
-    ]
+    ],
+    "validation": {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "enum_unit_variants",
+          "enumName": "ParseUserError",
+          "requiredVariants": [
+            "MissingId",
+            "MissingName",
+            "MissingEmail",
+            "InvalidId"
+          ]
+        }
+      ]
+    }
   }
 ]
