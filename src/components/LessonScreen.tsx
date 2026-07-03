@@ -1,11 +1,22 @@
 import { ArrowLeft } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CodeEditor from "./CodeEditor";
+import CompletionPanel from "./CompletionPanel";
 import HintPanel from "./HintPanel";
 import LessonActions from "./LessonActions";
 import ValidationPanel, {
   type ValidationPanelState,
 } from "./ValidationPanel";
+import {
+  getLessonCompletion,
+} from "../progress/progressSelectors";
+import {
+  ensureLessonAttempt,
+  recordHintReveal,
+  recordLessonCompletion,
+  recordValidationAttempt,
+} from "../progress/progressStore";
+import type { ProgressStore } from "../types/progress";
 import {
   clearDraft,
   loadDraft,
@@ -21,6 +32,8 @@ const SAVE_DELAY_MS = 450;
 type LessonScreenProps = {
   lesson: Lesson;
   concept: Concept | null;
+  progress: ProgressStore;
+  onProgressChange: () => void;
   onReturnHome: () => void;
 };
 
@@ -155,7 +168,11 @@ const useLessonDraft = (lesson: Lesson) => {
   }, [lesson.id, lesson.starterCode]);
 
   const handleRevealHint = useCallback(() => {
-    setRevealedHints((current) => Math.min(current + 1, lesson.hints.length));
+    setRevealedHints((current) => {
+      const next = Math.min(current + 1, lesson.hints.length);
+
+      return next;
+    });
   }, [lesson.hints.length]);
 
   return {
@@ -168,7 +185,13 @@ const useLessonDraft = (lesson: Lesson) => {
   };
 };
 
-const useValidationRunner = (lesson: Lesson, code: string) => {
+const useValidationRunner = (
+  lesson: Lesson,
+  concept: Concept | null,
+  code: string,
+  onProgressChange: () => void,
+  onCompleteNow: () => void,
+) => {
   const [state, setState] = useState<ValidationPanelState>(idleValidationState);
   const [checkedCode, setCheckedCode] = useState<string | null>(null);
   const codeRef = useRef(code);
@@ -192,6 +215,9 @@ const useValidationRunner = (lesson: Lesson, code: string) => {
     const { validation } = lesson;
     const requestCode = codeRef.current;
 
+    recordValidationAttempt(lesson.id);
+    onProgressChange();
+
     if (!validation) {
       setState(resultState(unsupportedResult(), false));
       setCheckedCode(requestCode);
@@ -206,7 +232,17 @@ const useValidationRunner = (lesson: Lesson, code: string) => {
 
     setCheckedCode(requestCode);
     setState(resultState(result, codeRef.current !== requestCode));
-  }, [lesson]);
+
+    if (result.status === "passed") {
+      const completion = recordLessonCompletion(lesson, concept);
+
+      if (completion.completedNow) {
+        onCompleteNow();
+      }
+
+      onProgressChange();
+    }
+  }, [concept, lesson, onCompleteNow, onProgressChange]);
 
   return {
     canCheck: Boolean(lesson.validation),
@@ -234,7 +270,9 @@ const LessonTopbar = ({ lesson, onReturnHome }: LessonTopbarProps) => (
   </header>
 );
 
-const LessonBrief = ({ lesson, concept }: Omit<LessonScreenProps, "onReturnHome">) => (
+type LessonBriefProps = Pick<LessonScreenProps, "concept" | "lesson">;
+
+const LessonBrief = ({ lesson, concept }: LessonBriefProps) => (
   <aside className="lesson-brief">
     <p className="eyebrow">One concept</p>
     <h1 id="lesson-title">{lesson.title}</h1>
@@ -260,9 +298,36 @@ const WorkspaceFooter = ({ saveStatus }: { saveStatus: string }) => (
 );
 
 function LessonScreen(props: LessonScreenProps) {
-  const { concept, lesson, onReturnHome } = props;
+  const { concept, lesson, onProgressChange, onReturnHome, progress } = props;
+  const [completedNow, setCompletedNow] = useState(false);
+  const completion = getLessonCompletion(progress, lesson.id);
+
+  useEffect(() => {
+    ensureLessonAttempt(lesson.id);
+    onProgressChange();
+    setCompletedNow(false);
+  }, [lesson.id, onProgressChange]);
+
+  const handleCompleteNow = useCallback(() => {
+    setCompletedNow(true);
+  }, []);
+
   const draft = useLessonDraft(lesson);
-  const validation = useValidationRunner(lesson, draft.code);
+
+  useEffect(() => {
+    if (draft.revealedHints > 0) {
+      recordHintReveal(lesson.id, draft.revealedHints);
+      onProgressChange();
+    }
+  }, [draft.revealedHints, lesson.id, onProgressChange]);
+
+  const validation = useValidationRunner(
+    lesson,
+    concept,
+    draft.code,
+    onProgressChange,
+    handleCompleteNow,
+  );
 
   return (
     <main className="app-shell lesson-shell">
@@ -290,6 +355,12 @@ function LessonScreen(props: LessonScreenProps) {
 
           <WorkspaceFooter saveStatus={draft.saveStatus} />
           <ValidationPanel state={validation.state} />
+          <CompletionPanel
+            completedNow={completedNow}
+            completion={completion}
+            lesson={lesson}
+            onReturnHome={onReturnHome}
+          />
 
           <HintPanel hints={lesson.hints} revealedCount={draft.revealedHints} />
         </section>

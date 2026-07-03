@@ -1420,7 +1420,7 @@ Milestone 3: Progress prototype.
 - Mark lesson complete.
 - Track streak.
 - Track concept progress.
-- Export and import progress JSON.
+- Reset local progress for pre-release QA.
 
 Milestone 4: PWA readiness.
 
@@ -1435,3 +1435,7 @@ Milestone 5: MVP content.
 - Run lesson validation checks.
 - Review all hints and explanations.
 - Test each lesson on tablet viewport.
+
+MVP portability hardening:
+
+- Export and import progress JSON.

@@ -1,11 +1,15 @@
 import { ArrowRight, CalendarDays, Clock, Gauge, Layers } from "lucide-react";
 import type { ReactNode } from "react";
+import type { ProgressSummary as ProgressSummaryData } from "../progress/progressSelectors";
 import type { Concept, Lesson } from "../types/lesson";
+import ProgressSummary from "./ProgressSummary";
 
 type DailyHomeProps = {
   lesson: Lesson;
   concept: Concept | null;
   onContinue: () => void;
+  onResetProgress: () => void;
+  summary: ProgressSummaryData;
 };
 
 type LessonFactProps = {
@@ -39,7 +43,9 @@ const BrandRow = () => (
   </div>
 );
 
-const LessonFacts = ({ lesson, concept }: Omit<DailyHomeProps, "onContinue">) => (
+type LessonFactsProps = Pick<DailyHomeProps, "concept" | "lesson">;
+
+const LessonFacts = ({ lesson, concept }: LessonFactsProps) => (
   <dl className="lesson-facts" aria-label="Lesson details">
     <LessonFact icon={<Layers size={18} aria-hidden="true" />} label="Arc">
       {lesson.arcTitle}
@@ -77,20 +83,41 @@ const DailyHeading = ({ lesson }: { lesson: Lesson }) => (
   </div>
 );
 
+const HomeActions = ({
+  onContinue,
+  onResetProgress,
+}: Pick<DailyHomeProps, "onContinue" | "onResetProgress">) => (
+  <div className="home-actions">
+    <button className="primary-button" type="button" onClick={onContinue}>
+      Continue
+      <ArrowRight size={20} aria-hidden="true" />
+    </button>
+
+    <button
+      className="text-button"
+      type="button"
+      onClick={onResetProgress}
+    >
+      Reset local progress
+    </button>
+  </div>
+);
+
 function DailyHome(props: DailyHomeProps) {
-  const { lesson, concept, onContinue } = props;
+  const { lesson, concept, onContinue, onResetProgress, summary } = props;
 
   return (
     <main className="app-shell daily-shell">
       <section className="daily-overview" aria-labelledby="daily-title">
         <BrandRow />
+        <ProgressSummary summary={summary} />
         <DailyHeading lesson={lesson} />
         <LessonFacts concept={concept} lesson={lesson} />
 
-        <button className="primary-button" type="button" onClick={onContinue}>
-          Continue
-          <ArrowRight size={20} aria-hidden="true" />
-        </button>
+        <HomeActions
+          onContinue={onContinue}
+          onResetProgress={onResetProgress}
+        />
       </section>
     </main>
   );

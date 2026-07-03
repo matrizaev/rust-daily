@@ -27,5 +27,6 @@ export type Lesson = {
   instructions: string;
   starterCode: string;
   hints: string[];
+  completionExplanation: string;
   validation?: LessonValidation;
 };

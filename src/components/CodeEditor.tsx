@@ -2,6 +2,7 @@ import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import {
   bracketMatching,
   defaultHighlightStyle,
+  indentUnit,
   syntaxHighlighting,
 } from "@codemirror/language";
 import { rust } from "@codemirror/lang-rust";
@@ -89,6 +90,8 @@ const createEditorState = (
       history(),
       bracketMatching(),
       rust(),
+      indentUnit.of("    "),
+      EditorState.tabSize.of(4),
       syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
       keymap.of([...defaultKeymap, ...historyKeymap]),
       EditorView.lineWrapping,

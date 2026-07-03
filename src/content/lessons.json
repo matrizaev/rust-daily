@@ -17,6 +17,7 @@
       "Each distinct failure mode should usually become its own enum variant.",
       "For this first lesson, simple unit-like variants are enough; later lessons can add formatting and source errors."
     ],
+    "completionExplanation": "Each parser failure now has a named enum variant. That gives callers a typed result they can match on instead of parsing strings or comparing error messages.",
     "validation": {
       "mode": "structural",
       "timeoutMs": 10000,

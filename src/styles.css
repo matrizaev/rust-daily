@@ -85,7 +85,7 @@ button:disabled {
 
 .brand-row {
   gap: 12px;
-  margin-bottom: 34px;
+  margin-bottom: 18px;
 }
 
 .brand-mark {
@@ -195,7 +195,8 @@ p {
 .primary-button,
 .secondary-button,
 .icon-text-button,
-.check-button {
+.check-button,
+.text-button {
   display: inline-flex;
   gap: 9px;
   align-items: center;
@@ -211,6 +212,56 @@ p {
 
 .primary-button:hover {
   background: var(--green-strong);
+}
+
+.text-button {
+  padding: 0 4px;
+  background: transparent;
+  color: var(--muted);
+}
+
+.text-button:hover {
+  color: var(--rust-strong);
+}
+
+.home-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+}
+
+.progress-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 30px;
+}
+
+.progress-summary-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  align-items: center;
+  min-height: 74px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #f5fbf7;
+  color: var(--green-strong);
+}
+
+.progress-summary-item strong {
+  color: var(--ink);
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.progress-summary-item span {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
 }
 
 .lesson-shell {
@@ -359,6 +410,40 @@ p {
   border-top: 1px solid var(--border);
 }
 
+.completion-panel {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border-top: 1px solid var(--border);
+  background: #edf7f1;
+}
+
+.completion-heading {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  color: var(--green-strong);
+}
+
+.completion-heading h2,
+.completion-heading p,
+.completion-panel p {
+  margin-bottom: 0;
+}
+
+.completion-heading p {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.completion-panel > p {
+  color: var(--ink);
+}
+
+.completion-panel .secondary-button {
+  justify-self: start;
+}
+
 .validation-panel {
   padding: 16px 18px;
   border-top: 1px solid var(--border);
@@ -495,6 +580,10 @@ p {
 
   .lesson-facts {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .progress-summary {
+    grid-template-columns: 1fr;
   }
 
   .lesson-layout {

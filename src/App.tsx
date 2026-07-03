@@ -3,6 +3,11 @@ import conceptsData from "./content/concepts.json";
 import lessonsData from "./content/lessons.json";
 import DailyHome from "./components/DailyHome";
 import LessonScreen from "./components/LessonScreen";
+import { getProgressSummary } from "./progress/progressSelectors";
+import {
+  loadProgress,
+  resetProgress,
+} from "./progress/progressStore";
 import type { Concept, Lesson } from "./types/lesson";
 
 const lessons = lessonsData as Lesson[];
@@ -48,6 +53,7 @@ const useActiveLessonId = () => {
 function App() {
   const todayLesson = lessons[0];
   const [activeLessonId, setActiveLessonId] = useActiveLessonId();
+  const [progress, setProgress] = useState(() => loadProgress());
 
   const activeLesson = useMemo(
     () =>
@@ -70,12 +76,23 @@ function App() {
     setActiveLessonId(null);
   }, []);
 
+  const handleProgressChange = useCallback(() => {
+    setProgress(loadProgress());
+  }, []);
+
+  const handleResetProgress = useCallback(() => {
+    resetProgress();
+    setProgress(loadProgress());
+  }, []);
+
   if (activeLesson) {
     return (
       <LessonScreen
         concept={activeConcept}
         lesson={activeLesson}
+        onProgressChange={handleProgressChange}
         onReturnHome={handleReturnHome}
+        progress={progress}
       />
     );
   }
@@ -85,6 +102,8 @@ function App() {
       concept={activeConcept}
       lesson={todayLesson}
       onContinue={handleContinue}
+      onResetProgress={handleResetProgress}
+      summary={getProgressSummary(progress)}
     />
   );
 }
