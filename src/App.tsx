@@ -9,6 +9,7 @@ import {
   loadProgress,
   resetProgress,
 } from "./progress/progressStore";
+import { selectDailyLesson } from "./progression/selectDailyLesson";
 import { registerServiceWorker } from "./pwa/registerServiceWorker";
 import type { Concept, Lesson } from "./types/lesson";
 
@@ -99,26 +100,29 @@ const usePwaState = () => {
 };
 
 function App() {
-  const todayLesson = lessons[0];
   const [activeLessonId, setActiveLessonId] = useActiveLessonId();
   const [progress, setProgress] = useState(() => loadProgress());
   const pwa = usePwaState();
+  const dailyLesson = useMemo(
+    () => selectDailyLesson(lessons, progress),
+    [progress],
+  );
 
   const activeLesson = useMemo(
     () =>
       lessons.find((lesson) => lesson.id === activeLessonId) ??
-      (activeLessonId ? todayLesson : null),
-    [activeLessonId, todayLesson],
+      (activeLessonId ? dailyLesson : null),
+    [activeLessonId, dailyLesson],
   );
 
   const activeConcept = useMemo(() => {
-    return findConcept(activeLesson ?? todayLesson);
-  }, [activeLesson, todayLesson]);
+    return findConcept(activeLesson ?? dailyLesson);
+  }, [activeLesson, dailyLesson]);
 
   const handleContinue = useCallback(() => {
-    window.location.hash = lessonHash(todayLesson.id);
-    setActiveLessonId(todayLesson.id);
-  }, [todayLesson.id]);
+    window.location.hash = lessonHash(dailyLesson.id);
+    setActiveLessonId(dailyLesson.id);
+  }, [dailyLesson.id]);
 
   const handleReturnHome = useCallback(() => {
     window.location.hash = "";
@@ -164,7 +168,7 @@ function App() {
       />
       <DailyHome
         concept={activeConcept}
-        lesson={todayLesson}
+        lesson={dailyLesson}
         onContinue={handleContinue}
         onResetProgress={handleResetProgress}
         summary={getProgressSummary(progress)}

@@ -63,6 +63,13 @@ const unsupportedResult = (startedAt: number) =>
     "This lesson cannot be checked in the browser yet.",
   );
 
+const selfCheckResult = (startedAt: number) =>
+  result(
+    "self_check",
+    startedAt,
+    "Self-check recorded. No compiler or hidden tests ran in this browser.",
+  );
+
 const structuralResult = (
   request: ValidationRequest,
   startedAt: number,
@@ -90,6 +97,10 @@ const handleRequest = (
 ): ValidationResult => {
   if (request.validation.mode === "structural") {
     return structuralResult(request, startedAt);
+  }
+
+  if (request.validation.mode === "self-check") {
+    return selfCheckResult(startedAt);
   }
 
   return unsupportedResult(startedAt);

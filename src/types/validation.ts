@@ -1,8 +1,38 @@
-export type StructuralCheck = {
-  type: "enum_unit_variants";
-  enumName: string;
-  requiredVariants: string[];
-};
+export type StructuralCheck =
+  | {
+      type: "enum_unit_variants";
+      enumName: string;
+      requiredVariants: string[];
+    }
+  | {
+      type: "struct_fields";
+      structName: string;
+      requiredFields: Array<{
+        name: string;
+        typeIncludes: string[];
+      }>;
+    }
+  | {
+      type: "impl_trait_for_type";
+      traitName: string;
+      typeName: string;
+    }
+  | {
+      type: "impl_method";
+      implFor: string;
+      methodName: string;
+      requiredSignatureIncludes: string[];
+    }
+  | {
+      type: "function_signature";
+      functionName: string;
+      requiredSignatureIncludes: string[];
+    }
+  | {
+      type: "source_includes";
+      requiredSnippets: string[];
+      forbiddenSnippets?: string[];
+    };
 
 export type LessonValidation =
   | {
@@ -21,6 +51,7 @@ export type LessonValidation =
 
 export type ValidationStatus =
   | "passed"
+  | "self_check"
   | "failed"
   | "timeout"
   | "unsupported"

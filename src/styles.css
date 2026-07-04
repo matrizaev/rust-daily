@@ -535,7 +535,8 @@ p {
   background: #edf4f2;
 }
 
-.validation-passed {
+.validation-passed,
+.validation-self_check {
   background: #edf7f1;
 }
 
@@ -545,7 +546,8 @@ p {
   background: #fff4ec;
 }
 
-.validation-passed .validation-title-row {
+.validation-passed .validation-title-row,
+.validation-self_check .validation-title-row {
   color: var(--green-strong);
 }
 

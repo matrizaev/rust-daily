@@ -27,6 +27,7 @@ type ValidationPanelProps = {
 
 const statusLabel: Record<ValidationStatus, string> = {
   passed: "Passed",
+  self_check: "Self-check complete",
   failed: "Needs changes",
   timeout: "Timed out",
   unsupported: "Unavailable",
@@ -40,6 +41,7 @@ const statusIcon: Record<string, ReactNode> = {
   idle: <Info size={20} aria-hidden="true" />,
   running: <LoaderCircle size={20} aria-hidden="true" />,
   passed: <CheckCircle2 size={20} aria-hidden="true" />,
+  self_check: <CheckCircle2 size={20} aria-hidden="true" />,
   failed: <AlertTriangle size={20} aria-hidden="true" />,
   timeout: <Clock3 size={20} aria-hidden="true" />,
   unsupported: <Info size={20} aria-hidden="true" />,

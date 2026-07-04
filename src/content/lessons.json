@@ -25,14 +25,969 @@
         {
           "type": "enum_unit_variants",
           "enumName": "ParseUserError",
-          "requiredVariants": [
-            "MissingId",
-            "MissingName",
-            "MissingEmail",
-            "InvalidId"
+          "requiredVariants": ["MissingId", "MissingName", "MissingEmail", "InvalidId"]
+        }
+      ]
+    }
+  },
+  {
+    "id": "display-parse-user-error-002",
+    "arcId": "parse-user",
+    "arcTitle": "Parse a user from text",
+    "day": 2,
+    "arcLength": 7,
+    "title": "Format parse errors for people",
+    "conceptId": "display-parse-error",
+    "difficulty": "easy",
+    "estimatedMinutes": 8,
+    "scenario": "Callers can match on ParseUserError, but logs and command-line output still need clear human-readable messages.",
+    "instructions": "Implement std::fmt::Display for ParseUserError. Use a match on self and write a short message for each variant.",
+    "starterCode": "use std::fmt;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId,\n}\n\n// TODO: implement std::fmt::Display for ParseUserError.\n",
+    "hints": [
+      "Display is implemented with fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result.",
+      "A match on self keeps one message next to each error case.",
+      "Use write!(f, \"...\") inside each match arm."
+    ],
+    "completionExplanation": "Display separates the typed error representation from the text shown to users. The enum stays useful for programs, while fmt gives each case a stable message.",
+    "validation": {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "impl_trait_for_type",
+          "traitName": "std::fmt::Display",
+          "typeName": "ParseUserError"
+        },
+        {
+          "type": "source_includes",
+          "requiredSnippets": ["fn fmt", "match self"]
+        }
+      ]
+    }
+  },
+  {
+    "id": "error-trait-parse-user-error-003",
+    "arcId": "parse-user",
+    "arcTitle": "Parse a user from text",
+    "day": 3,
+    "arcLength": 7,
+    "title": "Mark the parse error as an Error",
+    "conceptId": "error-trait",
+    "difficulty": "easy",
+    "estimatedMinutes": 5,
+    "scenario": "The parser error now has Display. Implementing the standard Error trait lets it fit into normal Rust error handling APIs.",
+    "instructions": "Add an implementation of std::error::Error for ParseUserError. No custom methods are needed yet.",
+    "starterCode": "use std::fmt;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId,\n}\n\nimpl std::fmt::Display for ParseUserError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            ParseUserError::MissingId => write!(f, \"missing id\"),\n            ParseUserError::MissingName => write!(f, \"missing name\"),\n            ParseUserError::MissingEmail => write!(f, \"missing email\"),\n            ParseUserError::InvalidId => write!(f, \"invalid id\"),\n        }\n    }\n}\n\n// TODO: implement std::error::Error for ParseUserError.\n",
+    "hints": [
+      "Error is the standard marker trait for error values.",
+      "Because Display and Debug already exist, this implementation can be empty.",
+      "The form is impl std::error::Error for ParseUserError {}."
+    ],
+    "completionExplanation": "Implementing Error makes ParseUserError compatible with APIs that accept standard Rust errors. Empty implementations are common when there is no source error to expose.",
+    "validation": {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "impl_trait_for_type",
+          "traitName": "std::error::Error",
+          "typeName": "ParseUserError"
+        }
+      ]
+    }
+  },
+  {
+    "id": "source-parse-int-error-004",
+    "arcId": "parse-user",
+    "arcTitle": "Parse a user from text",
+    "day": 4,
+    "arcLength": 7,
+    "title": "Preserve the ID parse source",
+    "conceptId": "error-source",
+    "difficulty": "medium",
+    "estimatedMinutes": 8,
+    "scenario": "Invalid IDs come from ParseIntError. Keeping that source error helps diagnostics without giving up the typed ParseUserError API.",
+    "instructions": "Change InvalidId so it stores ParseIntError, then pass the parse error through map_err instead of discarding it.",
+    "starterCode": "use std::num::ParseIntError;\n\n#[derive(Debug)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId,\n}\n\npub fn parse_id(id_text: &str) -> Result<u64, ParseUserError> {\n    id_text\n        .parse::<u64>()\n        .map_err(|_error| ParseUserError::InvalidId)\n}\n",
+    "hints": [
+      "Tuple variants can carry the original error value.",
+      "map_err can pass a function or variant constructor when the types line up.",
+      "After the change, InvalidId should look like InvalidId(ParseIntError)."
+    ],
+    "completionExplanation": "The parse error now keeps its original source. That makes the high-level error useful while preserving details for logging, debugging, or later Error::source support.",
+    "validation": {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "source_includes",
+          "requiredSnippets": ["InvalidId(ParseIntError)", "map_err(ParseUserError::InvalidId)"],
+          "forbiddenSnippets": ["|_error| ParseUserError::InvalidId"]
+        }
+      ]
+    }
+  },
+  {
+    "id": "from-parse-int-error-005",
+    "arcId": "parse-user",
+    "arcTitle": "Parse a user from text",
+    "day": 5,
+    "arcLength": 7,
+    "title": "Convert ParseIntError with From",
+    "conceptId": "from-error-conversion",
+    "difficulty": "medium",
+    "estimatedMinutes": 7,
+    "scenario": "The parser has one low-level error that should become a ParseUserError. A From implementation makes that conversion reusable.",
+    "instructions": "Implement From<ParseIntError> for ParseUserError by returning ParseUserError::InvalidId(error).",
+    "starterCode": "use std::num::ParseIntError;\n\n#[derive(Debug)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId(ParseIntError),\n}\n\n// TODO: implement From<ParseIntError> for ParseUserError.\n\npub fn parse_id(id_text: &str) -> Result<u64, ParseUserError> {\n    id_text.parse::<u64>().map_err(ParseUserError::from)\n}\n",
+    "hints": [
+      "From<T> defines fn from(value: T) -> Self.",
+      "The body only needs to wrap the ParseIntError in the InvalidId variant.",
+      "This is the conversion that lets ? work in later parser code."
+    ],
+    "completionExplanation": "From centralizes the low-level to high-level error conversion. Call sites can ask for ParseUserError without rewriting the wrapping logic each time.",
+    "validation": {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "impl_trait_for_type",
+          "traitName": "From<ParseIntError>",
+          "typeName": "ParseUserError"
+        },
+        {
+          "type": "source_includes",
+          "requiredSnippets": ["fn from", "ParseUserError::InvalidId"]
+        }
+      ]
+    }
+  },
+  {
+    "id": "tryfrom-user-str-006",
+    "arcId": "parse-user",
+    "arcTitle": "Parse a user from text",
+    "day": 6,
+    "arcLength": 7,
+    "title": "Parse User with TryFrom",
+    "conceptId": "tryfrom-user",
+    "difficulty": "medium",
+    "estimatedMinutes": 9,
+    "scenario": "Parsing a User from text is a fallible conversion. TryFrom<&str> gives callers a standard API for that operation.",
+    "instructions": "Implement TryFrom<&str> for User. Set type Error to ParseUserError and delegate to parse_user.",
+    "starterCode": "use std::convert::TryFrom;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct User {\n    pub id: u64,\n    pub name: String,\n    pub email: String,\n}\n\n#[derive(Debug)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId,\n}\n\npub fn parse_user(input: &str) -> Result<User, ParseUserError> {\n    let mut parts = input.split(',');\n    let id = parts.next().ok_or(ParseUserError::MissingId)?;\n    let name = parts.next().ok_or(ParseUserError::MissingName)?;\n    let email = parts.next().ok_or(ParseUserError::MissingEmail)?;\n\n    Ok(User {\n        id: id.parse().map_err(|_| ParseUserError::InvalidId)?,\n        name: name.to_owned(),\n        email: email.to_owned(),\n    })\n}\n\n// TODO: implement TryFrom<&str> for User.\n",
+    "hints": [
+      "TryFrom uses an associated Error type.",
+      "The conversion method is try_from(value: &str) -> Result<Self, Self::Error>.",
+      "You do not need to duplicate parse_user; delegate to it."
+    ],
+    "completionExplanation": "TryFrom communicates that parsing can fail and gives callers a standard conversion shape. Delegating keeps one parsing implementation instead of two drifting copies.",
+    "validation": {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "impl_trait_for_type",
+          "traitName": "TryFrom<&str>",
+          "typeName": "User"
+        },
+        {
+          "type": "source_includes",
+          "requiredSnippets": ["type Error = ParseUserError", "fn try_from"]
+        }
+      ]
+    }
+  },
+  {
+    "id": "parse-user-public-tests-007",
+    "arcId": "parse-user",
+    "arcTitle": "Parse a user from text",
+    "day": 7,
+    "arcLength": 7,
+    "title": "Write parser behavior checks",
+    "conceptId": "basic-tests",
+    "difficulty": "medium",
+    "estimatedMinutes": 8,
+    "scenario": "The parser arc ends with examples that document success and failure behavior for future maintainers.",
+    "instructions": "Fill in the two TODO blocks with one success check and one failure check. Use assert_eq! and matches! or a match expression.",
+    "starterCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct User {\n    pub id: u64,\n    pub name: String,\n    pub email: String,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId,\n}\n\npub fn parse_user(_input: &str) -> Result<User, ParseUserError> {\n    unimplemented!(\"parser implementation is provided earlier in the arc\")\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn parses_valid_user() {\n        // TODO: assert that a complete input returns the expected User.\n    }\n\n    #[test]\n    fn rejects_missing_email() {\n        // TODO: assert that an input without email returns MissingEmail.\n    }\n}\n",
+    "hints": [
+      "A useful success example checks the parsed id, name, and email.",
+      "A useful failure example checks the exact error variant, not just that an error happened.",
+      "matches!(result, Err(ParseUserError::MissingEmail)) is a compact shape for the failure case."
+    ],
+    "completionExplanation": "Focused behavior checks turn the parser contract into executable examples for humans and future tooling. They show both the happy path and the important failure shape.",
+    "validation": {
+      "mode": "self-check"
+    }
+  },
+  {
+    "id": "config-struct-fields-001",
+    "arcId": "config-service",
+    "arcTitle": "Configure a small service",
+    "day": 1,
+    "arcLength": 6,
+    "title": "Shape a service Config",
+    "conceptId": "struct-field-design",
+    "difficulty": "easy",
+    "estimatedMinutes": 6,
+    "scenario": "A tiny service needs configuration that can be owned by the service and moved between setup functions.",
+    "instructions": "Define Config with owned fields: service_url: String, max_connections: usize, and use_tls: bool.",
+    "starterCode": "// TODO: define Config with owned fields for the service settings.\n",
+    "hints": [
+      "Use a struct when a few named values travel together.",
+      "String is appropriate when Config owns its service URL.",
+      "Booleans are fine for small binary flags such as TLS on or off."
+    ],
+    "completionExplanation": "The Config type gives the service one explicit setup object. Owned fields make the value easy to store without tying it to temporary input lifetimes.",
+    "validation": {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "struct_fields",
+          "structName": "Config",
+          "requiredFields": [
+            { "name": "service_url", "typeIncludes": ["String"] },
+            { "name": "max_connections", "typeIncludes": ["usize"] },
+            { "name": "use_tls", "typeIncludes": ["bool"] }
           ]
         }
       ]
+    }
+  },
+  {
+    "id": "config-default-impl-002",
+    "arcId": "config-service",
+    "arcTitle": "Configure a small service",
+    "day": 2,
+    "arcLength": 6,
+    "title": "Give Config sensible defaults",
+    "conceptId": "default-impl",
+    "difficulty": "easy",
+    "estimatedMinutes": 6,
+    "scenario": "Most local service runs use the same setup. Default lets callers start from a reasonable Config and override only what changes.",
+    "instructions": "Implement Default for Config. Use http://localhost:8080, 32 max connections, and false for use_tls.",
+    "starterCode": "pub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n}\n\n// TODO: implement Default for Config.\n",
+    "hints": [
+      "Default returns Self from fn default() -> Self.",
+      "Use to_owned or String::from for the service URL.",
+      "Default values should be boring and safe for local development."
+    ],
+    "completionExplanation": "Default gives callers a clear starting point while keeping each field explicit. It is useful when most configuration values are optional overrides.",
+    "validation": {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "impl_trait_for_type",
+          "traitName": "Default",
+          "typeName": "Config"
+        },
+        {
+          "type": "source_includes",
+          "requiredSnippets": ["fn default", "localhost"]
+        }
+      ]
+    }
+  },
+  {
+    "id": "config-methods-003",
+    "arcId": "config-service",
+    "arcTitle": "Configure a small service",
+    "day": 3,
+    "arcLength": 6,
+    "title": "Add a small Config setter",
+    "conceptId": "methods-basic",
+    "difficulty": "easy",
+    "estimatedMinutes": 7,
+    "scenario": "Callers should be able to start from Config::default and customize one field without reaching into every detail.",
+    "instructions": "Add Config::with_service_url(self, service_url: impl Into<String>) -> Self. Update the field and return self.",
+    "starterCode": "pub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n}\n\nimpl Config {\n    // TODO: add with_service_url here.\n}\n",
+    "hints": [
+      "A consuming setter can take mut self, change a field, and return self.",
+      "impl Into<String> lets callers pass either String or &str.",
+      "Returning Self keeps the method chain-friendly."
+    ],
+    "completionExplanation": "A small method can make configuration ergonomic without hiding the Config fields. Taking self by value is a common builder-style pattern.",
+    "validation": {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "impl_method",
+          "implFor": "Config",
+          "methodName": "with_service_url",
+          "requiredSignatureIncludes": ["self", "impl Into<String>", "Self"]
+        }
+      ]
+    }
+  },
+  {
+    "id": "config-option-timeout-004",
+    "arcId": "config-service",
+    "arcTitle": "Configure a small service",
+    "day": 4,
+    "arcLength": 6,
+    "title": "Model an optional timeout",
+    "conceptId": "option-modeling",
+    "difficulty": "easy",
+    "estimatedMinutes": 6,
+    "scenario": "Some deployments need a request timeout while others should inherit the platform default. The type should make that optionality explicit.",
+    "instructions": "Add timeout_seconds: Option<u64> to Config. Use None in Default.",
+    "starterCode": "pub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n    // TODO: add an optional timeout in seconds.\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n        }\n    }\n}\n",
+    "hints": [
+      "Option<T> represents a value that may be present or absent.",
+      "A timeout expressed in seconds can be a u64.",
+      "None is clearer than a magic value such as 0 when no timeout is configured."
+    ],
+    "completionExplanation": "Option makes absence part of the type instead of encoding it with a sentinel value. Callers must handle both configured and not-configured cases.",
+    "validation": {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "struct_fields",
+          "structName": "Config",
+          "requiredFields": [
+            { "name": "timeout_seconds", "typeIncludes": ["Option", "u64"] }
+          ]
+        },
+        {
+          "type": "source_includes",
+          "requiredSnippets": ["timeout_seconds", "None"]
+        }
+      ]
+    }
+  },
+  {
+    "id": "config-result-validate-005",
+    "arcId": "config-service",
+    "arcTitle": "Configure a small service",
+    "day": 5,
+    "arcLength": 6,
+    "title": "Return validation errors with Result",
+    "conceptId": "result-validation",
+    "difficulty": "medium",
+    "estimatedMinutes": 9,
+    "scenario": "Configuration validation should explain what is wrong instead of returning a bare boolean.",
+    "instructions": "Add ConfigError variants EmptyServiceUrl and ZeroConnections. Change validate to return Result<(), ConfigError>.",
+    "starterCode": "pub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n}\n\npub enum ConfigError {\n    // TODO: add validation error variants.\n}\n\nimpl Config {\n    pub fn validate(&self) -> bool {\n        !self.service_url.is_empty() && self.max_connections > 0\n    }\n}\n",
+    "hints": [
+      "Result<(), ConfigError> says success has no extra value, but failure is typed.",
+      "Use one variant for an empty URL and one for zero connections.",
+      "Return Ok(()) only after all validation checks pass."
+    ],
+    "completionExplanation": "Result gives callers a success or a specific reason for failure. That is more useful than a boolean once validation can fail in multiple ways.",
+    "validation": {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "enum_unit_variants",
+          "enumName": "ConfigError",
+          "requiredVariants": ["EmptyServiceUrl", "ZeroConnections"]
+        },
+        {
+          "type": "impl_method",
+          "implFor": "Config",
+          "methodName": "validate",
+          "requiredSignatureIncludes": ["Result<(), ConfigError>"]
+        }
+      ]
+    }
+  },
+  {
+    "id": "config-borrowed-key-006",
+    "arcId": "config-service",
+    "arcTitle": "Configure a small service",
+    "day": 6,
+    "arcLength": 6,
+    "title": "Borrow setting keys",
+    "conceptId": "borrowing-api",
+    "difficulty": "medium",
+    "estimatedMinutes": 7,
+    "scenario": "A lookup helper should not take ownership of a key just to compare it with stored names.",
+    "instructions": "Change get_setting so key is borrowed as &str and the returned value is borrowed from settings as Option<&str>.",
+    "starterCode": "pub fn get_setting(settings: &[(String, String)], key: String) -> Option<String> {\n    settings\n        .iter()\n        .find(|(name, _value)| *name == key)\n        .map(|(_name, value)| value.clone())\n}\n",
+    "hints": [
+      "The function only needs to read key, not store it.",
+      "Returning &str can borrow from the String already inside settings.",
+      "as_str converts a String reference into a string slice."
+    ],
+    "completionExplanation": "Borrowing keeps the lookup API lightweight. The caller keeps its key, and the returned value can point into the existing settings data.",
+    "validation": {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "function_signature",
+          "functionName": "get_setting",
+          "requiredSignatureIncludes": ["key: &str", "Option<&str>"]
+        },
+        {
+          "type": "source_includes",
+          "requiredSnippets": ["as_str"],
+          "forbiddenSnippets": ["key: String", "Option<String>"]
+        }
+      ]
+    }
+  },
+  {
+    "id": "inventory-item-struct-001",
+    "arcId": "inventory-summary",
+    "arcTitle": "Summarize inventory",
+    "day": 1,
+    "arcLength": 6,
+    "title": "Define an inventory item",
+    "conceptId": "domain-structs",
+    "difficulty": "easy",
+    "estimatedMinutes": 5,
+    "scenario": "Inventory summaries need a small domain type before helpers can work with names and quantities.",
+    "instructions": "Define Item with sku: String, name: String, quantity: u32, and reserved: u32.",
+    "starterCode": "// TODO: define the Item struct used by inventory summaries.\n",
+    "hints": [
+      "Use a struct when each value has a distinct role.",
+      "The user-facing name and SKU are owned strings.",
+      "Quantities are small non-negative counts, so u32 is enough here."
+    ],
+    "completionExplanation": "The Item struct gives later helpers a clear vocabulary. Named fields make summary code easier to read than tuple positions.",
+    "validation": {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "struct_fields",
+          "structName": "Item",
+          "requiredFields": [
+            { "name": "sku", "typeIncludes": ["String"] },
+            { "name": "name", "typeIncludes": ["String"] },
+            { "name": "quantity", "typeIncludes": ["u32"] },
+            { "name": "reserved", "typeIncludes": ["u32"] }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "inventory-filter-map-002",
+    "arcId": "inventory-summary",
+    "arcTitle": "Summarize inventory",
+    "day": 2,
+    "arcLength": 6,
+    "title": "Collect available item names",
+    "conceptId": "filter-map",
+    "difficulty": "medium",
+    "estimatedMinutes": 8,
+    "scenario": "A dashboard only needs names for items whose available count is above zero.",
+    "instructions": "Implement available_names with filter_map. Include an item name only when quantity is greater than reserved.",
+    "starterCode": "pub struct Item {\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\npub fn available_names(items: &[Item]) -> Vec<&str> {\n    // TODO: use filter_map to collect names with available stock.\n    Vec::new()\n}\n",
+    "hints": [
+      "available stock is quantity minus reserved, but compare before subtracting.",
+      "filter_map can return Some(name) for included items and None for skipped items.",
+      "Borrow names with as_str instead of cloning them."
+    ],
+    "completionExplanation": "filter_map fits this helper because filtering and mapping happen together. It keeps the output borrowed from the input slice instead of allocating new strings.",
+    "validation": {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "function_signature",
+          "functionName": "available_names",
+          "requiredSignatureIncludes": ["Vec<&str>"]
+        },
+        {
+          "type": "source_includes",
+          "requiredSnippets": ["filter_map", "as_str"]
+        }
+      ]
+    }
+  },
+  {
+    "id": "inventory-fold-total-003",
+    "arcId": "inventory-summary",
+    "arcTitle": "Summarize inventory",
+    "day": 3,
+    "arcLength": 6,
+    "title": "Fold quantities into a total",
+    "conceptId": "fold-sum",
+    "difficulty": "easy",
+    "estimatedMinutes": 6,
+    "scenario": "Inventory reporting often needs a single total count across many items.",
+    "instructions": "Implement total_quantity with iter().fold. Add each item quantity into the accumulator.",
+    "starterCode": "pub struct Item {\n    pub quantity: u32,\n}\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    // TODO: fold item quantities into one total.\n    0\n}\n",
+    "hints": [
+      "fold starts with an initial accumulator value.",
+      "The accumulator and the item reference are the closure arguments.",
+      "The initial total should be 0."
+    ],
+    "completionExplanation": "fold makes the accumulation explicit: start at zero, visit each item, and return the next total. It is useful when the reducer logic is more than a plain field projection.",
+    "validation": {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "function_signature",
+          "functionName": "total_quantity",
+          "requiredSignatureIncludes": ["u32"]
+        },
+        {
+          "type": "source_includes",
+          "requiredSnippets": ["fold"]
+        }
+      ]
+    }
+  },
+  {
+    "id": "inventory-clear-loop-004",
+    "arcId": "inventory-summary",
+    "arcTitle": "Summarize inventory",
+    "day": 4,
+    "arcLength": 6,
+    "title": "Choose clarity over clever chains",
+    "conceptId": "iterator-judgment",
+    "difficulty": "medium",
+    "estimatedMinutes": 8,
+    "scenario": "Iterator chains are powerful, but a dense chain can hide business rules. This helper should be easy to scan.",
+    "instructions": "Refactor reorder_notes into a clearer shape. A small loop or named intermediate values are both fine if the priority rule is obvious.",
+    "starterCode": "pub fn reorder_notes(notes: &[String]) -> Vec<String> {\n    notes\n        .iter()\n        .filter(|note| !note.trim().is_empty())\n        .map(|note| note.trim().to_lowercase())\n        .filter(|note| note.contains(\"urgent\") || note.contains(\"stock\"))\n        .collect()\n}\n",
+    "hints": [
+      "The goal is not always fewer lines.",
+      "Name a boolean such as is_inventory_note if that makes the rule clearer.",
+      "A loop is idiomatic when each step deserves a name."
+    ],
+    "completionExplanation": "Idiomatic Rust values clarity over using an iterator chain everywhere. The best shape is the one that makes the business rule easiest to verify.",
+    "validation": {
+      "mode": "self-check"
+    }
+  },
+  {
+    "id": "inventory-intoiterator-005",
+    "arcId": "inventory-summary",
+    "arcTitle": "Summarize inventory",
+    "day": 5,
+    "arcLength": 6,
+    "title": "Make Inventory iterable",
+    "conceptId": "intoiterator-wrapper",
+    "difficulty": "medium",
+    "estimatedMinutes": 8,
+    "scenario": "A wrapper type can expose natural iteration while still owning its internal Vec.",
+    "instructions": "Implement IntoIterator for Inventory so consuming the wrapper yields Item values.",
+    "starterCode": "pub struct Item {\n    pub name: String,\n}\n\npub struct Inventory {\n    items: Vec<Item>,\n}\n\nimpl Inventory {\n    pub fn new(items: Vec<Item>) -> Self {\n        Self { items }\n    }\n}\n\n// TODO: implement IntoIterator for Inventory.\n",
+    "hints": [
+      "The associated Item type should be Item.",
+      "Vec<Item> already has an into_iter method that consumes the vector.",
+      "The associated IntoIter type can reuse std::vec::IntoIter<Item>."
+    ],
+    "completionExplanation": "IntoIterator lets Inventory participate in for loops and iterator adapters without exposing its internal field as public API.",
+    "validation": {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "impl_trait_for_type",
+          "traitName": "IntoIterator",
+          "typeName": "Inventory"
+        },
+        {
+          "type": "source_includes",
+          "requiredSnippets": ["type Item = Item", "std::vec::IntoIter<Item>"]
+        }
+      ]
+    }
+  },
+  {
+    "id": "inventory-sort-by-key-006",
+    "arcId": "inventory-summary",
+    "arcTitle": "Summarize inventory",
+    "day": 6,
+    "arcLength": 6,
+    "title": "Sort items by key",
+    "conceptId": "sort-by-key",
+    "difficulty": "easy",
+    "estimatedMinutes": 5,
+    "scenario": "Before rendering an inventory table, the service wants stable alphabetical ordering by item name.",
+    "instructions": "Implement sort_by_name with sort_by_key. Sort the mutable slice by each item's name.",
+    "starterCode": "pub struct Item {\n    pub name: String,\n    pub quantity: u32,\n}\n\npub fn sort_by_name(items: &mut [Item]) {\n    // TODO: sort by item name.\n}\n",
+    "hints": [
+      "Slices expose in-place sorting methods.",
+      "sort_by_key takes a closure that returns the value to order by.",
+      "Borrow or clone the name as needed for the key expression."
+    ],
+    "completionExplanation": "sort_by_key keeps the ordering rule close to the sort call. It is a concise fit when one field defines the order.",
+    "validation": {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "function_signature",
+          "functionName": "sort_by_name",
+          "requiredSignatureIncludes": ["&mut [Item]"]
+        },
+        {
+          "type": "source_includes",
+          "requiredSnippets": ["sort_by_key"]
+        }
+      ]
+    }
+  },
+  {
+    "id": "request-struct-001",
+    "arcId": "request-api",
+    "arcTitle": "Build a request API",
+    "day": 1,
+    "arcLength": 6,
+    "title": "Define the Request surface",
+    "conceptId": "api-structs",
+    "difficulty": "easy",
+    "estimatedMinutes": 5,
+    "scenario": "A small client library needs a request type that can be passed around after setup.",
+    "instructions": "Define Request with method: String, path: String, and body: Option<String>.",
+    "starterCode": "// TODO: define the Request type used by the client API.\n",
+    "hints": [
+      "Keep the request data owned so it can outlive the builder.",
+      "The body may be absent, which makes Option a good fit.",
+      "Use clear field names that match the API vocabulary."
+    ],
+    "completionExplanation": "A focused Request struct gives the API a stable output type. Owned fields keep the request independent from temporary builder input.",
+    "validation": {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "struct_fields",
+          "structName": "Request",
+          "requiredFields": [
+            { "name": "method", "typeIncludes": ["String"] },
+            { "name": "path", "typeIncludes": ["String"] },
+            { "name": "body", "typeIncludes": ["Option", "String"] }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "request-builder-owned-setters-002",
+    "arcId": "request-api",
+    "arcTitle": "Build a request API",
+    "day": 2,
+    "arcLength": 6,
+    "title": "Add consuming builder setters",
+    "conceptId": "builder-setters",
+    "difficulty": "medium",
+    "estimatedMinutes": 8,
+    "scenario": "A request builder should support chained calls without exposing all its intermediate fields.",
+    "instructions": "Add RequestBuilder::method(mut self, method: impl Into<String>) -> Self. Store the method and return self.",
+    "starterCode": "pub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl RequestBuilder {\n    pub fn new() -> Self {\n        Self { method: None, path: None }\n    }\n\n    // TODO: add a consuming method setter.\n}\n",
+    "hints": [
+      "Taking mut self works well for chainable builder setters.",
+      "impl Into<String> accepts both borrowed and owned string inputs.",
+      "Return self after updating the field."
+    ],
+    "completionExplanation": "Consuming setters make the builder ergonomic while preserving ownership. Each call returns the next builder state for the chain.",
+    "validation": {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "impl_method",
+          "implFor": "RequestBuilder",
+          "methodName": "method",
+          "requiredSignatureIncludes": ["mut self", "impl Into<String>", "Self"]
+        }
+      ]
+    }
+  },
+  {
+    "id": "request-builder-default-003",
+    "arcId": "request-api",
+    "arcTitle": "Build a request API",
+    "day": 3,
+    "arcLength": 6,
+    "title": "Start the builder from Default",
+    "conceptId": "builder-default",
+    "difficulty": "easy",
+    "estimatedMinutes": 6,
+    "scenario": "Callers should be able to create an empty builder using the standard Default trait.",
+    "instructions": "Implement Default for RequestBuilder. Both method and path should start as None.",
+    "starterCode": "pub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\n// TODO: implement Default for RequestBuilder.\n",
+    "hints": [
+      "Default should produce the same empty state every time.",
+      "Option fields usually start as None in an empty builder.",
+      "You can also call Self { method: None, path: None } directly."
+    ],
+    "completionExplanation": "Default makes the builder easy to construct and compose with APIs that expect defaultable values. The empty state is explicit through Option fields.",
+    "validation": {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "impl_trait_for_type",
+          "traitName": "Default",
+          "typeName": "RequestBuilder"
+        },
+        {
+          "type": "source_includes",
+          "requiredSnippets": ["method: None", "path: None"]
+        }
+      ]
+    }
+  },
+  {
+    "id": "request-builder-result-004",
+    "arcId": "request-api",
+    "arcTitle": "Build a request API",
+    "day": 4,
+    "arcLength": 6,
+    "title": "Validate builder output",
+    "conceptId": "builder-result",
+    "difficulty": "medium",
+    "estimatedMinutes": 9,
+    "scenario": "A builder can be incomplete. build should report missing required fields instead of creating a bad Request.",
+    "instructions": "Add BuildError variants MissingMethod and MissingPath. Change build to return Result<Request, BuildError>.",
+    "starterCode": "pub struct Request {\n    pub method: String,\n    pub path: String,\n}\n\npub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\npub enum BuildError {\n    // TODO: add missing-field variants.\n}\n\nimpl RequestBuilder {\n    pub fn build(self) -> Request {\n        Request {\n            method: self.method.unwrap_or_default(),\n            path: self.path.unwrap_or_default(),\n        }\n    }\n}\n",
+    "hints": [
+      "The build method is where optional builder state becomes required request state.",
+      "ok_or can turn an Option into a Result with a specific error.",
+      "Each required field should have its own missing-field variant."
+    ],
+    "completionExplanation": "Returning Result keeps invalid builder states from silently becoming invalid requests. Callers get a typed explanation of what still needs to be set.",
+    "validation": {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "enum_unit_variants",
+          "enumName": "BuildError",
+          "requiredVariants": ["MissingMethod", "MissingPath"]
+        },
+        {
+          "type": "impl_method",
+          "implFor": "RequestBuilder",
+          "methodName": "build",
+          "requiredSignatureIncludes": ["Result<Request, BuildError>"]
+        }
+      ]
+    }
+  },
+  {
+    "id": "request-builder-tryfrom-005",
+    "arcId": "request-api",
+    "arcTitle": "Build a request API",
+    "day": 5,
+    "arcLength": 6,
+    "title": "Convert RawRequest with TryFrom",
+    "conceptId": "tryfrom-request",
+    "difficulty": "medium",
+    "estimatedMinutes": 8,
+    "scenario": "A small input DTO can be converted into a validated Request using the same fallible conversion pattern as parser code.",
+    "instructions": "Implement TryFrom<RawRequest> for Request. Use BuildError as the associated error type.",
+    "starterCode": "use std::convert::TryFrom;\n\npub struct RawRequest {\n    pub method: Option<String>,\n    pub path: Option<String>,\n}\n\npub struct Request {\n    pub method: String,\n    pub path: String,\n}\n\npub enum BuildError {\n    MissingMethod,\n    MissingPath,\n}\n\n// TODO: implement TryFrom<RawRequest> for Request.\n",
+    "hints": [
+      "TryFrom is appropriate because RawRequest may be missing required data.",
+      "The associated Error type should be BuildError.",
+      "Use ok_or to extract each Option or return the matching BuildError."
+    ],
+    "completionExplanation": "TryFrom turns a possibly incomplete input type into a validated domain type. The conversion API clearly communicates that failure is possible.",
+    "validation": {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "impl_trait_for_type",
+          "traitName": "TryFrom<RawRequest>",
+          "typeName": "Request"
+        },
+        {
+          "type": "source_includes",
+          "requiredSnippets": ["type Error = BuildError", "fn try_from"]
+        }
+      ]
+    }
+  },
+  {
+    "id": "request-doc-example-006",
+    "arcId": "request-api",
+    "arcTitle": "Build a request API",
+    "day": 6,
+    "arcLength": 6,
+    "title": "Document the request builder",
+    "conceptId": "doc-examples",
+    "difficulty": "easy",
+    "estimatedMinutes": 7,
+    "scenario": "The request API is small enough that one doc example can show its intended usage better than a long paragraph.",
+    "instructions": "Add a short doc comment example above RequestBuilder. Show creating a builder, setting method and path, and calling build.",
+    "starterCode": "pub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl RequestBuilder {\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n        self.method = Some(method.into());\n        self\n    }\n\n    pub fn path(mut self, path: impl Into<String>) -> Self {\n        self.path = Some(path.into());\n        self\n    }\n}\n",
+    "hints": [
+      "Doc comments use /// before the item they describe.",
+      "A compact example should show the normal path, not every edge case.",
+      "Keep the example focused on how a caller should read the API."
+    ],
+    "completionExplanation": "A doc example teaches the API at the point of use. It also gives future maintainers a quick reference for the intended builder flow.",
+    "validation": {
+      "mode": "self-check"
+    }
+  },
+  {
+    "id": "log-entry-borrowed-001",
+    "arcId": "log-lines",
+    "arcTitle": "Inspect log lines",
+    "day": 1,
+    "arcLength": 5,
+    "title": "Borrow fields in a log entry",
+    "conceptId": "borrowed-fields",
+    "difficulty": "medium",
+    "estimatedMinutes": 7,
+    "scenario": "A log viewer often points into existing log text instead of allocating new strings for every parsed line.",
+    "instructions": "Define LogEntry<'a> with borrowed level: &'a str and message: &'a str fields.",
+    "starterCode": "// TODO: define LogEntry with borrowed fields.\n",
+    "hints": [
+      "Borrowed struct fields need a lifetime parameter on the struct.",
+      "Both fields can borrow string slices from the original log line.",
+      "Use &'a str for each borrowed text field."
+    ],
+    "completionExplanation": "Borrowed fields let the entry view point into existing text. The lifetime parameter states that the entry cannot outlive the data it references.",
+    "validation": {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "struct_fields",
+          "structName": "LogEntry",
+          "requiredFields": [
+            { "name": "level", "typeIncludes": ["&'a str"] },
+            { "name": "message", "typeIncludes": ["&'a str"] }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "log-view-lifetime-002",
+    "arcId": "log-lines",
+    "arcTitle": "Inspect log lines",
+    "day": 2,
+    "arcLength": 5,
+    "title": "Create a lifetime-backed view",
+    "conceptId": "lifetime-view",
+    "difficulty": "medium",
+    "estimatedMinutes": 8,
+    "scenario": "A log view should borrow a slice of entries and expose helper methods without taking ownership.",
+    "instructions": "Define LogView<'a> with entries: &'a [LogEntry<'a>].",
+    "starterCode": "pub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n// TODO: define LogView that borrows a slice of entries.\n",
+    "hints": [
+      "The view borrows the slice, so the field starts with &'a.",
+      "The entries inside the slice also carry the same lifetime.",
+      "This is a view type, not an owning collection."
+    ],
+    "completionExplanation": "The view type captures the relationship between the borrowed slice and the borrowed text inside each entry. The lifetime keeps those references tied together.",
+    "validation": {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "struct_fields",
+          "structName": "LogView",
+          "requiredFields": [
+            { "name": "entries", "typeIncludes": ["&'a", "[LogEntry"] }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "log-level-match-003",
+    "arcId": "log-lines",
+    "arcTitle": "Inspect log lines",
+    "day": 3,
+    "arcLength": 5,
+    "title": "Map log levels with match",
+    "conceptId": "pattern-matching",
+    "difficulty": "easy",
+    "estimatedMinutes": 6,
+    "scenario": "The viewer needs a stable severity number for each known log level.",
+    "instructions": "Add LogLevel variants Info, Warn, and Error. Implement severity with a match on level.",
+    "starterCode": "pub enum LogLevel {\n    // TODO: add the supported log levels.\n}\n\npub fn severity(level: LogLevel) -> u8 {\n    // TODO: map Info to 1, Warn to 2, and Error to 3.\n    0\n}\n",
+    "hints": [
+      "Enums pair well with match because every known case can be handled directly.",
+      "The severity function should return a small integer for each variant.",
+      "A match expression is clearer than string comparisons here."
+    ],
+    "completionExplanation": "Pattern matching keeps the mapping exhaustive and visible. Adding a new log level later will naturally point maintainers at this decision.",
+    "validation": {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "enum_unit_variants",
+          "enumName": "LogLevel",
+          "requiredVariants": ["Info", "Warn", "Error"]
+        },
+        {
+          "type": "source_includes",
+          "requiredSnippets": ["match level"]
+        }
+      ]
+    }
+  },
+  {
+    "id": "log-message-cow-004",
+    "arcId": "log-lines",
+    "arcTitle": "Inspect log lines",
+    "day": 4,
+    "arcLength": 5,
+    "title": "Allow borrowed or owned messages",
+    "conceptId": "cow-strings",
+    "difficulty": "advanced",
+    "estimatedMinutes": 10,
+    "scenario": "Most log messages can be borrowed, but some normalized messages need owned text. Cow supports both without forcing allocation every time.",
+    "instructions": "Define LogMessage<'a> with text: Cow<'a, str>. Import Cow from std::borrow.",
+    "starterCode": "// TODO: import Cow and define LogMessage with text that can be borrowed or owned.\n",
+    "hints": [
+      "Cow means clone-on-write and lives in std::borrow.",
+      "The borrowed form for text is str, so the field type is Cow<'a, str>.",
+      "This is useful when most data can be borrowed but a few cases need ownership."
+    ],
+    "completionExplanation": "Cow lets the API accept borrowed text by default while still supporting owned normalized messages. It avoids unnecessary allocation without giving up flexibility.",
+    "validation": {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "struct_fields",
+          "structName": "LogMessage",
+          "requiredFields": [
+            { "name": "text", "typeIncludes": ["Cow", "str"] }
+          ]
+        },
+        {
+          "type": "source_includes",
+          "requiredSnippets": ["std::borrow::Cow", "Cow<'a, str>"]
+        }
+      ]
+    }
+  },
+  {
+    "id": "log-filter-tests-005",
+    "arcId": "log-lines",
+    "arcTitle": "Inspect log lines",
+    "day": 5,
+    "arcLength": 5,
+    "title": "Check log filtering behavior",
+    "conceptId": "focused-tests",
+    "difficulty": "medium",
+    "estimatedMinutes": 8,
+    "scenario": "The log viewer should keep high-priority entries and discard routine information when asked for alerts.",
+    "instructions": "Fill in the TODO blocks with checks for keeping Error and Warn entries while excluding Info entries.",
+    "starterCode": "pub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub struct LogEntry<'a> {\n    pub level: LogLevel,\n    pub message: &'a str,\n}\n\npub fn alert_messages<'a>(entries: &'a [LogEntry<'a>]) -> Vec<&'a str> {\n    entries\n        .iter()\n        .filter_map(|entry| match entry.level {\n            LogLevel::Warn | LogLevel::Error => Some(entry.message),\n            LogLevel::Info => None,\n        })\n        .collect()\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn keeps_warning_and_error_messages() {\n        // TODO: assert that alert messages include warning and error text.\n    }\n\n    #[test]\n    fn skips_info_messages() {\n        // TODO: assert that info text is not returned.\n    }\n}\n",
+    "hints": [
+      "Use a small array of LogEntry values to show each level.",
+      "The first check should prove that warning and error messages are retained.",
+      "The second check should make the Info exclusion explicit."
+    ],
+    "completionExplanation": "Focused behavior checks document the alert filtering contract. They make the important inclusion and exclusion rules visible for the next reader.",
+    "validation": {
+      "mode": "self-check"
     }
   }
 ]

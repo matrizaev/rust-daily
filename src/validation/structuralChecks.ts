@@ -1,5 +1,21 @@
 import type { StructuralCheck, ValidationFailure } from "../types/validation";
 
+type EnumUnitVariantsCheck = Extract<
+  StructuralCheck,
+  { type: "enum_unit_variants" }
+>;
+type FunctionSignatureCheck = Extract<
+  StructuralCheck,
+  { type: "function_signature" }
+>;
+type ImplMethodCheck = Extract<StructuralCheck, { type: "impl_method" }>;
+type ImplTraitForTypeCheck = Extract<
+  StructuralCheck,
+  { type: "impl_trait_for_type" }
+>;
+type SourceIncludesCheck = Extract<StructuralCheck, { type: "source_includes" }>;
+type StructFieldsCheck = Extract<StructuralCheck, { type: "struct_fields" }>;
+
 const RUST_IDENTIFIER = /^([A-Za-z_][A-Za-z0-9_]*)\s*(?:=\s*[^({]+)?$/;
 
 const escapeRegex = (value: string) =>
@@ -12,9 +28,13 @@ const stripRustComments = (source: string) =>
     )
     .replace(/\/\/[^\n\r]*/g, "");
 
-const findEnumOpenBrace = (source: string, enumName: string) => {
-  const enumPattern = new RegExp(`\\benum\\s+${escapeRegex(enumName)}\\s*\\{`);
-  const match = enumPattern.exec(source);
+const optionalGenericsPattern = "(?:\\s*<[^>{}]*>)?";
+
+const findNamedOpenBrace = (source: string, keyword: string, name: string) => {
+  const pattern = new RegExp(
+    `\\b${keyword}\\s+${escapeRegex(name)}${optionalGenericsPattern}\\s*\\{`,
+  );
+  const match = pattern.exec(source);
 
   return match ? match.index + match[0].lastIndexOf("{") : -1;
 };
@@ -35,8 +55,8 @@ const extractBraceBody = (source: string, openBraceIndex: number) => {
   return null;
 };
 
-const extractEnumBody = (source: string, enumName: string) => {
-  const openBraceIndex = findEnumOpenBrace(source, enumName);
+const extractNamedBody = (source: string, keyword: string, name: string) => {
+  const openBraceIndex = findNamedOpenBrace(source, keyword, name);
 
   return openBraceIndex < 0 ? null : extractBraceBody(source, openBraceIndex);
 };
@@ -76,14 +96,33 @@ const splitTopLevelEntries = (body: string) => {
   return entries;
 };
 
+const normalizeWhitespace = (value: string) => value.replace(/\s+/g, " ").trim();
+
+const includesAll = (source: string, snippets: string[]) =>
+  snippets.every((snippet) => source.includes(snippet));
+
+const failure = (name: string, message: string): ValidationFailure => ({
+  name,
+  message,
+});
+
+const missingSnippetFailures = (source: string, snippets: string[]) =>
+  snippets
+    .filter((snippet) => !source.includes(snippet))
+    .map((snippet) => failure(snippet, `Missing required snippet: ${snippet}.`));
+
+const forbiddenSnippetFailures = (source: string, snippets: string[]) =>
+  snippets
+    .filter((snippet) => source.includes(snippet))
+    .map((snippet) => failure(snippet, `Remove forbidden snippet: ${snippet}.`));
+
 const getUnitVariantName = (entry: string) => {
   const match = RUST_IDENTIFIER.exec(entry.trim());
 
   return match?.[1] ?? null;
 };
 
-const isVariantName = (value: string | null): value is string =>
-  value !== null;
+const isString = (value: string | null): value is string => value !== null;
 
 const missingVariantFailures = (
   variants: Set<string>,
@@ -91,40 +130,156 @@ const missingVariantFailures = (
 ) =>
   requiredVariants
     .filter((variant) => !variants.has(variant))
-    .map((variant) => ({
-      name: variant,
-      message: `Missing variant: ${variant}.`,
-    }));
-
-const enumNotFoundFailure = (enumName: string): ValidationFailure => ({
-  name: enumName,
-  message: `${enumName} enum was not found.`,
-});
-
-const emptyEnumFailure = (enumName: string): ValidationFailure => ({
-  name: enumName,
-  message: `${enumName} enum is empty.`,
-});
+    .map((variant) => failure(variant, `Missing variant: ${variant}.`));
 
 const runEnumUnitVariantsCheck = (
   source: string,
-  check: StructuralCheck,
-): ValidationFailure[] => {
-  const body = extractEnumBody(stripRustComments(source), check.enumName);
+  check: EnumUnitVariantsCheck,
+) => {
+  const body = extractNamedBody(source, "enum", check.enumName);
 
   if (body === null) {
-    return [enumNotFoundFailure(check.enumName)];
+    return [failure(check.enumName, `${check.enumName} enum was not found.`)];
   }
 
   const variants = new Set(
-    splitTopLevelEntries(body).map(getUnitVariantName).filter(isVariantName),
+    splitTopLevelEntries(body).map(getUnitVariantName).filter(isString),
   );
   const missing = missingVariantFailures(variants, check.requiredVariants);
 
-  return variants.size === 0 ? [emptyEnumFailure(check.enumName), ...missing] : missing;
+  return variants.size === 0
+    ? [failure(check.enumName, `${check.enumName} enum is empty.`), ...missing]
+    : missing;
 };
+
+const parseStructField = (entry: string) => {
+  const match = /^\s*(?:pub(?:\([^)]*\))?\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*:\s*([^,]+)\s*$/.exec(
+    entry,
+  );
+
+  return match ? { name: match[1], typeText: normalizeWhitespace(match[2]) } : null;
+};
+
+const getStructFields = (body: string) =>
+  splitTopLevelEntries(body).map(parseStructField).filter((field) => field !== null);
+
+const fieldFailure = (structName: string, fieldName: string) =>
+  failure(fieldName, `${structName}.${fieldName} field is missing or has the wrong type.`);
+
+const runStructFieldsCheck = (source: string, check: StructFieldsCheck) => {
+  const body = extractNamedBody(source, "struct", check.structName);
+
+  if (body === null) {
+    return [failure(check.structName, `${check.structName} struct was not found.`)];
+  }
+
+  const fields = getStructFields(body);
+
+  return check.requiredFields.flatMap((requiredField) => {
+    const field = fields.find((field) => field.name === requiredField.name);
+
+    return field && includesAll(field.typeText, requiredField.typeIncludes)
+      ? []
+      : [fieldFailure(check.structName, requiredField.name)];
+  });
+};
+
+const implPattern = (implFor: string) =>
+  new RegExp(`\\bimpl${optionalGenericsPattern}\\s+${escapeRegex(implFor)}\\s*\\{`);
+
+const extractImplBody = (source: string, implFor: string) => {
+  const match = implPattern(implFor).exec(source);
+
+  return match ? extractBraceBody(source, match.index + match[0].lastIndexOf("{")) : null;
+};
+
+const functionPattern = (functionName: string) =>
+  new RegExp(
+    `\\b(?:pub\\s+)?fn\\s+${escapeRegex(functionName)}\\s*\\([^)]*\\)\\s*(?:->\\s*[^\\{;]+)?`,
+  );
+
+const findFunctionSignature = (source: string, functionName: string) => {
+  const match = functionPattern(functionName).exec(source);
+
+  return match ? normalizeWhitespace(match[0]) : null;
+};
+
+const methodSignatureFailures = (
+  signature: string | null,
+  methodName: string,
+  requiredIncludes: string[],
+) => {
+  if (signature === null) {
+    return [failure(methodName, `${methodName} method was not found.`)];
+  }
+
+  return missingSnippetFailures(signature, requiredIncludes);
+};
+
+const runImplMethodCheck = (source: string, check: ImplMethodCheck) => {
+  const body = extractImplBody(source, check.implFor);
+
+  if (body === null) {
+    return [failure(check.implFor, `impl ${check.implFor} block was not found.`)];
+  }
+
+  return methodSignatureFailures(
+    findFunctionSignature(body, check.methodName),
+    check.methodName,
+    check.requiredSignatureIncludes,
+  );
+};
+
+const runFunctionSignatureCheck = (
+  source: string,
+  check: FunctionSignatureCheck,
+) =>
+  methodSignatureFailures(
+    findFunctionSignature(source, check.functionName),
+    check.functionName,
+    check.requiredSignatureIncludes,
+  );
+
+const runImplTraitForTypeCheck = (
+  source: string,
+  check: ImplTraitForTypeCheck,
+) => {
+  const pattern = new RegExp(
+    `\\bimpl${optionalGenericsPattern}\\s+${escapeRegex(check.traitName)}\\s+for\\s+${escapeRegex(check.typeName)}\\b`,
+  );
+
+  return pattern.test(source)
+    ? []
+    : [
+        failure(
+          check.traitName,
+          `impl ${check.traitName} for ${check.typeName} was not found.`,
+        ),
+      ];
+};
+
+const runSourceIncludesCheck = (source: string, check: SourceIncludesCheck) => [
+  ...missingSnippetFailures(source, check.requiredSnippets),
+  ...forbiddenSnippetFailures(source, check.forbiddenSnippets ?? []),
+];
+
+const checkRunners = {
+  enum_unit_variants: runEnumUnitVariantsCheck,
+  function_signature: runFunctionSignatureCheck,
+  impl_method: runImplMethodCheck,
+  impl_trait_for_type: runImplTraitForTypeCheck,
+  source_includes: runSourceIncludesCheck,
+  struct_fields: runStructFieldsCheck,
+};
+
+const runStructuralCheck = (source: string, check: StructuralCheck) =>
+  checkRunners[check.type](source, check as never);
 
 export const runStructuralChecks = (
   source: string,
   checks: StructuralCheck[],
-) => checks.flatMap((check) => runEnumUnitVariantsCheck(source, check));
+) => {
+  const cleanSource = stripRustComments(source);
+
+  return checks.flatMap((check) => runStructuralCheck(cleanSource, check));
+};

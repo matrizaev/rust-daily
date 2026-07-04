@@ -102,6 +102,9 @@ const unsupportedResult = (): ValidationResult => ({
   failures: [],
 });
 
+const shouldCompleteLesson = (result: ValidationResult) =>
+  result.status === "passed" || result.status === "self_check";
+
 const buildValidationRequest = (
   lessonId: string,
   validation: LessonValidation,
@@ -233,7 +236,7 @@ const useValidationRunner = (
     setCheckedCode(requestCode);
     setState(resultState(result, codeRef.current !== requestCode));
 
-    if (result.status === "passed") {
+    if (shouldCompleteLesson(result)) {
       const completion = recordLessonCompletion(lesson, concept);
 
       if (completion.completedNow) {
