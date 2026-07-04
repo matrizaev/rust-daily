@@ -2,20 +2,65 @@
 
 ## 1. Product Summary
 
-Rust Daily is a frontend-only Progressive Web App for practicing idiomatic Rust in daily 5-10 minute sessions on tablets and desktop browsers.
+Rust Daily is a local-first Progressive Web App for practicing idiomatic Rust in daily 5-10 minute sessions on tablets and desktop browsers.
 
 The app is for intermediate engineers who already know basic Rust syntax and want to become fluent at writing production-quality Rust without AI code generation, autocomplete, IDE hints, or algorithmic puzzle grinding.
 
-The core experience is one byte-sized Rust exercise per day. Each exercise teaches exactly one concept and asks the learner to write or modify a small amount of real Rust code. MVP validation runs entirely in the browser through a shipped Rust validation engine and authored checks.
+The core experience is one byte-sized Rust exercise per day. Each exercise teaches exactly one concept and asks the learner to write or modify a small amount of real Rust code. The frontend can run local browser validation for supported lessons, and the repository now includes an optional Actix backend for Cargo-backed validation in an isolated runner container.
+
+The core PWA must remain usable without AI, accounts, or cloud sync. Backend validation is an optional capability for lessons that need normal Cargo behavior; it must not replace the local-first daily practice loop.
+
+### 1.1 Current Implementation Snapshot
+
+Implemented as of July 4, 2026:
+
+- Repository layout:
+  - `frontend/`: Vite, React, TypeScript PWA.
+  - `backend/`: Actix backend for optional remote Rust validation.
+  - `docker/`: runner image assets.
+  - `docs/`: product specs, backend docs, implementation plans.
+- Frontend:
+  - Dark-first tablet-oriented UI with light/system theme setting.
+  - CodeMirror Rust editor with syntax highlighting and no autocomplete extension.
+  - Daily home, lesson screen, hints, completion explanation, and validation panel.
+  - 30 local lesson records and concept metadata.
+  - Local drafts, attempts, completions, streak summary, concept progress, settings, progress export/import, progress reset, and draft deletion.
+  - PWA manifest, service worker, offline app shell, install metadata, and GitHub Pages workflow.
+  - Frontend validation worker with `structural` and `self-check` modes.
+- Backend:
+  - Actix service exposing `POST /run`.
+  - Typed request validation for exactly `src/lib.rs` and `tests/lesson.rs`.
+  - Config-driven queue capacity, worker count, timeout, output cap, runner image, workspace root, JSON limit, and optional CORS origin.
+  - Bounded Tokio `mpsc` queue with one-shot responses and fixed worker pool.
+  - Per-job temporary Cargo workspace assembly.
+  - Podman execution of `cargo test --offline --message-format=json` in a restricted container.
+  - Sandbox flags for no network, memory/CPU/PID limits, read-only container filesystem, tmpfs, no-new-privileges, and dropped capabilities.
+  - Output capping, compile-error classification from Cargo JSON messages, timeout classification, and structured HTTP error responses.
+  - `docker/rust-runner.Dockerfile` based on `rust:1.96-slim`.
+
+Not yet implemented:
+
+- Frontend integration with `POST /run`.
+- Browser-compiled Rust validation engine for `browser-rust` lessons.
+- Lesson content schema for backend-supplied public tests.
+- Backend hosting/deployment workflow.
+- Server-side hidden tests or tamper-resistant grading.
+- User accounts, cloud sync, persistence beyond local browser storage.
+- Full daily scheduler with review due, prerequisites, recent failures, selected focus, and grace-day streak rules.
+- Full progress/concept graph screen.
+- Notifications/reminders.
+- Authoring pipeline with reference solutions, starter compile checks, and solution-pass checks.
+- Automated frontend test runner and end-to-end test suite.
 
 ## 2. Product Positioning
 
 Rust Daily is:
 
 - A daily practice app for idiomatic Rust.
-- A browser-validated micro-lesson system.
+- A browser-validated micro-lesson system for local/offline-capable lessons.
+- An optional Cargo-backed validation system for lessons that need normal Rust tooling.
 - A tablet-friendly coding environment with intentionally limited assistance.
-- A static, local-first app that can run without a custom backend.
+- A local-first app that can run without a hosted backend for the core daily loop.
 - A long-term concept mastery tool for real-world Rust.
 
 Rust Daily is not:
@@ -25,7 +70,7 @@ Rust Daily is not:
 - A replacement for Rustlings.
 - An AI tutor or code generation product.
 - A full cloud IDE.
-- A hosted judge or remote compiler service.
+- A general hosted judge or remote compiler service.
 - A place to build large projects during a session.
 
 ## 3. Goals
@@ -35,7 +80,7 @@ Primary goals:
 - Help users practice idiomatic Rust for 5-10 minutes per day.
 - Make every session small enough to complete on a tablet.
 - Teach one Rust concept per lesson.
-- Validate work in the browser, not with AI grading.
+- Validate work deterministically through authored browser checks or the optional backend runner, not with AI grading.
 - Reinforce real production Rust patterns over puzzle tricks.
 - Build long-term comfort with ownership, traits, errors, iterators, modules, tests, and API design.
 
@@ -54,7 +99,7 @@ The app must not:
 - Encourage solving many exercises in one sitting as the primary loop.
 - Focus on clever algorithms unless the algorithm is incidental to a Rust concept.
 - Require local Rust installation on the user's tablet.
-- Require a hosted backend for MVP use.
+- Require a hosted backend for local practice, drafts, progress, or offline lesson viewing.
 - Require user accounts or cloud sync for MVP use.
 - Depend on large third-party crates for lesson solutions unless a specific advanced lesson intentionally teaches crate usage.
 
@@ -109,18 +154,21 @@ Lessons should produce small but realistic Rust code:
 
 Avoid throwaway puzzle framing when a real-world framing is possible.
 
-### 6.3 Browser Validation as Judge
+### 6.3 Deterministic Validation as Judge
 
-MVP validation is based on frontend-only mechanisms:
+Validation must be deterministic and authored. It may run locally in the browser or through the optional backend runner, depending on the lesson's validation mode and deployment.
 
-- A browser-shipped Rust validation engine where practical.
+Supported validation paths:
+
+- Browser-side structural checks for lesson metadata and expected API shape.
+- Browser-side self-check lessons when fair automated validation is not available yet.
+- A future browser-shipped Rust validation engine where practical.
+- Optional backend Cargo validation through the Actix runner for lessons that need normal `cargo test`.
 - Authored public tests and examples.
-- Structural checks for lesson metadata and expected API shape.
-- Optional compile-fail checks when supported by the browser validation engine.
 
 AI must not determine whether a submitted answer is correct.
 
-The MVP does not require full Cargo compatibility. Lessons must stay within the browser validation subset.
+The core PWA does not require full Cargo compatibility. Lessons that use backend validation must remain small, standard-library-first, and bounded by the runner limits.
 
 ### 6.4 No AI, No Autocomplete
 
@@ -616,28 +664,46 @@ The arc is complete when the artifact is coherent and usable on its own. The nex
 
 ### 12.1 Validation Source of Truth
 
-MVP validation runs entirely in the browser.
+The validation source of truth is the lesson's configured validation mode.
 
-The validation source of truth is the lesson's configured frontend validation mode:
+Current frontend modes:
 
-- `browser-rust`: use a browser-shipped Rust compiler/checker/test runner.
 - `structural`: inspect the submitted source for expected declarations, signatures, or traits.
 - `self-check`: ask the learner to compare against public expected behavior and mark completion manually.
+- `browser-rust`: reserved for a browser-shipped Rust compiler/checker/test runner; not implemented yet.
 
-The preferred mode is `browser-rust`. `structural` and `self-check` are fallbacks for concepts the browser Rust engine cannot support yet.
+Current backend mode:
 
-The MVP does not require full `cargo test`, Cargo dependency resolution, external crates, build scripts, or proc macros.
+- `backend-cargo-test`: send `src/lib.rs` and `tests/lesson.rs` to the Actix backend, enqueue a job, and run `cargo test --offline --message-format=json` inside the Podman runner.
+
+The preferred long-term mode for strong Rust behavior checks is either `browser-rust` for offline-capable lessons or `backend-cargo-test` for lessons that need normal Cargo behavior. `structural` and `self-check` remain fallbacks for concepts where automated validation would be unfair or too brittle.
+
+The backend service is implemented, but the frontend does not yet call it. Current product validation remains frontend worker based.
 
 ### 12.2 Validation Flow
+
+Current frontend flow:
 
 1. User edits code.
 2. User taps Check or Run Tests.
 3. Client loads the lesson validation bundle from local cache.
 4. Client sends the edited files to a Web Worker.
-5. The worker runs the configured browser validation mode.
+5. The worker runs the configured frontend validation mode.
 6. The worker returns structured diagnostics.
 7. Client shows compile/check errors, test failures, or success.
 8. Client records completion locally when validation passes or when a self-check lesson is manually completed.
+
+Planned backend-backed flow:
+
+1. User edits code.
+2. User taps Check or Run Tests.
+3. Client combines the user's `src/lib.rs` with the lesson-authored `tests/lesson.rs`.
+4. Client sends a `POST /run` request to the configured backend.
+5. Backend validates paths, file count, file sizes, and total submitted bytes.
+6. Backend enqueues the run in a bounded queue.
+7. A worker creates a temporary Cargo workspace and runs the Podman sandbox.
+8. Backend returns a structured `RunResult`.
+9. Client maps the result to the validation panel and records completion locally when appropriate.
 
 ### 12.3 Validation Result Schema
 
@@ -663,9 +729,12 @@ Possible statuses:
 - `failed`.
 - `compile_error`.
 - `timeout`.
+- `timed_out`.
 - `unsupported`.
 - `manual_review_required`.
 - `internal_error`.
+
+Frontend validation currently uses `timeout`; backend `RunStatus` currently serializes timeout as `timed_out`. The frontend/backend integration should normalize this naming before exposing backend results in the shared UI.
 
 ### 12.4 Browser Limits
 
@@ -687,21 +756,101 @@ Initial limits:
 
 These limits can be tuned after measuring real tablet performance.
 
-### 12.5 Security Requirements
+### 12.5 Backend Runner Limits
 
-The app executes user-provided code or code-like input in the browser and must isolate validation from the UI.
+Current backend defaults:
 
-Requirements:
+- Queue capacity: 20.
+- Workers: 2.
+- Job timeout: 10 seconds.
+- Max returned output: 64 KB.
+- Max files per request: 8.
+- Max single file size: 64 KB.
+- Max total submitted content: 256 KB.
+- Max JSON payload: 300 KB.
+- Allowed submitted paths: `src/lib.rs` and `tests/lesson.rs`.
+- Runner image: `rust-runner:1.96`.
+- Workspace root: `/tmp/rust-daily-runs`.
+
+Backend runner behavior:
+
+- Creates a temporary workspace per job.
+- Writes a generated `Cargo.toml`.
+- Writes submitted `src/lib.rs` and `tests/lesson.rs`.
+- Runs Podman with no network and resource limits.
+- Runs `cargo test --offline --message-format=json`.
+- Parses Cargo JSON compiler messages to distinguish compile errors from test failures.
+- Caps combined stdout/stderr output and appends an output-truncated marker when needed.
+- Cleans up temporary workspaces after each run.
+
+### 12.6 Backend API
+
+Current endpoint:
+
+```text
+POST /run
+```
+
+Request:
+
+```json
+{
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "content": "pub fn answer() -> u64 { 42 }\n"
+    },
+    {
+      "path": "tests/lesson.rs",
+      "content": "#[test]\nfn answer_is_42() { assert_eq!(rust_daily_lesson::answer(), 42); }\n"
+    }
+  ]
+}
+```
+
+Response:
+
+```json
+{
+  "status": "passed",
+  "stdout": "...",
+  "stderr": "",
+  "duration_ms": 842
+}
+```
+
+HTTP behavior:
+
+- `200 OK`: job ran; test failure is represented by `status`.
+- `400 Bad Request`: invalid JSON or non-limit validation error.
+- `413 Payload Too Large`: JSON/file/count/content limit exceeded.
+- `429 Too Many Requests`: queue full.
+- `500 Internal Server Error`: queue unavailable, worker dropped, Podman spawn failure, or workspace failure before a normal result can be produced.
+
+### 12.7 Security Requirements
+
+The app executes user-provided code or code-like input either in the browser worker or in the backend runner and must isolate validation from the UI and host.
+
+Browser requirements:
 
 - Run validation inside a Web Worker.
 - Terminate the worker on timeout.
 - Avoid exposing browser APIs to compiled user code.
 - Use a strict Content Security Policy.
-- Do not send source code to remote services.
 - Store drafts and validation results locally.
 - Keep validation deterministic.
 
-### 12.6 Frontend Validation Constraints
+Backend requirements:
+
+- Run submissions only inside the configured Podman runner.
+- Do not invoke a shell to construct runner commands.
+- Disable container networking.
+- Apply memory, CPU, PID, read-only filesystem, tmpfs, no-new-privileges, and capability-drop restrictions.
+- Use bounded queues and timeouts.
+- Reject unsafe paths and oversized requests before enqueueing.
+- Treat backend validation as practice feedback, not tamper-resistant grading, until server-side test selection or signed bundles exist.
+
+### 12.8 Frontend Validation Constraints
 
 Lessons must avoid validation requirements that need a normal native Rust project.
 
@@ -716,15 +865,15 @@ MVP lessons should avoid:
 - Platform-specific behavior.
 - Large multi-module projects.
 
-### 12.7 Cargo Compatibility for Authors
+### 12.9 Cargo Compatibility for Authors
 
 Lesson authors may maintain normal `Cargo.toml`, `src/`, and `tests/` files for authoring quality. A build step converts supported lessons into browser validation bundles.
 
-This preserves a path to normal Rust tooling without making a backend part of the product.
+Backend-backed lessons may also send authored public tests to `POST /run`. The first backend-backed content format should keep tests explicit and client-supplied; future scored or credentialed features need a stronger trust boundary.
 
 ## 13. Offline Behavior
 
-Rust Daily is a frontend-only PWA and should work after the app shell, lesson content, and validation assets have been cached.
+Rust Daily is a local-first PWA and should work after the app shell, lesson content, and frontend validation assets have been cached.
 
 ### 13.1 Offline Must-Haves
 
@@ -749,6 +898,8 @@ When a validation engine or lesson bundle is not cached:
 - The draft must still be editable and saved.
 - The app should fetch the missing asset next time it is online.
 - Drafts must not be lost.
+
+Backend-backed `cargo test` validation is unavailable offline unless the backend is reachable on the local network or same device. Lessons that require backend validation must show a clear unavailable/offline state and preserve drafts.
 
 ### 13.3 Validation Asset Caching
 
@@ -1059,8 +1210,8 @@ Every lesson must pass:
 
 - Starter project compiles or intentionally fails in the expected way.
 - Reference solution passes authoring tests.
-- Browser validation bundle is generated successfully.
-- Browser validation fails against incomplete starter code when appropriate.
+- Configured validation metadata or bundle is generated successfully.
+- Configured validation fails against incomplete starter code when appropriate.
 - Metadata is valid.
 - Estimated duration is present.
 - Concept ID exists.
@@ -1073,7 +1224,7 @@ Before publishing a lesson, confirm:
 - The lesson teaches one concept.
 - The task is realistic.
 - The code is idiomatic.
-- The browser validation checks are fair.
+- The configured validation checks are fair.
 - The public tests are helpful.
 - The wording fits on a tablet screen.
 - The solution does not require autocomplete.
@@ -1101,7 +1252,66 @@ Code should:
 
 ## 22. Technical Architecture
 
-### 22.1 Recommended MVP Architecture
+### 22.1 Repository Layout
+
+Current repository layout:
+
+```text
+/
+  .github/                 # repository workflows
+  AGENTS.md                # workspace guidance
+  Makefile                 # backend format/lint/test shortcuts
+  mise.toml                # tool versions
+  frontend/                # Vite React PWA
+  backend/                 # Actix validation service
+  docker/                  # runner images
+  docs/                    # specs and implementation plans
+```
+
+Frontend app layout:
+
+```text
+frontend/
+  index.html
+  package.json
+  public/
+  scripts/validate-content.mjs
+  src/
+    components/
+    content/
+    progress/
+    progression/
+    pwa/
+    storage/
+    types/
+    validation/
+```
+
+Backend app layout:
+
+```text
+backend/
+  Cargo.toml
+  src/
+    api.rs
+    config.rs
+    error.rs
+    lib.rs
+    main.rs
+    model.rs
+    queue.rs
+    runner.rs
+    workspace.rs
+```
+
+Docker layout:
+
+```text
+docker/
+  rust-runner.Dockerfile
+```
+
+### 22.2 Current Frontend Architecture
 
 Frontend:
 
@@ -1109,24 +1319,51 @@ Frontend:
 - Responsive tablet-first UI.
 - Browser code editor with completion disabled.
 - Local storage or IndexedDB for drafts and cached lessons.
-- Browser validation engine loaded as a cached asset.
-- Web Worker validation runtime.
+- Web Worker validation runtime for structural and self-check modes.
 - Local scheduler and progress engine.
+- Settings, theme, editor font size, reduced motion, export/import, and local deletion controls.
 
 Content:
 
 - Versioned lesson files.
 - Static lesson metadata.
-- Browser validation bundles.
-- Authoring-only reference solutions.
+- Structural validation metadata.
+- Self-check metadata.
+- Concept metadata.
+- Authoring-only reference solutions are not implemented yet.
 
 Deployment:
 
-- Static file hosting is sufficient.
-- The app must also work when served from a local static server.
-- No custom backend is required for MVP.
+- GitHub Pages static deployment is configured for the frontend.
+- The frontend must also work when served from a local static server.
+- No hosted backend is required for local practice, drafts, progress, or frontend validation.
 
-### 22.2 Frontend Responsibilities
+### 22.3 Current Backend Architecture
+
+Backend:
+
+- Actix HTTP API.
+- Thin `POST /run` handler.
+- Typed configuration loaded from `RUST_DAILY_*` environment variables through the `config` crate.
+- Typed request validation and path/content wrappers.
+- Bounded Tokio `mpsc` queue.
+- Fixed worker pool.
+- Tokio one-shot result channel per job.
+- Temporary Cargo workspace assembly.
+- Podman runner process launched with `tokio::process::Command`.
+- Structured JSON logs through `tracing`.
+- Optional CORS origin.
+
+Runner:
+
+- Uses `rust-runner:1.96` by default.
+- Runs without network.
+- Runs with memory, CPU, PID, read-only filesystem, tmpfs, no-new-privileges, and capability-drop restrictions.
+- Runs `cargo test --offline --message-format=json`.
+
+Backend deployment is not implemented yet. The service can be run locally after building the runner image.
+
+### 22.4 Frontend Responsibilities
 
 The frontend handles:
 
@@ -1135,12 +1372,36 @@ The frontend handles:
 - Managing local drafts.
 - Showing hints.
 - Running browser validation.
+- Eventually calling backend validation for backend-backed lessons.
 - Showing test output.
 - Caching app shell and lesson content.
 - Tracking local progress.
 - Exporting and importing progress data.
 
-### 22.3 Local Storage Responsibilities
+### 22.5 Backend Responsibilities
+
+The backend handles:
+
+- Validating submitted file paths and sizes.
+- Rejecting unsafe or unsupported submissions before enqueueing.
+- Applying bounded queue backpressure.
+- Preparing the Cargo workspace.
+- Running the restricted Podman command.
+- Returning compact run results.
+- Reporting structured API errors.
+
+The backend does not currently handle:
+
+- Authentication.
+- Accounts.
+- Progress persistence.
+- Lesson lookup by ID.
+- Server-side hidden test selection.
+- Database storage.
+- Async job polling.
+- Multi-language execution.
+
+### 22.6 Local Storage Responsibilities
 
 The app stores locally:
 
@@ -1156,7 +1417,9 @@ Preferred storage:
 - IndexedDB for larger data such as drafts and lesson bundles.
 - LocalStorage only for small settings or boot flags.
 
-### 22.4 Static Asset Layout
+Current implementation uses `localStorage` for drafts, progress, and settings.
+
+### 22.7 Static Asset Layout
 
 Suggested asset layout:
 
@@ -1174,7 +1437,9 @@ Suggested asset layout:
 /content/lessons/error-enum-parse-user-001/validation.json
 ```
 
-### 22.5 Validation Job
+Current frontend implementation bundles lesson and concept JSON through Vite instead of serving a separate `/content/` tree. Moving to external content bundles remains a future portability improvement.
+
+### 22.8 Frontend Validation Job
 
 ```json
 {
@@ -1186,7 +1451,7 @@ Suggested asset layout:
 }
 ```
 
-### 22.6 Validation Response
+### 22.9 Frontend Validation Response
 
 ```json
 {
@@ -1198,13 +1463,43 @@ Suggested asset layout:
 }
 ```
 
-### 22.7 Progress Portability
+### 22.10 Backend Validation Job
+
+```json
+{
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "content": "..."
+    },
+    {
+      "path": "tests/lesson.rs",
+      "content": "..."
+    }
+  ]
+}
+```
+
+### 22.11 Backend Validation Response
+
+```json
+{
+  "status": "passed",
+  "stdout": "...",
+  "stderr": "",
+  "duration_ms": 914
+}
+```
+
+### 22.12 Progress Portability
 
 Because there is no account system in MVP, progress portability should use files:
 
 - Export progress as JSON.
 - Import progress from JSON.
 - Never require cloud sync to keep a streak.
+
+Current implementation supports progress export/import from the settings screen.
 
 ## 23. Privacy
 
@@ -1213,7 +1508,8 @@ Privacy requirements:
 - Store only the minimum local data needed for progress.
 - Do not use submitted code to train AI models.
 - Do not send code to AI services.
-- Do not send code to any remote validation service in MVP.
+- Do not send code to any remote validation service unless the user/deployment has explicitly enabled backend validation.
+- Make backend-backed lessons visibly different from fully local browser-validated lessons.
 - Make this explicit in product copy.
 - Allow progress export.
 - Allow local data deletion.
@@ -1305,12 +1601,12 @@ Technical metrics:
 ### 28.1 MVP Must Include
 
 - PWA shell.
-- Static frontend-only deployment.
+- Static frontend deployment.
 - Dark tablet-first UI.
 - Daily lesson screen.
 - Code editor with syntax highlighting and no autocomplete.
 - Browser-side Check or Run Tests flow.
-- Browser validation bundles for supported lessons.
+- Browser validation for supported lessons.
 - Authored hints.
 - Completion explanation.
 - Local draft saving.
@@ -1342,10 +1638,8 @@ The first 30 lessons should cover:
 Exclude from MVP:
 
 - AI features.
-- Hosted backend.
 - User accounts.
 - Cloud sync.
-- Server-side `cargo test`.
 - Secret hidden tests.
 - Social features.
 - Leaderboards.
@@ -1354,10 +1648,55 @@ Exclude from MVP:
 - Marketplace/community lessons.
 - Advanced analytics dashboards.
 
+Backend validation may exist before the frontend uses it, but a hosted backend is not required for the local-first MVP. Server-side `cargo test` is optional until frontend integration and backend-backed lesson content are explicitly introduced.
+
+### 28.4 Current MVP Implementation Status
+
+Implemented:
+
+- Frontend PWA shell.
+- Static GitHub Pages deployment workflow for the frontend.
+- Dark-first UI with light/system theme control.
+- Daily lesson screen.
+- CodeMirror Rust editor with no autocomplete extension.
+- Browser-side structural/self-check validation flow.
+- Authored hints and completion explanations.
+- Local draft saving.
+- Basic streak and concept progress.
+- Progress export/import.
+- Local progress deletion and draft deletion.
+- 30-lesson initial curriculum.
+- Optional Actix backend service for Cargo-backed validation.
+- Podman runner image definition.
+
+Partially implemented:
+
+- Validation: `structural` and `self-check` are implemented; `browser-rust` is not implemented; backend validation exists but is not called by the frontend.
+- Scheduling: current selector continues the first incomplete lesson, then cycles by local date after all lessons are complete; it does not yet enforce one lesson per local day or review due logic.
+- Progress: summary exists; full progress/concept graph screen is not implemented.
+- Settings: theme, editor font size, reduced motion, export/import, progress reset, and draft reset exist; reminder settings do not exist.
+
+Not yet implemented:
+
+- Frontend `POST /run` integration.
+- Backend-backed lesson content/test bundling.
+- Browser Rust compiler/test runner.
+- Hosted backend deployment workflow.
+- Full spaced repetition scheduler.
+- Full progress screen.
+- Notifications.
+- Authoring pipeline with starter/solution compile checks.
+- Reference solutions.
+- Automated frontend test runner.
+- End-to-end browser tests.
+
 ## 29. Post-MVP Roadmap
 
 Possible later additions:
 
+- Frontend integration with backend `POST /run`.
+- Backend deployment and operational documentation.
+- Backend-backed lesson content schema.
 - Spaced repetition review queue.
 - Full concept graph visualization.
 - More advanced lifetime lessons.
@@ -1366,10 +1705,11 @@ Possible later additions:
 - Async Rust lessons.
 - Crate-specific tracks.
 - Better browser validation coverage.
+- Browser Rust validation engine.
 - Optional local/native validation export workflow.
 - Authoring tools for lesson creators.
 - Team mode for companies.
-- Progress export as JSON.
+- Server-side hidden tests only if a future scored/account-backed mode needs tamper-resistant validation.
 
 ## 30. Acceptance Criteria
 
@@ -1378,12 +1718,13 @@ The app is successful at MVP when:
 - A user can open the PWA on an Android tablet.
 - The user can complete one daily Rust lesson in under 10 minutes.
 - The editor provides syntax highlighting but no autocomplete or AI help.
-- The user can run browser-supported checks and receive validation feedback.
+- The user can run supported checks and receive validation feedback.
 - Drafts survive refresh and offline periods.
 - Progress and streak update locally after completion.
 - The app clearly explains the idiomatic Rust idea after completion.
 - The initial 30 lessons follow the one-concept rule.
-- The app can be deployed as static files without a custom backend.
+- The frontend can be deployed as static files without a custom backend.
+- Optional backend validation can be run locally for Cargo-backed experiments without changing the local-first progress model.
 
 ## 31. Open Product Questions
 
@@ -1391,6 +1732,9 @@ Questions to resolve before implementation:
 
 - Which browser Rust validation engine should be used initially?
 - Which lesson concepts are safe for the first browser validation subset?
+- Which lessons should be converted first to backend `cargo test` validation?
+- Should backend-backed validation be local-only, hosted, or configurable per deployment?
+- How should backend-backed lessons explain that code is sent to the configured runner?
 - Should `rustfmt` be available as a manual button in MVP?
 - How strict should streak recovery be?
 - Should users be allowed to do tomorrow's lesson early?
@@ -1439,3 +1783,11 @@ Milestone 5: MVP content.
 MVP portability hardening:
 
 - Export and import progress JSON.
+
+Backend validation milestone:
+
+- Connect frontend validation client to optional `POST /run`.
+- Extend lesson content with public test files for backend-backed lessons.
+- Normalize backend `timed_out` and frontend `timeout` status naming.
+- Add unavailable/offline state for backend-backed lessons.
+- Add backend deployment workflow or documented local-only mode.
