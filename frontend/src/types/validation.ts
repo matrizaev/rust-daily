@@ -46,6 +46,11 @@ export type LessonValidation =
       checks: unknown[];
     }
   | {
+      mode: "backend-cargo-test";
+      timeoutMs: number;
+      testCode: string;
+    }
+  | {
       mode: "self-check";
     };
 
@@ -53,6 +58,7 @@ export type ValidationStatus =
   | "passed"
   | "self_check"
   | "failed"
+  | "compile_error"
   | "timeout"
   | "unsupported"
   | "internal_error";

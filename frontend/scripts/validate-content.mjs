@@ -4,7 +4,16 @@ const LESSONS_PATH = new URL("../src/content/lessons.json", import.meta.url);
 const CONCEPTS_PATH = new URL("../src/content/concepts.json", import.meta.url);
 const EXPECTED_LESSON_COUNT = 30;
 const DIFFICULTIES = new Set(["easy", "medium", "advanced"]);
-const VALIDATION_MODES = new Set(["structural", "browser-rust", "self-check"]);
+const VALIDATION_MODES = new Set([
+  "structural",
+  "browser-rust",
+  "self-check",
+  "backend-cargo-test",
+]);
+const RUST_RUNTIME_VALIDATION_MODES = new Set([
+  "browser-rust",
+  "backend-cargo-test",
+]);
 const STRUCTURAL_TYPES = new Set([
   "enum_unit_variants",
   "struct_fields",
@@ -27,6 +36,10 @@ const isRecord = (value) => typeof value === "object" && value !== null;
 const isString = (value) => typeof value === "string" && value.trim().length > 0;
 const isNumber = (value) => typeof value === "number" && Number.isFinite(value);
 const isStringArray = (value) => Array.isArray(value) && value.every(isString);
+const hasPositiveTimeout = (validation) =>
+  isNumber(validation.timeoutMs) && validation.timeoutMs > 0;
+const hasNonEmptyChecks = (validation) =>
+  Array.isArray(validation.checks) && validation.checks.length > 0;
 
 const push = (errors, message) => {
   errors.push(message);
@@ -79,8 +92,11 @@ const validateNoCompilationPromises = (errors, lesson) => {
     .toLowerCase();
   const forbidden = FORBIDDEN_PROMISES.find((phrase) => copy.includes(phrase));
 
-  if (forbidden && lesson.validation?.mode !== "browser-rust") {
-    push(errors, `${lesson.id} promises unsupported browser Rust behavior: ${forbidden}.`);
+  if (
+    forbidden &&
+    !RUST_RUNTIME_VALIDATION_MODES.has(lesson.validation?.mode)
+  ) {
+    push(errors, `${lesson.id} promises unsupported Rust runtime behavior: ${forbidden}.`);
   }
 };
 
@@ -163,7 +179,11 @@ const isKnownValidation = (validation) =>
   isRecord(validation) && VALIDATION_MODES.has(validation.mode);
 
 const validateStructuralValidation = (errors, lesson, validation) => {
-  if (!Array.isArray(validation.checks) || validation.checks.length === 0) {
+  if (!hasPositiveTimeout(validation)) {
+    push(errors, `${lesson.id} structural validation must have timeoutMs.`);
+  }
+
+  if (!hasNonEmptyChecks(validation)) {
     push(errors, `${lesson.id} structural validation must have checks.`);
     return;
   }
@@ -171,6 +191,16 @@ const validateStructuralValidation = (errors, lesson, validation) => {
   validation.checks.forEach((check, index) =>
     validateStructuralCheck(errors, check, `${lesson.id}.checks[${index}]`),
   );
+};
+
+const validateBackendValidation = (errors, lesson, validation) => {
+  if (!hasPositiveTimeout(validation)) {
+    push(errors, `${lesson.id} backend validation must have timeoutMs.`);
+  }
+
+  if (!isString(validation.testCode)) {
+    push(errors, `${lesson.id} backend validation must have non-empty testCode.`);
+  }
 };
 
 const validateValidation = (errors, lesson) => {
@@ -183,6 +213,10 @@ const validateValidation = (errors, lesson) => {
 
   if (validation.mode === "structural") {
     validateStructuralValidation(errors, lesson, validation);
+  }
+
+  if (validation.mode === "backend-cargo-test") {
+    validateBackendValidation(errors, lesson, validation);
   }
 };
 

@@ -1,4 +1,6 @@
+import { BACKEND_URL } from "../config/backend";
 import type { ValidationRequest, ValidationResult } from "../types/validation";
+import { runBackendValidation } from "./backendValidation";
 
 const DEFAULT_TIMEOUT_MS = 10000;
 
@@ -31,7 +33,7 @@ const createWorker = () =>
     type: "module",
   });
 
-export const runValidation = (request: ValidationRequest) =>
+const runWorkerValidation = (request: ValidationRequest) =>
   new Promise<ValidationResult>((resolve) => {
     const startedAt = performance.now();
     let worker: Worker;
@@ -62,3 +64,11 @@ export const runValidation = (request: ValidationRequest) =>
 
     worker.postMessage(request);
   });
+
+export const runValidation = (request: ValidationRequest) => {
+  if (request.validation.mode !== "backend-cargo-test") {
+    return runWorkerValidation(request);
+  }
+
+  return runBackendValidation(request, BACKEND_URL);
+};

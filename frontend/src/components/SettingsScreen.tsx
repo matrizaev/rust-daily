@@ -77,7 +77,7 @@ function SettingsScreen({
 }: SettingsScreenProps) {
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const [status, setStatus] = useState(
-    "Code, drafts, and progress stay in this browser unless you export progress.",
+    "Drafts, progress, and settings stay in this browser unless you export progress.",
   );
 
   const updateSettings = (next: UserSettings) => {
@@ -160,7 +160,8 @@ function SettingsScreen({
           <ProgressSummary summary={summary} />
           <p>
             Rust Daily stores settings, draft code, and progress in this
-            browser. Nothing is uploaded unless you export a progress file.
+            browser. Browser-backed checks stay local; backend-backed checks
+            send current code to the configured Rust runner.
           </p>
         </section>
 

@@ -651,6 +651,7 @@ p {
 }
 
 .validation-failed,
+.validation-compile_error,
 .validation-timeout,
 .validation-internal_error {
   background: var(--danger-bg);
@@ -662,6 +663,7 @@ p {
 }
 
 .validation-failed .validation-title-row,
+.validation-compile_error .validation-title-row,
 .validation-timeout .validation-title-row,
 .validation-internal_error .validation-title-row {
   color: var(--rust-strong);

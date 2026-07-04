@@ -76,8 +76,14 @@ export const loadSettings = () => {
 };
 
 export const saveSettings = (settings: UserSettings) => {
+  const normalized = normalizeSettings(settings);
+
+  if (!normalized) {
+    return false;
+  }
+
   try {
-    window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(normalized));
     return true;
   } catch {
     return false;

@@ -19,15 +19,9 @@
     ],
     "completionExplanation": "Each parser failure now has a named enum variant. That gives callers a typed result they can match on instead of parsing strings or comparing error messages.",
     "validation": {
-      "mode": "structural",
+      "mode": "backend-cargo-test",
       "timeoutMs": 10000,
-      "checks": [
-        {
-          "type": "enum_unit_variants",
-          "enumName": "ParseUserError",
-          "requiredVariants": ["MissingId", "MissingName", "MissingEmail", "InvalidId"]
-        }
-      ]
+      "testCode": "use rust_daily_lesson::{parse_user, ParseUserError, User};\n\n#[test]\nfn parses_valid_user() {\n    assert_eq!(\n        parse_user(\"42,Ada,ada@example.com\"),\n        Ok(User {\n            id: 42,\n            name: \"Ada\".to_owned(),\n            email: \"ada@example.com\".to_owned(),\n        })\n    );\n}\n\n#[test]\nfn returns_named_parse_errors() {\n    assert_eq!(parse_user(\"\"), Err(ParseUserError::MissingName));\n    assert_eq!(parse_user(\"42,Ada\"), Err(ParseUserError::MissingEmail));\n    assert_eq!(parse_user(\"nope,Ada,ada@example.com\"), Err(ParseUserError::InvalidId));\n}\n"
     }
   },
   {

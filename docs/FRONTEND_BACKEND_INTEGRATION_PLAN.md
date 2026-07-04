@@ -8,7 +8,7 @@ The integration should preserve the local-first product model:
 
 - Existing `structural` and `self-check` lessons keep working without a backend.
 - Backend validation is used only by lessons that explicitly opt into it.
-- No code is sent to a remote service unless backend validation is configured and the lesson requires it.
+- No code is sent to a remote service unless the lesson requires backend validation.
 - The first integration should prove one backend-backed lesson end to end before converting more content.
 
 ## Current Baseline
@@ -30,7 +30,7 @@ Implemented now:
 
 Missing now:
 
-- Frontend has no backend URL setting or config.
+- Frontend has no build/runtime backend URL config.
 - Frontend `LessonValidation` has no backend validation mode.
 - Lesson content has no `tests/lesson.rs` payload.
 - Validation UI has no `compile_error` status.
@@ -42,7 +42,7 @@ Missing now:
 Include:
 
 - Add a frontend `backend-cargo-test` validation mode.
-- Add backend URL configuration in frontend settings.
+- Add backend URL configuration through build/dev environment.
 - Add a backend validation client around `fetch`.
 - Normalize backend results into the existing `ValidationResult` shape.
 - Add privacy/UI copy when a lesson sends code to the configured backend.
@@ -65,24 +65,22 @@ Exclude:
 
 ## Target User Flow
 
-Without backend configured:
+With the configured backend unavailable:
 
 1. User opens the PWA.
 2. Browser-backed lessons work as they do today.
-3. Backend-backed lessons show an unavailable state with a short explanation.
+3. Backend-backed lessons attempt the configured runner and show an unavailable state if it cannot be reached.
 4. Drafts still save locally.
 
-With backend configured:
+With the configured backend reachable:
 
-1. User opens Settings.
-2. User enables backend validation and enters a backend URL, for example `http://127.0.0.1:8080`.
-3. User opens a backend-backed lesson.
-4. The lesson clearly says checks run on the configured Rust runner.
-5. User taps Check.
-6. Frontend sends `src/lib.rs` plus lesson-authored `tests/lesson.rs` to `POST /run`.
-7. Backend returns a run result.
-8. UI shows pass, test failure, compile error, timeout, runner unavailable, or internal error.
-9. Progress is recorded only when the normalized result is `passed`.
+1. User opens a backend-backed lesson.
+2. The lesson clearly says checks run on the configured Rust runner.
+3. User taps Check.
+4. Frontend sends `src/lib.rs` plus lesson-authored `tests/lesson.rs` to `POST /run`.
+5. Backend returns a run result.
+6. UI shows pass, test failure, compile error, timeout, runner unavailable, or internal error.
+7. Progress is recorded only when the normalized result is `passed`.
 
 ## Data Contract
 
@@ -146,7 +144,7 @@ Backend to frontend:
 - `internal_error` -> `internal_error`.
 - HTTP `413` -> `failed` with a size-limit message.
 - HTTP `429` -> `unsupported` with a runner-busy message.
-- Network error / CORS error / backend URL missing -> `unsupported`.
+- Network error / CORS error -> `unsupported`.
 - Invalid backend response -> `internal_error`.
 
 Extend `ValidationStatus` with:
@@ -159,47 +157,23 @@ Do not add a separate `timed_out` frontend status in the first integration. Norm
 
 ## Frontend Implementation
 
-### 1. Settings Storage
+### 1. Backend URL Configuration
 
-Update `frontend/src/storage/settingsStore.ts`.
+Add frontend configuration for the Rust runner URL.
 
-Add:
+Rules:
 
-```ts
-backendValidationEnabled: boolean;
-backendUrl: string;
-```
-
-Defaults:
-
-- `backendValidationEnabled`: `false`.
-- `backendUrl`: `""`.
-
-Validation:
-
-- Empty URL is allowed.
-- Non-empty URL must parse as `http:` or `https:`.
-- Trim trailing slashes before saving.
+- Backend validation is always available for lessons with `backend-cargo-test`.
+- Local development defaults to `http://127.0.0.1:8080`.
+- Production builds default to `https://borrowquest.site`.
+- `VITE_RUST_DAILY_BACKEND_URL` can override the default at build or dev-server start.
+- `window.__RUST_DAILY_BACKEND_URL__` can override the default at runtime when injected before the app bundle loads.
+- Schemeless host values are accepted; localhost-style hosts default to `http`, other hosts default to `https`.
+- Trim trailing slashes before appending `/run`.
 
 ### 2. Settings UI
 
-Update `frontend/src/components/SettingsScreen.tsx`.
-
-Add a "Rust runner" section:
-
-- Toggle: Backend validation.
-- Text input: Backend URL.
-- Short local/privacy copy:
-  - Browser-backed checks stay local.
-  - Backend-backed checks send code to the configured runner.
-  - Progress still stays in this browser.
-
-Optional later:
-
-- Test connection button.
-- Display current backend health.
-
-Do not add a connection-test button in the first slice unless the backend adds a health endpoint.
+Do not add backend validation settings. Settings should only mention that browser-backed checks stay local and backend-backed checks send current code to the configured Rust runner.
 
 ### 3. Validation Types
 
@@ -246,20 +220,11 @@ New behavior:
 
 - If mode is `structural`, `self-check`, or placeholder `browser-rust`, use the existing worker path.
 - If mode is `backend-cargo-test`, use `runBackendValidation`.
-- If backend validation is disabled or no backend URL is configured, return `unsupported`.
 
 Recommended signature:
 
 ```ts
-export type ValidationOptions = {
-  backendValidationEnabled: boolean;
-  backendUrl: string;
-};
-
-export const runValidation = (
-  request: ValidationRequest,
-  options: ValidationOptions,
-) => Promise<ValidationResult>;
+export const runValidation = (request: ValidationRequest) => Promise<ValidationResult>;
 ```
 
 ### 6. Lesson Screen Wiring
@@ -268,8 +233,7 @@ Update `frontend/src/components/LessonScreen.tsx`.
 
 Changes:
 
-- Accept validation options from `App`.
-- Pass settings to `runValidation`.
+- Use the configured backend URL for backend-backed lessons.
 - Include `testCode` in the request through the validation object, not through the editable files map.
 - Keep stale-result behavior unchanged.
 - Continue completing lessons only on `passed` or `self_check`.
@@ -277,8 +241,7 @@ Changes:
 Update footer copy:
 
 - Browser modes: `Checks run locally in your browser.`
-- Backend mode enabled: `Checks run on the configured Rust runner.`
-- Backend mode disabled: `This lesson needs a configured Rust runner. Drafts still save locally.`
+- Backend mode: `Checks run on the configured Rust runner.`
 
 ### 7. Validation Panel
 
@@ -385,11 +348,11 @@ cd frontend
 npm run dev
 ```
 
-In app settings:
+Optional frontend URL override:
 
-```text
-Backend validation: enabled
-Backend URL: http://127.0.0.1:8080
+```bash
+cd frontend
+VITE_RUST_DAILY_BACKEND_URL=http://127.0.0.1:8080 npm run dev
 ```
 
 ## Verification Plan
@@ -436,8 +399,7 @@ Manual app checks:
 
 - Existing structural lesson still validates without backend.
 - Existing self-check lesson still records completion without backend.
-- Backend-backed lesson shows unavailable when backend validation is disabled.
-- Backend-backed lesson sends code only after backend validation is enabled and Check is pressed.
+- Backend-backed lesson sends code only after Check is pressed.
 - Correct solution passes.
 - Starter or broken code produces compile/test feedback.
 - Backend result becomes stale after editing.
@@ -446,12 +408,12 @@ Manual app checks:
 
 ## Acceptance Criteria
 
-- Frontend has an explicit backend validation setting and URL field.
-- Backend validation is disabled by default.
+- Frontend has build/dev-time backend URL configuration.
+- Backend validation is always available for `backend-cargo-test` lessons.
 - `backend-cargo-test` lesson mode exists in TypeScript and content validation.
 - One lesson uses `backend-cargo-test`.
 - Existing non-backend lessons continue to work.
-- Backend-backed lesson calls `POST /run` only when backend validation is enabled and configured.
+- Backend-backed lesson calls `POST /run` only when Check is pressed.
 - Backend responses map cleanly into the existing validation panel.
 - Compile errors are visibly distinct from normal test failures.
 - UI copy no longer claims all checks are local when backend validation is used.
@@ -465,8 +427,7 @@ Risk: GitHub Pages frontend cannot reach a local backend because browsers block 
 
 Mitigation:
 
-- Keep backend validation disabled by default.
-- Make backend URL explicit.
+- Configure the backend URL at build or dev-server start.
 - Document `RUST_DAILY_CORS_ORIGIN`.
 - Show a clear unavailable result for CORS/network failures.
 
