@@ -1,7 +1,7 @@
 # Deployment
 
-Rust Daily is a static Vite app paired with a Rust runner backend for lessons
-that use backend validation. Browser-backed checks still run locally.
+Rust Daily is a static Vite app paired with a Rust runner backend. Lesson
+checks run locally in the browser and through the configured Rust runner.
 
 ## Backend URL
 

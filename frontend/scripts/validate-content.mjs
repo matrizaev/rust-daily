@@ -9,6 +9,7 @@ const VALIDATION_MODES = new Set([
   "browser-rust",
   "self-check",
   "backend-cargo-test",
+  "all",
 ]);
 const RUST_RUNTIME_VALIDATION_MODES = new Set([
   "browser-rust",
@@ -40,6 +41,22 @@ const hasPositiveTimeout = (validation) =>
   isNumber(validation.timeoutMs) && validation.timeoutMs > 0;
 const hasNonEmptyChecks = (validation) =>
   Array.isArray(validation.checks) && validation.checks.length > 0;
+
+const validationMode = (validation) =>
+  isRecord(validation) && typeof validation.mode === "string"
+    ? validation.mode
+    : "";
+
+const validationSteps = (validation) =>
+  isRecord(validation) &&
+  validation.mode === "all" &&
+  Array.isArray(validation.validations)
+    ? validation.validations
+    : [];
+
+const validationHasRuntimeMode = (validation) =>
+  RUST_RUNTIME_VALIDATION_MODES.has(validationMode(validation)) ||
+  validationSteps(validation).some(validationHasRuntimeMode);
 
 const push = (errors, message) => {
   errors.push(message);
@@ -94,7 +111,7 @@ const validateNoCompilationPromises = (errors, lesson) => {
 
   if (
     forbidden &&
-    !RUST_RUNTIME_VALIDATION_MODES.has(lesson.validation?.mode)
+    !validationHasRuntimeMode(lesson.validation)
   ) {
     push(errors, `${lesson.id} promises unsupported Rust runtime behavior: ${forbidden}.`);
   }
@@ -203,6 +220,36 @@ const validateBackendValidation = (errors, lesson, validation) => {
   }
 };
 
+const validateAllValidation = (errors, lesson, validation) => {
+  if (!Array.isArray(validation.validations) || validation.validations.length === 0) {
+    push(errors, `${lesson.id} all validation must have validations.`);
+    return;
+  }
+
+  validation.validations.forEach((validationStep, index) => {
+    const stepLesson = {
+      ...lesson,
+      id: `${lesson.id}.validations[${index}]`,
+      validation: validationStep,
+    };
+
+    if (validationStep?.mode === "all") {
+      push(errors, `${stepLesson.id} must not nest all validation.`);
+      return;
+    }
+
+    validateValidation(errors, stepLesson);
+  });
+};
+
+const VALIDATION_VALIDATORS = {
+  structural: validateStructuralValidation,
+  "backend-cargo-test": validateBackendValidation,
+  all: validateAllValidation,
+  "browser-rust": () => undefined,
+  "self-check": () => undefined,
+};
+
 const validateValidation = (errors, lesson) => {
   const validation = lesson.validation;
 
@@ -211,13 +258,7 @@ const validateValidation = (errors, lesson) => {
     return;
   }
 
-  if (validation.mode === "structural") {
-    validateStructuralValidation(errors, lesson, validation);
-  }
-
-  if (validation.mode === "backend-cargo-test") {
-    validateBackendValidation(errors, lesson, validation);
-  }
+  VALIDATION_VALIDATORS[validation.mode](errors, lesson, validation);
 };
 
 const validateLesson = (errors, lesson) => {

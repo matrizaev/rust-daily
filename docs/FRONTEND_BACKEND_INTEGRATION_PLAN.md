@@ -2,14 +2,15 @@
 
 ## Goal
 
-Connect the React PWA to the Actix `POST /run` backend so selected lessons can be validated with real `cargo test --offline` in the Podman runner.
+Connect the React PWA to the Actix `POST /run` backend so lessons can be validated with real `cargo test --offline` in the Podman runner.
 
 The integration should preserve the local-first product model:
 
-- Existing `structural` and `self-check` lessons keep working without a backend.
-- Backend validation is used only by lessons that explicitly opt into it.
-- No code is sent to a remote service unless the lesson requires backend validation.
-- The first integration should prove one backend-backed lesson end to end before converting more content.
+- Existing `structural` and `self-check` lessons keep their local checks.
+- Local validation and backend validation are not mutually exclusive.
+- Every lesson check runs the configured backend runner; lessons without authored backend tests use a compile-smoke test.
+- Lessons can opt into authored backend tests when behavior checks are useful.
+- The first integration should prove one lesson with local checks plus authored backend tests before converting more content.
 
 ## Current Baseline
 
@@ -34,7 +35,7 @@ Missing now:
 - Frontend `LessonValidation` has no backend validation mode.
 - Lesson content has no `tests/lesson.rs` payload.
 - Validation UI has no `compile_error` status.
-- Lesson footer currently says checks run locally in the browser, which would be false for backend-backed lessons.
+- Lesson footer currently says checks run locally in the browser, which would be incomplete once backend checks also run.
 - GitHub Pages deployment has no hosted backend pairing.
 
 ## Scope
@@ -47,7 +48,7 @@ Include:
 - Normalize backend results into the existing `ValidationResult` shape.
 - Add privacy/UI copy when a lesson sends code to the configured backend.
 - Convert one lesson to backend validation as a smoke slice.
-- Keep all existing browser-backed lessons working.
+- Keep all existing local checks working.
 - Update content validation.
 - Update docs for local integrated development.
 
@@ -68,16 +69,16 @@ Exclude:
 With the configured backend unavailable:
 
 1. User opens the PWA.
-2. Browser-backed lessons work as they do today.
-3. Backend-backed lessons attempt the configured runner and show an unavailable state if it cannot be reached.
+2. Local lesson checks still run.
+3. The backend check shows an unavailable state if the configured runner cannot be reached.
 4. Drafts still save locally.
 
 With the configured backend reachable:
 
-1. User opens a backend-backed lesson.
-2. The lesson clearly says checks run on the configured Rust runner.
+1. User opens a lesson.
+2. The lesson clearly says checks run locally and on the configured Rust runner.
 3. User taps Check.
-4. Frontend sends `src/lib.rs` plus lesson-authored `tests/lesson.rs` to `POST /run`.
+4. Frontend runs local checks and sends `src/lib.rs` plus either a lesson-authored or default `tests/lesson.rs` to `POST /run`.
 5. Backend returns a run result.
 6. UI shows pass, test failure, compile error, timeout, runner unavailable, or internal error.
 7. Progress is recorded only when the normalized result is `passed`.
@@ -89,14 +90,27 @@ With the configured backend reachable:
 Extend `frontend/src/types/validation.ts`:
 
 ```ts
+export type LessonValidationStep =
+  | StructuralValidation
+  | BrowserRustValidation
+  | BackendCargoTestValidation
+  | SelfCheckValidation;
+
 export type BackendCargoTestValidation = {
   mode: "backend-cargo-test";
   timeoutMs: number;
   testCode: string;
 };
+
+export type LessonValidation =
+  | LessonValidationStep
+  | {
+      mode: "all";
+      validations: LessonValidationStep[];
+    };
 ```
 
-Add this variant to `LessonValidation`.
+Add `backend-cargo-test` and `all` to `LessonValidation`.
 
 Rules:
 
@@ -104,6 +118,7 @@ Rules:
 - User-edited code remains `src/lib.rs`.
 - Tests are public and shipped with the frontend bundle.
 - Tests are not secret and must not be described as hidden.
+- When a lesson does not define a backend test, the frontend sends a public no-op integration test so Cargo still compiles the submitted library.
 
 ### Backend Request
 
@@ -163,7 +178,7 @@ Add frontend configuration for the Rust runner URL.
 
 Rules:
 
-- Backend validation is always available for lessons with `backend-cargo-test`.
+- Backend validation is always available for every lesson check.
 - Local development defaults to `http://127.0.0.1:8080`.
 - Production builds default to `https://borrowquest.site`.
 - `VITE_RUST_DAILY_BACKEND_URL` can override the default at build or dev-server start.
@@ -173,7 +188,7 @@ Rules:
 
 ### 2. Settings UI
 
-Do not add backend validation settings. Settings should only mention that browser-backed checks stay local and backend-backed checks send current code to the configured Rust runner.
+Do not add backend validation settings. Settings should mention that checks run locally and send current code to the configured Rust runner.
 
 ### 3. Validation Types
 
@@ -218,8 +233,10 @@ Current behavior:
 
 New behavior:
 
-- If mode is `structural`, `self-check`, or placeholder `browser-rust`, use the existing worker path.
-- If mode is `backend-cargo-test`, use `runBackendValidation`.
+- If a validation step is `structural`, `self-check`, or placeholder `browser-rust`, use the existing worker path.
+- If a validation step is `backend-cargo-test`, use `runBackendValidation`.
+- If no backend step is authored for the lesson, add a default compile-smoke backend step.
+- Run all validation steps and aggregate the results. Completion requires every required step to pass or self-check successfully.
 
 Recommended signature:
 
@@ -233,15 +250,14 @@ Update `frontend/src/components/LessonScreen.tsx`.
 
 Changes:
 
-- Use the configured backend URL for backend-backed lessons.
+- Use the configured backend URL for backend checks.
 - Include `testCode` in the request through the validation object, not through the editable files map.
 - Keep stale-result behavior unchanged.
 - Continue completing lessons only on `passed` or `self_check`.
 
 Update footer copy:
 
-- Browser modes: `Checks run locally in your browser.`
-- Backend mode: `Checks run on the configured Rust runner.`
+- `Checks run locally in your browser and on the configured Rust runner.`
 
 ### 7. Validation Panel
 
@@ -261,7 +277,7 @@ Update `frontend/scripts/validate-content.mjs`.
 
 Changes:
 
-- Add `backend-cargo-test` to allowed validation modes.
+- Add `backend-cargo-test` and `all` to allowed validation modes.
 - Require non-empty `testCode` for `backend-cargo-test`.
 - Require `timeoutMs` for `backend-cargo-test`.
 - Permit backend lessons to mention checking, compiling, or tests in copy if the copy is honest.
@@ -397,8 +413,8 @@ yes | npx fallow health
 
 Manual app checks:
 
-- Existing structural lesson still validates without backend.
-- Existing self-check lesson still records completion without backend.
+- Existing structural lesson still runs local validation.
+- Existing self-check lesson still records local self-check status.
 - Backend-backed lesson sends code only after Check is pressed.
 - Correct solution passes.
 - Starter or broken code produces compile/test feedback.
@@ -409,10 +425,10 @@ Manual app checks:
 ## Acceptance Criteria
 
 - Frontend has build/dev-time backend URL configuration.
-- Backend validation is always available for `backend-cargo-test` lessons.
+- Backend validation is always available for lesson checks.
 - `backend-cargo-test` lesson mode exists in TypeScript and content validation.
-- One lesson uses `backend-cargo-test`.
-- Existing non-backend lessons continue to work.
+- One lesson uses `all` with both structural and authored backend validation.
+- Existing local checks continue to work.
 - Backend-backed lesson calls `POST /run` only when Check is pressed.
 - Backend responses map cleanly into the existing validation panel.
 - Compile errors are visibly distinct from normal test failures.

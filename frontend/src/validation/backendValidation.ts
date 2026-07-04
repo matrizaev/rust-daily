@@ -1,5 +1,5 @@
 import type {
-  LessonValidation,
+  LessonValidationStep,
   ValidationFailure,
   ValidationRequest,
   ValidationResult,
@@ -32,7 +32,7 @@ type BackendRunRequest = {
 };
 
 type BackendValidationRequest = ValidationRequest & {
-  validation: Extract<LessonValidation, { mode: "backend-cargo-test" }>;
+  validation: Extract<LessonValidationStep, { mode: "backend-cargo-test" }>;
 };
 
 type CargoCompilerMessage = {

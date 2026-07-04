@@ -160,8 +160,8 @@ function SettingsScreen({
           <ProgressSummary summary={summary} />
           <p>
             Rust Daily stores settings, draft code, and progress in this
-            browser. Browser-backed checks stay local; backend-backed checks
-            send current code to the configured Rust runner.
+            browser. Checks run locally and send current code to the configured
+            Rust runner.
           </p>
         </section>
 

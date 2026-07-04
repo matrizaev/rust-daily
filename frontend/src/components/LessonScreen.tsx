@@ -104,16 +104,8 @@ const unsupportedResult = (): ValidationResult => ({
   failures: [],
 });
 
-const isBackendBackedLesson = (lesson: Lesson) =>
-  lesson.validation?.mode === "backend-cargo-test";
-
-const getFooterCheckCopy = (lesson: Lesson) => {
-  if (!isBackendBackedLesson(lesson)) {
-    return "Checks run locally in your browser.";
-  }
-
-  return "Checks run on the configured Rust runner.";
-};
+const getFooterCheckCopy = () =>
+  "Checks run locally in your browser and on the configured Rust runner.";
 
 const shouldCompleteLesson = (result: ValidationResult) =>
   result.status === "passed" || result.status === "self_check";
@@ -373,7 +365,7 @@ function LessonScreen(props: LessonScreenProps) {
     handleCompleteNow,
   );
 
-  const footerCheckCopy = getFooterCheckCopy(lesson);
+  const footerCheckCopy = getFooterCheckCopy();
 
   return (
     <main className="app-shell lesson-shell">

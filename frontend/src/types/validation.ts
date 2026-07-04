@@ -34,7 +34,7 @@ export type StructuralCheck =
       forbiddenSnippets?: string[];
     };
 
-export type LessonValidation =
+export type LessonValidationStep =
   | {
       mode: "structural";
       timeoutMs: number;
@@ -52,6 +52,13 @@ export type LessonValidation =
     }
   | {
       mode: "self-check";
+    };
+
+export type LessonValidation =
+  | LessonValidationStep
+  | {
+      mode: "all";
+      validations: LessonValidationStep[];
     };
 
 export type ValidationStatus =
