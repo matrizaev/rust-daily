@@ -1,4 +1,4 @@
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Settings } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CodeEditor from "./CodeEditor";
 import CompletionPanel from "./CompletionPanel";
@@ -33,6 +33,8 @@ type LessonScreenProps = {
   lesson: Lesson;
   concept: Concept | null;
   progress: ProgressStore;
+  editorFontSize: number;
+  onOpenSettings: () => void;
   onProgressChange: () => void;
   onReturnHome: () => void;
 };
@@ -255,14 +257,28 @@ const useValidationRunner = (
   };
 };
 
-type LessonTopbarProps = Pick<LessonScreenProps, "lesson" | "onReturnHome">;
+type LessonTopbarProps = Pick<
+  LessonScreenProps,
+  "lesson" | "onOpenSettings" | "onReturnHome"
+>;
 
-const LessonTopbar = ({ lesson, onReturnHome }: LessonTopbarProps) => (
+const LessonTopbar = ({
+  lesson,
+  onOpenSettings,
+  onReturnHome,
+}: LessonTopbarProps) => (
   <header className="lesson-topbar">
-    <button className="icon-text-button" type="button" onClick={onReturnHome}>
-      <ArrowLeft size={20} aria-hidden="true" />
-      Today
-    </button>
+    <div className="topbar-actions">
+      <button className="icon-text-button" type="button" onClick={onReturnHome}>
+        <ArrowLeft size={20} aria-hidden="true" />
+        Today
+      </button>
+
+      <button className="icon-text-button" type="button" onClick={onOpenSettings}>
+        <Settings size={19} aria-hidden="true" />
+        Settings
+      </button>
+    </div>
 
     <div className="topbar-title">
       <span>{lesson.arcTitle}</span>
@@ -301,7 +317,15 @@ const WorkspaceFooter = ({ saveStatus }: { saveStatus: string }) => (
 );
 
 function LessonScreen(props: LessonScreenProps) {
-  const { concept, lesson, onProgressChange, onReturnHome, progress } = props;
+  const {
+    concept,
+    lesson,
+    editorFontSize,
+    onOpenSettings,
+    onProgressChange,
+    onReturnHome,
+    progress,
+  } = props;
   const [completedNow, setCompletedNow] = useState(false);
   const completion = getLessonCompletion(progress, lesson.id);
 
@@ -334,7 +358,11 @@ function LessonScreen(props: LessonScreenProps) {
 
   return (
     <main className="app-shell lesson-shell">
-      <LessonTopbar lesson={lesson} onReturnHome={onReturnHome} />
+      <LessonTopbar
+        lesson={lesson}
+        onOpenSettings={onOpenSettings}
+        onReturnHome={onReturnHome}
+      />
 
       <section className="lesson-layout" aria-labelledby="lesson-title">
         <LessonBrief concept={concept} lesson={lesson} />
@@ -352,6 +380,7 @@ function LessonScreen(props: LessonScreenProps) {
           <CodeEditor
             key={lesson.id}
             ariaLabel={`${lesson.title} Rust editor`}
+            fontSize={editorFontSize}
             value={draft.code}
             onChange={draft.setCode}
           />

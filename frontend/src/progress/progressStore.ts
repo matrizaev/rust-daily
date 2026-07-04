@@ -139,7 +139,7 @@ const progressStoreValidators = [
 const hasProgressStoreFields = (value: Record<string, unknown>) =>
   progressStoreValidators.every((validator) => validator(value));
 
-const isProgressStore = (value: unknown): value is ProgressStore =>
+export const isProgressStore = (value: unknown): value is ProgressStore =>
   isRecord(value) && hasProgressStoreFields(value);
 
 export const loadProgress = () => {
@@ -156,10 +156,15 @@ export const loadProgress = () => {
 const saveProgress = (progress: ProgressStore) => {
   try {
     window.localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+    return true;
   } catch {
     // LocalStorage can be unavailable or full in restricted browser modes.
+    return false;
   }
 };
+
+export const replaceProgress = (progress: ProgressStore) =>
+  saveProgress(progress);
 
 export const resetProgress = () => {
   try {

@@ -1,4 +1,11 @@
-import { ArrowRight, CalendarDays, Clock, Gauge, Layers } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarDays,
+  Clock,
+  Gauge,
+  Layers,
+  Settings,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import type { ProgressSummary as ProgressSummaryData } from "../progress/progressSelectors";
 import type { Concept, Lesson } from "../types/lesson";
@@ -8,7 +15,7 @@ type DailyHomeProps = {
   lesson: Lesson;
   concept: Concept | null;
   onContinue: () => void;
-  onResetProgress: () => void;
+  onOpenSettings: () => void;
   summary: ProgressSummaryData;
 };
 
@@ -85,8 +92,8 @@ const DailyHeading = ({ lesson }: { lesson: Lesson }) => (
 
 const HomeActions = ({
   onContinue,
-  onResetProgress,
-}: Pick<DailyHomeProps, "onContinue" | "onResetProgress">) => (
+  onOpenSettings,
+}: Pick<DailyHomeProps, "onContinue" | "onOpenSettings">) => (
   <div className="home-actions">
     <button className="primary-button" type="button" onClick={onContinue}>
       Continue
@@ -94,17 +101,18 @@ const HomeActions = ({
     </button>
 
     <button
-      className="text-button"
+      className="secondary-button"
       type="button"
-      onClick={onResetProgress}
+      onClick={onOpenSettings}
     >
-      Reset local progress
+      <Settings size={19} aria-hidden="true" />
+      Settings
     </button>
   </div>
 );
 
 function DailyHome(props: DailyHomeProps) {
-  const { lesson, concept, onContinue, onResetProgress, summary } = props;
+  const { lesson, concept, onContinue, onOpenSettings, summary } = props;
 
   return (
     <main className="app-shell daily-shell">
@@ -116,7 +124,7 @@ function DailyHome(props: DailyHomeProps) {
 
         <HomeActions
           onContinue={onContinue}
-          onResetProgress={onResetProgress}
+          onOpenSettings={onOpenSettings}
         />
       </section>
     </main>

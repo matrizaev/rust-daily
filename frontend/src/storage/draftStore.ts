@@ -74,3 +74,17 @@ export const clearDraft = (lessonId: string) => {
     // LocalStorage can be unavailable in restricted browser modes.
   }
 };
+
+export const clearAllDrafts = () => {
+  try {
+    const draftKeys = Object.keys(window.localStorage).filter((key) =>
+      key.startsWith(`${PREFIX}:`),
+    );
+
+    draftKeys.forEach((key) => window.localStorage.removeItem(key));
+
+    return draftKeys.length;
+  } catch {
+    return 0;
+  }
+};

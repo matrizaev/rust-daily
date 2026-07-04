@@ -19,19 +19,20 @@ type CodeEditorProps = {
   value: string;
   onChange: (value: string) => void;
   ariaLabel: string;
+  fontSize: number;
 };
 
 type OnChangeRef = {
   current: (value: string) => void;
 };
 
-const editorTheme = EditorView.theme({
+const createEditorTheme = (fontSize: number) => EditorView.theme({
   "&": {
     minHeight: "100%",
     height: "100%",
-    fontSize: "16px",
-    backgroundColor: "#111815",
-    color: "#f2efe7",
+    fontSize: `${fontSize}px`,
+    backgroundColor: "var(--editor-bg)",
+    color: "var(--editor-text)",
   },
   ".cm-scroller": {
     fontFamily:
@@ -41,39 +42,40 @@ const editorTheme = EditorView.theme({
   },
   ".cm-content": {
     padding: "18px 0",
-    caretColor: "#f2efe7",
+    caretColor: "var(--editor-text)",
   },
   ".cm-line": {
     padding: "0 18px 0 10px",
   },
   ".cm-gutters": {
-    backgroundColor: "#111815",
-    borderRight: "1px solid #2b3730",
-    color: "#8da092",
+    backgroundColor: "var(--editor-bg)",
+    borderRight: "1px solid var(--editor-border)",
+    color: "var(--editor-muted)",
   },
   ".cm-activeLineGutter": {
-    backgroundColor: "#1a251f",
+    backgroundColor: "var(--editor-line)",
   },
   ".cm-selectionBackground, &.cm-focused .cm-selectionBackground": {
-    backgroundColor: "#36584a",
+    backgroundColor: "var(--editor-selection)",
   },
   "&.cm-focused": {
-    outline: "2px solid #2e6f56",
+    outline: "2px solid var(--focus)",
     outlineOffset: "-2px",
   },
   ".cm-matchingBracket": {
-    backgroundColor: "#3b563c",
-    color: "#ffffff",
+    backgroundColor: "var(--editor-match)",
+    color: "var(--editor-text)",
   },
   ".cm-nonmatchingBracket": {
-    backgroundColor: "#7d3227",
-    color: "#ffffff",
+    backgroundColor: "var(--editor-mismatch)",
+    color: "var(--editor-text)",
   },
 });
 
 const createEditorState = (
   value: string,
   ariaLabel: string,
+  fontSize: number,
   onChangeRef: OnChangeRef,
 ) => {
   const updateListener = EditorView.updateListener.of((update) => {
@@ -95,7 +97,7 @@ const createEditorState = (
       syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
       keymap.of([...defaultKeymap, ...historyKeymap]),
       EditorView.lineWrapping,
-      editorTheme,
+      createEditorTheme(fontSize),
       updateListener,
       EditorView.contentAttributes.of({
         "aria-label": ariaLabel,
@@ -118,7 +120,12 @@ const syncEditorDocument = (view: EditorView | null, value: string) => {
   });
 };
 
-function CodeEditor({ value, onChange, ariaLabel }: CodeEditorProps) {
+function CodeEditor({
+  value,
+  onChange,
+  ariaLabel,
+  fontSize,
+}: CodeEditorProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
@@ -133,7 +140,7 @@ function CodeEditor({ value, onChange, ariaLabel }: CodeEditorProps) {
     }
 
     const view = new EditorView({
-      state: createEditorState(value, ariaLabel, onChangeRef),
+      state: createEditorState(value, ariaLabel, fontSize, onChangeRef),
       parent: hostRef.current,
     });
 
@@ -143,7 +150,7 @@ function CodeEditor({ value, onChange, ariaLabel }: CodeEditorProps) {
       view.destroy();
       viewRef.current = null;
     };
-  }, [ariaLabel]);
+  }, [ariaLabel, fontSize]);
 
   useEffect(() => {
     syncEditorDocument(viewRef.current, value);
