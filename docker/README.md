@@ -1,5 +1,12 @@
 # Docker
 
-This directory is reserved for runner images and related Docker assets.
+Runner images and related Docker/Podman assets live here.
 
-Keep frontend application code in `frontend/` and future Actix backend code in `backend/`.
+Build the MVP Rust runner image with:
+
+```bash
+podman build -f docker/rust-runner.Dockerfile -t rust-runner:1.96 .
+```
+
+The backend runs submitted lesson workspaces with `cargo test --offline` inside
+that image.
