@@ -204,6 +204,9 @@ The product should protect the user from overcommitment:
 
 The curriculum should cover:
 
+- Idiomatic standard library usage.
+- Strong domain types.
+- Asynchronous programming.
 - Ownership.
 - Borrowing.
 - Lifetimes.
@@ -234,7 +237,11 @@ The curriculum should cover:
 - Module organization.
 - Documentation.
 - Tests.
-- Idiomatic standard library usage.
+
+The detailed post-MVP curriculum expansion is specified in
+[`docs/FULL_CURRICULUM_SPEC.md`](FULL_CURRICULUM_SPEC.md). That feature spec
+defines the full lesson taxonomy for strong domain types, standard Rust
+conversions, structured errors, structured logs, and clean architecture.
 
 ## 8. Curriculum Model
 
@@ -1698,6 +1705,8 @@ Not yet implemented:
 
 Possible later additions:
 
+- Full idiomatic Rust curriculum expansion described in
+  [`docs/FULL_CURRICULUM_SPEC.md`](FULL_CURRICULUM_SPEC.md).
 - Broader backend-backed lesson content.
 - Spaced repetition review queue.
 - Full concept graph visualization.
