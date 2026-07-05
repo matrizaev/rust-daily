@@ -112,7 +112,6 @@ Also use a prebuilt image with dependencies already cached, otherwise `cargo tes
 ```dockerfile
 FROM rust:slim
 WORKDIR /workspace
-RUN rustup component add clippy rustfmt
 ```
 
 For real use, pre-cache a template crate:

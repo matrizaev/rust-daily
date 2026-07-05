@@ -79,6 +79,33 @@ podman build -f docker/rust-runner.Dockerfile -t rust-runner:1.95 .
 Rebuild that image deliberately whenever the Rust version or lesson dependency
 set changes.
 
+The backend service runs as `www-data12`, so rootless Podman image builds and
+runtime checks must use that same user:
+
+```bash
+cd /var/www12/html
+sudo -H -u www-data12 podman build -f docker/rust-runner.Dockerfile -t rust-runner:1.95 .
+sudo -H -u www-data12 podman run --rm rust-runner:1.95 rustc --version
+```
+
+Rootless Podman also needs subordinate UID/GID ranges for `www-data12`:
+
+```bash
+grep '^www-data12:' /etc/subuid /etc/subgid
+```
+
+Each file should contain a range such as:
+
+```text
+www-data12:100000:65536
+```
+
+The systemd unit sets `HOME`, `XDG_CONFIG_HOME`, and `XDG_DATA_HOME` under
+`/var/www12` so rootless Podman uses the same storage and configuration paths in
+the service that it uses during manual `www-data12` image builds. The
+submitted-code container still runs with `no-new-privileges`, dropped
+capabilities, no network, and the other sandbox flags from `backend/src/runner.rs`.
+
 ## Frontend Backend URL
 
 Local Vite development defaults to:

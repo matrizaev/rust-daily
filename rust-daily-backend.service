@@ -13,6 +13,10 @@ Environment=RUST_DAILY_PORT=8080
 Environment=RUST_DAILY_FRONTEND_DIST=/var/www12/html/frontend/dist
 Environment=RUST_DAILY_RUNNER_IMAGE=rust-runner:1.95
 Environment=RUST_DAILY_CORS_ORIGIN=
+Environment=HOME=/var/www12
+Environment=XDG_CONFIG_HOME=/var/www12/.config
+Environment=XDG_DATA_HOME=/var/www12/.local/share
+Environment=PATH=/var/www12/bin:/var/www12/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 ExecStart=/var/www12/html/rust-daily-backend
 
 Restart=on-failure
@@ -29,11 +33,11 @@ TimeoutStopSec=15
 
 # Security hardening
 NoNewPrivileges=true
-PrivateTmp=true
+#PrivateTmp=true
 PrivateDevices=true
-ProtectSystem=strict
-ProtectHome=true
-ReadWritePaths=/var/www12/html
+#ProtectSystem=strict
+#ProtectHome=true
+ReadWritePaths=/var/www12
 AmbientCapabilities=
 CapabilityBoundingSet=
 LimitNOFILE=65535

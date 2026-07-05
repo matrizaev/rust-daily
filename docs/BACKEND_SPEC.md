@@ -351,7 +351,6 @@ The simplest image can start from Rust slim:
 ```dockerfile
 FROM rust:1.95-slim
 WORKDIR /workspace
-RUN rustup component add clippy rustfmt
 ```
 
 For real use, the image should pre-cache a template crate and any lesson

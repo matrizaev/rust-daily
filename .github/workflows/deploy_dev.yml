@@ -51,6 +51,7 @@ jobs:
 
           ssh "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$DEPLOY_DIR/frontend' && rm -rf '$DEPLOY_DIR/frontend/dist.tmp'"
           scp ./backend/target/release/rust-daily-backend "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_DIR/rust-daily-backend.new"
+          scp -r ./docker "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_DIR/docker.tmp"
           scp -r ./frontend/dist "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_DIR/frontend/dist.tmp"
           scp "./$DEPLOY_NGINX_CONF" "$DEPLOY_USER@$DEPLOY_HOST:/tmp/$DEPLOY_NGINX_CONF"
           scp ./rust-daily-backend.service "$DEPLOY_USER@$DEPLOY_HOST:/tmp/$DEPLOY_SERVICE"
@@ -63,6 +64,8 @@ jobs:
             sudo systemctl daemon-reload; \
             sudo systemctl stop $DEPLOY_SERVICE || true; \
             install -m 0755 '$DEPLOY_DIR/rust-daily-backend.new' '$DEPLOY_DIR/rust-daily-backend'; \
+            rm -rf '$DEPLOY_DIR/docker'; \
+            mv '$DEPLOY_DIR/docker.tmp' '$DEPLOY_DIR/docker'; \
             rm -rf '$DEPLOY_DIR/frontend/dist'; \
             mv '$DEPLOY_DIR/frontend/dist.tmp' '$DEPLOY_DIR/frontend/dist'; \
             sudo systemctl start $DEPLOY_SERVICE; \
