@@ -13,10 +13,13 @@ import {
 import { rust } from "@codemirror/lang-rust";
 import { EditorState } from "@codemirror/state";
 import {
+  crosshairCursor,
+  drawSelection,
   EditorView,
   highlightSpecialChars,
   keymap,
   lineNumbers,
+  rectangularSelection,
 } from "@codemirror/view";
 import { useEffect, useRef } from "react";
 
@@ -97,10 +100,14 @@ const createEditorState = (
       history(),
       bracketMatching(),
       rust(),
+      EditorState.allowMultipleSelections.of(true),
       indentUnit.of("    "),
       EditorState.tabSize.of(4),
       syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
       keymap.of([indentWithTab, ...defaultKeymap, ...historyKeymap]),
+      drawSelection(),
+      rectangularSelection(),
+      crosshairCursor(),
       EditorView.lineWrapping,
       createEditorTheme(fontSize),
       updateListener,
