@@ -1,0 +1,71 @@
+name: Deploy VPS
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+  DEPLOY_DIR: /var/www12/html
+  DEPLOY_NGINX_CONF: borrowquest.qzz.io.conf
+  DEPLOY_SERVICE: rust-daily-backend.service
+  DEPLOY_USER: cicd
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: dtolnay/rust-toolchain@1.95.0
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+      - name: Check lesson content
+        working-directory: ./frontend
+        run: npm run content:check
+      - name: Build frontend assets
+        working-directory: ./frontend
+        env:
+          VITE_BASE_PATH: /
+        run: npm run build
+      - name: Build Rust binaries
+        run: cargo build --manifest-path backend/Cargo.toml --release --all-features
+      - name: Install SSH Key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.CICD_PRIVATE_KEY }}
+          name: id_rsa
+          known_hosts: ${{ secrets.CICD_KNOWN_HOSTS }}
+          if_key_exists: fail
+      - name: Deploy
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST"
+
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$DEPLOY_DIR/frontend' && rm -rf '$DEPLOY_DIR/frontend/dist.tmp'"
+          scp ./target/release/rust-daily-backend "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_DIR/rust-daily-backend.new"
+          scp -r ./frontend/dist "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_DIR/frontend/dist.tmp"
+          scp "./$DEPLOY_NGINX_CONF" "$DEPLOY_USER@$DEPLOY_HOST:/tmp/$DEPLOY_NGINX_CONF"
+          scp ./rust-daily-backend.service "$DEPLOY_USER@$DEPLOY_HOST:/tmp/$DEPLOY_SERVICE"
+
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" "\
+            set -euo pipefail; \
+            sudo install -m 0644 /tmp/$DEPLOY_NGINX_CONF /etc/nginx/sites-available/$DEPLOY_NGINX_CONF; \
+            sudo ln -sfn /etc/nginx/sites-available/$DEPLOY_NGINX_CONF /etc/nginx/sites-enabled/$DEPLOY_NGINX_CONF; \
+            sudo install -m 0644 /tmp/$DEPLOY_SERVICE /etc/systemd/system/$DEPLOY_SERVICE; \
+            sudo systemctl daemon-reload; \
+            sudo systemctl stop $DEPLOY_SERVICE || true; \
+            install -m 0755 '$DEPLOY_DIR/rust-daily-backend.new' '$DEPLOY_DIR/rust-daily-backend'; \
+            rm -rf '$DEPLOY_DIR/frontend/dist'; \
+            mv '$DEPLOY_DIR/frontend/dist.tmp' '$DEPLOY_DIR/frontend/dist'; \
+            sudo systemctl start $DEPLOY_SERVICE; \
+            sudo nginx -t; \
+            sudo systemctl reload nginx; \
+          "

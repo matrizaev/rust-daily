@@ -28,15 +28,16 @@ Implemented now:
   - Request files: `src/lib.rs`, `tests/lesson.rs`.
   - Response statuses: `passed`, `failed`, `compile_error`, `timed_out`, `internal_error`.
 - Backend validates paths, sizes, queue capacity, and runs Podman with sandbox restrictions.
+- Frontend has build/runtime backend URL config.
+- Frontend supports `backend-cargo-test` validation and `compile_error`.
+- One lesson includes an authored public backend test payload.
+- Validation UI and lesson copy mention the configured Rust runner.
+- VPS deployment serves the built frontend and backend API from one origin.
 
 Missing now:
 
-- Frontend has no build/runtime backend URL config.
-- Frontend `LessonValidation` has no backend validation mode.
-- Lesson content has no `tests/lesson.rs` payload.
-- Validation UI has no `compile_error` status.
-- Lesson footer currently says checks run locally in the browser, which would be incomplete once backend checks also run.
-- GitHub Pages deployment has no hosted backend pairing.
+- Broader conversion of lessons to authored backend tests.
+- Optional connection-health UI.
 
 ## Scope
 
@@ -62,7 +63,6 @@ Exclude:
 - Multi-file editable lessons.
 - Converting all 30 lessons.
 - Browser Rust compiler integration.
-- Hosted backend deployment.
 
 ## Target User Flow
 
@@ -180,7 +180,7 @@ Rules:
 
 - Backend validation is always available for every lesson check.
 - Local development defaults to `http://127.0.0.1:8080`.
-- Production builds default to `https://borrowquest.site`.
+- Production builds default to the same origin that served the frontend.
 - `VITE_RUST_DAILY_BACKEND_URL` can override the default at build or dev-server start.
 - `window.__RUST_DAILY_BACKEND_URL__` can override the default at runtime when injected before the app bundle loads.
 - Schemeless host values are accepted; localhost-style hosts default to `http`, other hosts default to `https`.
@@ -334,7 +334,7 @@ Backend changes to consider:
 
 - Confirm CORS works for Vite dev server:
   - `RUST_DAILY_CORS_ORIGIN=http://localhost:5173`.
-- Confirm CORS works for GitHub Pages if a hosted backend is later used.
+- Keep `RUST_DAILY_CORS_ORIGIN` empty for same-origin VPS deployment.
 - Consider adding a lightweight `GET /health` endpoint in a later milestone if the settings UI needs connection testing.
 
 Do not add hidden tests or lesson ID lookup in this milestone.
@@ -346,7 +346,7 @@ Do not add hidden tests or lesson ID lookup in this milestone.
 Build runner image:
 
 ```bash
-podman build -f docker/rust-runner.Dockerfile -t rust-runner:1.96 .
+podman build -f docker/rust-runner.Dockerfile -t rust-runner:1.95 .
 ```
 
 Start backend:
@@ -386,7 +386,7 @@ make test
 Manual runner check:
 
 ```bash
-podman build -f docker/rust-runner.Dockerfile -t rust-runner:1.96 .
+podman build -f docker/rust-runner.Dockerfile -t rust-runner:1.95 .
 RUST_DAILY_CORS_ORIGIN=http://localhost:5173 cargo run --manifest-path backend/Cargo.toml
 ```
 
@@ -405,7 +405,7 @@ Run from `frontend/`:
 ```bash
 npm run content:check
 npm run build
-VITE_BASE_PATH=/rust-daily/ npm run build
+VITE_BASE_PATH=/ npm run build
 yes | npx fallow dupes
 yes | npx fallow dead-code
 yes | npx fallow health
@@ -439,12 +439,13 @@ Manual app checks:
 
 ## Risks
 
-Risk: GitHub Pages frontend cannot reach a local backend because browsers block mixed origins or CORS.
+Risk: A split-origin frontend cannot reach a backend because browsers block mixed origins or CORS.
 
 Mitigation:
 
 - Configure the backend URL at build or dev-server start.
 - Document `RUST_DAILY_CORS_ORIGIN`.
+- Prefer same-origin VPS deployment for production.
 - Show a clear unavailable result for CORS/network failures.
 
 Risk: Tests shipped in frontend are editable by advanced users.

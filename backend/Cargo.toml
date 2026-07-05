@@ -6,6 +6,7 @@ rust-version = "1.95"
 
 [dependencies]
 actix-cors = "0.7"
+actix-files = "0.6"
 actix-web = "4"
 config = "0.15"
 serde = { version = "1", features = ["derive"] }

@@ -1,58 +1,99 @@
 # Deployment
 
-Rust Daily is a static Vite app paired with a Rust runner backend. Lesson
-checks run locally in the browser and through the configured Rust runner.
+Rust Daily is deployed as one Actix service on a VPS. The GitHub Actions
+workflow builds the Vite frontend, builds the release backend binary, copies
+both to the server, installs the systemd unit and Nginx vhost, and restarts the
+service.
 
-## Backend URL
+In production the backend serves:
 
-The frontend resolves the Rust runner URL at build or dev-server start from:
+- `POST /run` for Rust validation.
+- `/` from `index.html` in `RUST_DAILY_FRONTEND_DIST`.
+- Static frontend files from `RUST_DAILY_FRONTEND_DIST` through `actix-files`.
 
-```bash
-VITE_RUST_DAILY_BACKEND_URL=https://borrowquest.site
-```
+Because the frontend and API are served from the same origin, production builds
+do not need `VITE_RUST_DAILY_BACKEND_URL` or CORS.
 
-At runtime, a host can also inject `window.__RUST_DAILY_BACKEND_URL__` before
-the app bundle loads. That runtime value takes precedence over the Vite
-environment variable.
+## GitHub Actions
 
-If the variable is omitted, local development defaults to
-`http://127.0.0.1:8080` and production builds default to
-`https://borrowquest.site`.
+The VPS deploy workflow is `.github/workflows/deploy_dev.yml`. It runs on pushes
+to `main`.
 
-## GitHub Pages
+Required repository secrets:
 
-1. In GitHub, open the repository settings.
-2. Go to Pages.
-3. Set Source to GitHub Actions.
-4. Push to `main` or run the `Deploy GitHub Pages` workflow manually.
+- `CICD_PRIVATE_KEY`: SSH private key for the deploy user.
+- `CICD_KNOWN_HOSTS`: known-hosts entry for the VPS.
+- `DEPLOY_HOST`: VPS hostname or IP address.
 
-The default workflow builds for project Pages at:
+The workflow assumes:
+
+- SSH user: `cicd`.
+- Deploy directory: `/var/www12/html`.
+- Systemd service: `rust-daily-backend.service`.
+
+The deploy copies:
 
 ```text
-https://USER.github.io/rust-daily/
+/var/www12/html/rust-daily-backend
+/var/www12/html/frontend/dist/
+/etc/systemd/system/rust-daily-backend.service
+/etc/nginx/sites-available/borrowquest.qzz.io.conf
+/etc/nginx/sites-enabled/borrowquest.qzz.io.conf
 ```
 
-That path requires:
+## Systemd Service
+
+The service file is `rust-daily-backend.service`.
+
+Important production environment:
+
+```text
+RUST_DAILY_HOST=127.0.0.1
+RUST_DAILY_PORT=8080
+RUST_DAILY_FRONTEND_DIST=/var/www12/html/frontend/dist
+RUST_DAILY_RUNNER_IMAGE=rust-runner:1.95
+RUST_DAILY_CORS_ORIGIN=
+```
+
+`RUST_DAILY_HOST=127.0.0.1` expects a reverse proxy such as Nginx or Caddy to
+terminate TLS and forward traffic to `127.0.0.1:8080`. If the service must bind
+directly without a reverse proxy, set `RUST_DAILY_HOST=0.0.0.0` and restrict
+access with the VPS firewall.
+
+## Nginx
+
+The Nginx vhost is `borrowquest.qzz.io.conf`. It redirects HTTP to HTTPS and
+proxies HTTPS traffic to the backend at `127.0.0.1:8080`.
+
+Nginx does not serve `/var/www12/html` directly. The Actix backend owns static
+asset serving and `POST /run`.
+
+## Runner Image
+
+The backend expects the runner image to exist on the VPS:
 
 ```bash
-cd frontend
-VITE_BASE_PATH=/rust-daily/ npm run build
+podman build -f docker/rust-runner.Dockerfile -t rust-runner:1.95 .
 ```
 
-The workflow already sets that environment variable.
-It also sets `VITE_RUST_DAILY_BACKEND_URL` to `https://borrowquest.site`.
+Rebuild that image deliberately whenever the Rust version or lesson dependency
+set changes.
 
-The backend must allow the deployed frontend origin through
-`RUST_DAILY_CORS_ORIGIN`.
+## Frontend Backend URL
 
-## Custom Domain
+Local Vite development defaults to:
 
-For a custom domain served from the site root, build with:
-
-```bash
-cd frontend
-VITE_BASE_PATH=/ npm run build
+```text
+http://127.0.0.1:8080
 ```
 
-Set the custom domain in GitHub repository settings under Pages. If the domain
-is served at the root, update the workflow `VITE_BASE_PATH` value to `/`.
+Production defaults to `window.location.origin`, so the app served by the
+backend posts to the same backend at `/run`.
+
+Overrides remain available:
+
+- `VITE_RUST_DAILY_BACKEND_URL` at build or dev-server start.
+- `window.__RUST_DAILY_BACKEND_URL__` before the app bundle loads.
+
+Set `RUST_DAILY_CORS_ORIGIN` only when the frontend is intentionally served from
+a different origin than the backend API.

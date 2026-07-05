@@ -25,25 +25,24 @@ Implemented as of July 4, 2026:
   - Daily home, lesson screen, hints, completion explanation, and validation panel.
   - 30 local lesson records and concept metadata.
   - Local drafts, attempts, completions, streak summary, concept progress, settings, progress export/import, progress reset, and draft deletion.
-  - PWA manifest, service worker, offline app shell, install metadata, and GitHub Pages workflow.
+  - PWA manifest, service worker, offline app shell, install metadata, and VPS deploy workflow.
   - Frontend validation worker with `structural` and `self-check` modes.
 - Backend:
-  - Actix service exposing `POST /run`.
+  - Actix service exposing `POST /run` and serving the built frontend in production.
   - Typed request validation for exactly `src/lib.rs` and `tests/lesson.rs`.
-  - Config-driven queue capacity, worker count, timeout, output cap, runner image, workspace root, JSON limit, and optional CORS origin.
+  - Config-driven queue capacity, worker count, timeout, output cap, runner image, workspace root, frontend dist path, JSON limit, and optional CORS origin.
   - Bounded Tokio `mpsc` queue with one-shot responses and fixed worker pool.
   - Per-job temporary Cargo workspace assembly.
   - Podman execution of `cargo test --offline --message-format=json` in a restricted container.
   - Sandbox flags for no network, memory/CPU/PID limits, read-only container filesystem, tmpfs, no-new-privileges, and dropped capabilities.
   - Output capping, compile-error classification from Cargo JSON messages, timeout classification, and structured HTTP error responses.
-  - `docker/rust-runner.Dockerfile` based on `rust:1.96-slim`.
+  - `docker/rust-runner.Dockerfile` based on `rust:1.95-slim`.
 
 Not yet implemented:
 
 - Frontend integration with `POST /run`.
 - Browser-compiled Rust validation engine for `browser-rust` lessons.
 - Lesson content schema for backend-supplied public tests.
-- Backend hosting/deployment workflow.
 - Server-side hidden tests or tamper-resistant grading.
 - User accounts, cloud sync, persistence beyond local browser storage.
 - Full daily scheduler with review due, prerequisites, recent failures, selected focus, and grace-day streak rules.
@@ -678,7 +677,8 @@ Current backend mode:
 
 The preferred long-term mode for strong Rust behavior checks is either `browser-rust` for offline-capable lessons or `backend-cargo-test` for lessons that need normal Cargo behavior. `structural` and `self-check` remain fallbacks for concepts where automated validation would be unfair or too brittle.
 
-The backend service is implemented, but the frontend does not yet call it. Current product validation remains frontend worker based.
+The frontend dispatches `backend-cargo-test` steps to `POST /run` and still
+uses the browser worker for local validation modes.
 
 ### 12.2 Validation Flow
 
@@ -769,7 +769,7 @@ Current backend defaults:
 - Max total submitted content: 256 KB.
 - Max JSON payload: 300 KB.
 - Allowed submitted paths: `src/lib.rs` and `tests/lesson.rs`.
-- Runner image: `rust-runner:1.96`.
+- Runner image: `rust-runner:1.95`.
 - Workspace root: `/tmp/rust-daily-runs`.
 
 Backend runner behavior:
@@ -1334,8 +1334,9 @@ Content:
 
 Deployment:
 
-- GitHub Pages static deployment is configured for the frontend.
-- The frontend must also work when served from a local static server.
+- VPS deployment is configured through GitHub Actions.
+- The Actix backend serves the built frontend from the configured dist directory.
+- The frontend must also work when served from a local static server or Vite dev server.
 - No hosted backend is required for local practice, drafts, progress, or frontend validation.
 
 ### 22.3 Current Backend Architecture
@@ -1352,16 +1353,18 @@ Backend:
 - Temporary Cargo workspace assembly.
 - Podman runner process launched with `tokio::process::Command`.
 - Structured JSON logs through `tracing`.
+- Static frontend serving through `actix-files`, with `/` served from `index.html`.
 - Optional CORS origin.
 
 Runner:
 
-- Uses `rust-runner:1.96` by default.
+- Uses `rust-runner:1.95` by default.
 - Runs without network.
 - Runs with memory, CPU, PID, read-only filesystem, tmpfs, no-new-privileges, and capability-drop restrictions.
 - Runs `cargo test --offline --message-format=json`.
 
-Backend deployment is not implemented yet. The service can be run locally after building the runner image.
+Backend deployment is configured for a VPS systemd service. The service can
+also be run locally after building the runner image and the frontend bundle.
 
 ### 22.4 Frontend Responsibilities
 
@@ -1655,7 +1658,7 @@ Backend validation may exist before the frontend uses it, but a hosted backend i
 Implemented:
 
 - Frontend PWA shell.
-- Static GitHub Pages deployment workflow for the frontend.
+- VPS deployment workflow for the backend and built frontend.
 - Dark-first UI with light/system theme control.
 - Daily lesson screen.
 - CodeMirror Rust editor with no autocomplete extension.
@@ -1667,21 +1670,22 @@ Implemented:
 - Local progress deletion and draft deletion.
 - 30-lesson initial curriculum.
 - Optional Actix backend service for Cargo-backed validation.
+- Frontend `POST /run` integration for backend validation.
+- Initial backend-backed lesson content with public tests.
+- Actix static serving for the built frontend.
 - Podman runner image definition.
 
 Partially implemented:
 
-- Validation: `structural` and `self-check` are implemented; `browser-rust` is not implemented; backend validation exists but is not called by the frontend.
+- Validation: `structural`, `self-check`, and `backend-cargo-test` are implemented; `browser-rust` is not implemented.
 - Scheduling: current selector continues the first incomplete lesson, then cycles by local date after all lessons are complete; it does not yet enforce one lesson per local day or review due logic.
 - Progress: summary exists; full progress/concept graph screen is not implemented.
 - Settings: theme, editor font size, reduced motion, export/import, progress reset, and draft reset exist; reminder settings do not exist.
 
 Not yet implemented:
 
-- Frontend `POST /run` integration.
-- Backend-backed lesson content/test bundling.
+- Broad backend-backed lesson content/test coverage.
 - Browser Rust compiler/test runner.
-- Hosted backend deployment workflow.
 - Full spaced repetition scheduler.
 - Full progress screen.
 - Notifications.
@@ -1694,9 +1698,7 @@ Not yet implemented:
 
 Possible later additions:
 
-- Frontend integration with backend `POST /run`.
-- Backend deployment and operational documentation.
-- Backend-backed lesson content schema.
+- Broader backend-backed lesson content.
 - Spaced repetition review queue.
 - Full concept graph visualization.
 - More advanced lifetime lessons.
@@ -1790,4 +1792,4 @@ Backend validation milestone:
 - Extend lesson content with public test files for backend-backed lessons.
 - Normalize backend `timed_out` and frontend `timeout` status naming.
 - Add unavailable/offline state for backend-backed lessons.
-- Add backend deployment workflow or documented local-only mode.
+- Expand backend-backed lesson coverage beyond the first smoke slice.

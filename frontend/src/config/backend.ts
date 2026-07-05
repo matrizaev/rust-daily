@@ -1,5 +1,4 @@
 const LOCAL_BACKEND_URL = "http://127.0.0.1:8080";
-const PRODUCTION_BACKEND_URL = "https://borrowquest.site";
 
 declare global {
   interface Window {
@@ -34,15 +33,17 @@ const normalizeBackendUrl = (value: string) => {
   }
 };
 
-const defaultBackendUrl = import.meta.env.DEV
-  ? LOCAL_BACKEND_URL
-  : PRODUCTION_BACKEND_URL;
-
 const runtimeBackendUrl = () =>
   typeof window === "undefined" ? undefined : window.__RUST_DAILY_BACKEND_URL__;
+
+const sameOriginBackendUrl = () =>
+  typeof window === "undefined" ? "" : window.location.origin;
+
+const defaultBackendUrl = () =>
+  import.meta.env.DEV ? LOCAL_BACKEND_URL : sameOriginBackendUrl();
 
 export const BACKEND_URL =
   normalizeBackendUrl(
     runtimeBackendUrl() ?? import.meta.env.VITE_RUST_DAILY_BACKEND_URL ?? "",
   ) ??
-  defaultBackendUrl;
+  defaultBackendUrl();

@@ -1,0 +1,42 @@
+[Unit]
+Description=rust-daily-backend
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=www-data12
+Group=www-data
+
+WorkingDirectory=/var/www12/html
+Environment=RUST_DAILY_HOST=127.0.0.1
+Environment=RUST_DAILY_PORT=8080
+Environment=RUST_DAILY_FRONTEND_DIST=/var/www12/html/frontend/dist
+Environment=RUST_DAILY_RUNNER_IMAGE=rust-runner:1.95
+Environment=RUST_DAILY_CORS_ORIGIN=
+ExecStart=/var/www12/html/rust-daily-backend
+
+Restart=on-failure
+RestartSec=2
+
+# Supervisor stopasgroup/killasgroup → control-group
+KillMode=control-group
+KillSignal=SIGTERM
+TimeoutStopSec=15
+
+# Logging (journald by default)
+# StandardOutput=append:/var/log/rust-daily-backend/rust-daily-backend.log
+# StandardError=inherit
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www12/html
+AmbientCapabilities=
+CapabilityBoundingSet=
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

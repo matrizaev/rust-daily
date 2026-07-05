@@ -2,12 +2,11 @@
 
 ## 1. Purpose
 
-The Rust Daily backend is an optional future validation service for running Rust
+The Rust Daily backend is an optional validation service for running Rust
 lesson submissions with normal Cargo tooling in an isolated container.
 
-The current product MVP remains frontend-only. This backend spec describes the
-smallest viable server-side runner to introduce only when a later milestone
-explicitly adds remote execution.
+The core product remains local-first. This backend spec describes the smallest
+viable server-side runner for deployments that enable remote execution.
 
 Primary backend responsibility:
 
@@ -16,6 +15,7 @@ Primary backend responsibility:
 - Execute the submission in a sandboxed Rust runner container.
 - Run the authored tests supplied with the request using `cargo test --offline`.
 - Return a compact JSON result to the frontend.
+- In production, serve the built Vite frontend from a configured dist directory.
 
 The backend must not become a general cloud IDE, account system, async job
 platform, or multi-language judge in its MVP form.
@@ -33,6 +33,10 @@ Sandbox container
   ↓ cargo test --offline
 Run result JSON
 ```
+
+For VPS deployment, the same Actix service also serves `/` from the built
+frontend `index.html` and serves the remaining frontend files through
+`actix-files`. This keeps the PWA and `POST /run` on one origin.
 
 The HTTP handler is intentionally thin. It validates the request, creates a
 one-shot response channel, tries to enqueue the job, waits for the worker
@@ -61,7 +65,7 @@ Optional crates:
 Required external runtime:
 
 - Podman available on the backend host.
-- A prebuilt runner image named `rust-runner:1.96` or configured equivalent.
+- A prebuilt runner image named `rust-runner:1.95` or configured equivalent.
 
 ## 4. API Surface
 
@@ -301,7 +305,7 @@ podman run --rm \
   --cap-drop all \
   -v /tmp/job-123:/workspace:Z \
   -w /workspace \
-  rust-runner:1.96 \
+  rust-runner:1.95 \
   timeout 10s cargo test --offline
 ```
 
@@ -345,7 +349,7 @@ Security requirements:
 The simplest image can start from Rust slim:
 
 ```dockerfile
-FROM rust:1.96-slim
+FROM rust:1.95-slim
 WORKDIR /workspace
 RUN rustup component add clippy rustfmt
 ```
@@ -362,7 +366,7 @@ tests/lesson.rs
 Image requirements:
 
 - `cargo test --offline` must work without network access.
-- The default toolchain version must be pinned to Rust 1.96.
+- The default toolchain version must be pinned to Rust 1.95.
 - The template crate must use Rust 2024 edition with `edition = "2024"` in
   `Cargo.toml`.
 - Dependencies must be pinned and cached at build time.
@@ -382,12 +386,14 @@ RUST_DAILY_QUEUE_CAPACITY=20
 RUST_DAILY_WORKERS=2
 RUST_DAILY_TIMEOUT_SECS=10
 RUST_DAILY_MAX_OUTPUT_BYTES=65536
-RUST_DAILY_RUNNER_IMAGE=rust-runner:1.96
+RUST_DAILY_RUNNER_IMAGE=rust-runner:1.95
 RUST_DAILY_WORKSPACE_ROOT=/tmp/rust-daily-runs
+RUST_DAILY_FRONTEND_DIST=frontend/dist
 RUST_DAILY_CORS_ORIGIN=
 ```
 
 If `RUST_DAILY_CORS_ORIGIN` is empty, the backend may omit CORS middleware.
+Same-origin VPS deployments should leave it empty.
 
 ## 14. Error Handling and Result Classification
 
@@ -540,7 +546,7 @@ The backend MVP is complete when:
 - Podman runs with no network, memory/CPU/PID limits, read-only root filesystem,
   a tmpfs `/tmp`, `no-new-privileges`, and all capabilities dropped.
 - `cargo test --offline` succeeds in the runner image without network access.
-- The runner image uses Rust 1.96 and the template crate uses Rust 2024 edition.
+- The runner image uses Rust 1.95 and the template crate uses Rust 2024 edition.
 - The backend does not map lesson IDs to hidden tests or load hidden tests from
   disk/image in the MVP.
 - Podman logic is isolated outside the Actix handler.

@@ -1,6 +1,6 @@
 # Backend
 
-Actix service for optional remote Rust lesson validation.
+Actix service for Rust lesson validation and production frontend serving.
 
 ## Run Locally
 
@@ -17,7 +17,7 @@ with `VITE_RUST_DAILY_BACKEND_URL=http://127.0.0.1:8080`.
 Build the runner image first:
 
 ```bash
-podman build -f docker/rust-runner.Dockerfile -t rust-runner:1.96 .
+podman build -f docker/rust-runner.Dockerfile -t rust-runner:1.95 .
 ```
 
 Then start the API:
@@ -27,9 +27,14 @@ RUST_DAILY_CORS_ORIGIN=http://localhost:5173 cargo run --manifest-path backend/C
 ```
 
 The service listens on `127.0.0.1:8080` by default and exposes `POST /run`.
+It also serves the built frontend from `RUST_DAILY_FRONTEND_DIST`, defaulting to
+`frontend/dist` when run from the repository root.
+
 The frontend uses `http://127.0.0.1:8080` by default in local development.
-Override it at build or dev-server start with `VITE_RUST_DAILY_BACKEND_URL`,
-or inject `window.__RUST_DAILY_BACKEND_URL__` before the app bundle loads.
+Production frontend builds default to the same origin that served the page.
+Override either mode at build or dev-server start with
+`VITE_RUST_DAILY_BACKEND_URL`, or inject `window.__RUST_DAILY_BACKEND_URL__`
+before the app bundle loads.
 
 ## Configuration
 
@@ -41,6 +46,11 @@ Environment variables:
 - `RUST_DAILY_WORKERS` default `2`
 - `RUST_DAILY_TIMEOUT_SECS` default `10`
 - `RUST_DAILY_MAX_OUTPUT_BYTES` default `65536`
-- `RUST_DAILY_RUNNER_IMAGE` default `rust-runner:1.96`
+- `RUST_DAILY_RUNNER_IMAGE` default `rust-runner:1.95`
 - `RUST_DAILY_WORKSPACE_ROOT` default `/tmp/rust-daily-runs`
+- `RUST_DAILY_FRONTEND_DIST` default `frontend/dist`
 - `RUST_DAILY_CORS_ORIGIN` default empty
+- `RUST_DAILY_MAX_FILES` default `8`
+- `RUST_DAILY_MAX_FILE_BYTES` default `65536`
+- `RUST_DAILY_MAX_TOTAL_BYTES` default `262144`
+- `RUST_DAILY_MAX_JSON_PAYLOAD_BYTES` default `300000`

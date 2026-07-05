@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-RUNNER_IMAGE ?= rust-runner:1.96
+RUNNER_IMAGE ?= rust-runner:1.95
 FRONTEND_ORIGIN ?= http://localhost:5173
 FRONTEND_BACKEND_URL ?= http://127.0.0.1:8080
 

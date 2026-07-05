@@ -19,6 +19,7 @@ pub struct AppConfig {
     pub max_output_bytes: NonZeroUsize,
     pub runner_image: RunnerImage,
     pub workspace_root: WorkspaceRoot,
+    pub frontend_dist: FrontendDist,
     pub cors_origin: Option<CorsOrigin>,
     pub validation_limits: ValidationLimits,
     pub max_json_payload_bytes: NonZeroUsize,
@@ -34,6 +35,7 @@ struct RawAppConfig {
     max_output_bytes: usize,
     runner_image: String,
     workspace_root: PathBuf,
+    frontend_dist: PathBuf,
     cors_origin: String,
     max_files: usize,
     max_file_bytes: usize,
@@ -62,6 +64,7 @@ pub enum ConfigField {
     MaxOutputBytes,
     RunnerImage,
     WorkspaceRoot,
+    FrontendDist,
     CorsOrigin,
     MaxFiles,
     MaxFileBytes,
@@ -79,6 +82,7 @@ impl std::fmt::Display for ConfigField {
             Self::MaxOutputBytes => "max_output_bytes",
             Self::RunnerImage => "runner_image",
             Self::WorkspaceRoot => "workspace_root",
+            Self::FrontendDist => "frontend_dist",
             Self::CorsOrigin => "cors_origin",
             Self::MaxFiles => "max_files",
             Self::MaxFileBytes => "max_file_bytes",
@@ -174,6 +178,29 @@ impl TryFrom<PathBuf> for WorkspaceRoot {
 }
 
 #[derive(Debug, Clone)]
+pub struct FrontendDist(PathBuf);
+
+impl FrontendDist {
+    pub fn as_path(&self) -> &Path {
+        &self.0
+    }
+}
+
+impl TryFrom<PathBuf> for FrontendDist {
+    type Error = AppConfigError;
+
+    fn try_from(value: PathBuf) -> Result<Self, Self::Error> {
+        if value.as_os_str().is_empty() {
+            return Err(AppConfigError::Empty {
+                field: ConfigField::FrontendDist,
+            });
+        }
+
+        Ok(Self(value))
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct CorsOrigin(String);
 
 impl CorsOrigin {
@@ -206,8 +233,9 @@ impl AppConfig {
             .set_default("workers", 2_i64)?
             .set_default("timeout_secs", 10_i64)?
             .set_default("max_output_bytes", 65_536_i64)?
-            .set_default("runner_image", "rust-runner:1.96")?
+            .set_default("runner_image", "rust-runner:1.95")?
             .set_default("workspace_root", "/tmp/rust-daily-runs")?
+            .set_default("frontend_dist", "frontend/dist")?
             .set_default("cors_origin", "")?
             .set_default("max_files", 8_i64)?
             .set_default("max_file_bytes", 65_536_i64)?
@@ -260,6 +288,7 @@ impl TryFrom<RawAppConfig> for AppConfig {
             max_output_bytes,
             runner_image: RunnerImage::try_from(raw.runner_image)?,
             workspace_root: WorkspaceRoot::try_from(raw.workspace_root)?,
+            frontend_dist: FrontendDist::try_from(raw.frontend_dist)?,
             cors_origin,
             validation_limits,
             max_json_payload_bytes,

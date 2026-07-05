@@ -5,6 +5,7 @@ use rust_daily_backend::{
     api::{AppState, cors, json_config, run},
     config::AppConfig,
     queue::spawn_workers,
+    static_files::frontend_files,
 };
 use tracing::info;
 use tracing_subscriber::EnvFilter;
@@ -21,6 +22,7 @@ async fn main() -> io::Result<()> {
 
     info!(
         bind_address = %config.bind_address(),
+        frontend_dist = ?config.frontend_dist.as_path(),
         workers = config.workers.get(),
         queue_capacity = config.queue_capacity.get(),
         runner_image = %config.runner_image,
@@ -40,6 +42,7 @@ async fn main() -> io::Result<()> {
             .app_data(web::Data::new(state))
             .app_data(json_config(config.max_json_payload_bytes.get()))
             .route("/run", web::post().to(run))
+            .service(frontend_files(&config.frontend_dist))
     })
     .bind(bind_address)?
     .run()
