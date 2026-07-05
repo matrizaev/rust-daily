@@ -1,6 +1,19 @@
 import type { LessonValidation } from "./validation";
 
 export type Difficulty = "easy" | "medium" | "advanced";
+export type LessonFileRole = "editable" | "readonly" | "test";
+
+export type LessonFile = {
+  path: string;
+  role: LessonFileRole;
+  content: string;
+};
+
+export type LessonHint = {
+  level: number;
+  body: string;
+  solutionCode?: string;
+};
 
 export type Concept = {
   id: string;
@@ -14,9 +27,11 @@ export type Concept = {
 };
 
 export type Lesson = {
+  schemaVersion: 1 | 2;
   id: string;
   arcId: string;
   arcTitle: string;
+  order: number;
   day: number;
   arcLength: number;
   title: string;
@@ -26,7 +41,19 @@ export type Lesson = {
   scenario: string;
   instructions: string;
   starterCode: string;
-  hints: string[];
+  files: LessonFile[];
+  hints: LessonHint[];
   completionExplanation: string;
   validation?: LessonValidation;
+};
+
+export type RawLesson = Omit<
+  Lesson,
+  "schemaVersion" | "order" | "starterCode" | "files" | "hints"
+> & {
+  schemaVersion?: 1 | 2;
+  order?: number;
+  starterCode?: string;
+  files?: LessonFile[];
+  hints: string[] | LessonHint[];
 };

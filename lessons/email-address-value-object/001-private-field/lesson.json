@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 2,
+  "id": "email-address-private-field-001",
+  "arcId": "email-address-value-object",
+  "arcTitle": "Email address value object",
+  "order": 31,
+  "day": 1,
+  "arcLength": 6,
+  "title": "Hide EmailAddress internals",
+  "conceptId": "email-address-private-field",
+  "difficulty": "easy",
+  "estimatedMinutes": 6,
+  "scenario": "An email address should eventually be validated before callers can create one. Start by making the domain type own its text without exposing the field.",
+  "instructions": "Replace the TODO with a private value: String field on EmailAddress.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "The field should live inside EmailAddress, but callers should not set it directly."
+    },
+    {
+      "level": 2,
+      "body": "Use a named struct field with type String. Leave off pub so construction can be controlled later."
+    },
+    {
+      "level": 3,
+      "body": "A canonical solution keeps the representation private.",
+      "solutionCode": "pub struct EmailAddress {\n    value: String,\n}"
+    }
+  ],
+  "completionExplanation": "A private field lets EmailAddress own its text while reserving construction for validating APIs. That is the first step toward making invalid email values harder to represent.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "struct_fields",
+            "structName": "EmailAddress",
+            "requiredFields": [
+              { "name": "value", "typeIncludes": ["String"] }
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": ["struct EmailAddress"],
+            "forbiddenSnippets": ["pub value"]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

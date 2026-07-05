@@ -9,13 +9,17 @@ import {
 import type { ReactNode } from "react";
 import type { ProgressSummary as ProgressSummaryData } from "../progress/progressSelectors";
 import type { Concept, Lesson } from "../types/lesson";
+import type { ProgressStore } from "../types/progress";
+import CurriculumPath from "./CurriculumPath";
 import ProgressSummary from "./ProgressSummary";
 
 type DailyHomeProps = {
   lesson: Lesson;
+  lessons: Lesson[];
   concept: Concept | null;
   onContinue: () => void;
   onOpenSettings: () => void;
+  progress: ProgressStore;
   summary: ProgressSummaryData;
 };
 
@@ -112,7 +116,15 @@ const HomeActions = ({
 );
 
 function DailyHome(props: DailyHomeProps) {
-  const { lesson, concept, onContinue, onOpenSettings, summary } = props;
+  const {
+    lesson,
+    lessons,
+    concept,
+    onContinue,
+    onOpenSettings,
+    progress,
+    summary,
+  } = props;
 
   return (
     <main className="app-shell daily-shell">
@@ -125,6 +137,12 @@ function DailyHome(props: DailyHomeProps) {
         <HomeActions
           onContinue={onContinue}
           onOpenSettings={onOpenSettings}
+        />
+
+        <CurriculumPath
+          activeLessonId={lesson.id}
+          lessons={lessons}
+          progress={progress}
         />
       </section>
     </main>

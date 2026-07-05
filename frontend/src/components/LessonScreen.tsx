@@ -28,6 +28,7 @@ import type { LessonValidation, ValidationResult } from "../types/validation";
 import { runValidation } from "../validation/validationClient";
 
 const SAVE_DELAY_MS = 450;
+const DEFAULT_EDITABLE_PATH = "src/lib.rs";
 
 type LessonScreenProps = {
   lesson: Lesson;
@@ -41,16 +42,26 @@ type LessonScreenProps = {
 
 type DraftState = {
   code: string;
+  filePath: string;
   lastSavedAt: string | null;
 };
 
+const getPrimaryEditableFile = (lesson: Lesson) =>
+  lesson.files.find((file) => file.role === "editable") ?? {
+    path: DEFAULT_EDITABLE_PATH,
+    role: "editable" as const,
+    content: lesson.starterCode,
+  };
+
 const getStarterDraftState = (lesson: Lesson): DraftState => ({
-  code: lesson.starterCode,
+  code: getPrimaryEditableFile(lesson).content,
+  filePath: getPrimaryEditableFile(lesson).path,
   lastSavedAt: null,
 });
 
-const draftRecordToState = (draft: DraftRecord): DraftState => ({
-  code: draft.code,
+const draftRecordToState = (lesson: Lesson, draft: DraftRecord): DraftState => ({
+  code: draft.files[getPrimaryEditableFile(lesson).path] ?? draft.code,
+  filePath: getPrimaryEditableFile(lesson).path,
   lastSavedAt: draft.updatedAt,
 });
 
@@ -59,7 +70,7 @@ const getDraftState = (lesson: Lesson): DraftState => {
 
   return draft === null
     ? getStarterDraftState(lesson)
-    : draftRecordToState(draft);
+    : draftRecordToState(lesson, draft);
 };
 
 const formatSavedAt = (savedAt: string | null) =>
@@ -70,13 +81,13 @@ const formatSavedAt = (savedAt: string | null) =>
       }).format(new Date(savedAt))}`
     : "Draft will save locally";
 
-const persistDraft = (lesson: Lesson, code: string) => {
-  if (code === lesson.starterCode) {
+const persistDraft = (lesson: Lesson, filePath: string, code: string) => {
+  if (code === getPrimaryEditableFile(lesson).content) {
     clearDraft(lesson.id);
     return null;
   }
 
-  return saveDraft(lesson.id, code)?.updatedAt ?? null;
+  return saveDraft(lesson.id, code, filePath)?.updatedAt ?? null;
 };
 
 const idleValidationState: ValidationPanelState = {
@@ -114,11 +125,12 @@ const buildValidationRequest = (
   lessonId: string,
   validation: LessonValidation,
   code: string,
+  filePath: string,
 ) => ({
   lessonId,
   validation,
   files: {
-    "src/lib.rs": code,
+    [filePath]: code,
   },
 });
 
@@ -149,6 +161,7 @@ const useLessonDraft = (lesson: Lesson) => {
   const initialDraft = useMemo(() => getDraftState(lesson), [lesson]);
 
   const [code, setCode] = useState(initialDraft.code);
+  const [filePath, setFilePath] = useState(initialDraft.filePath);
   const [revealedHints, setRevealedHints] = useState(0);
   const [lastSavedAt, setLastSavedAt] = useState(initialDraft.lastSavedAt);
 
@@ -156,24 +169,28 @@ const useLessonDraft = (lesson: Lesson) => {
     const nextDraft = getDraftState(lesson);
 
     setCode(nextDraft.code);
+    setFilePath(nextDraft.filePath);
     setLastSavedAt(nextDraft.lastSavedAt);
     setRevealedHints(0);
   }, [lesson]);
 
   useEffect(() => {
     const saveTimer = window.setTimeout(() => {
-      setLastSavedAt(persistDraft(lesson, code));
+      setLastSavedAt(persistDraft(lesson, filePath, code));
     }, SAVE_DELAY_MS);
 
     return () => window.clearTimeout(saveTimer);
-  }, [code, lesson]);
+  }, [code, filePath, lesson]);
 
   const handleReset = useCallback(() => {
+    const editableFile = getPrimaryEditableFile(lesson);
+
     clearDraft(lesson.id);
-    setCode(lesson.starterCode);
+    setCode(editableFile.content);
+    setFilePath(editableFile.path);
     setLastSavedAt(null);
     setRevealedHints(0);
-  }, [lesson.id, lesson.starterCode]);
+  }, [lesson]);
 
   const handleRevealHint = useCallback(() => {
     setRevealedHints((current) => {
@@ -185,6 +202,7 @@ const useLessonDraft = (lesson: Lesson) => {
 
   return {
     code,
+    filePath,
     revealedHints,
     saveStatus: formatSavedAt(lastSavedAt),
     setCode,
@@ -197,6 +215,7 @@ const useValidationRunner = (
   lesson: Lesson,
   concept: Concept | null,
   code: string,
+  filePath: string,
   onProgressChange: () => void,
   onCompleteNow: () => void,
 ) => {
@@ -235,7 +254,7 @@ const useValidationRunner = (
     setState(runningValidationState);
 
     const result = await runValidation(
-      buildValidationRequest(lesson.id, validation, requestCode),
+      buildValidationRequest(lesson.id, validation, requestCode, filePath),
     );
 
     setCheckedCode(requestCode);
@@ -250,7 +269,7 @@ const useValidationRunner = (
 
       onProgressChange();
     }
-  }, [concept, lesson, onCompleteNow, onProgressChange]);
+  }, [concept, filePath, lesson, onCompleteNow, onProgressChange]);
 
   return {
     canCheck: Boolean(lesson.validation),
@@ -325,6 +344,27 @@ const WorkspaceFooter = ({
   </div>
 );
 
+const ReadonlyFilesPanel = ({ lesson }: { lesson: Lesson }) => {
+  const readonlyFiles = lesson.files.filter((file) => file.role !== "editable");
+
+  if (readonlyFiles.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="readonly-files" aria-label="Read-only lesson files">
+      {readonlyFiles.map((file) => (
+        <details key={file.path}>
+          <summary>{file.path}</summary>
+          <pre>
+            <code>{file.content}</code>
+          </pre>
+        </details>
+      ))}
+    </section>
+  );
+};
+
 function LessonScreen(props: LessonScreenProps) {
   const {
     concept,
@@ -361,6 +401,7 @@ function LessonScreen(props: LessonScreenProps) {
     lesson,
     concept,
     draft.code,
+    draft.filePath,
     onProgressChange,
     handleCompleteNow,
   );
@@ -390,11 +431,13 @@ function LessonScreen(props: LessonScreenProps) {
 
           <CodeEditor
             key={lesson.id}
-            ariaLabel={`${lesson.title} Rust editor`}
+            ariaLabel={`${lesson.title} ${draft.filePath} Rust editor`}
             fontSize={editorFontSize}
             value={draft.code}
             onChange={draft.setCode}
           />
+
+          <ReadonlyFilesPanel lesson={lesson} />
 
           <WorkspaceFooter
             checkCopy={footerCheckCopy}

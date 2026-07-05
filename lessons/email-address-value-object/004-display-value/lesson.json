@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 2,
+  "id": "email-address-display-004",
+  "arcId": "email-address-value-object",
+  "arcTitle": "Email address value object",
+  "order": 34,
+  "day": 4,
+  "arcLength": 6,
+  "title": "Format EmailAddress with Display",
+  "conceptId": "display-email-address",
+  "difficulty": "easy",
+  "estimatedMinutes": 6,
+  "scenario": "Callers should be able to print an EmailAddress without reaching into its private field.",
+  "instructions": "Implement std::fmt::Display for EmailAddress by writing the stored email text.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Display receives &self and a formatter. It should not consume the domain value."
+    },
+    {
+      "level": 2,
+      "body": "Use write!(f, \"{}\", self.value) inside fmt."
+    },
+    {
+      "level": 3,
+      "body": "A canonical solution delegates formatting to the private string.",
+      "solutionCode": "impl std::fmt::Display for EmailAddress {\n    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        write!(f, \"{}\", self.value)\n    }\n}"
+    }
+  ],
+  "completionExplanation": "Display exposes the public text representation without making the field public. The type keeps its invariant boundary while still fitting normal formatting APIs.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "impl_trait_for_type",
+            "traitName": "std::fmt::Display",
+            "typeName": "EmailAddress"
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": ["fn fmt", "write!"]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

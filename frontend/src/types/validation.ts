@@ -48,7 +48,12 @@ export type LessonValidationStep =
   | {
       mode: "backend-cargo-test";
       timeoutMs: number;
-      testCode: string;
+      testCode?: string;
+      dependencySet?: string;
+      testFiles?: Array<{
+        path: string;
+        content: string;
+      }>;
     }
   | {
       mode: "self-check";
@@ -73,9 +78,7 @@ export type ValidationStatus =
 export type ValidationRequest = {
   lessonId: string;
   validation: LessonValidation;
-  files: {
-    "src/lib.rs": string;
-  };
+  files: Record<string, string>;
 };
 
 export type ValidationFailure = {

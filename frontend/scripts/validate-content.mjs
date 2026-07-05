@@ -1,8 +1,16 @@
 import { readFile } from "node:fs/promises";
+import {
+  isNumber,
+  isRecord,
+  isString,
+  push,
+  reportErrorsOrLog,
+  validateHintObject,
+} from "./curriculum/shared.mjs";
 
 const LESSONS_PATH = new URL("../src/content/lessons.json", import.meta.url);
 const CONCEPTS_PATH = new URL("../src/content/concepts.json", import.meta.url);
-const EXPECTED_LESSON_COUNT = 30;
+const MINIMUM_LESSON_COUNT = 30;
 const DIFFICULTIES = new Set(["easy", "medium", "advanced"]);
 const VALIDATION_MODES = new Set([
   "structural",
@@ -33,10 +41,10 @@ const FORBIDDEN_PROMISES = [
 
 const readJson = async (path) => JSON.parse(await readFile(path, "utf8"));
 
-const isRecord = (value) => typeof value === "object" && value !== null;
-const isString = (value) => typeof value === "string" && value.trim().length > 0;
-const isNumber = (value) => typeof value === "number" && Number.isFinite(value);
 const isStringArray = (value) => Array.isArray(value) && value.every(isString);
+const hintText = (hint) => typeof hint === "string" ? hint : hint?.body;
+const lessonHintTexts = (lesson) =>
+  Array.isArray(lesson.hints) ? lesson.hints.map(hintText).filter(isString) : [];
 const hasPositiveTimeout = (validation) =>
   isNumber(validation.timeoutMs) && validation.timeoutMs > 0;
 const hasNonEmptyChecks = (validation) =>
@@ -57,10 +65,6 @@ const validationSteps = (validation) =>
 const validationHasRuntimeMode = (validation) =>
   RUST_RUNTIME_VALIDATION_MODES.has(validationMode(validation)) ||
   validationSteps(validation).some(validationHasRuntimeMode);
-
-const push = (errors, message) => {
-  errors.push(message);
-};
 
 const getDuplicateValues = (values) => {
   const seen = new Set();
@@ -97,6 +101,18 @@ const validateHintCount = (errors, lesson) => {
   }
 };
 
+const validateHints = (errors, lesson) => {
+  validateHintCount(errors, lesson);
+
+  if (!Array.isArray(lesson.hints)) {
+    return;
+  }
+
+  lesson.hints.forEach((hint, index) =>
+    validateHintObject(errors, lesson.id, hint, index, { allowString: true }),
+  );
+};
+
 const validateEstimatedMinutes = (errors, lesson) => {
   if (!isNumber(lesson.estimatedMinutes) || lesson.estimatedMinutes < 5 || lesson.estimatedMinutes > 10) {
     push(errors, `${lesson.id} estimatedMinutes must be between 5 and 10.`);
@@ -104,7 +120,7 @@ const validateEstimatedMinutes = (errors, lesson) => {
 };
 
 const validateNoCompilationPromises = (errors, lesson) => {
-  const copy = [lesson.title, ...lesson.hints, lesson.completionExplanation]
+  const copy = [lesson.title, ...lessonHintTexts(lesson), lesson.completionExplanation]
     .join(" ")
     .toLowerCase();
   const forbidden = FORBIDDEN_PROMISES.find((phrase) => copy.includes(phrase));
@@ -210,13 +226,22 @@ const validateStructuralValidation = (errors, lesson, validation) => {
   );
 };
 
+// fallow-ignore-next-line complexity
 const validateBackendValidation = (errors, lesson, validation) => {
   if (!hasPositiveTimeout(validation)) {
     push(errors, `${lesson.id} backend validation must have timeoutMs.`);
   }
 
-  if (!isString(validation.testCode)) {
-    push(errors, `${lesson.id} backend validation must have non-empty testCode.`);
+  const hasTestCode = isString(validation.testCode);
+  const hasTestFiles =
+    Array.isArray(validation.testFiles) &&
+    validation.testFiles.length > 0 &&
+    validation.testFiles.every(
+      (file) => isRecord(file) && isString(file.path) && isString(file.content),
+    );
+
+  if (!hasTestCode && !hasTestFiles) {
+    push(errors, `${lesson.id} backend validation must have testCode or testFiles.`);
   }
 };
 
@@ -274,16 +299,20 @@ const validateLesson = (errors, lesson) => {
     "estimatedMinutes",
     "scenario",
     "instructions",
-    "starterCode",
     "hints",
     "completionExplanation",
     "validation",
   ];
 
   validateRequiredFields(errors, `Lesson ${lesson.id ?? "(missing id)"}`, lesson, required);
+
+  if (!isString(lesson.starterCode) && !Array.isArray(lesson.files)) {
+    push(errors, `${lesson.id} must have starterCode or files.`);
+  }
+
   validateDifficulty(errors, lesson.id, lesson.difficulty);
   validateEstimatedMinutes(errors, lesson);
-  validateHintCount(errors, lesson);
+  validateHints(errors, lesson);
   validateValidation(errors, lesson);
   validateNoCompilationPromises(errors, lesson);
 };
@@ -395,8 +424,8 @@ const validateArcs = (errors, lessons) => {
 const validateContent = (lessons, concepts) => {
   const errors = [];
 
-  if (!Array.isArray(lessons) || lessons.length !== EXPECTED_LESSON_COUNT) {
-    push(errors, `Expected exactly ${EXPECTED_LESSON_COUNT} lessons.`);
+  if (!Array.isArray(lessons) || lessons.length < MINIMUM_LESSON_COUNT) {
+    push(errors, `Expected at least ${MINIMUM_LESSON_COUNT} lessons.`);
   }
 
   if (!Array.isArray(concepts)) {
@@ -418,13 +447,11 @@ const main = async () => {
   const concepts = await readJson(CONCEPTS_PATH);
   const errors = validateContent(lessons, concepts);
 
-  if (errors.length > 0) {
-    console.error(`Content check failed with ${errors.length} issue(s):`);
-    errors.forEach((error) => console.error(`- ${error}`));
-    process.exit(1);
-  }
-
-  console.log(`Content check passed: ${lessons.length} lessons, ${concepts.length} concepts.`);
+  reportErrorsOrLog(
+    errors,
+    "Content check failed",
+    `Content check passed: ${lessons.length} lessons, ${concepts.length} concepts.`,
+  );
 };
 
 await main();

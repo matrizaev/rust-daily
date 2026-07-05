@@ -1,5 +1,7 @@
+import type { LessonHint } from "../types/lesson";
+
 type HintPanelProps = {
-  hints: string[];
+  hints: LessonHint[];
   revealedCount: number;
 };
 
@@ -18,7 +20,14 @@ function HintPanel({ hints, revealedCount }: HintPanelProps) {
       {visibleHints.length > 0 ? (
         <ol aria-live="polite">
           {visibleHints.map((hint) => (
-            <li key={hint}>{hint}</li>
+            <li key={hint.level}>
+              <p>{hint.body}</p>
+              {hint.solutionCode ? (
+                <pre className="hint-solution">
+                  <code>{hint.solutionCode}</code>
+                </pre>
+              ) : null}
+            </li>
           ))}
         </ol>
       ) : (

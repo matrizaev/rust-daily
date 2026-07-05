@@ -1,0 +1,10 @@
+[
+  {
+    "id": "email-address-value-object",
+    "title": "Email address value object",
+    "pillar": "domain",
+    "orderStart": 31,
+    "targetLessonCount": 6,
+    "description": "Model, validate, format, and parse an email address with strong domain types and standard conversions."
+  }
+]

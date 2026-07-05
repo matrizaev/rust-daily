@@ -5,6 +5,7 @@ import DailyHome from "./components/DailyHome";
 import LessonScreen from "./components/LessonScreen";
 import PwaStatus from "./components/PwaStatus";
 import SettingsScreen from "./components/SettingsScreen";
+import { normalizeLessons } from "./content/normalizeLessons";
 import { getProgressSummary } from "./progress/progressSelectors";
 import {
   loadProgress,
@@ -25,9 +26,9 @@ import {
   type EffectiveTheme,
   type UserSettings,
 } from "./storage/settingsStore";
-import type { Concept, Lesson } from "./types/lesson";
+import type { Concept, Lesson, RawLesson } from "./types/lesson";
 
-const lessons = lessonsData as Lesson[];
+const lessons = normalizeLessons(lessonsData as RawLesson[]);
 const concepts = conceptsData as Concept[];
 
 const lessonHash = (lessonId: string) => `#lesson/${lessonId}`;
@@ -347,8 +348,10 @@ function App() {
       <DailyHome
         concept={activeConcept}
         lesson={dailyLesson}
+        lessons={lessons}
         onContinue={navigation.handleContinue}
         onOpenSettings={navigation.handleOpenSettings}
+        progress={progressState.progress}
         summary={progressState.summary}
       />
     </>

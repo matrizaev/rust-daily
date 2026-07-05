@@ -1706,7 +1706,8 @@ Not yet implemented:
 Possible later additions:
 
 - Full idiomatic Rust curriculum expansion described in
-  [`docs/FULL_CURRICULUM_SPEC.md`](FULL_CURRICULUM_SPEC.md).
+  [`docs/FULL_CURRICULUM_SPEC.md`](FULL_CURRICULUM_SPEC.md) and planned in
+  [`docs/FULL_CURRICULUM_IMPLEMENTATION_PLAN.md`](FULL_CURRICULUM_IMPLEMENTATION_PLAN.md).
 - Broader backend-backed lesson content.
 - Spaced repetition review queue.
 - Full concept graph visualization.

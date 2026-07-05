@@ -3,300 +3,732 @@
     "id": "error-enum-design",
     "name": "Error enum design",
     "description": "Model distinct parser failure modes with a typed Rust enum instead of stringly typed errors.",
-    "prerequisites": ["enums-basic", "result-basic"],
-    "difficulty": ["easy", "medium"],
-    "lessonIds": ["error-enum-parse-user-001"],
-    "tags": ["enums", "errors", "api-design", "parsing"],
+    "prerequisites": [
+      "enums-basic",
+      "result-basic"
+    ],
+    "difficulty": [
+      "easy",
+      "medium"
+    ],
+    "lessonIds": [
+      "error-enum-parse-user-001"
+    ],
+    "tags": [
+      "enums",
+      "errors",
+      "api-design",
+      "parsing"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "display-parse-error",
     "name": "Display for errors",
     "description": "Implement human-readable formatting while keeping the error type programmatic.",
-    "prerequisites": ["error-enum-design"],
-    "difficulty": ["easy"],
-    "lessonIds": ["display-parse-user-error-002"],
-    "tags": ["display", "errors", "formatting"],
+    "prerequisites": [
+      "error-enum-design"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "display-parse-user-error-002"
+    ],
+    "tags": [
+      "display",
+      "errors",
+      "formatting"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "error-trait",
     "name": "Error trait",
     "description": "Mark a displayable error type as a standard Rust error.",
-    "prerequisites": ["display-parse-error"],
-    "difficulty": ["easy"],
-    "lessonIds": ["error-trait-parse-user-error-003"],
-    "tags": ["errors", "traits"],
+    "prerequisites": [
+      "display-parse-error"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "error-trait-parse-user-error-003"
+    ],
+    "tags": [
+      "errors",
+      "traits"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "error-source",
     "name": "Source errors",
     "description": "Preserve lower-level error values inside higher-level domain errors.",
-    "prerequisites": ["error-trait"],
-    "difficulty": ["medium"],
-    "lessonIds": ["source-parse-int-error-004"],
-    "tags": ["errors", "parsing", "diagnostics"],
+    "prerequisites": [
+      "error-trait"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "source-parse-int-error-004"
+    ],
+    "tags": [
+      "errors",
+      "parsing",
+      "diagnostics"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "from-error-conversion",
     "name": "From for errors",
     "description": "Centralize conversion from a low-level error into a domain error.",
-    "prerequisites": ["error-source"],
-    "difficulty": ["medium"],
-    "lessonIds": ["from-parse-int-error-005"],
-    "tags": ["from", "errors", "conversion"],
+    "prerequisites": [
+      "error-source"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "from-parse-int-error-005"
+    ],
+    "tags": [
+      "from",
+      "errors",
+      "conversion"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "tryfrom-user",
     "name": "TryFrom for parsing",
     "description": "Represent fallible text-to-domain conversion with TryFrom.",
-    "prerequisites": ["from-error-conversion"],
-    "difficulty": ["medium"],
-    "lessonIds": ["tryfrom-user-str-006"],
-    "tags": ["tryfrom", "parsing", "conversion"],
+    "prerequisites": [
+      "from-error-conversion"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "tryfrom-user-str-006"
+    ],
+    "tags": [
+      "tryfrom",
+      "parsing",
+      "conversion"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "basic-tests",
     "name": "Basic behavior checks",
     "description": "Write focused examples that document success and failure behavior.",
-    "prerequisites": ["tryfrom-user"],
-    "difficulty": ["medium"],
-    "lessonIds": ["parse-user-public-tests-007"],
-    "tags": ["tests", "examples", "quality"],
+    "prerequisites": [
+      "tryfrom-user"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "parse-user-public-tests-007"
+    ],
+    "tags": [
+      "tests",
+      "examples",
+      "quality"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "struct-field-design",
     "name": "Struct field design",
     "description": "Choose owned field types for a small configuration object.",
-    "prerequisites": ["structs-basic"],
-    "difficulty": ["easy"],
-    "lessonIds": ["config-struct-fields-001"],
-    "tags": ["structs", "configuration", "ownership"],
+    "prerequisites": [
+      "structs-basic"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "config-struct-fields-001"
+    ],
+    "tags": [
+      "structs",
+      "configuration",
+      "ownership"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "default-impl",
     "name": "Default",
     "description": "Provide a sensible default state for a domain type.",
-    "prerequisites": ["struct-field-design"],
-    "difficulty": ["easy"],
-    "lessonIds": ["config-default-impl-002"],
-    "tags": ["default", "traits", "configuration"],
+    "prerequisites": [
+      "struct-field-design"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "config-default-impl-002"
+    ],
+    "tags": [
+      "default",
+      "traits",
+      "configuration"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "methods-basic",
     "name": "Methods",
     "description": "Add small inherent methods that improve a type's calling ergonomics.",
-    "prerequisites": ["struct-field-design"],
-    "difficulty": ["easy"],
-    "lessonIds": ["config-methods-003"],
-    "tags": ["methods", "api-design"],
+    "prerequisites": [
+      "struct-field-design"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "config-methods-003"
+    ],
+    "tags": [
+      "methods",
+      "api-design"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "option-modeling",
     "name": "Option modeling",
     "description": "Represent optional configuration explicitly with Option.",
-    "prerequisites": ["struct-field-design"],
-    "difficulty": ["easy"],
-    "lessonIds": ["config-option-timeout-004"],
-    "tags": ["option", "configuration", "types"],
+    "prerequisites": [
+      "struct-field-design"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "config-option-timeout-004"
+    ],
+    "tags": [
+      "option",
+      "configuration",
+      "types"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "result-validation",
     "name": "Result validation",
     "description": "Return typed validation failures instead of boolean success flags.",
-    "prerequisites": ["option-modeling", "error-enum-design"],
-    "difficulty": ["medium"],
-    "lessonIds": ["config-result-validate-005"],
-    "tags": ["result", "errors", "validation"],
+    "prerequisites": [
+      "option-modeling",
+      "error-enum-design"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "config-result-validate-005"
+    ],
+    "tags": [
+      "result",
+      "errors",
+      "validation"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "borrowing-api",
     "name": "Borrowing in APIs",
     "description": "Avoid unnecessary ownership in read-only helper functions.",
-    "prerequisites": ["methods-basic"],
-    "difficulty": ["medium"],
-    "lessonIds": ["config-borrowed-key-006"],
-    "tags": ["borrowing", "api-design", "strings"],
+    "prerequisites": [
+      "methods-basic"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "config-borrowed-key-006"
+    ],
+    "tags": [
+      "borrowing",
+      "api-design",
+      "strings"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "domain-structs",
     "name": "Domain structs",
     "description": "Use named fields to model inventory data clearly.",
-    "prerequisites": ["structs-basic"],
-    "difficulty": ["easy"],
-    "lessonIds": ["inventory-item-struct-001"],
-    "tags": ["structs", "domain-modeling"],
+    "prerequisites": [
+      "structs-basic"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "inventory-item-struct-001"
+    ],
+    "tags": [
+      "structs",
+      "domain-modeling"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "filter-map",
     "name": "filter_map",
     "description": "Filter and transform collection items in one iterator step.",
-    "prerequisites": ["domain-structs", "borrowing-api"],
-    "difficulty": ["medium"],
-    "lessonIds": ["inventory-filter-map-002"],
-    "tags": ["iterators", "borrowing", "collections"],
+    "prerequisites": [
+      "domain-structs",
+      "borrowing-api"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "inventory-filter-map-002"
+    ],
+    "tags": [
+      "iterators",
+      "borrowing",
+      "collections"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "fold-sum",
     "name": "fold",
     "description": "Accumulate values across a collection with an explicit reducer.",
-    "prerequisites": ["domain-structs"],
-    "difficulty": ["easy"],
-    "lessonIds": ["inventory-fold-total-003"],
-    "tags": ["iterators", "accumulation"],
+    "prerequisites": [
+      "domain-structs"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "inventory-fold-total-003"
+    ],
+    "tags": [
+      "iterators",
+      "accumulation"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "iterator-judgment",
     "name": "Iterator judgment",
     "description": "Choose between loops and iterator chains based on readability.",
-    "prerequisites": ["filter-map", "fold-sum"],
-    "difficulty": ["medium"],
-    "lessonIds": ["inventory-clear-loop-004"],
-    "tags": ["iterators", "readability", "refactoring"],
+    "prerequisites": [
+      "filter-map",
+      "fold-sum"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "inventory-clear-loop-004"
+    ],
+    "tags": [
+      "iterators",
+      "readability",
+      "refactoring"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "intoiterator-wrapper",
     "name": "IntoIterator",
     "description": "Expose natural iteration for an owning wrapper type.",
-    "prerequisites": ["domain-structs"],
-    "difficulty": ["medium"],
-    "lessonIds": ["inventory-intoiterator-005"],
-    "tags": ["intoiterator", "collections", "traits"],
+    "prerequisites": [
+      "domain-structs"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "inventory-intoiterator-005"
+    ],
+    "tags": [
+      "intoiterator",
+      "collections",
+      "traits"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "sort-by-key",
     "name": "sort_by_key",
     "description": "Sort a collection by a focused ordering key.",
-    "prerequisites": ["domain-structs"],
-    "difficulty": ["easy"],
-    "lessonIds": ["inventory-sort-by-key-006"],
-    "tags": ["ordering", "collections", "iterators"],
+    "prerequisites": [
+      "domain-structs"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "inventory-sort-by-key-006"
+    ],
+    "tags": [
+      "ordering",
+      "collections",
+      "iterators"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "api-structs",
     "name": "API surface structs",
     "description": "Define a small owned type that represents a completed API request.",
-    "prerequisites": ["struct-field-design"],
-    "difficulty": ["easy"],
-    "lessonIds": ["request-struct-001"],
-    "tags": ["api-design", "structs", "ownership"],
+    "prerequisites": [
+      "struct-field-design"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "request-struct-001"
+    ],
+    "tags": [
+      "api-design",
+      "structs",
+      "ownership"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "builder-setters",
     "name": "Builder setters",
     "description": "Use consuming setters to make small builder APIs chainable.",
-    "prerequisites": ["api-structs", "methods-basic"],
-    "difficulty": ["medium"],
-    "lessonIds": ["request-builder-owned-setters-002"],
-    "tags": ["builder", "methods", "ownership"],
+    "prerequisites": [
+      "api-structs",
+      "methods-basic"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "request-builder-owned-setters-002"
+    ],
+    "tags": [
+      "builder",
+      "methods",
+      "ownership"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "builder-default",
     "name": "Builder default state",
     "description": "Create an empty builder with the standard Default trait.",
-    "prerequisites": ["builder-setters", "default-impl"],
-    "difficulty": ["easy"],
-    "lessonIds": ["request-builder-default-003"],
-    "tags": ["builder", "default", "traits"],
+    "prerequisites": [
+      "builder-setters",
+      "default-impl"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "request-builder-default-003"
+    ],
+    "tags": [
+      "builder",
+      "default",
+      "traits"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "builder-result",
     "name": "Builder Result output",
     "description": "Validate required builder fields before producing the final type.",
-    "prerequisites": ["builder-default", "result-validation"],
-    "difficulty": ["medium"],
-    "lessonIds": ["request-builder-result-004"],
-    "tags": ["builder", "result", "validation"],
+    "prerequisites": [
+      "builder-default",
+      "result-validation"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "request-builder-result-004"
+    ],
+    "tags": [
+      "builder",
+      "result",
+      "validation"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "tryfrom-request",
     "name": "TryFrom for request data",
     "description": "Convert a raw input type into a validated request with TryFrom.",
-    "prerequisites": ["builder-result", "tryfrom-user"],
-    "difficulty": ["medium"],
-    "lessonIds": ["request-builder-tryfrom-005"],
-    "tags": ["tryfrom", "api-design", "conversion"],
+    "prerequisites": [
+      "builder-result",
+      "tryfrom-user"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "request-builder-tryfrom-005"
+    ],
+    "tags": [
+      "tryfrom",
+      "api-design",
+      "conversion"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "doc-examples",
     "name": "Documentation examples",
     "description": "Write a short example that teaches the intended API flow.",
-    "prerequisites": ["tryfrom-request"],
-    "difficulty": ["easy"],
-    "lessonIds": ["request-doc-example-006"],
-    "tags": ["docs", "examples", "api-design"],
+    "prerequisites": [
+      "tryfrom-request"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "request-doc-example-006"
+    ],
+    "tags": [
+      "docs",
+      "examples",
+      "api-design"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "borrowed-fields",
     "name": "Borrowed fields",
     "description": "Use lifetimes to store borrowed string slices in a struct.",
-    "prerequisites": ["borrowing-api"],
-    "difficulty": ["medium"],
-    "lessonIds": ["log-entry-borrowed-001"],
-    "tags": ["lifetimes", "borrowing", "strings"],
+    "prerequisites": [
+      "borrowing-api"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "log-entry-borrowed-001"
+    ],
+    "tags": [
+      "lifetimes",
+      "borrowing",
+      "strings"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "lifetime-view",
     "name": "Lifetime-backed views",
     "description": "Model a view type that borrows a slice of borrowed entries.",
-    "prerequisites": ["borrowed-fields"],
-    "difficulty": ["medium"],
-    "lessonIds": ["log-view-lifetime-002"],
-    "tags": ["lifetimes", "views", "borrowing"],
+    "prerequisites": [
+      "borrowed-fields"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "log-view-lifetime-002"
+    ],
+    "tags": [
+      "lifetimes",
+      "views",
+      "borrowing"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "pattern-matching",
     "name": "Pattern matching",
     "description": "Map enum variants to behavior with a clear match expression.",
-    "prerequisites": ["error-enum-design"],
-    "difficulty": ["easy"],
-    "lessonIds": ["log-level-match-003"],
-    "tags": ["match", "enums", "control-flow"],
+    "prerequisites": [
+      "error-enum-design"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "log-level-match-003"
+    ],
+    "tags": [
+      "match",
+      "enums",
+      "control-flow"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "cow-strings",
     "name": "Cow strings",
     "description": "Use Cow to support borrowed or owned string data.",
-    "prerequisites": ["borrowed-fields"],
-    "difficulty": ["advanced"],
-    "lessonIds": ["log-message-cow-004"],
-    "tags": ["cow", "borrowing", "ownership"],
+    "prerequisites": [
+      "borrowed-fields"
+    ],
+    "difficulty": [
+      "advanced"
+    ],
+    "lessonIds": [
+      "log-message-cow-004"
+    ],
+    "tags": [
+      "cow",
+      "borrowing",
+      "ownership"
+    ],
     "masteryThreshold": 3
   },
   {
     "id": "focused-tests",
     "name": "Focused behavior checks",
     "description": "Write compact examples for important inclusion and exclusion behavior.",
-    "prerequisites": ["pattern-matching", "filter-map"],
-    "difficulty": ["medium"],
-    "lessonIds": ["log-filter-tests-005"],
-    "tags": ["tests", "examples", "quality"],
+    "prerequisites": [
+      "pattern-matching",
+      "filter-map"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "log-filter-tests-005"
+    ],
+    "tags": [
+      "tests",
+      "examples",
+      "quality"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "email-address-private-field",
+    "name": "Private domain fields",
+    "description": "Hide representation details so construction can preserve domain invariants.",
+    "prerequisites": [
+      "domain-structs"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "email-address-private-field-001"
+    ],
+    "tags": [
+      "domain",
+      "types",
+      "architecture"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "tryfrom-email-address",
+    "name": "TryFrom for domain validation",
+    "description": "Use TryFrom to convert raw text into a validated domain value.",
+    "prerequisites": [
+      "email-address-private-field",
+      "tryfrom-user"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "email-address-tryfrom-str-002"
+    ],
+    "tags": [
+      "domain",
+      "conversion",
+      "tryfrom"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "email-validation-error",
+    "name": "Typed validation errors",
+    "description": "Name distinct validation failures with an enum instead of string errors.",
+    "prerequisites": [
+      "tryfrom-email-address",
+      "error-enum-design"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "email-address-domain-error-003"
+    ],
+    "tags": [
+      "domain",
+      "errors",
+      "validation"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "display-email-address",
+    "name": "Display for value objects",
+    "description": "Format a domain value through its public representation.",
+    "prerequisites": [
+      "email-address-private-field",
+      "display-parse-error"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "email-address-display-004"
+    ],
+    "tags": [
+      "domain",
+      "display",
+      "traits"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "display-email-validation-error",
+    "name": "Display and Error for validation errors",
+    "description": "Make typed validation errors useful to humans and standard error APIs.",
+    "prerequisites": [
+      "email-validation-error",
+      "error-trait"
+    ],
+    "difficulty": [
+      "easy",
+      "medium"
+    ],
+    "lessonIds": [
+      "email-validation-error-display-005"
+    ],
+    "tags": [
+      "errors",
+      "display",
+      "traits"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "fromstr-email-address",
+    "name": "FromStr for string parsing",
+    "description": "Expose string parsing through the standard FromStr trait while reusing TryFrom validation.",
+    "prerequisites": [
+      "tryfrom-email-address"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "email-address-fromstr-006"
+    ],
+    "tags": [
+      "conversion",
+      "fromstr",
+      "domain"
+    ],
     "masteryThreshold": 3
   }
 ]

@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 2,
+  "id": "email-validation-error-display-005",
+  "arcId": "email-address-value-object",
+  "arcTitle": "Email address value object",
+  "order": 35,
+  "day": 5,
+  "arcLength": 6,
+  "title": "Format validation errors",
+  "conceptId": "display-email-validation-error",
+  "difficulty": "easy",
+  "estimatedMinutes": 7,
+  "scenario": "EmailValidationError is useful to match on, but logs and UI messages need human-readable text.",
+  "instructions": "Implement Display for EmailValidationError and then implement std::error::Error for it.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Keep the enum variants programmatic. Display is where human-facing text belongs."
+    },
+    {
+      "level": 2,
+      "body": "Match on self inside fmt. The Error implementation can be empty once Debug and Display exist."
+    },
+    {
+      "level": 3,
+      "body": "A canonical solution gives every variant its own message and marks the enum as a standard error.",
+      "solutionCode": "impl std::fmt::Display for EmailValidationError {\n    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        match self {\n            Self::Empty => write!(f, \"email address is empty\"),\n            Self::MissingAt => write!(f, \"email address is missing @\"),\n            Self::MissingDomain => write!(f, \"email address is missing a domain\"),\n        }\n    }\n}\n\nimpl std::error::Error for EmailValidationError {}"
+    }
+  ],
+  "completionExplanation": "Display keeps user-facing text separate from programmatic error variants. Implementing Error lets the validation error fit standard Rust error APIs.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "impl_trait_for_type",
+            "traitName": "std::fmt::Display",
+            "typeName": "EmailValidationError"
+          },
+          {
+            "type": "impl_trait_for_type",
+            "traitName": "std::error::Error",
+            "typeName": "EmailValidationError"
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

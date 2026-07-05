@@ -78,17 +78,33 @@ const result = (
 const buildRunUrl = (backendUrl: string) =>
   `${backendUrl.trim().replace(/\/+$/, "")}/run`;
 
+const testCodeFromValidation = (
+  validation: BackendValidationRequest["validation"],
+) => {
+  if (typeof validation.testCode === "string") {
+    return validation.testCode;
+  }
+
+  if (validation.testFiles?.length) {
+    return validation.testFiles
+      .map((file) => `// ${file.path}\n${file.content}`)
+      .join("\n\n");
+  }
+
+  return "";
+};
+
 const buildRunRequest = (
   request: BackendValidationRequest,
 ): BackendRunRequest => ({
   files: [
     {
       path: "src/lib.rs",
-      content: request.files["src/lib.rs"],
+      content: request.files["src/lib.rs"] ?? "",
     },
     {
       path: "tests/lesson.rs",
-      content: request.validation.testCode,
+      content: testCodeFromValidation(request.validation),
     },
   ],
 });

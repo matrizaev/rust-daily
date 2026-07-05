@@ -1,6 +1,7 @@
 export type DraftRecord = {
   lessonId: string;
   code: string;
+  files: Record<string, string>;
   updatedAt: string;
 };
 
@@ -10,10 +11,17 @@ const getDraftKey = (lessonId: string) => `${PREFIX}:${lessonId}`;
 
 type DraftCandidate = {
   lessonId: string;
-  code: string;
+  code?: unknown;
+  files?: unknown;
   updatedAt?: unknown;
 };
 
+const hasStringFileMap = (files: unknown) =>
+  files !== null &&
+  typeof files === "object" &&
+  Object.values(files).every((value) => typeof value === "string");
+
+// fallow-ignore-next-line complexity
 const isDraftCandidate = (
   record: unknown,
   lessonId: string,
@@ -23,18 +31,35 @@ const isDraftCandidate = (
   }
 
   const candidate = record as Partial<DraftRecord>;
+  const hasDraftContent =
+    typeof candidate.code === "string" || hasStringFileMap(candidate.files);
 
-  return candidate.lessonId === lessonId && typeof candidate.code === "string";
+  return candidate.lessonId === lessonId && hasDraftContent;
 };
 
-const normalizeDraft = (record: DraftCandidate): DraftRecord => ({
-  lessonId: record.lessonId,
-  code: record.code,
-  updatedAt:
-    typeof record.updatedAt === "string"
-      ? record.updatedAt
-      : new Date().toISOString(),
-});
+const normalizeFiles = (record: DraftCandidate) => {
+  if (record.files && typeof record.files === "object") {
+    return record.files as Record<string, string>;
+  }
+
+  return {
+    "src/lib.rs": typeof record.code === "string" ? record.code : "",
+  };
+};
+
+const normalizeDraft = (record: DraftCandidate): DraftRecord => {
+  const files = normalizeFiles(record);
+
+  return {
+    lessonId: record.lessonId,
+    code: files["src/lib.rs"] ?? Object.values(files)[0] ?? "",
+    files,
+    updatedAt:
+      typeof record.updatedAt === "string"
+        ? record.updatedAt
+        : new Date().toISOString(),
+  };
+};
 
 const parseDraft = (raw: string, lessonId: string): DraftRecord | null => {
   const record = JSON.parse(raw) as unknown;
@@ -52,10 +77,18 @@ export const loadDraft = (lessonId: string): DraftRecord | null => {
   }
 };
 
-export const saveDraft = (lessonId: string, code: string): DraftRecord | null => {
+export const saveDraft = (
+  lessonId: string,
+  code: string,
+  path = "src/lib.rs",
+): DraftRecord | null => {
+  const files = {
+    [path]: code,
+  };
   const record: DraftRecord = {
     lessonId,
-    code,
+    code: files["src/lib.rs"] ?? code,
+    files,
     updatedAt: new Date().toISOString(),
   };
 

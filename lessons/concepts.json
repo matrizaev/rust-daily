@@ -1,0 +1,62 @@
+[
+  {
+    "id": "email-address-private-field",
+    "name": "Private domain fields",
+    "description": "Hide representation details so construction can preserve domain invariants.",
+    "prerequisites": ["domain-structs"],
+    "difficulty": ["easy"],
+    "lessonIds": ["email-address-private-field-001"],
+    "tags": ["domain", "types", "architecture"],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "tryfrom-email-address",
+    "name": "TryFrom for domain validation",
+    "description": "Use TryFrom to convert raw text into a validated domain value.",
+    "prerequisites": ["email-address-private-field", "tryfrom-user"],
+    "difficulty": ["medium"],
+    "lessonIds": ["email-address-tryfrom-str-002"],
+    "tags": ["domain", "conversion", "tryfrom"],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "email-validation-error",
+    "name": "Typed validation errors",
+    "description": "Name distinct validation failures with an enum instead of string errors.",
+    "prerequisites": ["tryfrom-email-address", "error-enum-design"],
+    "difficulty": ["medium"],
+    "lessonIds": ["email-address-domain-error-003"],
+    "tags": ["domain", "errors", "validation"],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "display-email-address",
+    "name": "Display for value objects",
+    "description": "Format a domain value through its public representation.",
+    "prerequisites": ["email-address-private-field", "display-parse-error"],
+    "difficulty": ["easy"],
+    "lessonIds": ["email-address-display-004"],
+    "tags": ["domain", "display", "traits"],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "display-email-validation-error",
+    "name": "Display and Error for validation errors",
+    "description": "Make typed validation errors useful to humans and standard error APIs.",
+    "prerequisites": ["email-validation-error", "error-trait"],
+    "difficulty": ["easy", "medium"],
+    "lessonIds": ["email-validation-error-display-005"],
+    "tags": ["errors", "display", "traits"],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "fromstr-email-address",
+    "name": "FromStr for string parsing",
+    "description": "Expose string parsing through the standard FromStr trait while reusing TryFrom validation.",
+    "prerequisites": ["tryfrom-email-address"],
+    "difficulty": ["medium"],
+    "lessonIds": ["email-address-fromstr-006"],
+    "tags": ["conversion", "fromstr", "domain"],
+    "masteryThreshold": 3
+  }
+]

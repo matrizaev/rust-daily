@@ -709,6 +709,9 @@ Do not rewrite all MVP lessons at once. Use this audit to define a repeatable au
 
 ## 13. Implementation Milestones
 
+The detailed execution plan for these milestones is in
+[`FULL_CURRICULUM_IMPLEMENTATION_PLAN.md`](FULL_CURRICULUM_IMPLEMENTATION_PLAN.md).
+
 ### Milestone 1: Curriculum Taxonomy
 
 - Add concept tags for domain modeling, conversions, errors, logging, architecture, async, and testing.

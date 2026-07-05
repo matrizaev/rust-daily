@@ -18,7 +18,10 @@ const dayIndex = (now: Date) => {
 const firstIncompleteLesson = (
   lessons: Lesson[],
   completedLessonIds: Set<string>,
-) => lessons.find((lesson) => !completedLessonIds.has(lesson.id)) ?? null;
+) =>
+  [...lessons]
+    .sort((left, right) => left.order - right.order)
+    .find((lesson) => !completedLessonIds.has(lesson.id)) ?? null;
 
 export const selectDailyLesson = (
   lessons: Lesson[],

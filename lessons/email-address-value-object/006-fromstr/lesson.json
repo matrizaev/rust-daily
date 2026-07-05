@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 2,
+  "id": "email-address-fromstr-006",
+  "arcId": "email-address-value-object",
+  "arcTitle": "Email address value object",
+  "order": 36,
+  "day": 6,
+  "arcLength": 6,
+  "title": "Parse EmailAddress with FromStr",
+  "conceptId": "fromstr-email-address",
+  "difficulty": "medium",
+  "estimatedMinutes": 8,
+  "scenario": "Once a domain type can validate &str input, callers also expect the standard string parsing API.",
+  "instructions": "Implement std::str::FromStr for EmailAddress. Reuse EmailAddress::try_from instead of duplicating validation.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "FromStr is another standard fallible conversion shape for string input."
+    },
+    {
+      "level": 2,
+      "body": "Set type Err = EmailValidationError, then delegate parse to EmailAddress::try_from."
+    },
+    {
+      "level": 3,
+      "body": "A canonical solution keeps TryFrom as the single validation implementation.",
+      "solutionCode": "impl std::str::FromStr for EmailAddress {\n    type Err = EmailValidationError;\n\n    fn from_str(value: &str) -> Result<Self, Self::Err> {\n        Self::try_from(value)\n    }\n}"
+    }
+  ],
+  "completionExplanation": "FromStr gives callers the familiar \"text\".parse::<EmailAddress>() API. Delegating to TryFrom avoids two validation implementations that can drift apart.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "impl_trait_for_type",
+            "traitName": "std::str::FromStr",
+            "typeName": "EmailAddress"
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": ["type Err = EmailValidationError", "Self::try_from"]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}
