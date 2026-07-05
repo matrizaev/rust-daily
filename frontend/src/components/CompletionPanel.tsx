@@ -38,7 +38,7 @@ function CompletionPanel({
       <p>{lesson.completionExplanation}</p>
 
       <button className="secondary-button" type="button" onClick={onReturnHome}>
-        Return to today
+        Return home
       </button>
     </section>
   );

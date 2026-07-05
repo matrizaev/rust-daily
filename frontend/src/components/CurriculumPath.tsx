@@ -43,7 +43,7 @@ const StateIcon = ({ state }: { state: PathItemState }) => {
 const stateLabel = (state: PathItemState) => {
   const labels: Record<PathItemState, string> = {
     completed: "Completed",
-    current: "Current",
+    current: "Next to do",
     upcoming: "Upcoming",
   };
 
@@ -67,10 +67,10 @@ function CurriculumPath({
       <div className="curriculum-path-heading">
         <div>
           <p className="eyebrow">Curriculum path</p>
-          <h2 id="curriculum-path-title">Full lesson order</h2>
+          <h2 id="curriculum-path-title">Lesson queue</h2>
         </div>
         <span>
-          {currentPosition} / {sortedLessons.length}
+          Lesson {currentPosition} of {sortedLessons.length}
         </span>
       </div>
 
@@ -89,7 +89,8 @@ function CurriculumPath({
                 <span>{stateLabel(state)}</span>
                 <strong>{lesson.title}</strong>
                 <small>
-                  {lesson.order}. {lesson.arcTitle} · Day {lesson.day} of{" "}
+                  Lesson {lesson.order} of {sortedLessons.length} ·{" "}
+                  {lesson.arcTitle} · Arc step {lesson.day} of{" "}
                   {lesson.arcLength}
                 </small>
               </div>

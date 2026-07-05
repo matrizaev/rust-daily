@@ -1,6 +1,6 @@
 import {
   ArrowRight,
-  CalendarDays,
+  BookOpen,
   Clock,
   Gauge,
   Layers,
@@ -61,7 +61,7 @@ const LessonFacts = ({ lesson, concept }: LessonFactsProps) => (
     <LessonFact icon={<Layers size={18} aria-hidden="true" />} label="Arc">
       {lesson.arcTitle}
       <span>
-        Day {lesson.day} of {lesson.arcLength}
+        Arc step {lesson.day} of {lesson.arcLength}
       </span>
     </LessonFact>
 
@@ -70,7 +70,7 @@ const LessonFacts = ({ lesson, concept }: LessonFactsProps) => (
     </LessonFact>
 
     <LessonFact
-      icon={<CalendarDays size={18} aria-hidden="true" />}
+      icon={<BookOpen size={18} aria-hidden="true" />}
       label="Concept"
     >
       {concept?.name ?? lesson.conceptId}
@@ -88,7 +88,7 @@ const LessonFacts = ({ lesson, concept }: LessonFactsProps) => (
 
 const DailyHeading = ({ lesson }: { lesson: Lesson }) => (
   <div className="daily-heading">
-    <p className="eyebrow">Today&apos;s lesson</p>
+    <p className="eyebrow">Next lesson</p>
     <h1 id="daily-title">{lesson.title}</h1>
     <p>{lesson.scenario}</p>
   </div>

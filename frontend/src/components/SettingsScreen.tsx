@@ -147,7 +147,7 @@ function SettingsScreen({
       <header className="settings-header">
         <button className="icon-text-button" type="button" onClick={onReturnHome}>
           <ArrowLeft size={20} aria-hidden="true" />
-          Today
+          Home
         </button>
         <div>
           <p className="eyebrow">Local settings</p>

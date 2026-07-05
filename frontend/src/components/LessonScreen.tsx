@@ -293,7 +293,7 @@ const LessonTopbar = ({
     <div className="topbar-actions">
       <button className="icon-text-button" type="button" onClick={onReturnHome}>
         <ArrowLeft size={20} aria-hidden="true" />
-        Today
+        Home
       </button>
 
       <button className="icon-text-button" type="button" onClick={onOpenSettings}>
@@ -305,7 +305,7 @@ const LessonTopbar = ({
     <div className="topbar-title">
       <span>{lesson.arcTitle}</span>
       <strong>
-        Day {lesson.day} of {lesson.arcLength}
+        Arc step {lesson.day} of {lesson.arcLength}
       </strong>
     </div>
   </header>
