@@ -1,0 +1,10 @@
+server:
+  host: 127.0.0.1
+  port: 8080
+  cors_origin: null
+
+frontend:
+  dist: /var/www12/html/frontend/dist
+
+runner:
+  image: rust-runner:1.95

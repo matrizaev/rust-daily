@@ -8,8 +8,8 @@ service.
 In production the backend serves:
 
 - `POST /run` for Rust validation.
-- `/` from `index.html` in `RUST_DAILY_FRONTEND_DIST`.
-- Static frontend files from `RUST_DAILY_FRONTEND_DIST` through `actix-files`.
+- `/` from `index.html` in the configured `frontend.dist` directory.
+- Static frontend files from the configured `frontend.dist` directory through `actix-files`.
 
 Because the frontend and API are served from the same origin, production builds
 do not need `VITE_RUST_DAILY_BACKEND_URL` or CORS.
@@ -35,6 +35,7 @@ The deploy copies:
 
 ```text
 /var/www12/html/rust-daily-backend
+/var/www12/html/config/
 /var/www12/html/frontend/dist/
 /etc/systemd/system/rust-daily-backend.service
 /etc/nginx/sites-available/borrowquest.qzz.io.conf
@@ -48,17 +49,14 @@ The service file is `rust-daily-backend.service`.
 Important production environment:
 
 ```text
-RUST_DAILY_HOST=127.0.0.1
-RUST_DAILY_PORT=8080
-RUST_DAILY_FRONTEND_DIST=/var/www12/html/frontend/dist
-RUST_DAILY_RUNNER_IMAGE=rust-runner:1.95
-RUST_DAILY_CORS_ORIGIN=
+RUST_DAILY_ENV=prod
 ```
 
-`RUST_DAILY_HOST=127.0.0.1` expects a reverse proxy such as Nginx or Caddy to
+`config/prod.yaml` binds to `127.0.0.1:8080` and points `frontend.dist` at
+`/var/www12/html/frontend/dist`. That bind address expects a reverse proxy such as Nginx or Caddy to
 terminate TLS and forward traffic to `127.0.0.1:8080`. If the service must bind
-directly without a reverse proxy, set `RUST_DAILY_HOST=0.0.0.0` and restrict
-access with the VPS firewall.
+directly without a reverse proxy, override `RUST_DAILY_SERVER__HOST=0.0.0.0`
+and restrict access with the VPS firewall.
 
 ## Nginx
 
@@ -122,5 +120,5 @@ Overrides remain available:
 - `VITE_RUST_DAILY_BACKEND_URL` at build or dev-server start.
 - `window.__RUST_DAILY_BACKEND_URL__` before the app bundle loads.
 
-Set `RUST_DAILY_CORS_ORIGIN` only when the frontend is intentionally served from
-a different origin than the backend API.
+Set `server.cors_origin` or `RUST_DAILY_SERVER__CORS_ORIGIN` only when the
+frontend is intentionally served from a different origin than the backend API.

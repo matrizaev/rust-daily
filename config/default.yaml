@@ -1,0 +1,23 @@
+server:
+  host: 127.0.0.1
+  port: 8080
+  cors_origin: null
+
+frontend:
+  dist: frontend/dist
+
+runner:
+  queue_capacity: 20
+  workers: 2
+  timeout_secs: 10
+  max_output_bytes: 65536
+  image: rust-runner:1.95
+  workspace_root: /tmp/rust-daily-runs
+
+validation:
+  max_files: 8
+  max_file_bytes: 65536
+  max_total_bytes: 262144
+
+api:
+  max_json_payload_bytes: 300000

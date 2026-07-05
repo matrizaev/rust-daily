@@ -3,7 +3,7 @@ use serde::Serialize;
 use serde_json::{Value, json};
 use thiserror::Error;
 
-use crate::{model::ValidationError, queue::EnqueueError};
+use crate::{model::ValidationError, queue::EnqueueError, service::RunServiceError};
 
 #[derive(Debug, Error)]
 pub enum ApiError {
@@ -81,6 +81,16 @@ impl From<EnqueueError> for ApiError {
         match error {
             EnqueueError::Full => Self::QueueFull,
             EnqueueError::Closed => Self::QueueClosed,
+        }
+    }
+}
+
+impl From<RunServiceError> for ApiError {
+    fn from(error: RunServiceError) -> Self {
+        match error {
+            RunServiceError::Validation(error) => Self::Validation(error),
+            RunServiceError::Enqueue(error) => error.into(),
+            RunServiceError::WorkerDropped => Self::WorkerDropped,
         }
     }
 }

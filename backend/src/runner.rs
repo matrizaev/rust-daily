@@ -8,7 +8,7 @@ use tracing::{info, warn};
 use uuid::Uuid;
 
 use crate::{
-    config::AppConfig,
+    config::RunnerSettings,
     model::{RunResult, RunStatus, ValidatedRunRequest},
     workspace::{WorkspaceError, prepare_workspace},
 };
@@ -55,7 +55,7 @@ enum CargoDiagnosticLevel {
     Other,
 }
 
-pub async fn run(job_id: Uuid, request: ValidatedRunRequest, config: &AppConfig) -> RunResult {
+pub async fn run(job_id: Uuid, request: ValidatedRunRequest, config: &RunnerSettings) -> RunResult {
     let started_at = Instant::now();
 
     match run_inner(job_id, &request, config, started_at).await {
@@ -73,7 +73,7 @@ pub async fn run(job_id: Uuid, request: ValidatedRunRequest, config: &AppConfig)
 async fn run_inner(
     job_id: Uuid,
     request: &ValidatedRunRequest,
-    config: &AppConfig,
+    config: &RunnerSettings,
     started_at: Instant,
 ) -> Result<RunResult, RunnerError> {
     let workspace = prepare_workspace(job_id, request, config.workspace_root.as_path()).await?;
@@ -109,7 +109,7 @@ async fn run_inner(
 
 async fn execute_podman(
     workspace: &TempDir,
-    config: &AppConfig,
+    config: &RunnerSettings,
 ) -> Result<PodmanOutcome, io::Error> {
     let workspace_mount = format!("{}:/workspace:Z", workspace.path().display());
     let inner_timeout = format!("{}s", config.timeout.as_secs());
@@ -142,7 +142,7 @@ async fn execute_podman(
         .arg(workspace_mount)
         .arg("-w")
         .arg("/workspace")
-        .arg(config.runner_image.as_str())
+        .arg(config.image.as_str())
         .arg("timeout")
         .arg(inner_timeout)
         .arg("cargo")

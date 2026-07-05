@@ -8,11 +8,7 @@ User=www-data12
 Group=www-data
 
 WorkingDirectory=/var/www12/html
-Environment=RUST_DAILY_HOST=127.0.0.1
-Environment=RUST_DAILY_PORT=8080
-Environment=RUST_DAILY_FRONTEND_DIST=/var/www12/html/frontend/dist
-Environment=RUST_DAILY_RUNNER_IMAGE=rust-runner:1.95
-Environment=RUST_DAILY_CORS_ORIGIN=
+Environment=RUST_DAILY_ENV=prod
 Environment=HOME=/var/www12
 Environment=XDG_CONFIG_HOME=/var/www12/.config
 Environment=XDG_DATA_HOME=/var/www12/.local/share

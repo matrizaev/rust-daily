@@ -5,7 +5,7 @@
 Implement the full Rust Daily curriculum described in
 [`FULL_CURRICULUM_SPEC.md`](FULL_CURRICULUM_SPEC.md).
 
-The implementation should expand Rust Daily from the current 30-lesson MVP into
+The implementation should expand Rust Daily from the original 30-lesson MVP into
 an ordered 300-500 lesson curriculum that teaches production-quality Rust:
 strong domain types, standard conversions, structured errors, structured logs,
 clean architecture, async boundaries, and approved crate tracks.
@@ -25,27 +25,33 @@ Already implemented:
 
 - Vite React PWA.
 - CodeMirror Rust editor with autocomplete disabled.
-- Local lesson JSON with 30 lessons and concept metadata.
+- Local lesson JSON with 36 lessons and concept metadata.
 - Local draft, progress, completion, streak, and settings storage.
 - Ordered daily selector that returns the first incomplete lesson before cycling.
+- Ordered curriculum path showing completed, current, and upcoming lessons.
 - Structural and self-check browser validation worker.
 - Frontend backend validation client.
+- Schema V2 TypeScript types with V1 normalization.
+- Path-aware V2 draft storage with old draft compatibility.
+- Structured hint rendering with optional final-hint solution reveal.
 - Backend `POST /run` endpoint.
 - Backend Cargo runner using Podman.
 - Backend request validation for `src/lib.rs` and `tests/lesson.rs`.
 - Runner image based on `rust:1.95-slim`.
-- Content validation script for the current MVP JSON shape.
+- Content validation scripts for generated V1/V2 frontend JSON and source V2 lessons.
+- Root `lessons/` authoring tree for the first 6-lesson Email Address Value Object arc.
+- Frontend content generation from source V2 lessons.
 
 Important current limits:
 
 - Content is bundled directly from `frontend/src/content/*.json`.
-- Lesson schema is single-editable-file first.
+- Most existing lessons are still V1 single-editable-file records.
 - Backend accepts only `src/lib.rs` and `tests/lesson.rs`.
-- Backend generates one minimal Cargo workspace per run.
+- Backend generates one minimal Cargo workspace per run; V2 public tests are currently bridged into `tests/lesson.rs`.
 - Approved crate tracks are not yet cached in the runner image.
-- Author reference solutions are not represented in the repository.
-- Authoring checks do not compile starters or verify solutions.
-- Full curriculum content does not exist yet.
+- Author reference solutions exist only for the first Email Address arc.
+- Authoring checks do not yet compile starters or verify solutions across the source tree.
+- Full curriculum content beyond the first post-MVP arc does not exist yet.
 
 ## Non-Goals
 
@@ -68,7 +74,7 @@ Build the full curriculum in layers:
 2. Add schema V2 while keeping MVP lessons compatible.
 3. Expand backend validation for multi-file lesson crates and approved dependency sets.
 4. Add authoring directories and generation scripts.
-5. Migrate and audit the existing 30 lessons.
+5. Migrate and audit the original 30 MVP lessons.
 6. Author the first 60 new lessons.
 7. Improve frontend curriculum progress for a larger ordered course.
 8. Add crate-specific observability and async tracks.
@@ -238,7 +244,7 @@ Define the curriculum spine before writing hundreds of lessons.
   - 4 async/side-effect arcs.
   - 4 structured logging/observability arcs.
 - Assign each arc an ordered range.
-- Map the existing 30 lessons into the same taxonomy.
+- Map the original 30 MVP lessons into the same taxonomy.
 
 ### Deliverables
 
@@ -487,15 +493,15 @@ content path fully replaces it.
 - One command generates frontend content.
 - One command checks starter and solution behavior for all backend-backed lessons.
 
-## Milestone 5: Existing 30-Lesson Migration
+## Milestone 5: Original MVP 30-Lesson Migration
 
 ### Scope
 
-Move the MVP lessons into the new authoring structure and audit their quality.
+Move the original MVP lessons into the new authoring structure and audit their quality.
 
 ### Tasks
 
-- Create `lessons/` entries for all current 30 lessons.
+- Create `lessons/` entries for all original MVP lessons.
 - Preserve existing lesson IDs.
 - Preserve concept IDs unless a rename is worth a migration.
 - Add author reference solutions for each lesson.
@@ -865,7 +871,7 @@ Mitigation:
 
 ## Suggested First Implementation Slice
 
-Start with the smallest slice that proves the new pipeline:
+Started with the smallest slice that proves the new pipeline:
 
 1. Add `lessons/` source layout for one new arc: Email Address Value Object.
 2. Add schema V2 TypeScript types and V1 normalization.
@@ -876,5 +882,11 @@ Start with the smallest slice that proves the new pipeline:
 7. Render final-hint solution reveal.
 8. Run frontend build, Fallow checks, backend tests, and one runner smoke test.
 
-This slice exercises the hardest surfaces without committing to hundreds of
-lessons before the tooling is stable.
+Current status:
+
+- Done: source layout, schema V2 normalization, source validation, frontend generation, final-hint solution rendering, ordered curriculum path UI, frontend build, Fallow checks, and manual solution smoke checks for the Email Address arc.
+- Partially done: public tests are represented in V2 lesson source and generated frontend content, but the backend API still accepts only `src/lib.rs` and `tests/lesson.rs`; the frontend currently bridges authored public tests into that existing backend shape.
+- Not done: generalized starter/solution compile-check command for the whole `lessons/` tree and first-class backend multi-file request support.
+
+The next implementation step should close those remaining tooling gaps before
+authoring a large wave of new lessons.

@@ -333,9 +333,9 @@ The first integration should require little backend code. The backend already ha
 Backend changes to consider:
 
 - Confirm CORS works for Vite dev server:
-  - `RUST_DAILY_CORS_ORIGIN=http://localhost:5173`.
-- Keep `RUST_DAILY_CORS_ORIGIN` empty for same-origin VPS deployment.
-- Consider adding a lightweight `GET /health` endpoint in a later milestone if the settings UI needs connection testing.
+  - `config/local.yaml` sets `server.cors_origin: http://localhost:5173`.
+- Keep `server.cors_origin` empty for same-origin VPS deployment.
+- Use the lightweight `GET /healthz` endpoint for connection checks if the settings UI needs them.
 
 Do not add hidden tests or lesson ID lookup in this milestone.
 
@@ -352,7 +352,7 @@ podman build -f docker/rust-runner.Dockerfile -t rust-runner:1.95 .
 Start backend:
 
 ```bash
-RUST_DAILY_CORS_ORIGIN=http://localhost:5173 cargo run --manifest-path backend/Cargo.toml
+RUST_DAILY_ENV=local cargo run --manifest-path backend/Cargo.toml
 ```
 
 ### Local Frontend
@@ -387,7 +387,7 @@ Manual runner check:
 
 ```bash
 podman build -f docker/rust-runner.Dockerfile -t rust-runner:1.95 .
-RUST_DAILY_CORS_ORIGIN=http://localhost:5173 cargo run --manifest-path backend/Cargo.toml
+RUST_DAILY_ENV=local cargo run --manifest-path backend/Cargo.toml
 ```
 
 Then send a known valid `POST /run` payload and confirm:
@@ -444,7 +444,7 @@ Risk: A split-origin frontend cannot reach a backend because browsers block mixe
 Mitigation:
 
 - Configure the backend URL at build or dev-server start.
-- Document `RUST_DAILY_CORS_ORIGIN`.
+- Document `server.cors_origin` and `RUST_DAILY_SERVER__CORS_ORIGIN`.
 - Prefer same-origin VPS deployment for production.
 - Show a clear unavailable result for CORS/network failures.
 

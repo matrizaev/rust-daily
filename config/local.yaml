@@ -1,0 +1,10 @@
+server:
+  host: 127.0.0.1
+  port: 8080
+  cors_origin: http://localhost:5173
+
+frontend:
+  dist: frontend/dist
+
+runner:
+  image: rust-runner:1.95

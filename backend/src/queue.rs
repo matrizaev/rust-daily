@@ -6,7 +6,7 @@ use tracing::{info, warn};
 use uuid::Uuid;
 
 use crate::{
-    config::AppConfig,
+    config::RunnerSettings,
     model::{RunJob, RunResult, ValidatedRunRequest},
     runner,
 };
@@ -54,7 +54,7 @@ impl RunQueue {
     }
 }
 
-pub fn spawn_workers(config: Arc<AppConfig>) -> RunQueue {
+pub fn spawn_workers(config: Arc<RunnerSettings>) -> RunQueue {
     let (sender, receiver) = mpsc::channel(config.queue_capacity.get());
     let receiver = Arc::new(Mutex::new(receiver));
 
@@ -72,7 +72,7 @@ pub fn spawn_workers(config: Arc<AppConfig>) -> RunQueue {
 async fn worker_loop(
     worker_id: usize,
     receiver: Arc<Mutex<mpsc::Receiver<RunJob>>>,
-    config: Arc<AppConfig>,
+    config: Arc<RunnerSettings>,
 ) {
     loop {
         let job = {

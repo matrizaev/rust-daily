@@ -12,21 +12,28 @@ The core PWA must remain usable without AI, accounts, or cloud sync. Backend val
 
 ### 1.1 Current Implementation Snapshot
 
-Implemented as of July 4, 2026:
+Implemented as of July 5, 2026:
 
 - Repository layout:
   - `frontend/`: Vite, React, TypeScript PWA.
   - `backend/`: Actix backend for optional remote Rust validation.
   - `docker/`: runner image assets.
   - `docs/`: product specs, backend docs, implementation plans.
+  - `lessons/`: source authoring tree for schema V2 lessons.
 - Frontend:
   - Dark-first tablet-oriented UI with light/system theme setting.
   - CodeMirror Rust editor with syntax highlighting and no autocomplete extension.
   - Daily home, lesson screen, hints, completion explanation, and validation panel.
-  - 30 local lesson records and concept metadata.
+  - Ordered curriculum path showing completed, current, and upcoming lessons.
+  - 36 local lesson records and concept metadata: the original 30 MVP lessons plus the first schema V2 Email Address Value Object arc.
   - Local drafts, attempts, completions, streak summary, concept progress, settings, progress export/import, progress reset, and draft deletion.
   - PWA manifest, service worker, offline app shell, install metadata, and VPS deploy workflow.
   - Frontend validation worker with `structural` and `self-check` modes.
+  - Frontend integration with optional backend `POST /run` validation.
+- Content:
+  - Schema V2 compatibility path for multi-file lessons, structured hints, public test files, and final-hint solution reveal content.
+  - Source-content validation and frontend-content generation scripts.
+  - Authoring reference solutions for the first V2 Email Address Value Object arc.
 - Backend:
   - Actix service exposing `POST /run` and serving the built frontend in production.
   - Typed request validation for exactly `src/lib.rs` and `tests/lesson.rs`.
@@ -40,15 +47,14 @@ Implemented as of July 4, 2026:
 
 Not yet implemented:
 
-- Frontend integration with `POST /run`.
 - Browser-compiled Rust validation engine for `browser-rust` lessons.
-- Lesson content schema for backend-supplied public tests.
+- First-class backend request support for arbitrary lesson public-test paths beyond the current `src/lib.rs` and `tests/lesson.rs` compatibility bridge.
 - Server-side hidden tests or tamper-resistant grading.
 - User accounts, cloud sync, persistence beyond local browser storage.
-- Full daily scheduler with review due, prerequisites, recent failures, selected focus, and grace-day streak rules.
+- Long-term review scheduler with review due, prerequisites, recent failures, and grace-day streak rules.
 - Full progress/concept graph screen.
 - Notifications/reminders.
-- Authoring pipeline with reference solutions, starter compile checks, and solution-pass checks.
+- Generalized authoring checks for all lessons, including starter compile checks and solution-pass checks.
 - Automated frontend test runner and end-to-end test suite.
 
 ## 2. Product Positioning
@@ -429,23 +435,23 @@ Recommended structure:
 
 ```text
 lessons/
-  error-enum-parse-user-001/
-    lesson.yml
-    author/
-      Cargo.toml
-      src/
-        lib.rs
+  arcs.json
+  concepts.json
+  email-address-value-object/
+    001-private-field/
+      lesson.json
+      starter/
+        src/
+          lib.rs
       tests/
         public.rs
-    solution/
-      src/
-        lib.rs
-    browser/
-      files.json
-      validation.json
+      solution/
+        src/
+          lib.rs
+      notes.md
 ```
 
-The `author/` directory keeps lessons easy to test with normal Rust tooling during content creation. The `browser/` directory is the static bundle shipped to the PWA. The solution directory is for authoring and internal validation only; it must not be shipped unless a future solution reveal feature explicitly requires it.
+The `starter/`, `tests/`, and `solution/` directories keep lessons easy to test with normal Rust tooling during content creation. Generation scripts convert supported source lessons into `frontend/src/content/*.json` for the shipped PWA. Full solution directories remain authoring artifacts; only approved final-hint solution reveal content may ship in the frontend bundle.
 
 ### 9.4 Starter Code
 
@@ -976,12 +982,14 @@ Hint 3:
 
 - Explains the concept.
 - May describe the shape of the solution.
-- Still should not reveal the full answer unless the lesson is already failed repeatedly and the product explicitly supports solution reveal.
+- May reveal the canonical solution for the editable part when the lesson author explicitly includes final-hint solution content.
 
 Solution reveal:
 
-- Not part of MVP.
-- If added later, it should end the active attempt and mark the lesson as reviewed, not independently solved.
+- Lives at the final hint level.
+- Requires explicit user action to reveal.
+- Should explain the idiomatic reasoning, not only provide code to paste.
+- Does not complete the lesson by itself; completion still requires passing the configured validation.
 
 ## 16. User Experience
 
@@ -1109,23 +1117,21 @@ Requirements:
 
 ### 19.1 Daily Lesson Selection
 
-The local scheduler should choose one lesson per local day.
+The current full-curriculum path should present lessons one by one in authored order.
 
 Inputs:
 
-- User's current concept states.
-- Prerequisites.
-- Recent failures.
-- Review due.
-- Desired difficulty.
-- User's selected learning focus.
+- Authored lesson order.
+- Completion state.
+- Draft state for the current lesson.
 
 Default priority:
 
-1. Review due for weak concepts.
-2. Continue current multi-day arc.
-3. Introduce next unlocked concept.
-4. Reinforce a related earlier concept.
+1. Continue the first incomplete lesson in authored order.
+2. Show completed and upcoming lessons in the curriculum path for orientation.
+3. After all lessons are complete, cycle by local date only as a fallback.
+
+No user-selected focus tracks or adaptive scheduler are needed for the current full-curriculum expansion. A review queue, prerequisite-aware scheduler, or focus-track mode should be treated as a separate future feature after the ordered curriculum is stable.
 
 ### 19.2 Streak Rules
 
@@ -1306,8 +1312,11 @@ backend/
     lib.rs
     main.rs
     model.rs
+    observability.rs
     queue.rs
     runner.rs
+    server.rs
+    service.rs
     workspace.rs
 ```
 
@@ -1332,12 +1341,13 @@ Frontend:
 
 Content:
 
-- Versioned lesson files.
+- Versioned lesson files, including V1 lesson records and V2 generated lesson records.
 - Static lesson metadata.
 - Structural validation metadata.
 - Self-check metadata.
+- Backend public-test metadata for V2 lessons.
 - Concept metadata.
-- Authoring-only reference solutions are not implemented yet.
+- Authoring-only starter, test, notes, and reference solution files exist for the first V2 Email Address Value Object arc.
 
 Deployment:
 
@@ -1352,7 +1362,10 @@ Backend:
 
 - Actix HTTP API.
 - Thin `POST /run` handler.
-- Typed configuration loaded from `RUST_DAILY_*` environment variables through the `config` crate.
+- Thin binary entrypoint that loads settings and delegates to a testable library `run(settings)` function.
+- Typed configuration loaded from `config/default.yaml`, `config/{RUST_DAILY_ENV}.yaml`, and `RUST_DAILY_*` environment overrides through the `config` crate.
+- Server construction isolated behind a library `build_server(settings)` function.
+- Application service boundary between Actix handlers and the run queue.
 - Typed request validation and path/content wrappers.
 - Bounded Tokio `mpsc` queue.
 - Fixed worker pool.
@@ -1382,7 +1395,7 @@ The frontend handles:
 - Managing local drafts.
 - Showing hints.
 - Running browser validation.
-- Eventually calling backend validation for backend-backed lessons.
+- Calling backend validation for backend-backed lessons.
 - Showing test output.
 - Caching app shell and lesson content.
 - Tracking local progress.
@@ -1578,7 +1591,6 @@ Settings should include:
 Optional later settings:
 
 - Preferred difficulty.
-- Learning focus.
 - Keyboard bindings.
 
 ## 27. Success Metrics
@@ -1658,7 +1670,7 @@ Exclude from MVP:
 - Marketplace/community lessons.
 - Advanced analytics dashboards.
 
-Backend validation may exist before the frontend uses it, but a hosted backend is not required for the local-first MVP. Server-side `cargo test` is optional until frontend integration and backend-backed lesson content are explicitly introduced.
+Backend validation now exists and the frontend can use it for backend-backed lessons, but a hosted backend is still not required for the local-first practice loop. Server-side `cargo test` is practice feedback, not tamper-resistant scoring.
 
 ### 28.4 Current MVP Implementation Status
 
@@ -1675,29 +1687,32 @@ Implemented:
 - Basic streak and concept progress.
 - Progress export/import.
 - Local progress deletion and draft deletion.
-- 30-lesson initial curriculum.
+- 36-lesson current curriculum: the 30-lesson initial curriculum plus the first 6-lesson V2 Email Address Value Object arc.
 - Optional Actix backend service for Cargo-backed validation.
 - Frontend `POST /run` integration for backend validation.
 - Initial backend-backed lesson content with public tests.
+- Ordered curriculum path for completed, current, and upcoming lessons.
+- Schema V2 lesson normalization, structured hints, path-aware drafts, and source-content generation.
 - Actix static serving for the built frontend.
 - Podman runner image definition.
 
 Partially implemented:
 
 - Validation: `structural`, `self-check`, and `backend-cargo-test` are implemented; `browser-rust` is not implemented.
-- Scheduling: current selector continues the first incomplete lesson, then cycles by local date after all lessons are complete; it does not yet enforce one lesson per local day or review due logic.
+- Scheduling: current selector continues the first incomplete lesson in authored order, then cycles by local date after all lessons are complete; review due logic is not part of the current full-curriculum expansion.
 - Progress: summary exists; full progress/concept graph screen is not implemented.
 - Settings: theme, editor font size, reduced motion, export/import, progress reset, and draft reset exist; reminder settings do not exist.
+- Authoring pipeline: source layout, source validation, and frontend-content generation exist for the first V2 arc; generalized starter/solution compile checks are not implemented.
 
 Not yet implemented:
 
 - Broad backend-backed lesson content/test coverage.
 - Browser Rust compiler/test runner.
-- Full spaced repetition scheduler.
+- Optional spaced repetition or review scheduler.
 - Full progress screen.
 - Notifications.
-- Authoring pipeline with starter/solution compile checks.
-- Reference solutions.
+- Generalized authoring CI with starter/solution compile checks.
+- Reference solutions for migrated MVP lessons and future arcs.
 - Automated frontend test runner.
 - End-to-end browser tests.
 
@@ -1709,7 +1724,7 @@ Possible later additions:
   [`docs/FULL_CURRICULUM_SPEC.md`](FULL_CURRICULUM_SPEC.md) and planned in
   [`docs/FULL_CURRICULUM_IMPLEMENTATION_PLAN.md`](FULL_CURRICULUM_IMPLEMENTATION_PLAN.md).
 - Broader backend-backed lesson content.
-- Spaced repetition review queue.
+- Optional spaced repetition review queue as a separate feature after the ordered curriculum is stable.
 - Full concept graph visualization.
 - More advanced lifetime lessons.
 - Iterator design arcs.
@@ -1738,20 +1753,16 @@ The app is successful at MVP when:
 - The frontend can be deployed as static files without a custom backend.
 - Optional backend validation can be run locally for Cargo-backed experiments without changing the local-first progress model.
 
-## 31. Open Product Questions
+## 31. Remaining Product Questions
 
-Questions to resolve before implementation:
+Questions still open after the MVP and first full-curriculum slice:
 
-- Which browser Rust validation engine should be used initially?
-- Which lesson concepts are safe for the first browser validation subset?
-- Which lessons should be converted first to backend `cargo test` validation?
-- Should backend-backed validation be local-only, hosted, or configurable per deployment?
+- Which browser Rust validation engine should be used if `browser-rust` lessons become a priority?
+- Which MVP lessons should be migrated next into schema V2 with backend public tests?
 - How should backend-backed lessons explain that code is sent to the configured runner?
 - Should `rustfmt` be available as a manual button in MVP?
 - How strict should streak recovery be?
 - Should users be allowed to do tomorrow's lesson early?
-- Should solution reveal exist after repeated failures, or should users only receive hints?
-- Should lessons be authored in a separate repository or inside the app repository?
 
 ## 32. First Implementation Milestones
 

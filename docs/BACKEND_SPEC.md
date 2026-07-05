@@ -373,26 +373,43 @@ Image requirements:
 
 ## 13. Configuration
 
-Backend behavior should be configurable through environment variables with sane
-defaults.
+Backend behavior should be configurable through layered YAML files with
+environment overrides.
 
-Recommended configuration:
+Configuration loading order:
 
-```text
-RUST_DAILY_HOST=127.0.0.1
-RUST_DAILY_PORT=8080
-RUST_DAILY_QUEUE_CAPACITY=20
-RUST_DAILY_WORKERS=2
-RUST_DAILY_TIMEOUT_SECS=10
-RUST_DAILY_MAX_OUTPUT_BYTES=65536
-RUST_DAILY_RUNNER_IMAGE=rust-runner:1.95
-RUST_DAILY_WORKSPACE_ROOT=/tmp/rust-daily-runs
-RUST_DAILY_FRONTEND_DIST=frontend/dist
-RUST_DAILY_CORS_ORIGIN=
+1. `config/default.yaml`
+2. `config/{RUST_DAILY_ENV}.yaml`, defaulting to `local`
+3. `RUST_DAILY_*` environment overrides
+
+Recommended configuration shape:
+
+```yaml
+server:
+  host: 127.0.0.1
+  port: 8080
+  cors_origin: null
+frontend:
+  dist: frontend/dist
+runner:
+  queue_capacity: 20
+  workers: 2
+  timeout_secs: 10
+  max_output_bytes: 65536
+  image: rust-runner:1.95
+  workspace_root: /tmp/rust-daily-runs
+validation:
+  max_files: 8
+  max_file_bytes: 65536
+  max_total_bytes: 262144
+api:
+  max_json_payload_bytes: 300000
 ```
 
-If `RUST_DAILY_CORS_ORIGIN` is empty, the backend may omit CORS middleware.
-Same-origin VPS deployments should leave it empty.
+If `server.cors_origin` is empty or null, the backend may omit CORS middleware.
+Same-origin VPS deployments should leave it empty. New environment overrides
+should use nested names such as `RUST_DAILY_SERVER__HOST` and
+`RUST_DAILY_RUNNER__IMAGE`; legacy flat overrides remain compatibility aliases.
 
 ## 14. Error Handling and Result Classification
 
@@ -417,7 +434,7 @@ Use `RunResult.status` for:
 Output handling:
 
 - Return stdout and stderr separately.
-- Cap output to `RUST_DAILY_MAX_OUTPUT_BYTES`.
+- Cap output to `runner.max_output_bytes`.
 - If output is truncated, include a short truncation marker.
 - Do not separately echo submitted source or test files in API responses. Cargo
   and compiler output may still include file names, line numbers, and excerpts.
@@ -502,6 +519,9 @@ backend/
     main.rs
     config.rs
     api.rs
+    service.rs
+    server.rs
+    observability.rs
     model.rs
     queue.rs
     runner.rs
@@ -511,9 +531,12 @@ backend/
 
 Responsibilities:
 
-- `main.rs`: load config, create queue, spawn workers, start Actix server.
-- `config.rs`: environment configuration and defaults.
-- `api.rs`: `/run` handler and HTTP error mapping.
+- `main.rs`: initialize observability, load settings, and call library `run(settings)`.
+- `config.rs`: layered YAML and environment configuration with typed validation.
+- `api.rs`: route registration, `/healthz`, `/run`, JSON limits, CORS helpers, and HTTP error mapping.
+- `service.rs`: application service boundary between HTTP handlers and queue dispatch.
+- `server.rs`: build and run the Actix server from typed settings.
+- `observability.rs`: tracing subscriber setup and future metrics/readiness helpers.
 - `model.rs`: request, response, and job types.
 - `queue.rs`: bounded queue setup and worker spawning.
 - `runner.rs`: Podman command execution and result classification.

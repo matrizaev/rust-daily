@@ -3,39 +3,34 @@ use actix_web::{
     http::{Method, header},
     web,
 };
+use serde::Serialize;
 
 use crate::{
     error::ApiError,
-    model::{RunRequest, RunRequestValidation, RunResult, ValidatedRunRequest, ValidationLimits},
-    queue::RunQueue,
+    model::{RunRequest, RunResult},
+    service::AppService,
 };
 
-#[derive(Clone)]
-pub struct AppState {
-    queue: RunQueue,
-    validation_limits: ValidationLimits,
+#[derive(Debug, Serialize)]
+pub struct HealthResponse {
+    status: &'static str,
 }
 
-impl AppState {
-    pub fn new(queue: RunQueue, validation_limits: ValidationLimits) -> Self {
-        Self {
-            queue,
-            validation_limits,
-        }
-    }
+pub fn configure(config: &mut web::ServiceConfig) {
+    config
+        .route("/healthz", web::get().to(healthz))
+        .route("/run", web::post().to(run));
+}
+
+pub async fn healthz() -> web::Json<HealthResponse> {
+    web::Json(HealthResponse { status: "ok" })
 }
 
 pub async fn run(
-    state: web::Data<AppState>,
+    service: web::Data<AppService>,
     request: web::Json<RunRequest>,
 ) -> Result<web::Json<RunResult>, ApiError> {
-    let request = request.into_inner();
-    let request =
-        ValidatedRunRequest::try_from(RunRequestValidation::new(request, state.validation_limits))?;
-
-    let response_rx = state.queue.try_enqueue(request)?;
-    let result = response_rx.await.map_err(|_| ApiError::WorkerDropped)?;
-
+    let result = service.run_lesson(request.into_inner()).await?;
     Ok(web::Json(result))
 }
 
@@ -60,4 +55,21 @@ pub fn cors(origin: &str) -> actix_cors::Cors {
         .allowed_methods([Method::POST])
         .allowed_headers([header::CONTENT_TYPE])
         .max_age(3600)
+}
+
+#[cfg(test)]
+mod tests {
+    use actix_web::{App, http::StatusCode, test};
+
+    use super::configure;
+
+    #[actix_web::test]
+    async fn configured_routes_include_healthz() {
+        let app = test::init_service(App::new().configure(configure)).await;
+
+        let response =
+            test::call_service(&app, test::TestRequest::get().uri("/healthz").to_request()).await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+    }
 }

@@ -693,11 +693,11 @@ Lessons:
 
 ## 12. MVP Curriculum Remediation
 
-The existing 30 lessons are a good foundation, but the full-curriculum feature should audit them before adding hundreds more.
+The original 30 MVP lessons are a good foundation, but the full-curriculum feature should audit them before adding hundreds more.
 
 Audit checks:
 
-- Ensure all current lessons use the new concept taxonomy.
+- Ensure all original MVP lessons use the new concept taxonomy.
 - Replace brittle structural-only checks with backend or browser Rust tests where practical.
 - Add author reference solutions.
 - Add public test files for behavior-focused lessons.
@@ -716,7 +716,7 @@ The detailed execution plan for these milestones is in
 
 - Add concept tags for domain modeling, conversions, errors, logging, architecture, async, and testing.
 - Define the first 60-80 new concepts.
-- Map existing 30 lessons into the taxonomy.
+- Map the original 30 MVP lessons into the taxonomy.
 - Create an arc backlog with target lesson counts.
 
 ### Milestone 2: Content Schema V2

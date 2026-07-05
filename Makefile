@@ -21,8 +21,9 @@ runner-image:
 dev-full: runner-image
 	@set -euo pipefail; \
 	echo "Starting backend with CORS origin $(FRONTEND_ORIGIN)"; \
-	RUST_DAILY_CORS_ORIGIN=$(FRONTEND_ORIGIN) \
-	RUST_DAILY_RUNNER_IMAGE=$(RUNNER_IMAGE) \
+	RUST_DAILY_ENV=local \
+	RUST_DAILY_SERVER__CORS_ORIGIN=$(FRONTEND_ORIGIN) \
+	RUST_DAILY_RUNNER__IMAGE=$(RUNNER_IMAGE) \
 	cargo run --manifest-path backend/Cargo.toml & \
 	backend_pid=$$!; \
 	echo "Starting frontend at $(FRONTEND_ORIGIN)"; \
