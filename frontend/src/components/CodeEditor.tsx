@@ -6,12 +6,13 @@ import {
 } from "@codemirror/commands";
 import {
   bracketMatching,
-  defaultHighlightStyle,
+  HighlightStyle,
   indentUnit,
   syntaxHighlighting,
 } from "@codemirror/language";
 import { rust } from "@codemirror/lang-rust";
-import { EditorState } from "@codemirror/state";
+import { Compartment, EditorState } from "@codemirror/state";
+import { tags } from "@lezer/highlight";
 import {
   crosshairCursor,
   drawSelection,
@@ -34,6 +35,40 @@ type OnChangeRef = {
   current: (value: string) => void;
 };
 
+const editorHighlightStyle = HighlightStyle.define([
+  { tag: tags.keyword, color: "var(--editor-token-keyword)" },
+  {
+    tag: [tags.name, tags.deleted, tags.character, tags.propertyName, tags.macroName],
+    color: "var(--editor-token-symbol)",
+  },
+  {
+    tag: [tags.function(tags.name), tags.labelName],
+    color: "var(--editor-token-function)",
+  },
+  {
+    tag: [tags.color, tags.constant(tags.name), tags.standard(tags.name)],
+    color: "var(--editor-token-constant)",
+  },
+  {
+    tag: [tags.definition(tags.name), tags.separator],
+    color: "var(--editor-token-definition)",
+  },
+  {
+    tag: [tags.className, tags.typeName, tags.number, tags.changed, tags.annotation],
+    color: "var(--editor-token-type)",
+  },
+  {
+    tag: [tags.operator, tags.operatorKeyword, tags.url, tags.escape, tags.regexp],
+    color: "var(--editor-token-operator)",
+  },
+  {
+    tag: [tags.string, tags.special(tags.string), tags.inserted],
+    color: "var(--editor-token-string)",
+  },
+  { tag: [tags.meta, tags.comment], color: "var(--editor-token-comment)" },
+  { tag: tags.invalid, color: "var(--editor-token-invalid)" },
+]);
+
 const createEditorTheme = (fontSize: number) => EditorView.theme({
   "&": {
     minHeight: "100%",
@@ -52,6 +87,13 @@ const createEditorTheme = (fontSize: number) => EditorView.theme({
     padding: "18px 0",
     caretColor: "var(--editor-text)",
   },
+  ".cm-cursor, .cm-dropCursor": {
+    borderLeftColor: "var(--editor-caret)",
+    borderLeftWidth: "2px",
+  },
+  ".cm-fat-cursor": {
+    backgroundColor: "var(--editor-caret)",
+  },
   ".cm-line": {
     padding: "0 18px 0 10px",
   },
@@ -61,6 +103,9 @@ const createEditorTheme = (fontSize: number) => EditorView.theme({
     color: "var(--editor-muted)",
   },
   ".cm-activeLineGutter": {
+    backgroundColor: "var(--editor-line)",
+  },
+  ".cm-activeLine": {
     backgroundColor: "var(--editor-line)",
   },
   ".cm-selectionBackground, &.cm-focused .cm-selectionBackground": {
@@ -85,6 +130,8 @@ const createEditorState = (
   ariaLabel: string,
   fontSize: number,
   onChangeRef: OnChangeRef,
+  themeCompartment: Compartment,
+  contentAttributesCompartment: Compartment,
 ) => {
   const updateListener = EditorView.updateListener.of((update) => {
     if (update.docChanged) {
@@ -103,17 +150,19 @@ const createEditorState = (
       EditorState.allowMultipleSelections.of(true),
       indentUnit.of("    "),
       EditorState.tabSize.of(4),
-      syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+      syntaxHighlighting(editorHighlightStyle, { fallback: true }),
       keymap.of([indentWithTab, ...defaultKeymap, ...historyKeymap]),
       drawSelection(),
       rectangularSelection(),
       crosshairCursor(),
       EditorView.lineWrapping,
-      createEditorTheme(fontSize),
+      themeCompartment.of(createEditorTheme(fontSize)),
       updateListener,
-      EditorView.contentAttributes.of({
-        "aria-label": ariaLabel,
-      }),
+      contentAttributesCompartment.of(
+        EditorView.contentAttributes.of({
+          "aria-label": ariaLabel,
+        }),
+      ),
     ],
   });
 };
@@ -141,6 +190,8 @@ function CodeEditor({
   const hostRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
+  const themeCompartmentRef = useRef(new Compartment());
+  const contentAttributesCompartmentRef = useRef(new Compartment());
 
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -152,7 +203,14 @@ function CodeEditor({
     }
 
     const view = new EditorView({
-      state: createEditorState(value, ariaLabel, fontSize, onChangeRef),
+      state: createEditorState(
+        value,
+        ariaLabel,
+        fontSize,
+        onChangeRef,
+        themeCompartmentRef.current,
+        contentAttributesCompartmentRef.current,
+      ),
       parent: hostRef.current,
     });
 
@@ -162,11 +220,41 @@ function CodeEditor({
       view.destroy();
       viewRef.current = null;
     };
-  }, [ariaLabel, fontSize]);
+  }, []);
 
   useEffect(() => {
     syncEditorDocument(viewRef.current, value);
   }, [value]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+
+    if (!view) {
+      return;
+    }
+
+    view.dispatch({
+      effects: themeCompartmentRef.current.reconfigure(
+        createEditorTheme(fontSize),
+      ),
+    });
+  }, [fontSize]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+
+    if (!view) {
+      return;
+    }
+
+    view.dispatch({
+      effects: contentAttributesCompartmentRef.current.reconfigure(
+        EditorView.contentAttributes.of({
+          "aria-label": ariaLabel,
+        }),
+      ),
+    });
+  }, [ariaLabel]);
 
   return <div className="code-editor" ref={hostRef} />;
 }

@@ -50,6 +50,17 @@
   --editor-selection: #36584a;
   --editor-match: #3b563c;
   --editor-mismatch: #7d3227;
+  --editor-caret: #fff7d6;
+  --editor-token-keyword: #ffb454;
+  --editor-token-symbol: #f2efe7;
+  --editor-token-function: #7bd88f;
+  --editor-token-constant: #ffd28a;
+  --editor-token-definition: #f7c56f;
+  --editor-token-type: #73d0ff;
+  --editor-token-operator: #ff9a7a;
+  --editor-token-string: #b8f2b2;
+  --editor-token-comment: #91a091;
+  --editor-token-invalid: #ff8a80;
 }
 
 [data-theme="light"] {
@@ -90,14 +101,25 @@
   --danger-bg: #fff4ec;
   --pwa-bg: #fff8ec;
   --pwa-border: #bfaa8d;
-  --editor-bg: #111815;
-  --editor-text: #f2efe7;
-  --editor-muted: #8da092;
-  --editor-border: #2b3730;
-  --editor-line: #1a251f;
-  --editor-selection: #36584a;
-  --editor-match: #3b563c;
-  --editor-mismatch: #7d3227;
+  --editor-bg: #fffdf8;
+  --editor-text: #202521;
+  --editor-muted: #67736d;
+  --editor-border: #d7d0c1;
+  --editor-line: #f5efe6;
+  --editor-selection: #cfe4d8;
+  --editor-match: #d9ecdd;
+  --editor-mismatch: #f6d8cf;
+  --editor-caret: #1f5a45;
+  --editor-token-keyword: #9b3f1b;
+  --editor-token-symbol: #202521;
+  --editor-token-function: #235641;
+  --editor-token-constant: #8f4d17;
+  --editor-token-definition: #6b4a1f;
+  --editor-token-type: #1d5f80;
+  --editor-token-operator: #8f3b2f;
+  --editor-token-string: #34684f;
+  --editor-token-comment: #6c7872;
+  --editor-token-invalid: #b33b2c;
 }
 
 * {
