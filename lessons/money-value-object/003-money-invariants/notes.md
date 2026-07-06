@@ -1,0 +1,1 @@
+Teaches encapsulating fields behind validation constructors and accessors.

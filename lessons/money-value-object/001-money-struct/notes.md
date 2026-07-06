@@ -1,0 +1,1 @@
+Teaches the basic definition of a struct with private fields to model a domain concept.

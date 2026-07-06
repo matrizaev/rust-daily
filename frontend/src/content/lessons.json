@@ -1638,5 +1638,950 @@
       ]
     },
     "starterCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct EmailAddress {\n    value: String,\n}\n\nimpl EmailAddress {\n    pub fn as_str(&self) -> &str {\n        &self.value\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum EmailValidationError {\n    Empty,\n    MissingAt,\n    MissingDomain,\n}\n\nimpl TryFrom<&str> for EmailAddress {\n    type Error = EmailValidationError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        if value.is_empty() {\n            return Err(EmailValidationError::Empty);\n        }\n\n        let (_local, domain) = value\n            .split_once('@')\n            .ok_or(EmailValidationError::MissingAt)?;\n\n        if domain.is_empty() {\n            return Err(EmailValidationError::MissingDomain);\n        }\n\n        Ok(Self {\n            value: value.to_owned(),\n        })\n    }\n}\n\n// TODO: implement std::str::FromStr for EmailAddress.\n"
+  },
+  {
+    "schemaVersion": 2,
+    "id": "money-struct-001",
+    "arcId": "money-value-object",
+    "arcTitle": "Money and currency domain representation",
+    "order": 37,
+    "day": 1,
+    "arcLength": 6,
+    "title": "Define a basic Money struct",
+    "conceptId": "money-struct",
+    "difficulty": "easy",
+    "estimatedMinutes": 6,
+    "scenario": "The system needs to represent monetary amounts. To prevent bugs, we must group the numeric amount and the currency type together into a single struct.",
+    "instructions": "Define a public Money struct with private amount (u64) and currency (Currency) fields.",
+    "files": [
+      {
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub enum Currency {\r\n    Usd,\r\n    Eur,\r\n}\r\n\r\n// TODO: Define a public Money struct with private amount (u64) and currency (Currency) fields.\r\n"
+      },
+      {
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::Money;\r\n\r\n#[test]\r\nfn money_is_public() {\r\n    let _ = core::mem::size_of::<Money>();\r\n}\r\n"
+      }
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Define pub struct Money."
+      },
+      {
+        "level": 2,
+        "body": "The fields should be private: amount: u64 and currency: Currency. Do not add pub before them."
+      },
+      {
+        "level": 3,
+        "body": "A canonical solution defines the Money struct with private fields.",
+        "solutionCode": "pub struct Money {\n    amount: u64,\n    currency: Currency,\n}"
+      }
+    ],
+    "completionExplanation": "The Money struct encapsulates the amount and currency. Keeping the fields private ensures that we can control how money values are constructed and mutated.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "struct_fields",
+              "structName": "Money",
+              "requiredFields": [
+                {
+                  "name": "amount",
+                  "typeIncludes": [
+                    "u64"
+                  ]
+                },
+                {
+                  "name": "currency",
+                  "typeIncludes": [
+                    "Currency"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "source_includes",
+              "requiredSnippets": [
+                "struct Money"
+              ],
+              "forbiddenSnippets": [
+                "pub amount",
+                "pub currency"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "testFiles": [
+            {
+              "path": "tests/public.rs",
+              "content": "use rust_daily_lesson::Money;\r\n\r\n#[test]\r\nfn money_is_public() {\r\n    let _ = core::mem::size_of::<Money>();\r\n}\r\n"
+            }
+          ]
+        }
+      ]
+    },
+    "starterCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub enum Currency {\r\n    Usd,\r\n    Eur,\r\n}\r\n\r\n// TODO: Define a public Money struct with private amount (u64) and currency (Currency) fields.\r\n"
+  },
+  {
+    "schemaVersion": 2,
+    "id": "currency-enum-002",
+    "arcId": "money-value-object",
+    "arcTitle": "Money and currency domain representation",
+    "order": 38,
+    "day": 2,
+    "arcLength": 6,
+    "title": "Add supported Currency variants",
+    "conceptId": "currency-enum",
+    "difficulty": "easy",
+    "estimatedMinutes": 5,
+    "scenario": "The payment gateway is expanding. We need to support British Pounds (GBP) in our Currency representation.",
+    "instructions": "Add Gbp to the Currency enum.",
+    "files": [
+      {
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub enum Currency {\r\n    Usd,\r\n    Eur,\r\n    // TODO: Add British Pounds (Gbp)\r\n}\r\n"
+      },
+      {
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::Currency;\r\n\r\n#[test]\r\nfn currency_variants() {\r\n    assert_ne!(Currency::Usd, Currency::Eur);\r\n    assert_ne!(Currency::Eur, Currency::Gbp);\r\n}\r\n"
+      }
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Enums are updated by adding new variants separated by commas."
+      },
+      {
+        "level": 2,
+        "body": "Add Gbp as a variant to the Currency enum."
+      },
+      {
+        "level": 3,
+        "body": "A canonical solution adds Gbp to the enum.",
+        "solutionCode": "pub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}"
+      }
+    ],
+    "completionExplanation": "Updating the enum extends the supported domain concepts without altering the rest of the type structure.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "enum_unit_variants",
+              "enumName": "Currency",
+              "requiredVariants": [
+                "Usd",
+                "Eur",
+                "Gbp"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "testFiles": [
+            {
+              "path": "tests/public.rs",
+              "content": "use rust_daily_lesson::Currency;\r\n\r\n#[test]\r\nfn currency_variants() {\r\n    assert_ne!(Currency::Usd, Currency::Eur);\r\n    assert_ne!(Currency::Eur, Currency::Gbp);\r\n}\r\n"
+            }
+          ]
+        }
+      ]
+    },
+    "starterCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub enum Currency {\r\n    Usd,\r\n    Eur,\r\n    // TODO: Add British Pounds (Gbp)\r\n}\r\n"
+  },
+  {
+    "schemaVersion": 2,
+    "id": "money-invariants-003",
+    "arcId": "money-value-object",
+    "arcTitle": "Money and currency domain representation",
+    "order": 39,
+    "day": 3,
+    "arcLength": 6,
+    "title": "Control Money construction invariants",
+    "conceptId": "money-invariants",
+    "difficulty": "medium",
+    "estimatedMinutes": 8,
+    "scenario": "To ensure money values are created consistently, we need to hide the raw fields and expose a constructor that initializes the values, along with read-only accessors.",
+    "instructions": "Expose Money::new(amount: u64, currency: Currency) -> Self and accessor methods amount(&self) -> u64 and currency(&self) -> Currency.",
+    "files": [
+      {
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub enum Currency {\r\n    Usd,\r\n    Eur,\r\n}\r\n\r\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub struct Money {\r\n    amount: u64,\r\n    currency: Currency,\r\n}\r\n\r\nimpl Money {\r\n    // TODO: Implement new, amount, and currency methods.\r\n}\r\n"
+      },
+      {
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{Money, Currency};\r\n\r\n#[test]\r\nfn money_constructor_and_accessors() {\r\n    let m = Money::new(100, Currency::Usd);\r\n    assert_eq!(m.amount(), 100);\r\n    assert_eq!(m.currency(), Currency::Usd);\r\n}\r\n"
+      }
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Write impl Money block."
+      },
+      {
+        "level": 2,
+        "body": "new should be public and return Self. Accessors should return u64 and Currency respectively."
+      },
+      {
+        "level": 3,
+        "body": "A canonical solution implements new and getter methods.",
+        "solutionCode": "impl Money {\n    pub fn new(amount: u64, currency: Currency) -> Self {\n        Self { amount, currency }\n    }\n    pub fn amount(&self) -> u64 { self.amount }\n    pub fn currency(&self) -> Currency { self.currency }\n}"
+      }
+    ],
+    "completionExplanation": "Hiding fields and providing a constructor + accessors ensures read-only safety for users of the domain object.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "impl_method",
+              "implFor": "Money",
+              "methodName": "new",
+              "requiredSignatureIncludes": [
+                "pub fn new",
+                "amount: u64",
+                "currency: Currency",
+                "Self"
+              ]
+            },
+            {
+              "type": "impl_method",
+              "implFor": "Money",
+              "methodName": "amount",
+              "requiredSignatureIncludes": [
+                "pub fn amount",
+                "&self",
+                "u64"
+              ]
+            },
+            {
+              "type": "impl_method",
+              "implFor": "Money",
+              "methodName": "currency",
+              "requiredSignatureIncludes": [
+                "pub fn currency",
+                "&self",
+                "Currency"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "testFiles": [
+            {
+              "path": "tests/public.rs",
+              "content": "use rust_daily_lesson::{Money, Currency};\r\n\r\n#[test]\r\nfn money_constructor_and_accessors() {\r\n    let m = Money::new(100, Currency::Usd);\r\n    assert_eq!(m.amount(), 100);\r\n    assert_eq!(m.currency(), Currency::Usd);\r\n}\r\n"
+            }
+          ]
+        }
+      ]
+    },
+    "starterCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub enum Currency {\r\n    Usd,\r\n    Eur,\r\n}\r\n\r\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub struct Money {\r\n    amount: u64,\r\n    currency: Currency,\r\n}\r\n\r\nimpl Money {\r\n    // TODO: Implement new, amount, and currency methods.\r\n}\r\n"
+  },
+  {
+    "schemaVersion": 2,
+    "id": "money-add-004",
+    "arcId": "money-value-object",
+    "arcTitle": "Money and currency domain representation",
+    "order": 40,
+    "day": 4,
+    "arcLength": 6,
+    "title": "Implement Add for same Currency",
+    "conceptId": "money-add-impl",
+    "difficulty": "medium",
+    "estimatedMinutes": 8,
+    "scenario": "Callers need to add two money values together using the + operator. However, adding money of different currencies makes no sense and should panic, while adding the same currency should return the combined amount.",
+    "instructions": "Implement std::ops::Add for Money. If the currencies do not match, panic with a clear error message.",
+    "files": [
+      {
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "use std::ops::Add;\r\n\r\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub enum Currency {\r\n    Usd,\r\n    Eur,\r\n}\r\n\r\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub struct Money {\r\n    amount: u64,\r\n    currency: Currency,\r\n}\r\n\r\nimpl Money {\r\n    pub fn new(amount: u64, currency: Currency) -> Self {\r\n        Self { amount, currency }\r\n    }\r\n    pub fn amount(&self) -> u64 { self.amount }\r\n    pub fn currency(&self) -> Currency { self.currency }\r\n}\r\n\r\n// TODO: Implement std::ops::Add for Money.\r\n"
+      },
+      {
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{Money, Currency};\r\n\r\n#[test]\r\nfn adds_same_currency() {\r\n    let m1 = Money::new(100, Currency::Usd);\r\n    let m2 = Money::new(50, Currency::Usd);\r\n    let res = m1 + m2;\r\n    assert_eq!(res.amount(), 150);\r\n}\r\n\r\n#[test]\r\n#[should_panic]\r\nfn panics_different_currencies() {\r\n    let m1 = Money::new(100, Currency::Usd);\r\n    let m2 = Money::new(50, Currency::Eur);\r\n    let _ = m1 + m2;\r\n}\r\n"
+      }
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Import std::ops::Add, then implement Add for Money."
+      },
+      {
+        "level": 2,
+        "body": "Check currency equality first: if self.currency != rhs.currency { panic!(\"...\") }."
+      },
+      {
+        "level": 3,
+        "body": "A canonical solution implements Add with a currency mismatch check.",
+        "solutionCode": "impl Add for Money {\n    type Output = Self;\n    fn add(self, rhs: Self) -> Self::Output {\n        if self.currency != rhs.currency {\n            panic!(\"Cannot add money of different currencies\");\n        }\n        Self { amount: self.amount + rhs.amount, currency: self.currency }\n    }\n}"
+      }
+    ],
+    "completionExplanation": "Implementing Add enables operator overloading. Panicking on currency mismatch enforces domain rule safety at runtime.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "impl_trait_for_type",
+              "traitName": "Add",
+              "typeName": "Money"
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "testFiles": [
+            {
+              "path": "tests/public.rs",
+              "content": "use rust_daily_lesson::{Money, Currency};\r\n\r\n#[test]\r\nfn adds_same_currency() {\r\n    let m1 = Money::new(100, Currency::Usd);\r\n    let m2 = Money::new(50, Currency::Usd);\r\n    let res = m1 + m2;\r\n    assert_eq!(res.amount(), 150);\r\n}\r\n\r\n#[test]\r\n#[should_panic]\r\nfn panics_different_currencies() {\r\n    let m1 = Money::new(100, Currency::Usd);\r\n    let m2 = Money::new(50, Currency::Eur);\r\n    let _ = m1 + m2;\r\n}\r\n"
+            }
+          ]
+        }
+      ]
+    },
+    "starterCode": "use std::ops::Add;\r\n\r\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub enum Currency {\r\n    Usd,\r\n    Eur,\r\n}\r\n\r\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub struct Money {\r\n    amount: u64,\r\n    currency: Currency,\r\n}\r\n\r\nimpl Money {\r\n    pub fn new(amount: u64, currency: Currency) -> Self {\r\n        Self { amount, currency }\r\n    }\r\n    pub fn amount(&self) -> u64 { self.amount }\r\n    pub fn currency(&self) -> Currency { self.currency }\r\n}\r\n\r\n// TODO: Implement std::ops::Add for Money.\r\n"
+  },
+  {
+    "schemaVersion": 2,
+    "id": "money-tryfrom-decimal-005",
+    "arcId": "money-value-object",
+    "arcTitle": "Money and currency domain representation",
+    "order": 41,
+    "day": 5,
+    "arcLength": 6,
+    "title": "Convert a float string value to Money",
+    "conceptId": "money-try-from-decimal",
+    "difficulty": "medium",
+    "estimatedMinutes": 8,
+    "scenario": "Forms pass pricing as float-like strings (e.g. \"19.99\"). To avoid float rounding bugs, we must convert these strings into our integer-based Money representation fallibly.",
+    "instructions": "Implement TryFrom<&str> for Money. Assume the format is a decimal number in USD. Reject invalid formats with MoneyParseError.",
+    "files": [
+      {
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub enum Currency {\r\n    Usd,\r\n}\r\n\r\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub struct Money {\r\n    amount: u64,\r\n    currency: Currency,\r\n}\r\n\r\nimpl Money {\r\n    pub fn new(amount: u64, currency: Currency) -> Self {\r\n        Self { amount, currency }\r\n    }\r\n    pub fn amount(&self) -> u64 { self.amount }\r\n    pub fn currency(&self) -> Currency { self.currency }\r\n}\r\n\r\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub enum MoneyParseError {\r\n    InvalidFormat,\r\n}\r\n\r\n// TODO: Implement TryFrom<&str> for Money with USD currency.\r\n"
+      },
+      {
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{Money, Currency, MoneyParseError};\r\n\r\n#[test]\r\nfn parses_valid_decimals() {\r\n    assert_eq!(Money::try_from(\"19.99\"), Ok(Money::new(1999, Currency::Usd)));\r\n    assert_eq!(Money::try_from(\"5\"), Ok(Money::new(500, Currency::Usd)));\r\n    assert_eq!(Money::try_from(\"5.2\"), Ok(Money::new(520, Currency::Usd)));\r\n}\r\n\r\n#[test]\r\nfn rejects_invalid_decimals() {\r\n    assert_eq!(Money::try_from(\"abc\"), Err(MoneyParseError::InvalidFormat));\r\n    assert_eq!(Money::try_from(\"12.345\"), Err(MoneyParseError::InvalidFormat));\r\n    assert_eq!(Money::try_from(\"12.3.4\"), Err(MoneyParseError::InvalidFormat));\r\n}\r\n"
+      }
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Split the string on '.' to process the major and minor parts."
+      },
+      {
+        "level": 2,
+        "body": "Convert major to cents (major * 100) and parse cents. If single-digit cents (like .2), multiply by 10."
+      },
+      {
+        "level": 3,
+        "body": "A canonical solution parses string and validates parts.",
+        "solutionCode": "impl TryFrom<&str> for Money {\n    type Error = MoneyParseError;\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        // ... parsing logic ...\n    }\n}"
+      }
+    ],
+    "completionExplanation": "Converting string representations into integer-based pennies prevents classic float inaccuracy bugs.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "impl_trait_for_type",
+              "traitName": "TryFrom<&str>",
+              "typeName": "Money"
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "testFiles": [
+            {
+              "path": "tests/public.rs",
+              "content": "use rust_daily_lesson::{Money, Currency, MoneyParseError};\r\n\r\n#[test]\r\nfn parses_valid_decimals() {\r\n    assert_eq!(Money::try_from(\"19.99\"), Ok(Money::new(1999, Currency::Usd)));\r\n    assert_eq!(Money::try_from(\"5\"), Ok(Money::new(500, Currency::Usd)));\r\n    assert_eq!(Money::try_from(\"5.2\"), Ok(Money::new(520, Currency::Usd)));\r\n}\r\n\r\n#[test]\r\nfn rejects_invalid_decimals() {\r\n    assert_eq!(Money::try_from(\"abc\"), Err(MoneyParseError::InvalidFormat));\r\n    assert_eq!(Money::try_from(\"12.345\"), Err(MoneyParseError::InvalidFormat));\r\n    assert_eq!(Money::try_from(\"12.3.4\"), Err(MoneyParseError::InvalidFormat));\r\n}\r\n"
+            }
+          ]
+        }
+      ]
+    },
+    "starterCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub enum Currency {\r\n    Usd,\r\n}\r\n\r\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub struct Money {\r\n    amount: u64,\r\n    currency: Currency,\r\n}\r\n\r\nimpl Money {\r\n    pub fn new(amount: u64, currency: Currency) -> Self {\r\n        Self { amount, currency }\r\n    }\r\n    pub fn amount(&self) -> u64 { self.amount }\r\n    pub fn currency(&self) -> Currency { self.currency }\r\n}\r\n\r\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub enum MoneyParseError {\r\n    InvalidFormat,\r\n}\r\n\r\n// TODO: Implement TryFrom<&str> for Money with USD currency.\r\n"
+  },
+  {
+    "schemaVersion": 2,
+    "id": "money-display-006",
+    "arcId": "money-value-object",
+    "arcTitle": "Money and currency domain representation",
+    "order": 42,
+    "day": 6,
+    "arcLength": 6,
+    "title": "Implement Display for Money",
+    "conceptId": "money-display-format",
+    "difficulty": "easy",
+    "estimatedMinutes": 6,
+    "scenario": "The UI needs to render formatted prices like $19.99 or €5.00 correctly.",
+    "instructions": "Implement std::fmt::Display for Money. Use '$' for USD and '€' for EUR, and output cents formatted to 2 decimal places.",
+    "files": [
+      {
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "use std::fmt;\r\n\r\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub enum Currency {\r\n    Usd,\r\n    Eur,\r\n}\r\n\r\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub struct Money {\r\n    amount: u64,\r\n    currency: Currency,\r\n}\r\n\r\nimpl Money {\r\n    pub fn new(amount: u64, currency: Currency) -> Self {\r\n        Self { amount, currency }\r\n    }\r\n    pub fn amount(&self) -> u64 { self.amount }\r\n    pub fn currency(&self) -> Currency { self.currency }\r\n}\r\n\r\n// TODO: Implement std::fmt::Display for Money.\r\n"
+      },
+      {
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{Money, Currency};\r\n\r\n#[test]\r\nfn formats_correctly() {\r\n    assert_eq!(Money::new(1999, Currency::Usd).to_string(), \"$19.99\");\r\n    assert_eq!(Money::new(500, Currency::Eur).to_string(), \"€5.00\");\r\n    assert_eq!(Money::new(5, Currency::Usd).to_string(), \"$0.05\");\r\n}\r\n"
+      }
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Write impl fmt::Display for Money block."
+      },
+      {
+        "level": 2,
+        "body": "Extract major amount (/ 100) and minor cents (% 100). Use write! with Symbol, major, and padded minor :02."
+      },
+      {
+        "level": 3,
+        "body": "A canonical solution prints currency symbol and decimal formatting.",
+        "solutionCode": "impl fmt::Display for Money {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        let symbol = match self.currency { Currency::Usd => \"$\", Currency::Eur => \"€\" };\n        write!(f, \"{}{}.{:02}\", symbol, self.amount / 100, self.amount % 100)\n    }\n}"
+      }
+    ],
+    "completionExplanation": "Implementing Display gives domain objects formatting capabilities without exposing private data fields.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "impl_trait_for_type",
+              "traitName": "std::fmt::Display",
+              "typeName": "Money"
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "testFiles": [
+            {
+              "path": "tests/public.rs",
+              "content": "use rust_daily_lesson::{Money, Currency};\r\n\r\n#[test]\r\nfn formats_correctly() {\r\n    assert_eq!(Money::new(1999, Currency::Usd).to_string(), \"$19.99\");\r\n    assert_eq!(Money::new(500, Currency::Eur).to_string(), \"€5.00\");\r\n    assert_eq!(Money::new(5, Currency::Usd).to_string(), \"$0.05\");\r\n}\r\n"
+            }
+          ]
+        }
+      ]
+    },
+    "starterCode": "use std::fmt;\r\n\r\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub enum Currency {\r\n    Usd,\r\n    Eur,\r\n}\r\n\r\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub struct Money {\r\n    amount: u64,\r\n    currency: Currency,\r\n}\r\n\r\nimpl Money {\r\n    pub fn new(amount: u64, currency: Currency) -> Self {\r\n        Self { amount, currency }\r\n    }\r\n    pub fn amount(&self) -> u64 { self.amount }\r\n    pub fn currency(&self) -> Currency { self.currency }\r\n}\r\n\r\n// TODO: Implement std::fmt::Display for Money.\r\n"
+  },
+  {
+    "schemaVersion": 2,
+    "id": "port-nonzero-001",
+    "arcId": "host-port-config",
+    "arcTitle": "Host and port configuration modeling",
+    "order": 43,
+    "day": 1,
+    "arcLength": 6,
+    "title": "Use NonZeroU16 for Port representation",
+    "conceptId": "port-nonzero",
+    "difficulty": "easy",
+    "estimatedMinutes": 6,
+    "scenario": "A port of 0 is invalid for our application. We can leverage Rust's standard library NonZeroU16 to enforce this rule at the compiler level.",
+    "instructions": "Define a Port struct wrapping std::num::NonZeroU16 privately. Expose a constructor new returning an Option<Self>.",
+    "files": [
+      {
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "use std::num::NonZeroU16;\r\n\r\n// TODO: Define Port struct wrapping NonZeroU16 privately.\r\n\r\nimpl Port {\r\n    // TODO: Expose Port::new(val: u16) -> Option<Self>\r\n}\r\n"
+      },
+      {
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::Port;\r\n\r\n#[test]\r\nfn port_safety() {\r\n    assert!(Port::new(8080).is_some());\r\n    assert!(Port::new(0).is_none());\r\n}\r\n"
+      }
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Use a tuple struct: pub struct Port(NonZeroU16);"
+      },
+      {
+        "level": 2,
+        "body": "NonZeroU16::new(val) returns Option<NonZeroU16>. Map this into Port using .map(Self)."
+      },
+      {
+        "level": 3,
+        "body": "A canonical solution wraps NonZeroU16 in a tuple struct.",
+        "solutionCode": "pub struct Port(NonZeroU16);\nimpl Port {\n    pub fn new(val: u16) -> Option<Self> {\n        NonZeroU16::new(val).map(Self)\n    }\n}"
+      }
+    ],
+    "completionExplanation": "Using NonZeroU16 prevents 0 values compile-time/construction-time, eliminating validation checks downstream.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "tuple_struct_fields",
+              "structName": "Port",
+              "requiredTypes": [
+                "NonZeroU16"
+              ]
+            },
+            {
+              "type": "impl_method",
+              "implFor": "Port",
+              "methodName": "new",
+              "requiredSignatureIncludes": [
+                "pub fn new",
+                "val: u16",
+                "Option<Self>"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "testFiles": [
+            {
+              "path": "tests/public.rs",
+              "content": "use rust_daily_lesson::Port;\r\n\r\n#[test]\r\nfn port_safety() {\r\n    assert!(Port::new(8080).is_some());\r\n    assert!(Port::new(0).is_none());\r\n}\r\n"
+            }
+          ]
+        }
+      ]
+    },
+    "starterCode": "use std::num::NonZeroU16;\r\n\r\n// TODO: Define Port struct wrapping NonZeroU16 privately.\r\n\r\nimpl Port {\r\n    // TODO: Expose Port::new(val: u16) -> Option<Self>\r\n}\r\n"
+  },
+  {
+    "schemaVersion": 2,
+    "id": "host-domain-002",
+    "arcId": "host-port-config",
+    "arcTitle": "Host and port configuration modeling",
+    "order": 44,
+    "day": 2,
+    "arcLength": 6,
+    "title": "Define Host domain value object",
+    "conceptId": "host-domain",
+    "difficulty": "easy",
+    "estimatedMinutes": 5,
+    "scenario": "Hosts are string representations. We want to avoid using raw strings to represent hosts, so we'll wrap it in a custom type.",
+    "instructions": "Define a Host struct with a private String field. Expose a Host::as_str(&self) -> &str method.",
+    "files": [
+      {
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "// TODO: Define Host struct with private String field.\r\n\r\nimpl Host {\r\n    pub fn new_unchecked(val: String) -> Self {\r\n        Self(val)\r\n    }\r\n\r\n    // TODO: Expose as_str method.\r\n}\r\n"
+      },
+      {
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::Host;\r\n\r\n#[test]\r\nfn host_representation() {\r\n    let h = Host::new_unchecked(\"localhost\".to_owned());\r\n    assert_eq!(h.as_str(), \"localhost\");\r\n}\r\n"
+      }
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Use a tuple struct: pub struct Host(String);"
+      },
+      {
+        "level": 2,
+        "body": "as_str should return &self.0 as a borrow string slice &str."
+      },
+      {
+        "level": 3,
+        "body": "A canonical solution wraps String and exposes a borrow accessor.",
+        "solutionCode": "pub struct Host(String);\nimpl Host {\n    pub fn as_str(&self) -> &str { &self.0 }\n}"
+      }
+    ],
+    "completionExplanation": "Wrapping primitive values prevents type mix-ups (like passing a email string as a host).",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "impl_method",
+              "implFor": "Host",
+              "methodName": "as_str",
+              "requiredSignatureIncludes": [
+                "&self",
+                "&str"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "testFiles": [
+            {
+              "path": "tests/public.rs",
+              "content": "use rust_daily_lesson::Host;\r\n\r\n#[test]\r\nfn host_representation() {\r\n    let h = Host::new_unchecked(\"localhost\".to_owned());\r\n    assert_eq!(h.as_str(), \"localhost\");\r\n}\r\n"
+            }
+          ]
+        }
+      ]
+    },
+    "starterCode": "// TODO: Define Host struct with private String field.\r\n\r\nimpl Host {\r\n    pub fn new_unchecked(val: String) -> Self {\r\n        Self(val)\r\n    }\r\n\r\n    // TODO: Expose as_str method.\r\n}\r\n"
+  },
+  {
+    "schemaVersion": 2,
+    "id": "host-validation-003",
+    "arcId": "host-port-config",
+    "arcTitle": "Host and port configuration modeling",
+    "order": 45,
+    "day": 3,
+    "arcLength": 6,
+    "title": "Validate Host names with TryFrom",
+    "conceptId": "host-validation",
+    "difficulty": "medium",
+    "estimatedMinutes": 8,
+    "scenario": "A host must be valid. We want to reject empty hosts or hosts containing spaces.",
+    "instructions": "Implement TryFrom<String> for Host. Return HostValidationError if the string is empty or contains spaces.",
+    "files": [
+      {
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\r\npub struct Host(String);\r\n\r\nimpl Host {\r\n    pub fn as_str(&self) -> &str {\r\n        &self.0\r\n    }\r\n}\r\n\r\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub enum HostValidationError {\r\n    Empty,\r\n    InvalidCharacters,\r\n}\r\n\r\n// TODO: Implement TryFrom<String> for Host.\r\n"
+      },
+      {
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{Host, HostValidationError};\r\n\r\n#[test]\r\nfn host_try_from() {\r\n    assert_eq!(Host::try_from(\"localhost\".to_owned()).map(|h| h.as_str().to_owned()), Ok(\"localhost\".to_owned()));\r\n    assert_eq!(Host::try_from(\"\".to_owned()), Err(HostValidationError::Empty));\r\n    assert_eq!(Host::try_from(\"bad host\".to_owned()), Err(HostValidationError::InvalidCharacters));\r\n}\r\n"
+      }
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Implement TryFrom<String> for Host and set type Error = HostValidationError;"
+      },
+      {
+        "level": 2,
+        "body": "Use val.is_empty() and val.contains(' ') to perform checks."
+      },
+      {
+        "level": 3,
+        "body": "A canonical solution validates string parameters fallibly.",
+        "solutionCode": "impl TryFrom<String> for Host {\n    type Error = HostValidationError;\n    fn try_from(val: String) -> Result<Self, Self::Error> {\n        if val.is_empty() { return Err(HostValidationError::Empty); }\n        if val.contains(' ') { return Err(HostValidationError::InvalidCharacters); }\n        Ok(Self(val))\n    }\n}"
+      }
+    ],
+    "completionExplanation": "Implementing TryFrom ensures we cannot construct invalid Host objects, maintaining structural boundaries.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "impl_trait_for_type",
+              "traitName": "TryFrom<String>",
+              "typeName": "Host"
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "testFiles": [
+            {
+              "path": "tests/public.rs",
+              "content": "use rust_daily_lesson::{Host, HostValidationError};\r\n\r\n#[test]\r\nfn host_try_from() {\r\n    assert_eq!(Host::try_from(\"localhost\".to_owned()).map(|h| h.as_str().to_owned()), Ok(\"localhost\".to_owned()));\r\n    assert_eq!(Host::try_from(\"\".to_owned()), Err(HostValidationError::Empty));\r\n    assert_eq!(Host::try_from(\"bad host\".to_owned()), Err(HostValidationError::InvalidCharacters));\r\n}\r\n"
+            }
+          ]
+        }
+      ]
+    },
+    "starterCode": "#[derive(Debug, Clone, PartialEq, Eq)]\r\npub struct Host(String);\r\n\r\nimpl Host {\r\n    pub fn as_str(&self) -> &str {\r\n        &self.0\r\n    }\r\n}\r\n\r\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub enum HostValidationError {\r\n    Empty,\r\n    InvalidCharacters,\r\n}\r\n\r\n// TODO: Implement TryFrom<String> for Host.\r\n"
+  },
+  {
+    "schemaVersion": 2,
+    "id": "host-port-struct-004",
+    "arcId": "host-port-config",
+    "arcTitle": "Host and port configuration modeling",
+    "order": 46,
+    "day": 4,
+    "arcLength": 6,
+    "title": "Compose Host and Port into Endpoint",
+    "conceptId": "host-port-composite",
+    "difficulty": "medium",
+    "estimatedMinutes": 8,
+    "scenario": "Hosts and Ports travel together as a composite network endpoint.",
+    "instructions": "Define a public Endpoint struct with public host (type Host) and port (type Port) fields. Also provide a constructor Endpoint::new(host: Host, port: Port) -> Self.",
+    "files": [
+      {
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "use std::num::NonZeroU16;\r\n\r\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub struct Port(NonZeroU16);\r\n\r\nimpl Port {\r\n    pub fn new(val: u16) -> Option<Self> {\r\n        NonZeroU16::new(val).map(Self)\r\n    }\r\n}\r\n\r\n#[derive(Debug, Clone, PartialEq, Eq)]\r\npub struct Host(String);\r\n\r\nimpl Host {\r\n    pub fn new_unchecked(val: String) -> Self {\r\n        Self(val)\r\n    }\r\n}\r\n\r\n// TODO: Define Endpoint struct and constructor.\r\n"
+      },
+      {
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{Endpoint, Host, Port};\r\n\r\n#[test]\r\nfn endpoint_composites() {\r\n    let h = Host::new_unchecked(\"127.0.0.1\".to_owned());\r\n    let p = Port::new(80).unwrap();\r\n    let e = Endpoint::new(h.clone(), p);\r\n    assert_eq!(e.host, h);\r\n    assert_eq!(e.port, p);\r\n}\r\n"
+      }
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Define pub struct Endpoint with fields: pub host: Host and pub port: Port."
+      },
+      {
+        "level": 2,
+        "body": "Implement Endpoint::new that constructs this composite type."
+      },
+      {
+        "level": 3,
+        "body": "A canonical solution constructs composite Endpoint structs.",
+        "solutionCode": "pub struct Endpoint {\n    pub host: Host,\n    pub port: Port,\n}\nimpl Endpoint {\n    pub fn new(host: Host, port: Port) -> Self {\n        Self { host, port }\n    }\n}"
+      }
+    ],
+    "completionExplanation": "Composing simple types makes complex domain relationships explicit and safe.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "struct_fields",
+              "structName": "Endpoint",
+              "requiredFields": [
+                {
+                  "name": "host",
+                  "typeIncludes": [
+                    "Host"
+                  ]
+                },
+                {
+                  "name": "port",
+                  "typeIncludes": [
+                    "Port"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "impl_method",
+              "implFor": "Endpoint",
+              "methodName": "new",
+              "requiredSignatureIncludes": [
+                "pub fn new",
+                "host: Host",
+                "port: Port",
+                "Self"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "testFiles": [
+            {
+              "path": "tests/public.rs",
+              "content": "use rust_daily_lesson::{Endpoint, Host, Port};\r\n\r\n#[test]\r\nfn endpoint_composites() {\r\n    let h = Host::new_unchecked(\"127.0.0.1\".to_owned());\r\n    let p = Port::new(80).unwrap();\r\n    let e = Endpoint::new(h.clone(), p);\r\n    assert_eq!(e.host, h);\r\n    assert_eq!(e.port, p);\r\n}\r\n"
+            }
+          ]
+        }
+      ]
+    },
+    "starterCode": "use std::num::NonZeroU16;\r\n\r\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub struct Port(NonZeroU16);\r\n\r\nimpl Port {\r\n    pub fn new(val: u16) -> Option<Self> {\r\n        NonZeroU16::new(val).map(Self)\r\n    }\r\n}\r\n\r\n#[derive(Debug, Clone, PartialEq, Eq)]\r\npub struct Host(String);\r\n\r\nimpl Host {\r\n    pub fn new_unchecked(val: String) -> Self {\r\n        Self(val)\r\n    }\r\n}\r\n\r\n// TODO: Define Endpoint struct and constructor.\r\n"
+  },
+  {
+    "schemaVersion": 2,
+    "id": "endpoint-default-005",
+    "arcId": "host-port-config",
+    "arcTitle": "Host and port configuration modeling",
+    "order": 47,
+    "day": 5,
+    "arcLength": 6,
+    "title": "Give Endpoint sensible local defaults",
+    "conceptId": "endpoint-default",
+    "difficulty": "easy",
+    "estimatedMinutes": 6,
+    "scenario": "Most service connections locally defaults to host \"localhost\" and port 8080.",
+    "instructions": "Implement Default for Endpoint using these defaults.",
+    "files": [
+      {
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "use std::num::NonZeroU16;\r\n\r\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub struct Port(NonZeroU16);\r\n\r\nimpl Port {\r\n    pub fn new(val: u16) -> Option<Self> {\r\n        NonZeroU16::new(val).map(Self)\r\n    }\r\n}\r\n\r\n#[derive(Debug, Clone, PartialEq, Eq)]\r\npub struct Host(String);\r\n\r\nimpl Host {\r\n    pub fn new_unchecked(val: String) -> Self {\r\n        Self(val)\r\n    }\r\n}\r\n\r\n#[derive(Debug, Clone, PartialEq, Eq)]\r\npub struct Endpoint {\r\n    pub host: Host,\r\n    pub port: Port,\r\n}\r\n\r\n// TODO: Implement Default for Endpoint.\r\n"
+      },
+      {
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{Endpoint, Host, Port};\r\n\r\n#[test]\r\nfn endpoint_default() {\r\n    let def = Endpoint::default();\r\n    assert_eq!(def.host, Host::new_unchecked(\"localhost\".to_owned()));\r\n    assert_eq!(def.port, Port::new(8080).unwrap());\r\n}\r\n"
+      }
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Implement Default for Endpoint and implement fn default() -> Self."
+      },
+      {
+        "level": 2,
+        "body": "Use Host::new_unchecked(\"localhost\".to_owned()) and Port::new(8080).unwrap() inside default()."
+      },
+      {
+        "level": 3,
+        "body": "A canonical solution provides default setups.",
+        "solutionCode": "impl Default for Endpoint {\n    fn default() -> Self {\n        Self {\n            host: Host::new_unchecked(\"localhost\".to_owned()),\n            port: Port::new(8080).unwrap(),\n        }\n    }\n}"
+      }
+    ],
+    "completionExplanation": "Implementing Default facilitates rapid testing environments with predictable outcomes.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "impl_trait_for_type",
+              "traitName": "Default",
+              "typeName": "Endpoint"
+            }
+          ]
+        },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "content": "use rust_daily_lesson::{Endpoint, Host, Port};\r\n\r\n#[test]\r\nfn endpoint_default() {\r\n    let def = Endpoint::default();\r\n    assert_eq!(def.host, Host::new_unchecked(\"localhost\".to_owned()));\r\n    assert_eq!(def.port, Port::new(8080).unwrap());\r\n}\r\n"
+          }
+        ]
+      }
+    ]
+  },
+    "starterCode": "use std::num::NonZeroU16;\r\n\r\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub struct Port(NonZeroU16);\r\n\r\nimpl Port {\r\n    pub fn new(val: u16) -> Option<Self> {\r\n        NonZeroU16::new(val).map(Self)\r\n    }\r\n}\r\n\r\n#[derive(Debug, Clone, PartialEq, Eq)]\r\npub struct Host(String);\r\n\r\nimpl Host {\r\n    pub fn new_unchecked(val: String) -> Self {\r\n        Self(val)\r\n    }\r\n}\r\n\r\n#[derive(Debug, Clone, PartialEq, Eq)]\r\npub struct Endpoint {\r\n    pub host: Host,\r\n    pub port: Port,\r\n}\r\n\r\n// TODO: Implement Default for Endpoint.\r\n"
+  },
+  {
+    "schemaVersion": 2,
+    "id": "endpoint-display-006",
+    "arcId": "host-port-config",
+    "arcTitle": "Host and port configuration modeling",
+    "order": 48,
+    "day": 6,
+    "arcLength": 6,
+    "title": "Implement Display for Endpoint",
+    "conceptId": "endpoint-display",
+    "difficulty": "easy",
+    "estimatedMinutes": 6,
+    "scenario": "Connecting logs and config outputs need endpoint formatting in host:port string style.",
+    "instructions": "Implement Display for Endpoint formatting it as host:port.",
+    "files": [
+      {
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "use std::fmt;\r\nuse std::num::NonZeroU16;\r\n\r\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub struct Port(NonZeroU16);\r\n\r\nimpl Port {\r\n    pub fn new(val: u16) -> Option<Self> {\r\n        NonZeroU16::new(val).map(Self)\r\n    }\r\n    pub fn value(&self) -> u16 {\r\n        self.0.get()\r\n    }\r\n}\r\n\r\n#[derive(Debug, Clone, PartialEq, Eq)]\r\npub struct Host(String);\r\n\r\nimpl Host {\r\n    pub fn new_unchecked(val: String) -> Self {\r\n        Self(val)\r\n    }\r\n    pub fn as_str(&self) -> &str {\r\n        &self.0\r\n    }\r\n}\r\n\r\n#[derive(Debug, Clone, PartialEq, Eq)]\r\npub struct Endpoint {\r\n    pub host: Host,\r\n    pub port: Port,\r\n}\r\n\r\n// TODO: Implement std::fmt::Display for Endpoint.\r\n"
+      },
+      {
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{Endpoint, Host, Port};\r\n\r\n#[test]\r\nfn endpoint_display() {\r\n    let e = Endpoint {\r\n        host: Host::new_unchecked(\"127.0.0.1\".to_owned()),\r\n        port: Port::new(80).unwrap(),\r\n    };\r\n    assert_eq!(e.to_string(), \"127.0.0.1:80\");\r\n}\r\n"
+      }
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Implement std::fmt::Display for Endpoint."
+      },
+      {
+        "level": 2,
+        "body": "Use write!(f, \"{}:{}\", self.host.as_str(), self.port.value()) inside fmt."
+      },
+      {
+        "level": 3,
+        "body": "A canonical solution prints host:port formatting.",
+        "solutionCode": "impl fmt::Display for Endpoint {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        write!(f, \"{}:{}\", self.host.as_str(), self.port.value())\n    }\n}"
+      }
+    ],
+    "completionExplanation": "Implementing Display on a composite value object maps internal relationships to consistent strings.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "impl_trait_for_type",
+              "traitName": "std::fmt::Display",
+              "typeName": "Endpoint"
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "testFiles": [
+            {
+              "path": "tests/public.rs",
+              "content": "use rust_daily_lesson::{Endpoint, Host, Port};\r\n\r\n#[test]\r\nfn endpoint_display() {\r\n    let e = Endpoint {\r\n        host: Host::new_unchecked(\"127.0.0.1\".to_owned()),\r\n        port: Port::new(80).unwrap(),\r\n    };\r\n    assert_eq!(e.to_string(), \"127.0.0.1:80\");\r\n}\r\n"
+            }
+          ]
+        }
+      ]
+    },
+    "starterCode": "use std::fmt;\r\nuse std::num::NonZeroU16;\r\n\r\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub struct Port(NonZeroU16);\r\n\r\nimpl Port {\r\n    pub fn new(val: u16) -> Option<Self> {\r\n        NonZeroU16::new(val).map(Self)\r\n    }\r\n    pub fn value(&self) -> u16 {\r\n        self.0.get()\r\n    }\r\n}\r\n\r\n#[derive(Debug, Clone, PartialEq, Eq)]\r\npub struct Host(String);\r\n\r\nimpl Host {\r\n    pub fn new_unchecked(val: String) -> Self {\r\n        Self(val)\r\n    }\r\n    pub fn as_str(&self) -> &str {\r\n        &self.0\r\n    }\r\n}\r\n\r\n#[derive(Debug, Clone, PartialEq, Eq)]\r\npub struct Endpoint {\r\n    pub host: Host,\r\n    pub port: Port,\r\n}\r\n\r\n// TODO: Implement std::fmt::Display for Endpoint.\r\n"
   }
 ]

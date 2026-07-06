@@ -1,0 +1,33 @@
+use std::fmt;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Currency {
+    Usd,
+    Eur,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Money {
+    amount: u64,
+    currency: Currency,
+}
+
+impl Money {
+    pub fn new(amount: u64, currency: Currency) -> Self {
+        Self { amount, currency }
+    }
+    pub fn amount(&self) -> u64 { self.amount }
+    pub fn currency(&self) -> Currency { self.currency }
+}
+
+impl fmt::Display for Money {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let symbol = match self.currency {
+            Currency::Usd => "$",
+            Currency::Eur => "€",
+        };
+        let major = self.amount / 100;
+        let minor = self.amount % 100;
+        write!(f, "{}{}.{:02}", symbol, major, minor)
+    }
+}

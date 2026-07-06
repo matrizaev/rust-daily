@@ -1,0 +1,1 @@
+Teaches implementing Display for a composite configuration model.

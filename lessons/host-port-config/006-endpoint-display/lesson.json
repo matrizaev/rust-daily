@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 2,
+  "id": "endpoint-display-006",
+  "arcId": "host-port-config",
+  "arcTitle": "Host and port configuration modeling",
+  "order": 48,
+  "day": 6,
+  "arcLength": 6,
+  "title": "Implement Display for Endpoint",
+  "conceptId": "endpoint-display",
+  "difficulty": "easy",
+  "estimatedMinutes": 6,
+  "scenario": "Connecting logs and config outputs need endpoint formatting in host:port string style.",
+  "instructions": "Implement Display for Endpoint formatting it as host:port.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Implement std::fmt::Display for Endpoint."
+    },
+    {
+      "level": 2,
+      "body": "Use write!(f, \"{}:{}\", self.host.as_str(), self.port.value()) inside fmt."
+    },
+    {
+      "level": 3,
+      "body": "A canonical solution prints host:port formatting.",
+      "solutionCode": "impl fmt::Display for Endpoint {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        write!(f, \"{}:{}\", self.host.as_str(), self.port.value())\n    }\n}"
+    }
+  ],
+  "completionExplanation": "Implementing Display on a composite value object maps internal relationships to consistent strings.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "impl_trait_for_type",
+            "traitName": "std::fmt::Display",
+            "typeName": "Endpoint"
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

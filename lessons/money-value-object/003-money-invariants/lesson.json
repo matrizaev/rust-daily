@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 2,
+  "id": "money-invariants-003",
+  "arcId": "money-value-object",
+  "arcTitle": "Money and currency domain representation",
+  "order": 39,
+  "day": 3,
+  "arcLength": 6,
+  "title": "Control Money construction invariants",
+  "conceptId": "money-invariants",
+  "difficulty": "medium",
+  "estimatedMinutes": 8,
+  "scenario": "To ensure money values are created consistently, we need to hide the raw fields and expose a constructor that initializes the values, along with read-only accessors.",
+  "instructions": "Expose Money::new(amount: u64, currency: Currency) -> Self and accessor methods amount(&self) -> u64 and currency(&self) -> Currency.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Write impl Money block."
+    },
+    {
+      "level": 2,
+      "body": "new should be public and return Self. Accessors should return u64 and Currency respectively."
+    },
+    {
+      "level": 3,
+      "body": "A canonical solution implements new and getter methods.",
+      "solutionCode": "impl Money {\n    pub fn new(amount: u64, currency: Currency) -> Self {\n        Self { amount, currency }\n    }\n    pub fn amount(&self) -> u64 { self.amount }\n    pub fn currency(&self) -> Currency { self.currency }\n}"
+    }
+  ],
+  "completionExplanation": "Hiding fields and providing a constructor + accessors ensures read-only safety for users of the domain object.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "impl_method",
+            "implFor": "Money",
+            "methodName": "new",
+            "requiredSignatureIncludes": [
+              "pub fn new",
+              "amount: u64",
+              "currency: Currency",
+              "Self"
+            ]
+          },
+          {
+            "type": "impl_method",
+            "implFor": "Money",
+            "methodName": "amount",
+            "requiredSignatureIncludes": [
+              "pub fn amount",
+              "&self",
+              "u64"
+            ]
+          },
+          {
+            "type": "impl_method",
+            "implFor": "Money",
+            "methodName": "currency",
+            "requiredSignatureIncludes": [
+              "pub fn currency",
+              "&self",
+              "Currency"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

@@ -13,6 +13,11 @@ export type StructuralCheck =
       }>;
     }
   | {
+      type: "tuple_struct_fields";
+      structName: string;
+      requiredTypes: string[];
+    }
+  | {
       type: "impl_trait_for_type";
       traitName: string;
       typeName: string;

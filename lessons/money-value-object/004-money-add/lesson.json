@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 2,
+  "id": "money-add-004",
+  "arcId": "money-value-object",
+  "arcTitle": "Money and currency domain representation",
+  "order": 40,
+  "day": 4,
+  "arcLength": 6,
+  "title": "Implement Add for same Currency",
+  "conceptId": "money-add-impl",
+  "difficulty": "medium",
+  "estimatedMinutes": 8,
+  "scenario": "Callers need to add two money values together using the + operator. However, adding money of different currencies makes no sense and should panic, while adding the same currency should return the combined amount.",
+  "instructions": "Implement std::ops::Add for Money. If the currencies do not match, panic with a clear error message.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Import std::ops::Add, then implement Add for Money."
+    },
+    {
+      "level": 2,
+      "body": "Check currency equality first: if self.currency != rhs.currency { panic!(\"...\") }."
+    },
+    {
+      "level": 3,
+      "body": "A canonical solution implements Add with a currency mismatch check.",
+      "solutionCode": "impl Add for Money {\n    type Output = Self;\n    fn add(self, rhs: Self) -> Self::Output {\n        if self.currency != rhs.currency {\n            panic!(\"Cannot add money of different currencies\");\n        }\n        Self { amount: self.amount + rhs.amount, currency: self.currency }\n    }\n}"
+    }
+  ],
+  "completionExplanation": "Implementing Add enables operator overloading. Panicking on currency mismatch enforces domain rule safety at runtime.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "impl_trait_for_type",
+            "traitName": "Add",
+            "typeName": "Money"
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

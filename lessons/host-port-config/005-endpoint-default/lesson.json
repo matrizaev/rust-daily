@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 2,
+  "id": "endpoint-default-005",
+  "arcId": "host-port-config",
+  "arcTitle": "Host and port configuration modeling",
+  "order": 47,
+  "day": 5,
+  "arcLength": 6,
+  "title": "Give Endpoint sensible local defaults",
+  "conceptId": "endpoint-default",
+  "difficulty": "easy",
+  "estimatedMinutes": 6,
+  "scenario": "Most service connections locally defaults to host \"localhost\" and port 8080.",
+  "instructions": "Implement Default for Endpoint using these defaults.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Implement Default for Endpoint and implement fn default() -> Self."
+    },
+    {
+      "level": 2,
+      "body": "Use Host::new_unchecked(\"localhost\".to_owned()) and Port::new(8080).unwrap() inside default()."
+    },
+    {
+      "level": 3,
+      "body": "A canonical solution provides default setups.",
+      "solutionCode": "impl Default for Endpoint {\n    fn default() -> Self {\n        Self {\n            host: Host::new_unchecked(\"localhost\".to_owned()),\n            port: Port::new(8080).unwrap(),\n        }\n    }\n}"
+    }
+  ],
+  "completionExplanation": "Implementing Default facilitates rapid testing environments with predictable outcomes.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "impl_trait_for_type",
+            "traitName": "Default",
+            "typeName": "Endpoint"
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

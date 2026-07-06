@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 2,
+  "id": "host-port-struct-004",
+  "arcId": "host-port-config",
+  "arcTitle": "Host and port configuration modeling",
+  "order": 46,
+  "day": 4,
+  "arcLength": 6,
+  "title": "Compose Host and Port into Endpoint",
+  "conceptId": "host-port-composite",
+  "difficulty": "medium",
+  "estimatedMinutes": 8,
+  "scenario": "Hosts and Ports travel together as a composite network endpoint.",
+  "instructions": "Define a public Endpoint struct with public host (type Host) and port (type Port) fields. Also provide a constructor Endpoint::new(host: Host, port: Port) -> Self.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Define pub struct Endpoint with fields: pub host: Host and pub port: Port."
+    },
+    {
+      "level": 2,
+      "body": "Implement Endpoint::new that constructs this composite type."
+    },
+    {
+      "level": 3,
+      "body": "A canonical solution constructs composite Endpoint structs.",
+      "solutionCode": "pub struct Endpoint {\n    pub host: Host,\n    pub port: Port,\n}\nimpl Endpoint {\n    pub fn new(host: Host, port: Port) -> Self {\n        Self { host, port }\n    }\n}"
+    }
+  ],
+  "completionExplanation": "Composing simple types makes complex domain relationships explicit and safe.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "struct_fields",
+            "structName": "Endpoint",
+            "requiredFields": [
+              {
+                "name": "host",
+                "typeIncludes": [
+                  "Host"
+                ]
+              },
+              {
+                "name": "port",
+                "typeIncludes": [
+                  "Port"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "impl_method",
+            "implFor": "Endpoint",
+            "methodName": "new",
+            "requiredSignatureIncludes": [
+              "pub fn new",
+              "host: Host",
+              "port: Port",
+              "Self"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

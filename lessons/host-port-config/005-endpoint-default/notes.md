@@ -1,0 +1,1 @@
+Teaches implementing Default for configuration structs.

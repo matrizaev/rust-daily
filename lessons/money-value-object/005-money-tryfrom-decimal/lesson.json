@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 2,
+  "id": "money-tryfrom-decimal-005",
+  "arcId": "money-value-object",
+  "arcTitle": "Money and currency domain representation",
+  "order": 41,
+  "day": 5,
+  "arcLength": 6,
+  "title": "Convert a float string value to Money",
+  "conceptId": "money-try-from-decimal",
+  "difficulty": "medium",
+  "estimatedMinutes": 8,
+  "scenario": "Forms pass pricing as float-like strings (e.g. \"19.99\"). To avoid float rounding bugs, we must convert these strings into our integer-based Money representation fallibly.",
+  "instructions": "Implement TryFrom<&str> for Money. Assume the format is a decimal number in USD. Reject invalid formats with MoneyParseError.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Split the string on '.' to process the major and minor parts."
+    },
+    {
+      "level": 2,
+      "body": "Convert major to cents (major * 100) and parse cents. If single-digit cents (like .2), multiply by 10."
+    },
+    {
+      "level": 3,
+      "body": "A canonical solution parses string and validates parts.",
+      "solutionCode": "impl TryFrom<&str> for Money {\n    type Error = MoneyParseError;\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        // ... parsing logic ...\n    }\n}"
+    }
+  ],
+  "completionExplanation": "Converting string representations into integer-based pennies prevents classic float inaccuracy bugs.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "impl_trait_for_type",
+            "traitName": "TryFrom<&str>",
+            "typeName": "Money"
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

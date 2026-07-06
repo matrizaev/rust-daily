@@ -730,5 +730,246 @@
       "domain"
     ],
     "masteryThreshold": 3
+  },
+  {
+    "id": "money-struct",
+    "name": "Money struct definition",
+    "description": "Represent monetary amounts securely by grouping amounts and currencies together.",
+    "prerequisites": [
+      "domain-structs"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "money-struct-001"
+    ],
+    "tags": [
+      "domain",
+      "types",
+      "structs"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "currency-enum",
+    "name": "Currency enum",
+    "description": "Represent supported currencies using enums to enforce type safety.",
+    "prerequisites": [
+      "money-struct"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "currency-enum-002"
+    ],
+    "tags": [
+      "domain",
+      "enums",
+      "types"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "money-invariants",
+    "name": "Money invariants",
+    "description": "Control how Money is constructed and enforce read-only safety with accessors.",
+    "prerequisites": [
+      "currency-enum"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "money-invariants-003"
+    ],
+    "tags": [
+      "domain",
+      "invariants",
+      "methods"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "money-add-impl",
+    "name": "Adding money values",
+    "description": "Implement standard Add trait to allow operator overloading while validating currency rules.",
+    "prerequisites": [
+      "money-invariants"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "money-add-004"
+    ],
+    "tags": [
+      "traits",
+      "operator-overloading",
+      "money"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "money-try-from-decimal",
+    "name": "Parsing decimal money strings",
+    "description": "Convert float-like pricing strings fallibly to safe minor-unit integers.",
+    "prerequisites": [
+      "money-invariants"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "money-tryfrom-decimal-005"
+    ],
+    "tags": [
+      "conversion",
+      "tryfrom",
+      "parsing"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "money-display-format",
+    "name": "Displaying money values",
+    "description": "Implement Display for custom human-readable currency symbol and cents formatting.",
+    "prerequisites": [
+      "money-invariants"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "money-display-006"
+    ],
+    "tags": [
+      "traits",
+      "display",
+      "formatting"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "port-nonzero",
+    "name": "NonZero ports",
+    "description": "Leverage NonZeroU16 to prevent invalid port numbers at compilation and construction boundaries.",
+    "prerequisites": [
+      "domain-structs"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "port-nonzero-001"
+    ],
+    "tags": [
+      "domain",
+      "types",
+      "safety"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "host-domain",
+    "name": "Host domain representation",
+    "description": "Wrap host strings in custom types to prevent primitive string obsession.",
+    "prerequisites": [
+      "domain-structs"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "host-domain-002"
+    ],
+    "tags": [
+      "domain",
+      "types",
+      "structs"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "host-validation",
+    "name": "Validating hostnames fallibly",
+    "description": "Validate hostname inputs fallibly using TryFrom.",
+    "prerequisites": [
+      "host-domain"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "host-validation-003"
+    ],
+    "tags": [
+      "conversion",
+      "tryfrom",
+      "validation"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "host-port-composite",
+    "name": "Composite network endpoints",
+    "description": "Group Host and Port values together into single Endpoint structures.",
+    "prerequisites": [
+      "host-domain",
+      "port-nonzero"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "host-port-struct-004"
+    ],
+    "tags": [
+      "domain",
+      "structs",
+      "composition"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "endpoint-default",
+    "name": "Endpoint local defaults",
+    "description": "Implement Default to provide predictable local developer connection settings.",
+    "prerequisites": [
+      "host-port-composite"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "endpoint-default-005"
+    ],
+    "tags": [
+      "traits",
+      "default",
+      "configuration"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "endpoint-display",
+    "name": "Formatting network endpoints",
+    "description": "Format network endpoints cleanly as host:port strings using Display.",
+    "prerequisites": [
+      "host-port-composite"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "endpoint-display-006"
+    ],
+    "tags": [
+      "traits",
+      "display",
+      "formatting"
+    ],
+    "masteryThreshold": 3
   }
 ]

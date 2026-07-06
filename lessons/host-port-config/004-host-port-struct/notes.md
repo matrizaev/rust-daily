@@ -1,0 +1,1 @@
+Teaches composing individual value objects into a single struct.

@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 2,
+  "id": "host-validation-003",
+  "arcId": "host-port-config",
+  "arcTitle": "Host and port configuration modeling",
+  "order": 45,
+  "day": 3,
+  "arcLength": 6,
+  "title": "Validate Host names with TryFrom",
+  "conceptId": "host-validation",
+  "difficulty": "medium",
+  "estimatedMinutes": 8,
+  "scenario": "A host must be valid. We want to reject empty hosts or hosts containing spaces.",
+  "instructions": "Implement TryFrom<String> for Host. Return HostValidationError if the string is empty or contains spaces.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Implement TryFrom<String> for Host and set type Error = HostValidationError;"
+    },
+    {
+      "level": 2,
+      "body": "Use val.is_empty() and val.contains(' ') to perform checks."
+    },
+    {
+      "level": 3,
+      "body": "A canonical solution validates string parameters fallibly.",
+      "solutionCode": "impl TryFrom<String> for Host {\n    type Error = HostValidationError;\n    fn try_from(val: String) -> Result<Self, Self::Error> {\n        if val.is_empty() { return Err(HostValidationError::Empty); }\n        if val.contains(' ') { return Err(HostValidationError::InvalidCharacters); }\n        Ok(Self(val))\n    }\n}"
+    }
+  ],
+  "completionExplanation": "Implementing TryFrom ensures we cannot construct invalid Host objects, maintaining structural boundaries.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "impl_trait_for_type",
+            "traitName": "TryFrom<String>",
+            "typeName": "Host"
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 2,
+  "id": "money-struct-001",
+  "arcId": "money-value-object",
+  "arcTitle": "Money and currency domain representation",
+  "order": 37,
+  "day": 1,
+  "arcLength": 6,
+  "title": "Define a basic Money struct",
+  "conceptId": "money-struct",
+  "difficulty": "easy",
+  "estimatedMinutes": 6,
+  "scenario": "The system needs to represent monetary amounts. To prevent bugs, we must group the numeric amount and the currency type together into a single struct.",
+  "instructions": "Define a public Money struct with private amount (u64) and currency (Currency) fields.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Define pub struct Money."
+    },
+    {
+      "level": 2,
+      "body": "The fields should be private: amount: u64 and currency: Currency. Do not add pub before them."
+    },
+    {
+      "level": 3,
+      "body": "A canonical solution defines the Money struct with private fields.",
+      "solutionCode": "pub struct Money {\n    amount: u64,\n    currency: Currency,\n}"
+    }
+  ],
+  "completionExplanation": "The Money struct encapsulates the amount and currency. Keeping the fields private ensures that we can control how money values are constructed and mutated.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "struct_fields",
+            "structName": "Money",
+            "requiredFields": [
+              {
+                "name": "amount",
+                "typeIncludes": [
+                  "u64"
+                ]
+              },
+              {
+                "name": "currency",
+                "typeIncludes": [
+                  "Currency"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "struct Money"
+            ],
+            "forbiddenSnippets": [
+              "pub amount",
+              "pub currency"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

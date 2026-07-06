@@ -6,5 +6,21 @@
     "orderStart": 31,
     "targetLessonCount": 6,
     "description": "Model, validate, format, and parse an email address with strong domain types and standard conversions."
+  },
+  {
+    "id": "money-value-object",
+    "title": "Money and currency domain representation",
+    "pillar": "domain",
+    "orderStart": 37,
+    "targetLessonCount": 6,
+    "description": "Represent money and currency as a secure domain value object with invariants and operations."
+  },
+  {
+    "id": "host-port-config",
+    "title": "Host and port configuration modeling",
+    "pillar": "domain",
+    "orderStart": 43,
+    "targetLessonCount": 6,
+    "description": "Configure hostnames and ports with strong typing and composition."
   }
 ]

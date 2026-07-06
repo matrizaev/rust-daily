@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 2,
+  "id": "money-display-006",
+  "arcId": "money-value-object",
+  "arcTitle": "Money and currency domain representation",
+  "order": 42,
+  "day": 6,
+  "arcLength": 6,
+  "title": "Implement Display for Money",
+  "conceptId": "money-display-format",
+  "difficulty": "easy",
+  "estimatedMinutes": 6,
+  "scenario": "The UI needs to render formatted prices like $19.99 or \u20ac5.00 correctly.",
+  "instructions": "Implement std::fmt::Display for Money. Use '$' for USD and '\u20ac' for EUR, and output cents formatted to 2 decimal places.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Write impl fmt::Display for Money block."
+    },
+    {
+      "level": 2,
+      "body": "Extract major amount (/ 100) and minor cents (% 100). Use write! with Symbol, major, and padded minor :02."
+    },
+    {
+      "level": 3,
+      "body": "A canonical solution prints currency symbol and decimal formatting.",
+      "solutionCode": "impl fmt::Display for Money {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        let symbol = match self.currency { Currency::Usd => \"$\", Currency::Eur => \"\u20ac\" };\n        write!(f, \"{}{}.{:02}\", symbol, self.amount / 100, self.amount % 100)\n    }\n}"
+    }
+  ],
+  "completionExplanation": "Implementing Display gives domain objects formatting capabilities without exposing private data fields.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "impl_trait_for_type",
+            "traitName": "std::fmt::Display",
+            "typeName": "Money"
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

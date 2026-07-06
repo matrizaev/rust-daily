@@ -15,6 +15,10 @@ type ImplTraitForTypeCheck = Extract<
 >;
 type SourceIncludesCheck = Extract<StructuralCheck, { type: "source_includes" }>;
 type StructFieldsCheck = Extract<StructuralCheck, { type: "struct_fields" }>;
+type TupleStructFieldsCheck = Extract<
+  StructuralCheck,
+  { type: "tuple_struct_fields" }
+>;
 
 const RUST_IDENTIFIER = /^([A-Za-z_][A-Za-z0-9_]*)\s*(?:=\s*[^({]+)?$/;
 
@@ -59,6 +63,76 @@ const extractNamedBody = (source: string, keyword: string, name: string) => {
   const openBraceIndex = findNamedOpenBrace(source, keyword, name);
 
   return openBraceIndex < 0 ? null : extractBraceBody(source, openBraceIndex);
+};
+
+const findNamedOpenDelimiter = (
+  source: string,
+  keyword: string,
+  name: string,
+  openDelimiter: string,
+) => {
+  const escapedDelimiter = escapeRegex(openDelimiter);
+  const pattern = new RegExp(
+    `\\b${keyword}\\s+${escapeRegex(name)}${optionalGenericsPattern}\\s*${escapedDelimiter}`,
+  );
+  const match = pattern.exec(source);
+
+  return match ? match.index + match[0].lastIndexOf(openDelimiter) : -1;
+};
+
+const updateDelimitedDepth = (
+  char: string,
+  depth: number,
+  openDelimiter: string,
+  closeDelimiter: string,
+) => {
+  if (char === openDelimiter) {
+    return depth + 1;
+  }
+
+  if (char === closeDelimiter) {
+    return depth - 1;
+  }
+
+  return depth;
+};
+
+const extractDelimitedBody = (
+  source: string,
+  openIndex: number,
+  openDelimiter: string,
+  closeDelimiter: string,
+) => {
+  let depth = 1;
+
+  for (let index = openIndex + 1; index < source.length; index += 1) {
+    depth = updateDelimitedDepth(
+      source[index],
+      depth,
+      openDelimiter,
+      closeDelimiter,
+    );
+
+    if (depth === 0) {
+      return source.slice(openIndex + 1, index);
+    }
+  }
+
+  return null;
+};
+
+const extractNamedDelimitedBody = (
+  source: string,
+  keyword: string,
+  name: string,
+  openDelimiter: string,
+  closeDelimiter: string,
+) => {
+  const openIndex = findNamedOpenDelimiter(source, keyword, name, openDelimiter);
+
+  return openIndex < 0
+    ? null
+    : extractDelimitedBody(source, openIndex, openDelimiter, closeDelimiter);
 };
 
 const OPEN_DEPTH_CHARS = new Set(["(", "[", "{"]);
@@ -184,6 +258,44 @@ const runStructFieldsCheck = (source: string, check: StructFieldsCheck) => {
   });
 };
 
+const getTupleStructFieldTypes = (body: string) =>
+  splitTopLevelEntries(body)
+    .map((entry) => normalizeWhitespace(entry.replace(/^\s*pub(?:\([^)]*\))?\s+/, "")))
+    .filter(Boolean);
+
+const runTupleStructFieldsCheck = (
+  source: string,
+  check: TupleStructFieldsCheck,
+) => {
+  const body = extractNamedDelimitedBody(source, "struct", check.structName, "(", ")");
+
+  if (body === null) {
+    return [failure(check.structName, `${check.structName} tuple struct was not found.`)];
+  }
+
+  const fieldTypes = getTupleStructFieldTypes(body);
+
+  if (fieldTypes.length !== check.requiredTypes.length) {
+    return [
+      failure(
+        check.structName,
+        `${check.structName} should have ${check.requiredTypes.length} tuple field(s).`,
+      ),
+    ];
+  }
+
+  return check.requiredTypes.flatMap((requiredType, index) =>
+    fieldTypes[index] && includesAll(fieldTypes[index], [requiredType])
+      ? []
+      : [
+          failure(
+            `${check.structName}.${index}`,
+            `${check.structName} field ${index + 1} should include type ${requiredType}.`,
+          ),
+        ],
+  );
+};
+
 const implPattern = (implFor: string) =>
   new RegExp(`\\bimpl${optionalGenericsPattern}\\s+${escapeRegex(implFor)}\\s*\\{`);
 
@@ -270,6 +382,7 @@ const checkRunners = {
   impl_trait_for_type: runImplTraitForTypeCheck,
   source_includes: runSourceIncludesCheck,
   struct_fields: runStructFieldsCheck,
+  tuple_struct_fields: runTupleStructFieldsCheck,
 };
 
 const runStructuralCheck = (source: string, check: StructuralCheck) =>

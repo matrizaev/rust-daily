@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 2,
+  "id": "host-domain-002",
+  "arcId": "host-port-config",
+  "arcTitle": "Host and port configuration modeling",
+  "order": 44,
+  "day": 2,
+  "arcLength": 6,
+  "title": "Define Host domain value object",
+  "conceptId": "host-domain",
+  "difficulty": "easy",
+  "estimatedMinutes": 5,
+  "scenario": "Hosts are string representations. We want to avoid using raw strings to represent hosts, so we'll wrap it in a custom type.",
+  "instructions": "Define a Host struct with a private String field. Expose a Host::as_str(&self) -> &str method.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Use a tuple struct: pub struct Host(String);"
+    },
+    {
+      "level": 2,
+      "body": "as_str should return &self.0 as a borrow string slice &str."
+    },
+    {
+      "level": 3,
+      "body": "A canonical solution wraps String and exposes a borrow accessor.",
+      "solutionCode": "pub struct Host(String);\nimpl Host {\n    pub fn as_str(&self) -> &str { &self.0 }\n}"
+    }
+  ],
+  "completionExplanation": "Wrapping primitive values prevents type mix-ups (like passing a email string as a host).",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "impl_method",
+            "implFor": "Host",
+            "methodName": "as_str",
+            "requiredSignatureIncludes": [
+              "&self",
+              "&str"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

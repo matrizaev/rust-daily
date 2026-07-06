@@ -1,0 +1,1 @@
+Teaches implementing Display for formatting value objects.

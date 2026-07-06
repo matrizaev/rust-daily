@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 2,
+  "id": "port-nonzero-001",
+  "arcId": "host-port-config",
+  "arcTitle": "Host and port configuration modeling",
+  "order": 43,
+  "day": 1,
+  "arcLength": 6,
+  "title": "Use NonZeroU16 for Port representation",
+  "conceptId": "port-nonzero",
+  "difficulty": "easy",
+  "estimatedMinutes": 6,
+  "scenario": "A port of 0 is invalid for our application. We can leverage Rust's standard library NonZeroU16 to enforce this rule at the compiler level.",
+  "instructions": "Define a Port struct wrapping std::num::NonZeroU16 privately. Expose a constructor new returning an Option<Self>.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Use a tuple struct: pub struct Port(NonZeroU16);"
+    },
+    {
+      "level": 2,
+      "body": "NonZeroU16::new(val) returns Option<NonZeroU16>. Map this into Port using .map(Self)."
+    },
+    {
+      "level": 3,
+      "body": "A canonical solution wraps NonZeroU16 in a tuple struct.",
+      "solutionCode": "pub struct Port(NonZeroU16);\nimpl Port {\n    pub fn new(val: u16) -> Option<Self> {\n        NonZeroU16::new(val).map(Self)\n    }\n}"
+    }
+  ],
+  "completionExplanation": "Using NonZeroU16 prevents 0 values compile-time/construction-time, eliminating validation checks downstream.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "tuple_struct_fields",
+            "structName": "Port",
+            "requiredTypes": [
+              "NonZeroU16"
+            ]
+          },
+          {
+            "type": "impl_method",
+            "implFor": "Port",
+            "methodName": "new",
+            "requiredSignatureIncludes": [
+              "pub fn new",
+              "val: u16",
+              "Option<Self>"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

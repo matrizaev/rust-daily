@@ -1,0 +1,1 @@
+Teaches how to extend domain enum variants.
