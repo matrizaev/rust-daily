@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 2,
+  "id": "inventory-filter-map-002",
+  "arcId": "inventory-summary",
+  "arcTitle": "Summarize inventory",
+  "order": 15,
+  "day": 2,
+  "arcLength": 6,
+  "title": "Collect available item names",
+  "conceptId": "filter-map",
+  "difficulty": "medium",
+  "estimatedMinutes": 8,
+  "scenario": "A dashboard only needs names for items whose available count is above zero.",
+  "instructions": "Implement available_names with filter_map. Include an item name only when quantity is greater than reserved.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "available stock is quantity minus reserved, but compare before subtracting."
+    },
+    {
+      "level": 2,
+      "body": "filter_map can return Some(name) for included items and None for skipped items."
+    },
+    {
+      "level": 3,
+      "body": "Borrow names with as_str instead of cloning them.",
+      "solutionCode": "pub struct Item {\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\npub fn available_names(items: &[Item]) -> Vec<&str> {\n    items\n        .iter()\n        .filter_map(|item| {\n            if item.quantity > item.reserved {\n                Some(item.name.as_str())\n            } else {\n                None\n            }\n        })\n        .collect()\n}"
+    }
+  ],
+  "completionExplanation": "filter_map fits this helper because filtering and mapping happen together. It keeps the output borrowed from the input slice instead of allocating new strings.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "function_signature",
+            "functionName": "available_names",
+            "requiredSignatureIncludes": [
+              "Vec<&str>"
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "filter_map",
+              "as_str"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

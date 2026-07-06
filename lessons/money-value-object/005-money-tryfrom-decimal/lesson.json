@@ -6,12 +6,12 @@
   "order": 41,
   "day": 5,
   "arcLength": 6,
-  "title": "Convert a float string value to Money",
+  "title": "Convert a decimal string to Money",
   "conceptId": "money-try-from-decimal",
   "difficulty": "medium",
   "estimatedMinutes": 8,
-  "scenario": "Forms pass pricing as float-like strings (e.g. \"19.99\"). To avoid float rounding bugs, we must convert these strings into our integer-based Money representation fallibly.",
-  "instructions": "Implement TryFrom<&str> for Money. Assume the format is a decimal number in USD. Reject invalid formats with MoneyParseError.",
+  "scenario": "Forms pass prices as decimal strings such as \"19.99\". To avoid float rounding bugs, parse those strings into integer minor units with explicit errors and checked arithmetic.",
+  "instructions": "Implement TryFrom<&str> for Money. Assume the parsed amount is USD. Return specific MoneyParseError variants for empty input, invalid digits, too many decimal places, and overflow.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Split the string on '.' to process the major and minor parts."
+      "body": "Split once on the decimal point so the major and minor parts can be validated separately."
     },
     {
       "level": 2,
-      "body": "Convert major to cents (major * 100) and parse cents. If single-digit cents (like .2), multiply by 10."
+      "body": "Parse digits into u64, use checked_mul and checked_add, and map each expected failure to a MoneyParseError variant."
     },
     {
       "level": 3,
-      "body": "A canonical solution parses string and validates parts.",
-      "solutionCode": "impl TryFrom<&str> for Money {\n    type Error = MoneyParseError;\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        // ... parsing logic ...\n    }\n}"
+      "body": "A canonical solution parses text without floats and preserves every expected failure as a typed error.",
+      "solutionCode": "impl TryFrom<&str> for Money {\n    type Error = MoneyParseError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        if value.is_empty() {\n            return Err(MoneyParseError::Empty);\n        }\n\n        let (major_text, minor_text) = match value.split_once('.') {\n            Some((major_text, minor_text)) => (major_text, Some(minor_text)),\n            None => (value, None),\n        };\n\n        if major_text.is_empty() {\n            return Err(MoneyParseError::InvalidDigits);\n        }\n\n        let major = major_text\n            .parse::<u64>()\n            .map_err(|_| MoneyParseError::InvalidDigits)?;\n        let minor = match minor_text {\n            None => 0,\n            Some(text) if text.is_empty() => return Err(MoneyParseError::InvalidDigits),\n            Some(text) if text.len() > 2 => {\n                return Err(MoneyParseError::TooManyDecimalPlaces);\n            }\n            Some(text) => {\n                let parsed = text\n                    .parse::<u64>()\n                    .map_err(|_| MoneyParseError::InvalidDigits)?;\n\n                if text.len() == 1 {\n                    parsed.checked_mul(10).ok_or(MoneyParseError::AmountOverflow)?\n                } else {\n                    parsed\n                }\n            }\n        };\n        let amount = major\n            .checked_mul(100)\n            .and_then(|major_minor_units| major_minor_units.checked_add(minor))\n            .ok_or(MoneyParseError::AmountOverflow)?;\n\n        Ok(Self::new(amount, Currency::Usd))\n    }\n}"
     }
   ],
-  "completionExplanation": "Converting string representations into integer-based pennies prevents classic float inaccuracy bugs.",
+  "completionExplanation": "Parsing money through TryFrom gives callers a standard fallible conversion API. Using integer minor units and checked arithmetic avoids floating-point rounding, overflow surprises, and panics.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -51,6 +51,28 @@
             "type": "impl_trait_for_type",
             "traitName": "TryFrom<&str>",
             "typeName": "Money"
+          },
+          {
+            "type": "enum_unit_variants",
+            "enumName": "MoneyParseError",
+            "requiredVariants": [
+              "Empty",
+              "InvalidDigits",
+              "TooManyDecimalPlaces",
+              "AmountOverflow"
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "checked_mul",
+              "checked_add"
+            ],
+            "forbiddenSnippets": [
+              "panic!",
+              ".unwrap()",
+              ".expect("
+            ]
           }
         ]
       },

@@ -10,8 +10,8 @@
   "conceptId": "endpoint-default",
   "difficulty": "easy",
   "estimatedMinutes": 6,
-  "scenario": "Most service connections locally defaults to host \"localhost\" and port 8080.",
-  "instructions": "Implement Default for Endpoint using these defaults.",
+  "scenario": "Most local service connections use host \"localhost\" and port 8080. The default should be convenient, deterministic, and free of unwrap or expect.",
+  "instructions": "Implement Default for Endpoint using Host::localhost() and Port::LOCAL_DEVELOPMENT. Do not use unwrap, expect, or panic.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Implement Default for Endpoint and implement fn default() -> Self."
+      "body": "Use Default only for a known-good local configuration; keep fallible parsing at external boundaries."
     },
     {
       "level": 2,
-      "body": "Use Host::new_unchecked(\"localhost\".to_owned()) and Port::new(8080).unwrap() inside default()."
+      "body": "The starter already gives named constructors for the known-good host and port. Compose those in default()."
     },
     {
       "level": 3,
-      "body": "A canonical solution provides default setups.",
-      "solutionCode": "impl Default for Endpoint {\n    fn default() -> Self {\n        Self {\n            host: Host::new_unchecked(\"localhost\".to_owned()),\n            port: Port::new(8080).unwrap(),\n        }\n    }\n}"
+      "body": "A canonical solution builds defaults from named trusted constants without unwrap or expect.",
+      "solutionCode": "impl Default for Endpoint {\n    fn default() -> Self {\n        Self::new(Host::localhost(), Port::LOCAL_DEVELOPMENT)\n    }\n}"
     }
   ],
-  "completionExplanation": "Implementing Default facilitates rapid testing environments with predictable outcomes.",
+  "completionExplanation": "Default is useful for known local configuration, but it should not normalize unwraps in library code. Trusted constants and explicit constructors keep the code deterministic without hiding failure paths.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -51,6 +51,18 @@
             "type": "impl_trait_for_type",
             "traitName": "Default",
             "typeName": "Endpoint"
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "Host::localhost()",
+              "Port::LOCAL_DEVELOPMENT"
+            ],
+            "forbiddenSnippets": [
+              "unwrap",
+              "expect",
+              "panic!"
+            ]
           }
         ]
       },

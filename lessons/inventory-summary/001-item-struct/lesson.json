@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 2,
+  "id": "inventory-item-struct-001",
+  "arcId": "inventory-summary",
+  "arcTitle": "Summarize inventory",
+  "order": 14,
+  "day": 1,
+  "arcLength": 6,
+  "title": "Define an inventory item",
+  "conceptId": "domain-structs",
+  "difficulty": "easy",
+  "estimatedMinutes": 5,
+  "scenario": "Inventory summaries need a small domain type before helpers can work with names and quantities.",
+  "instructions": "Define Item with sku: String, name: String, quantity: u32, and reserved: u32.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Use a struct when each value has a distinct role."
+    },
+    {
+      "level": 2,
+      "body": "The user-facing name and SKU are owned strings."
+    },
+    {
+      "level": 3,
+      "body": "Quantities are small non-negative counts, so u32 is enough here.",
+      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Item {\n    pub sku: String,\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}"
+    }
+  ],
+  "completionExplanation": "The Item struct gives later helpers a clear vocabulary. Named fields make summary code easier to read than tuple positions.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "struct_fields",
+            "structName": "Item",
+            "requiredFields": [
+              {
+                "name": "sku",
+                "typeIncludes": [
+                  "String"
+                ]
+              },
+              {
+                "name": "name",
+                "typeIncludes": [
+                  "String"
+                ]
+              },
+              {
+                "name": "quantity",
+                "typeIncludes": [
+                  "u32"
+                ]
+              },
+              {
+                "name": "reserved",
+                "typeIncludes": [
+                  "u32"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

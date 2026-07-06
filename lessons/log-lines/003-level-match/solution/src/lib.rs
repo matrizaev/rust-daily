@@ -1,0 +1,14 @@
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LogLevel {
+    Info,
+    Warn,
+    Error,
+}
+
+pub fn severity(level: LogLevel) -> u8 {
+    match level {
+        LogLevel::Info => 1,
+        LogLevel::Warn => 2,
+        LogLevel::Error => 3,
+    }
+}

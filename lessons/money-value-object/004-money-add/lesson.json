@@ -6,12 +6,12 @@
   "order": 40,
   "day": 4,
   "arcLength": 6,
-  "title": "Implement Add for same Currency",
+  "title": "Add Money with a typed error",
   "conceptId": "money-add-impl",
   "difficulty": "medium",
   "estimatedMinutes": 8,
-  "scenario": "Callers need to add two money values together using the + operator. However, adding money of different currencies makes no sense and should panic, while adding the same currency should return the combined amount.",
-  "instructions": "Implement std::ops::Add for Money. If the currencies do not match, panic with a clear error message.",
+  "scenario": "Callers need to add two money values, but currency mismatches and integer overflow are expected domain failures. Library code should return typed errors instead of panicking.",
+  "instructions": "Implement Money::checked_add(self, rhs: Self) -> Result<Self, MoneyAddError>. Return CurrencyMismatch for different currencies and AmountOverflow for checked integer overflow.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Import std::ops::Add, then implement Add for Money."
+      "body": "Keep this as a method returning Result instead of implementing an operator that can panic."
     },
     {
       "level": 2,
-      "body": "Check currency equality first: if self.currency != rhs.currency { panic!(\"...\") }."
+      "body": "Check currency equality first, then use u64::checked_add to combine the minor-unit amounts safely."
     },
     {
       "level": 3,
-      "body": "A canonical solution implements Add with a currency mismatch check.",
-      "solutionCode": "impl Add for Money {\n    type Output = Self;\n    fn add(self, rhs: Self) -> Self::Output {\n        if self.currency != rhs.currency {\n            panic!(\"Cannot add money of different currencies\");\n        }\n        Self { amount: self.amount + rhs.amount, currency: self.currency }\n    }\n}"
+      "body": "A canonical solution returns programmatic errors for both domain and arithmetic failures.",
+      "solutionCode": "impl Money {\n    pub fn checked_add(self, rhs: Self) -> Result<Self, MoneyAddError> {\n        if self.currency != rhs.currency {\n            return Err(MoneyAddError::CurrencyMismatch {\n                left: self.currency,\n                right: rhs.currency,\n            });\n        }\n\n        let amount = self\n            .amount\n            .checked_add(rhs.amount)\n            .ok_or(MoneyAddError::AmountOverflow)?;\n\n        Ok(Self {\n            amount,\n            currency: self.currency,\n        })\n    }\n}"
     }
   ],
-  "completionExplanation": "Implementing Add enables operator overloading. Panicking on currency mismatch enforces domain rule safety at runtime.",
+  "completionExplanation": "Fallible domain operations should make failure visible in the type signature. A Result keeps currency mismatches and overflow recoverable and testable, while avoiding panics in library code.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -48,9 +48,34 @@
         "timeoutMs": 10000,
         "checks": [
           {
-            "type": "impl_trait_for_type",
-            "traitName": "Add",
-            "typeName": "Money"
+            "type": "impl_method",
+            "implFor": "Money",
+            "methodName": "checked_add",
+            "requiredSignatureIncludes": [
+              "pub fn checked_add",
+              "rhs: Self",
+              "Result<Self, MoneyAddError>"
+            ]
+          },
+          {
+            "type": "enum_unit_variants",
+            "enumName": "MoneyAddError",
+            "requiredVariants": [
+              "AmountOverflow"
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "CurrencyMismatch",
+              "checked_add"
+            ],
+            "forbiddenSnippets": [
+              "panic!",
+              ".unwrap()",
+              ".expect(",
+              "impl Add for Money"
+            ]
           }
         ]
       },

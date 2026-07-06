@@ -39,7 +39,7 @@
       "solutionCode": "impl std::fmt::Display for EmailAddress {\n    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        write!(f, \"{}\", self.value)\n    }\n}"
     }
   ],
-  "completionExplanation": "Display exposes the public text representation without making the field public. The type keeps its invariant boundary while still fitting normal formatting APIs.",
+  "completionExplanation": "Display exposes the public text representation without making the field public or adding unchecked construction paths. The type keeps its validation boundary while still fitting normal formatting APIs.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -54,7 +54,10 @@
           },
           {
             "type": "source_includes",
-            "requiredSnippets": ["fn fmt", "write!"]
+            "requiredSnippets": [
+              "fn fmt",
+              "write!"
+            ]
           }
         ]
       },

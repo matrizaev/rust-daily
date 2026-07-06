@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 2,
+  "id": "config-methods-003",
+  "arcId": "config-service",
+  "arcTitle": "Configure a small service",
+  "order": 3,
+  "day": 3,
+  "arcLength": 6,
+  "title": "Add a small Config setter",
+  "conceptId": "methods-basic",
+  "difficulty": "easy",
+  "estimatedMinutes": 7,
+  "scenario": "Callers should be able to start from Config::default and customize one field without reaching into every detail.",
+  "instructions": "Add Config::with_service_url(self, service_url: impl Into<String>) -> Self. Update the field and return self.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "A consuming setter can take mut self, change a field, and return self."
+    },
+    {
+      "level": 2,
+      "body": "impl Into<String> lets callers pass either String or &str."
+    },
+    {
+      "level": 3,
+      "body": "Returning Self keeps the method chain-friendly.",
+      "solutionCode": "pub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n}"
+    }
+  ],
+  "completionExplanation": "A small method can make configuration ergonomic without hiding the Config fields. Taking self by value is a common builder-style pattern.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "impl_method",
+            "implFor": "Config",
+            "methodName": "with_service_url",
+            "requiredSignatureIncludes": [
+              "self",
+              "impl Into<String>",
+              "Self"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

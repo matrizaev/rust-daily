@@ -1,0 +1,1 @@
+Teaches intoiterator-wrapper through a focused, behavior-checked Rust micro-lesson.

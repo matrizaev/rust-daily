@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 2,
+  "id": "config-borrowed-key-006",
+  "arcId": "config-service",
+  "arcTitle": "Configure a small service",
+  "order": 6,
+  "day": 6,
+  "arcLength": 6,
+  "title": "Borrow setting keys",
+  "conceptId": "borrowing-api",
+  "difficulty": "medium",
+  "estimatedMinutes": 7,
+  "scenario": "A lookup helper should not take ownership of a key just to compare it with stored names.",
+  "instructions": "Change get_setting so key is borrowed as &str and the returned value is borrowed from settings as Option<&str>.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "The function only needs to read key, not store it."
+    },
+    {
+      "level": 2,
+      "body": "Returning &str can borrow from the String already inside settings."
+    },
+    {
+      "level": 3,
+      "body": "as_str converts a String reference into a string slice.",
+      "solutionCode": "pub fn get_setting<'a>(settings: &'a [(String, String)], key: &str) -> Option<&'a str> {\n    settings\n        .iter()\n        .find(|(name, _value)| name.as_str() == key)\n        .map(|(_name, value)| value.as_str())\n}"
+    }
+  ],
+  "completionExplanation": "Borrowing keeps the lookup API lightweight. The caller keeps its key, and the returned value can point into the existing settings data.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "function_signature",
+            "functionName": "get_setting",
+            "requiredSignatureIncludes": [
+              "key: &str",
+              "Option<&str>"
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "as_str"
+            ],
+            "forbiddenSnippets": [
+              "key: String",
+              "Option<String>"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

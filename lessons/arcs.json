@@ -1,5 +1,45 @@
 [
   {
+    "id": "config-service",
+    "title": "Configure a small service",
+    "pillar": "domain",
+    "orderStart": 1,
+    "targetLessonCount": 6,
+    "description": "Model service configuration with owned fields, defaults, validation, and borrowed lookup APIs."
+  },
+  {
+    "id": "parse-user",
+    "title": "Parse a user from text",
+    "pillar": "errors",
+    "orderStart": 7,
+    "targetLessonCount": 7,
+    "description": "Build a parser around typed errors, Display, Error, sources, From, TryFrom, and behavior checks."
+  },
+  {
+    "id": "inventory-summary",
+    "title": "Summarize inventory",
+    "pillar": "collections",
+    "orderStart": 14,
+    "targetLessonCount": 6,
+    "description": "Use structs, borrowed collection outputs, folds, readable loops, IntoIterator, and borrowed sort comparisons."
+  },
+  {
+    "id": "log-lines",
+    "title": "Inspect log lines",
+    "pillar": "ownership",
+    "orderStart": 20,
+    "targetLessonCount": 5,
+    "description": "Represent log entries and views with borrowing, lifetimes, pattern matching, Cow, and focused tests."
+  },
+  {
+    "id": "request-api",
+    "title": "Build a request API",
+    "pillar": "traits",
+    "orderStart": 25,
+    "targetLessonCount": 6,
+    "description": "Design a small request builder with consuming setters, Default, Result, TryFrom, and doc examples."
+  },
+  {
     "id": "email-address-value-object",
     "title": "Email address value object",
     "pillar": "domain",
@@ -13,7 +53,7 @@
     "pillar": "domain",
     "orderStart": 37,
     "targetLessonCount": 6,
-    "description": "Represent money and currency as a secure domain value object with invariants and operations."
+    "description": "Represent money and currency as a secure domain value object with invariants and checked operations."
   },
   {
     "id": "host-port-config",
@@ -21,6 +61,6 @@
     "pillar": "domain",
     "orderStart": 43,
     "targetLessonCount": 6,
-    "description": "Configure hostnames and ports with strong typing and composition."
+    "description": "Configure hostnames and ports with strong typing, validation, defaults, and composition."
   }
 ]

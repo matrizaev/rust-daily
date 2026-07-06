@@ -1,8 +1,9 @@
-use rust_daily_lesson::{Money, Currency};
+use rust_daily_lesson::{Currency, Money};
 
 #[test]
 fn money_constructor_and_accessors() {
-    let m = Money::new(100, Currency::Usd);
-    assert_eq!(m.amount(), 100);
-    assert_eq!(m.currency(), Currency::Usd);
+    let money = Money::new(100, Currency::Gbp);
+
+    assert_eq!(money.amount(), 100);
+    assert_eq!(money.currency(), Currency::Gbp);
 }

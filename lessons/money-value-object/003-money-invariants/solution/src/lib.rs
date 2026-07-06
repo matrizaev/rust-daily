@@ -2,6 +2,7 @@
 pub enum Currency {
     Usd,
     Eur,
+    Gbp,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

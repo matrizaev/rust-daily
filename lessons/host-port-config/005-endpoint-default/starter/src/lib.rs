@@ -4,8 +4,14 @@ use std::num::NonZeroU16;
 pub struct Port(NonZeroU16);
 
 impl Port {
-    pub fn new(val: u16) -> Option<Self> {
-        NonZeroU16::new(val).map(Self)
+    pub const LOCAL_DEVELOPMENT: Self = Self(NonZeroU16::MIN.saturating_add(8079));
+
+    pub fn new(value: u16) -> Option<Self> {
+        NonZeroU16::new(value).map(Self)
+    }
+
+    pub fn value(&self) -> u16 {
+        self.0.get()
     }
 }
 
@@ -13,15 +19,55 @@ impl Port {
 pub struct Host(String);
 
 impl Host {
-    pub fn new_unchecked(val: String) -> Self {
-        Self(val)
+    pub fn localhost() -> Self {
+        Self("localhost".to_owned())
     }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl TryFrom<&str> for Host {
+    type Error = HostValidationError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        if value.is_empty() {
+            return Err(HostValidationError::Empty);
+        }
+
+        if value.contains(char::is_whitespace) {
+            return Err(HostValidationError::InvalidCharacters);
+        }
+
+        Ok(Self(value.to_owned()))
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HostValidationError {
+    Empty,
+    InvalidCharacters,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Endpoint {
-    pub host: Host,
-    pub port: Port,
+    host: Host,
+    port: Port,
 }
 
-// TODO: Implement Default for Endpoint.
+impl Endpoint {
+    pub fn new(host: Host, port: Port) -> Self {
+        Self { host, port }
+    }
+
+    pub fn host(&self) -> &Host {
+        &self.host
+    }
+
+    pub fn port(&self) -> Port {
+        self.port
+    }
+}
+
+// TODO: Implement Default for Endpoint without unwrap or expect.

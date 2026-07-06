@@ -1,10 +1,12 @@
 use rust_daily_lesson::{EmailAddress, EmailValidationError};
 
 #[test]
-fn accepts_text_with_at_sign() {
-    let email = EmailAddress::try_from("ada@example.com").expect("email should be valid");
+fn accepts_text_with_at_sign() -> Result<(), EmailValidationError> {
+    let email = EmailAddress::try_from("ada@example.com")?;
 
     assert_eq!(email.as_str(), "ada@example.com");
+
+    Ok(())
 }
 
 #[test]

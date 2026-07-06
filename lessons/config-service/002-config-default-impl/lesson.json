@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 2,
+  "id": "config-default-impl-002",
+  "arcId": "config-service",
+  "arcTitle": "Configure a small service",
+  "order": 2,
+  "day": 2,
+  "arcLength": 6,
+  "title": "Give Config sensible defaults",
+  "conceptId": "default-impl",
+  "difficulty": "easy",
+  "estimatedMinutes": 6,
+  "scenario": "Most local service runs use the same setup. Default lets callers start from a reasonable Config and override only what changes.",
+  "instructions": "Implement Default for Config. Use http://localhost:8080, 32 max connections, and false for use_tls.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Default returns Self from fn default() -> Self."
+    },
+    {
+      "level": 2,
+      "body": "Use to_owned or String::from for the service URL."
+    },
+    {
+      "level": 3,
+      "body": "Default values should be boring and safe for local development.",
+      "solutionCode": "pub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n        }\n    }\n}"
+    }
+  ],
+  "completionExplanation": "Default gives callers a clear starting point while keeping each field explicit. It is useful when most configuration values are optional overrides.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "impl_trait_for_type",
+            "traitName": "Default",
+            "typeName": "Config"
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "fn default",
+              "localhost"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

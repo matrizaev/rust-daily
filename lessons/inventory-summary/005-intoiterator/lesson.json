@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 2,
+  "id": "inventory-intoiterator-005",
+  "arcId": "inventory-summary",
+  "arcTitle": "Summarize inventory",
+  "order": 18,
+  "day": 5,
+  "arcLength": 6,
+  "title": "Make Inventory iterable",
+  "conceptId": "intoiterator-wrapper",
+  "difficulty": "medium",
+  "estimatedMinutes": 8,
+  "scenario": "A wrapper type can expose natural iteration while still owning its internal Vec.",
+  "instructions": "Implement IntoIterator for Inventory so consuming the wrapper yields Item values.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "The associated Item type should be Item."
+    },
+    {
+      "level": 2,
+      "body": "Vec<Item> already has an into_iter method that consumes the vector."
+    },
+    {
+      "level": 3,
+      "body": "The associated IntoIter type can reuse std::vec::IntoIter<Item>.",
+      "solutionCode": "pub struct Item {\n    pub name: String,\n}\n\npub struct Inventory {\n    items: Vec<Item>,\n}\n\nimpl Inventory {\n    pub fn new(items: Vec<Item>) -> Self {\n        Self { items }\n    }\n}\n\nimpl IntoIterator for Inventory {\n    type Item = Item;\n    type IntoIter = std::vec::IntoIter<Item>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.items.into_iter()\n    }\n}"
+    }
+  ],
+  "completionExplanation": "IntoIterator lets Inventory participate in for loops and iterator adapters without exposing its internal field as public API.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "impl_trait_for_type",
+            "traitName": "IntoIterator",
+            "typeName": "Inventory"
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "type Item = Item",
+              "std::vec::IntoIter<Item>"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

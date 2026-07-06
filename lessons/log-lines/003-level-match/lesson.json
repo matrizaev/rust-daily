@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 2,
+  "id": "log-level-match-003",
+  "arcId": "log-lines",
+  "arcTitle": "Inspect log lines",
+  "order": 22,
+  "day": 3,
+  "arcLength": 5,
+  "title": "Map log levels with match",
+  "conceptId": "pattern-matching",
+  "difficulty": "easy",
+  "estimatedMinutes": 6,
+  "scenario": "The viewer needs a stable severity number for each known log level.",
+  "instructions": "Add LogLevel variants Info, Warn, and Error. Implement severity with a match on level.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Enums pair well with match because every known case can be handled directly."
+    },
+    {
+      "level": 2,
+      "body": "The severity function should return a small integer for each variant."
+    },
+    {
+      "level": 3,
+      "body": "A match expression is clearer than string comparisons here.",
+      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn severity(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 1,\n        LogLevel::Warn => 2,\n        LogLevel::Error => 3,\n    }\n}"
+    }
+  ],
+  "completionExplanation": "Pattern matching keeps the mapping exhaustive and visible. Adding a new log level later will naturally point maintainers at this decision.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "enum_unit_variants",
+            "enumName": "LogLevel",
+            "requiredVariants": [
+              "Info",
+              "Warn",
+              "Error"
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "match level"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

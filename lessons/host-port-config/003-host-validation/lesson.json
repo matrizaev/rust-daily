@@ -6,12 +6,12 @@
   "order": 45,
   "day": 3,
   "arcLength": 6,
-  "title": "Validate Host names with TryFrom",
+  "title": "Reuse Host validation for owned strings",
   "conceptId": "host-validation",
   "difficulty": "medium",
   "estimatedMinutes": 8,
-  "scenario": "A host must be valid. We want to reject empty hosts or hosts containing spaces.",
-  "instructions": "Implement TryFrom<String> for Host. Return HostValidationError if the string is empty or contains spaces.",
+  "scenario": "Some adapter and configuration APIs hand us owned String values. The domain type should support those call sites without duplicating validation logic.",
+  "instructions": "Implement TryFrom<String> for Host by reusing the existing validate_host helper. Validate through a borrowed view, then store the original String on success.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Implement TryFrom<String> for Host and set type Error = HostValidationError;"
+      "body": "The validate_host helper already contains the validation rules; do not copy them into a second implementation."
     },
     {
       "level": 2,
-      "body": "Use val.is_empty() and val.contains(' ') to perform checks."
+      "body": "Borrow the String with value.as_str() for validation, then return Ok(Self(value)) so the owned allocation is reused."
     },
     {
       "level": 3,
-      "body": "A canonical solution validates string parameters fallibly.",
-      "solutionCode": "impl TryFrom<String> for Host {\n    type Error = HostValidationError;\n    fn try_from(val: String) -> Result<Self, Self::Error> {\n        if val.is_empty() { return Err(HostValidationError::Empty); }\n        if val.contains(' ') { return Err(HostValidationError::InvalidCharacters); }\n        Ok(Self(val))\n    }\n}"
+      "body": "A canonical solution keeps one validation function and avoids an unnecessary reallocation.",
+      "solutionCode": "impl TryFrom<String> for Host {\n    type Error = HostValidationError;\n\n    fn try_from(value: String) -> Result<Self, Self::Error> {\n        validate_host(value.as_str())?;\n\n        Ok(Self(value))\n    }\n}"
     }
   ],
-  "completionExplanation": "Implementing TryFrom ensures we cannot construct invalid Host objects, maintaining structural boundaries.",
+  "completionExplanation": "Supporting owned input can improve adapter ergonomics, but validation rules should still live in one place. Validating through a borrowed view and then storing the original String keeps the API consistent without an extra allocation.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -51,6 +51,19 @@
             "type": "impl_trait_for_type",
             "traitName": "TryFrom<String>",
             "typeName": "Host"
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "validate_host",
+              "value.as_str()",
+              "Ok(Self(value))"
+            ],
+            "forbiddenSnippets": [
+              ".unwrap()",
+              ".expect(",
+              "panic!"
+            ]
           }
         ]
       },

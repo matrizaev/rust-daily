@@ -10,8 +10,8 @@
   "conceptId": "host-port-composite",
   "difficulty": "medium",
   "estimatedMinutes": 8,
-  "scenario": "Hosts and Ports travel together as a composite network endpoint.",
-  "instructions": "Define a public Endpoint struct with public host (type Host) and port (type Port) fields. Also provide a constructor Endpoint::new(host: Host, port: Port) -> Self.",
+  "scenario": "Hosts and ports travel together as a network endpoint. The composite type should keep the relationship explicit without exposing mutable internals.",
+  "instructions": "Define an Endpoint struct with private host: Host and port: Port fields. Provide Endpoint::new(host: Host, port: Port) -> Self, host(&self) -> &Host, and port(&self) -> Port.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Define pub struct Endpoint with fields: pub host: Host and pub port: Port."
+      "body": "Define Endpoint as a named-field struct, but leave the fields private."
     },
     {
       "level": 2,
-      "body": "Implement Endpoint::new that constructs this composite type."
+      "body": "The host accessor can return &Host to avoid cloning; Port is Copy, so its accessor can return Port."
     },
     {
       "level": 3,
-      "body": "A canonical solution constructs composite Endpoint structs.",
-      "solutionCode": "pub struct Endpoint {\n    pub host: Host,\n    pub port: Port,\n}\nimpl Endpoint {\n    pub fn new(host: Host, port: Port) -> Self {\n        Self { host, port }\n    }\n}"
+      "body": "A canonical solution composes existing value objects behind a narrow API.",
+      "solutionCode": "pub struct Endpoint {\n    host: Host,\n    port: Port,\n}\n\nimpl Endpoint {\n    pub fn new(host: Host, port: Port) -> Self {\n        Self { host, port }\n    }\n\n    pub fn host(&self) -> &Host {\n        &self.host\n    }\n\n    pub fn port(&self) -> Port {\n        self.port\n    }\n}"
     }
   ],
-  "completionExplanation": "Composing simple types makes complex domain relationships explicit and safe.",
+  "completionExplanation": "Composing validated value objects makes the endpoint relationship explicit. Keeping Endpoint fields private preserves the ability to add endpoint-level rules later without breaking callers.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -74,6 +74,38 @@
               "host: Host",
               "port: Port",
               "Self"
+            ]
+          },
+          {
+            "type": "impl_method",
+            "implFor": "Endpoint",
+            "methodName": "host",
+            "requiredSignatureIncludes": [
+              "pub fn host",
+              "&self",
+              "&Host"
+            ]
+          },
+          {
+            "type": "impl_method",
+            "implFor": "Endpoint",
+            "methodName": "port",
+            "requiredSignatureIncludes": [
+              "pub fn port",
+              "&self",
+              "Port"
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "struct Endpoint"
+            ],
+            "forbiddenSnippets": [
+              "pub host",
+              "pub port",
+              ".unwrap()",
+              ".expect("
             ]
           }
         ]

@@ -10,8 +10,8 @@
   "conceptId": "port-nonzero",
   "difficulty": "easy",
   "estimatedMinutes": 6,
-  "scenario": "A port of 0 is invalid for our application. We can leverage Rust's standard library NonZeroU16 to enforce this rule at the compiler level.",
-  "instructions": "Define a Port struct wrapping std::num::NonZeroU16 privately. Expose a constructor new returning an Option<Self>.",
+  "scenario": "A port of 0 is invalid for this application. The standard library NonZeroU16 lets the Port type store only non-zero values after construction.",
+  "instructions": "Define a Port tuple struct wrapping std::num::NonZeroU16 privately. Expose Port::new(value: u16) -> Option<Self> and Port::value(&self) -> u16.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -31,15 +31,15 @@
     },
     {
       "level": 2,
-      "body": "NonZeroU16::new(val) returns Option<NonZeroU16>. Map this into Port using .map(Self)."
+      "body": "NonZeroU16::new(value) returns Option<NonZeroU16>. Map this into Port with .map(Self), then use get() in the accessor."
     },
     {
       "level": 3,
-      "body": "A canonical solution wraps NonZeroU16 in a tuple struct.",
-      "solutionCode": "pub struct Port(NonZeroU16);\nimpl Port {\n    pub fn new(val: u16) -> Option<Self> {\n        NonZeroU16::new(val).map(Self)\n    }\n}"
+      "body": "A canonical solution wraps NonZeroU16 and exposes only intentional construction and read access.",
+      "solutionCode": "pub struct Port(NonZeroU16);\n\nimpl Port {\n    pub fn new(value: u16) -> Option<Self> {\n        NonZeroU16::new(value).map(Self)\n    }\n\n    pub fn value(&self) -> u16 {\n        self.0.get()\n    }\n}"
     }
   ],
-  "completionExplanation": "Using NonZeroU16 prevents 0 values compile-time/construction-time, eliminating validation checks downstream.",
+  "completionExplanation": "Using NonZeroU16 moves the non-zero rule into the type representation after construction. Downstream code can trust Port values and does not need to repeat the zero check.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -60,8 +60,29 @@
             "methodName": "new",
             "requiredSignatureIncludes": [
               "pub fn new",
-              "val: u16",
+              "value: u16",
               "Option<Self>"
+            ]
+          },
+          {
+            "type": "impl_method",
+            "implFor": "Port",
+            "methodName": "value",
+            "requiredSignatureIncludes": [
+              "pub fn value",
+              "&self",
+              "u16"
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "NonZeroU16::new"
+            ],
+            "forbiddenSnippets": [
+              ".unwrap()",
+              ".expect(",
+              "panic!"
             ]
           }
         ]

@@ -1,1 +1,1 @@
-Teaches parsing and validating input strings using TryFrom.
+Teaches adding an owned-input conversion for adapter ergonomics while reusing the borrowed validation implementation instead of duplicating rules.

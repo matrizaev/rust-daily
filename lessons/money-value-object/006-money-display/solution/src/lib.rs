@@ -4,6 +4,7 @@ use std::fmt;
 pub enum Currency {
     Usd,
     Eur,
+    Gbp,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -16,8 +17,14 @@ impl Money {
     pub fn new(amount: u64, currency: Currency) -> Self {
         Self { amount, currency }
     }
-    pub fn amount(&self) -> u64 { self.amount }
-    pub fn currency(&self) -> Currency { self.currency }
+
+    pub fn amount(&self) -> u64 {
+        self.amount
+    }
+
+    pub fn currency(&self) -> Currency {
+        self.currency
+    }
 }
 
 impl fmt::Display for Money {
@@ -25,9 +32,11 @@ impl fmt::Display for Money {
         let symbol = match self.currency {
             Currency::Usd => "$",
             Currency::Eur => "€",
+            Currency::Gbp => "£",
         };
         let major = self.amount / 100;
         let minor = self.amount % 100;
+
         write!(f, "{}{}.{:02}", symbol, major, minor)
     }
 }

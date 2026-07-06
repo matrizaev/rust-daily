@@ -3,12 +3,28 @@ pub struct EmailAddress {
     value: String,
 }
 
-impl EmailAddress {
-    pub fn new_unchecked(value: impl Into<String>) -> Self {
-        Self {
-            value: value.into(),
+impl TryFrom<&str> for EmailAddress {
+    type Error = EmailValidationError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        if value.is_empty() {
+            return Err(EmailValidationError::Empty);
         }
+
+        if !value.contains('@') {
+            return Err(EmailValidationError::MissingAt);
+        }
+
+        Ok(Self {
+            value: value.to_owned(),
+        })
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum EmailValidationError {
+    Empty,
+    MissingAt,
 }
 
 // TODO: implement std::fmt::Display for EmailAddress.

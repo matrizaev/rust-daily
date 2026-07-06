@@ -57,7 +57,7 @@ The 500 lessons are distributed across the 10 pillars as follows:
 | 16 | 3 | `inventory-fold-total-003` | Fold quantities into a total | `fold-sum` |
 | 17 | 4 | `inventory-clear-loop-004` | Choose clarity over clever chains | `iterator-judgment` |
 | 18 | 5 | `inventory-intoiterator-005` | Make Inventory iterable | `intoiterator-wrapper` |
-| 19 | 6 | `inventory-sort-by-key-006` | Sort items by key | `sort-by-key` |
+| 19 | 6 | `inventory-sort-by-key-006` | Sort items by borrowed comparison | `sort-by-key` |
 
 ### Arc: Inspect log lines (`log-lines`)
 
@@ -97,9 +97,9 @@ The 500 lessons are distributed across the 10 pillars as follows:
 |---|---|---|---|---|
 | 37 | 1 | `money-struct-001` | Define a basic Money struct | `money-struct` |
 | 38 | 2 | `currency-enum-002` | Add supported Currency enums | `currency-enum` |
-| 39 | 3 | `money-invariants-003` | Control Money construction invariants | `money-invariants` |
-| 40 | 4 | `money-add-004` | Implement Add for same Currency | `money-add-impl` |
-| 41 | 5 | `money-tryfrom-decimal-005` | Parse Money value from Decimal | `money-try-from-decimal` |
+| 39 | 3 | `money-invariants-003` | Add a Money constructor and accessors | `money-invariants` |
+| 40 | 4 | `money-add-004` | Add Money with a typed error | `money-add-impl` |
+| 41 | 5 | `money-tryfrom-decimal-005` | Convert a decimal string to Money | `money-try-from-decimal` |
 | 42 | 6 | `money-display-006` | Implement Display for Money with currency symbols | `money-display-format` |
 
 ### Arc: Host and port configuration modeling (`host-port-config`)
@@ -107,8 +107,8 @@ The 500 lessons are distributed across the 10 pillars as follows:
 | Order | Day | Lesson ID | Title | Concept ID |
 |---|---|---|---|---|
 | 43 | 1 | `port-nonzero-001` | Use NonZeroU16 for Port representation | `port-nonzero` |
-| 44 | 2 | `host-domain-002` | Define Host domain value object | `host-domain` |
-| 45 | 3 | `host-validation-003` | Validate Host names with TryFrom | `host-validation` |
+| 44 | 2 | `host-domain-002` | Define and validate a Host value object | `host-domain` |
+| 45 | 3 | `host-validation-003` | Reuse Host validation for owned strings | `host-validation` |
 | 46 | 4 | `host-port-struct-004` | Compose Host and Port into Endpoint | `host-port-composite` |
 | 47 | 5 | `endpoint-default-005` | Give Endpoint sensible local defaults | `endpoint-default` |
 | 48 | 6 | `endpoint-display-006` | Implement Display for Endpoint URL formatting | `endpoint-display` |

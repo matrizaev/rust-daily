@@ -3,10 +3,7 @@
     "id": "error-enum-design",
     "name": "Error enum design",
     "description": "Model distinct parser failure modes with a typed Rust enum instead of stringly typed errors.",
-    "prerequisites": [
-      "enums-basic",
-      "result-basic"
-    ],
+    "prerequisites": [],
     "difficulty": [
       "easy",
       "medium"
@@ -145,9 +142,7 @@
     "id": "struct-field-design",
     "name": "Struct field design",
     "description": "Choose owned field types for a small configuration object.",
-    "prerequisites": [
-      "structs-basic"
-    ],
+    "prerequisites": [],
     "difficulty": [
       "easy"
     ],
@@ -265,9 +260,7 @@
     "id": "domain-structs",
     "name": "Domain structs",
     "description": "Use named fields to model inventory data clearly.",
-    "prerequisites": [
-      "structs-basic"
-    ],
+    "prerequisites": [],
     "difficulty": [
       "easy"
     ],
@@ -363,8 +356,8 @@
   },
   {
     "id": "sort-by-key",
-    "name": "sort_by_key",
-    "description": "Sort a collection by a focused ordering key.",
+    "name": "Borrowed sort comparisons",
+    "description": "Sort slices by comparing borrowed fields when cloning a key would be wasteful.",
     "prerequisites": [
       "domain-structs"
     ],
@@ -375,9 +368,9 @@
       "inventory-sort-by-key-006"
     ],
     "tags": [
-      "ordering",
       "collections",
-      "iterators"
+      "sorting",
+      "borrowing"
     ],
     "masteryThreshold": 3
   },
@@ -446,7 +439,7 @@
   {
     "id": "builder-result",
     "name": "Builder Result output",
-    "description": "Validate required builder fields before producing the final type.",
+    "description": "Return Result from builders so incomplete state becomes a typed, recoverable error.",
     "prerequisites": [
       "builder-default",
       "result-validation"
@@ -488,7 +481,7 @@
   {
     "id": "doc-examples",
     "name": "Documentation examples",
-    "description": "Write a short example that teaches the intended API flow.",
+    "description": "Write doc examples that show fallible APIs without unwrap or expect.",
     "prerequisites": [
       "tryfrom-request"
     ],
@@ -773,8 +766,8 @@
   },
   {
     "id": "money-invariants",
-    "name": "Money invariants",
-    "description": "Control how Money is constructed and enforce read-only safety with accessors.",
+    "name": "Money constructor and accessors",
+    "description": "Keep Money fields private while exposing a narrow constructor and read-only accessors as an invariant boundary.",
     "prerequisites": [
       "currency-enum"
     ],
@@ -786,15 +779,15 @@
     ],
     "tags": [
       "domain",
-      "invariants",
+      "encapsulation",
       "methods"
     ],
     "masteryThreshold": 3
   },
   {
     "id": "money-add-impl",
-    "name": "Adding money values",
-    "description": "Implement standard Add trait to allow operator overloading while validating currency rules.",
+    "name": "Checked money addition",
+    "description": "Return typed errors for currency mismatches and arithmetic overflow instead of panicking.",
     "prerequisites": [
       "money-invariants"
     ],
@@ -805,16 +798,16 @@
       "money-add-004"
     ],
     "tags": [
-      "traits",
-      "operator-overloading",
-      "money"
+      "domain",
+      "errors",
+      "checked-arithmetic"
     ],
     "masteryThreshold": 3
   },
   {
     "id": "money-try-from-decimal",
     "name": "Parsing decimal money strings",
-    "description": "Convert float-like pricing strings fallibly to safe minor-unit integers.",
+    "description": "Convert decimal price strings into safe integer minor units with specific typed errors.",
     "prerequisites": [
       "money-invariants"
     ],
@@ -827,14 +820,15 @@
     "tags": [
       "conversion",
       "tryfrom",
-      "parsing"
+      "parsing",
+      "checked-arithmetic"
     ],
     "masteryThreshold": 3
   },
   {
     "id": "money-display-format",
     "name": "Displaying money values",
-    "description": "Implement Display for custom human-readable currency symbol and cents formatting.",
+    "description": "Implement Display for all supported currency symbols and cents formatting.",
     "prerequisites": [
       "money-invariants"
     ],
@@ -847,14 +841,15 @@
     "tags": [
       "traits",
       "display",
-      "formatting"
+      "formatting",
+      "domain"
     ],
     "masteryThreshold": 3
   },
   {
     "id": "port-nonzero",
     "name": "NonZero ports",
-    "description": "Leverage NonZeroU16 to prevent invalid port numbers at compilation and construction boundaries.",
+    "description": "Leverage NonZeroU16 so Port values store only non-zero numbers after construction.",
     "prerequisites": [
       "domain-structs"
     ],
@@ -867,19 +862,20 @@
     "tags": [
       "domain",
       "types",
-      "safety"
+      "safety",
+      "accessors"
     ],
     "masteryThreshold": 3
   },
   {
     "id": "host-domain",
-    "name": "Host domain representation",
-    "description": "Wrap host strings in custom types to prevent primitive string obsession.",
+    "name": "Validated Host value object",
+    "description": "Wrap host strings in a validated domain type, using TryFrom<&str> to avoid raw string usage and unnecessary caller allocation.",
     "prerequisites": [
       "domain-structs"
     ],
     "difficulty": [
-      "easy"
+      "medium"
     ],
     "lessonIds": [
       "host-domain-002"
@@ -887,14 +883,15 @@
     "tags": [
       "domain",
       "types",
-      "structs"
+      "validation",
+      "conversion"
     ],
     "masteryThreshold": 3
   },
   {
     "id": "host-validation",
-    "name": "Validating hostnames fallibly",
-    "description": "Validate hostname inputs fallibly using TryFrom.",
+    "name": "Owned Host conversion reuse",
+    "description": "Support TryFrom<String> by reusing borrowed Host validation and storing the original owned String on success.",
     "prerequisites": [
       "host-domain"
     ],
@@ -907,14 +904,15 @@
     "tags": [
       "conversion",
       "tryfrom",
-      "validation"
+      "validation",
+      "allocation"
     ],
     "masteryThreshold": 3
   },
   {
     "id": "host-port-composite",
     "name": "Composite network endpoints",
-    "description": "Group Host and Port values together into single Endpoint structures.",
+    "description": "Group Host and Port values into an Endpoint with private fields and narrow accessors.",
     "prerequisites": [
       "host-domain",
       "port-nonzero"
@@ -928,14 +926,15 @@
     "tags": [
       "domain",
       "structs",
-      "composition"
+      "composition",
+      "encapsulation"
     ],
     "masteryThreshold": 3
   },
   {
     "id": "endpoint-default",
     "name": "Endpoint local defaults",
-    "description": "Implement Default to provide predictable local developer connection settings.",
+    "description": "Implement Default for known local settings without unwrap, expect, or panic.",
     "prerequisites": [
       "host-port-composite"
     ],
@@ -948,14 +947,15 @@
     "tags": [
       "traits",
       "default",
-      "configuration"
+      "configuration",
+      "safety"
     ],
     "masteryThreshold": 3
   },
   {
     "id": "endpoint-display",
     "name": "Formatting network endpoints",
-    "description": "Format network endpoints cleanly as host:port strings using Display.",
+    "description": "Format endpoints through their public accessors using Display.",
     "prerequisites": [
       "host-port-composite"
     ],
@@ -968,7 +968,8 @@
     "tags": [
       "traits",
       "display",
-      "formatting"
+      "formatting",
+      "encapsulation"
     ],
     "masteryThreshold": 3
   }

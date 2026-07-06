@@ -10,8 +10,8 @@
   "conceptId": "money-display-format",
   "difficulty": "easy",
   "estimatedMinutes": 6,
-  "scenario": "The UI needs to render formatted prices like $19.99 or \u20ac5.00 correctly.",
-  "instructions": "Implement std::fmt::Display for Money. Use '$' for USD and '\u20ac' for EUR, and output cents formatted to 2 decimal places.",
+  "scenario": "The UI needs to render formatted prices like $19.99, \u20ac5.00, or \u00a37.25 without exposing Money's private fields.",
+  "instructions": "Implement std::fmt::Display for Money. Use '$' for USD, '\u20ac' for EUR, '\u00a3' for GBP, and output cents formatted to two decimal places.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Write impl fmt::Display for Money block."
+      "body": "Write an impl fmt::Display for Money block."
     },
     {
       "level": 2,
-      "body": "Extract major amount (/ 100) and minor cents (% 100). Use write! with Symbol, major, and padded minor :02."
+      "body": "Match on Currency for the symbol, then use amount / 100 and amount % 100 with {:02} for cents."
     },
     {
       "level": 3,
-      "body": "A canonical solution prints currency symbol and decimal formatting.",
-      "solutionCode": "impl fmt::Display for Money {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        let symbol = match self.currency { Currency::Usd => \"$\", Currency::Eur => \"\u20ac\" };\n        write!(f, \"{}{}.{:02}\", symbol, self.amount / 100, self.amount % 100)\n    }\n}"
+      "body": "A canonical solution formats all supported currencies through the Display trait.",
+      "solutionCode": "impl fmt::Display for Money {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        let symbol = match self.currency {\n            Currency::Usd => \"$\",\n            Currency::Eur => \"\u20ac\",\n            Currency::Gbp => \"\u00a3\",\n        };\n        let major = self.amount / 100;\n        let minor = self.amount % 100;\n\n        write!(f, \"{}{}.{:02}\", symbol, major, minor)\n    }\n}"
     }
   ],
-  "completionExplanation": "Implementing Display gives domain objects formatting capabilities without exposing private data fields.",
+  "completionExplanation": "Display provides the standard formatting API while the value object keeps its representation private. Matching every supported currency also prevents enum additions from being silently ignored.",
   "validation": {
     "mode": "all",
     "validations": [

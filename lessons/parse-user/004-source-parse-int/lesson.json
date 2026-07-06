@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 2,
+  "id": "source-parse-int-error-004",
+  "arcId": "parse-user",
+  "arcTitle": "Parse a user from text",
+  "order": 10,
+  "day": 4,
+  "arcLength": 7,
+  "title": "Preserve the ID parse source",
+  "conceptId": "error-source",
+  "difficulty": "medium",
+  "estimatedMinutes": 8,
+  "scenario": "Invalid IDs come from ParseIntError. Keeping that source error helps diagnostics without giving up the typed ParseUserError API.",
+  "instructions": "Change InvalidId so it stores ParseIntError, then pass the parse error through map_err instead of discarding it.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Tuple variants can carry the original error value."
+    },
+    {
+      "level": 2,
+      "body": "map_err can pass a function or variant constructor when the types line up."
+    },
+    {
+      "level": 3,
+      "body": "After the change, InvalidId should look like InvalidId(ParseIntError).",
+      "solutionCode": "use std::num::ParseIntError;\n\n#[derive(Debug)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId(ParseIntError),\n}\n\npub fn parse_id(id_text: &str) -> Result<u64, ParseUserError> {\n    id_text.parse::<u64>().map_err(ParseUserError::InvalidId)\n}"
+    }
+  ],
+  "completionExplanation": "The parse error now keeps its original source. That makes the high-level error useful while preserving details for logging, debugging, or later Error::source support.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "InvalidId(ParseIntError)",
+              "map_err(ParseUserError::InvalidId)"
+            ],
+            "forbiddenSnippets": [
+              "|_error| ParseUserError::InvalidId"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

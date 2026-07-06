@@ -10,8 +10,8 @@
   "conceptId": "endpoint-display",
   "difficulty": "easy",
   "estimatedMinutes": 6,
-  "scenario": "Connecting logs and config outputs need endpoint formatting in host:port string style.",
-  "instructions": "Implement Display for Endpoint formatting it as host:port.",
+  "scenario": "Connection logs and configuration output need endpoint formatting in host:port style without exposing Endpoint internals.",
+  "instructions": "Implement Display for Endpoint by formatting self.host().as_str() and self.port().value() as host:port.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -31,15 +31,15 @@
     },
     {
       "level": 2,
-      "body": "Use write!(f, \"{}:{}\", self.host.as_str(), self.port.value()) inside fmt."
+      "body": "Use the public accessors: self.host().as_str() and self.port().value()."
     },
     {
       "level": 3,
-      "body": "A canonical solution prints host:port formatting.",
-      "solutionCode": "impl fmt::Display for Endpoint {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        write!(f, \"{}:{}\", self.host.as_str(), self.port.value())\n    }\n}"
+      "body": "A canonical solution formats the composite through its public API.",
+      "solutionCode": "impl fmt::Display for Endpoint {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        write!(f, \"{}:{}\", self.host().as_str(), self.port().value())\n    }\n}"
     }
   ],
-  "completionExplanation": "Implementing Display on a composite value object maps internal relationships to consistent strings.",
+  "completionExplanation": "Display gives the composite type a standard textual representation while callers and formatting code continue to use the public API instead of reaching into private fields.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -51,6 +51,18 @@
             "type": "impl_trait_for_type",
             "traitName": "std::fmt::Display",
             "typeName": "Endpoint"
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "fn fmt",
+              "write!"
+            ],
+            "forbiddenSnippets": [
+              ".unwrap()",
+              ".expect(",
+              "panic!"
+            ]
           }
         ]
       },

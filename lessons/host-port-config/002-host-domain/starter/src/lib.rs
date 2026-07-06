@@ -1,9 +1,13 @@
-// TODO: Define Host struct with private String field.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HostValidationError {
+    Empty,
+    InvalidCharacters,
+}
+
+// TODO: Define Host as a public tuple struct with a private String field.
 
 impl Host {
-    pub fn new_unchecked(val: String) -> Self {
-        Self(val)
-    }
-
-    // TODO: Expose as_str method.
+    // TODO: Expose as_str(&self) -> &str.
 }
+
+// TODO: Implement TryFrom<&str> for Host.

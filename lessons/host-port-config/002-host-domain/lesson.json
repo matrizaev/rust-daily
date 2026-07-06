@@ -6,12 +6,12 @@
   "order": 44,
   "day": 2,
   "arcLength": 6,
-  "title": "Define Host domain value object",
+  "title": "Define and validate a Host value object",
   "conceptId": "host-domain",
-  "difficulty": "easy",
-  "estimatedMinutes": 5,
-  "scenario": "Hosts are string representations. We want to avoid using raw strings to represent hosts, so we'll wrap it in a custom type.",
-  "instructions": "Define a Host struct with a private String field. Expose a Host::as_str(&self) -> &str method.",
+  "difficulty": "medium",
+  "estimatedMinutes": 8,
+  "scenario": "Hosts arrive as borrowed text from configuration and adapters. We want a domain type that rejects empty values and whitespace before storing an owned String.",
+  "instructions": "Define a Host tuple struct with a private String field. Expose Host::as_str(&self) -> &str and implement TryFrom<&str> for Host using HostValidationError.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Use a tuple struct: pub struct Host(String);"
+      "body": "Wrap the owned String in Host, but validate from &str so callers do not allocate before validation."
     },
     {
       "level": 2,
-      "body": "as_str should return &self.0 as a borrow string slice &str."
+      "body": "Return Empty for an empty string and InvalidCharacters if the input contains whitespace; allocate only when returning Ok."
     },
     {
       "level": 3,
-      "body": "A canonical solution wraps String and exposes a borrow accessor.",
-      "solutionCode": "pub struct Host(String);\nimpl Host {\n    pub fn as_str(&self) -> &str { &self.0 }\n}"
+      "body": "A canonical solution validates borrowed text before storing an owned string.",
+      "solutionCode": "pub struct Host(String);\n\nimpl Host {\n    pub fn as_str(&self) -> &str {\n        &self.0\n    }\n}\n\nimpl TryFrom<&str> for Host {\n    type Error = HostValidationError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        if value.is_empty() {\n            return Err(HostValidationError::Empty);\n        }\n\n        if value.contains(char::is_whitespace) {\n            return Err(HostValidationError::InvalidCharacters);\n        }\n\n        Ok(Self(value.to_owned()))\n    }\n}"
     }
   ],
-  "completionExplanation": "Wrapping primitive values prevents type mix-ups (like passing a email string as a host).",
+  "completionExplanation": "A validated value object keeps raw strings at the boundary. Implementing TryFrom<&str> avoids forcing callers to allocate invalid input, while Host owns the accepted value after validation.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -48,12 +48,44 @@
         "timeoutMs": 10000,
         "checks": [
           {
+            "type": "tuple_struct_fields",
+            "structName": "Host",
+            "requiredTypes": [
+              "String"
+            ]
+          },
+          {
             "type": "impl_method",
             "implFor": "Host",
             "methodName": "as_str",
             "requiredSignatureIncludes": [
               "&self",
               "&str"
+            ]
+          },
+          {
+            "type": "impl_trait_for_type",
+            "traitName": "TryFrom<&str>",
+            "typeName": "Host"
+          },
+          {
+            "type": "enum_unit_variants",
+            "enumName": "HostValidationError",
+            "requiredVariants": [
+              "Empty",
+              "InvalidCharacters"
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "to_owned"
+            ],
+            "forbiddenSnippets": [
+              "new_unchecked",
+              ".unwrap()",
+              ".expect(",
+              "panic!"
             ]
           }
         ]

@@ -1,9 +1,8 @@
-use std::ops::Add;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Currency {
     Usd,
     Eur,
+    Gbp,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -16,20 +15,39 @@ impl Money {
     pub fn new(amount: u64, currency: Currency) -> Self {
         Self { amount, currency }
     }
-    pub fn amount(&self) -> u64 { self.amount }
-    pub fn currency(&self) -> Currency { self.currency }
+
+    pub fn amount(&self) -> u64 {
+        self.amount
+    }
+
+    pub fn currency(&self) -> Currency {
+        self.currency
+    }
 }
 
-impl Add for Money {
-    type Output = Self;
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MoneyAddError {
+    CurrencyMismatch { left: Currency, right: Currency },
+    AmountOverflow,
+}
 
-    fn add(self, rhs: Self) -> Self::Output {
+impl Money {
+    pub fn checked_add(self, rhs: Self) -> Result<Self, MoneyAddError> {
         if self.currency != rhs.currency {
-            panic!("Cannot add money of different currencies");
+            return Err(MoneyAddError::CurrencyMismatch {
+                left: self.currency,
+                right: rhs.currency,
+            });
         }
-        Self {
-            amount: self.amount + rhs.amount,
+
+        let amount = self
+            .amount
+            .checked_add(rhs.amount)
+            .ok_or(MoneyAddError::AmountOverflow)?;
+
+        Ok(Self {
+            amount,
             currency: self.currency,
-        }
+        })
     }
 }

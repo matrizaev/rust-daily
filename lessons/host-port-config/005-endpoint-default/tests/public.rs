@@ -1,8 +1,9 @@
-use rust_daily_lesson::{Endpoint, Host, Port};
+use rust_daily_lesson::Endpoint;
 
 #[test]
 fn endpoint_default() {
-    let def = Endpoint::default();
-    assert_eq!(def.host, Host::new_unchecked("localhost".to_owned()));
-    assert_eq!(def.port, Port::new(8080).unwrap());
+    let default_endpoint = Endpoint::default();
+
+    assert_eq!(default_endpoint.host().as_str(), "localhost");
+    assert_eq!(default_endpoint.port().value(), 8080);
 }

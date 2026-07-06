@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 2,
+  "id": "log-filter-tests-005",
+  "arcId": "log-lines",
+  "arcTitle": "Inspect log lines",
+  "order": 24,
+  "day": 5,
+  "arcLength": 5,
+  "title": "Check log filtering behavior",
+  "conceptId": "focused-tests",
+  "difficulty": "medium",
+  "estimatedMinutes": 8,
+  "scenario": "The log viewer should keep high-priority entries and discard routine information when asked for alerts.",
+  "instructions": "Fill in the TODO blocks with checks for keeping Error and Warn entries while excluding Info entries.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Use a small array of LogEntry values to show each level."
+    },
+    {
+      "level": 2,
+      "body": "The first check should prove that warning and error messages are retained."
+    },
+    {
+      "level": 3,
+      "body": "The second check should make the Info exclusion explicit.",
+      "solutionCode": "pub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub struct LogEntry<'a> {\n    pub level: LogLevel,\n    pub message: &'a str,\n}\n\npub fn alert_messages<'a>(entries: &'a [LogEntry<'a>]) -> Vec<&'a str> {\n    entries\n        .iter()\n        .filter_map(|entry| match entry.level {\n            LogLevel::Warn | LogLevel::Error => Some(entry.message),\n            LogLevel::Info => None,\n        })\n        .collect()\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn keeps_warning_and_error_messages() {\n        let entries = [\n            LogEntry { level: LogLevel::Warn, message: \"slow response\" },\n            LogEntry { level: LogLevel::Error, message: \"write failed\" },\n        ];\n\n        assert_eq!(\n            alert_messages(&entries),\n            vec![\"slow response\", \"write failed\"]\n        );\n    }\n\n    #[test]\n    fn skips_info_messages() {\n        let entries = [\n            LogEntry { level: LogLevel::Info, message: \"started\" },\n            LogEntry { level: LogLevel::Warn, message: \"slow response\" },\n        ];\n\n        assert_eq!(alert_messages(&entries), vec![\"slow response\"]);\n    }\n}"
+    }
+  ],
+  "completionExplanation": "Focused behavior checks document the alert filtering contract. They make the important inclusion and exclusion rules visible for the next reader.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "assert_eq!",
+              "LogLevel::Warn",
+              "LogLevel::Error",
+              "LogLevel::Info"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

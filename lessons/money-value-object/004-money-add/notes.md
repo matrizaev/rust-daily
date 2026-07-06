@@ -1,1 +1,1 @@
-Teaches implementing standard library Add trait with validation guards.
+Teaches that fallible domain operations should return typed errors instead of overloading operators with panics.

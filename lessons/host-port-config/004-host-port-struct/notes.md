@@ -1,1 +1,1 @@
-Teaches composing individual value objects into a single struct.
+Teaches composing validated value objects into an aggregate while keeping aggregate fields private and exposing narrow accessors.

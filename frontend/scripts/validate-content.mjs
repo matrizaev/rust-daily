@@ -26,6 +26,7 @@ const RUST_RUNTIME_VALIDATION_MODES = new Set([
 const STRUCTURAL_TYPES = new Set([
   "enum_unit_variants",
   "struct_fields",
+  "tuple_struct_fields",
   "impl_trait_for_type",
   "impl_method",
   "function_signature",
@@ -165,6 +166,14 @@ const validateFieldCheck = (errors, check, path) => {
   validateStructFieldRequirements(errors, check, path);
 };
 
+const validateTupleFieldCheck = (errors, check, path) => {
+  validateStringFields(errors, check, path, ["structName"]);
+
+  if (!isStringArray(check.requiredTypes)) {
+    push(errors, `${path} requiredTypes must be a non-empty string array.`);
+  }
+};
+
 const validateIncludesCheck = (errors, check, path) => {
   if (!isStringArray(check.requiredSnippets)) {
     push(errors, `${path} requiredSnippets must be a non-empty string array.`);
@@ -189,6 +198,7 @@ const validateStructuralCheck = (errors, check, path) => {
       }
     },
     struct_fields: () => validateFieldCheck(errors, check, path),
+    tuple_struct_fields: () => validateTupleFieldCheck(errors, check, path),
     impl_trait_for_type: () => validateStringFields(errors, check, path, ["traitName", "typeName"]),
     impl_method: () => {
       validateStringFields(errors, check, path, ["implFor", "methodName"]);

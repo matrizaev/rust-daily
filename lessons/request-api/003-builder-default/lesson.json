@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 2,
+  "id": "request-builder-default-003",
+  "arcId": "request-api",
+  "arcTitle": "Build a request API",
+  "order": 27,
+  "day": 3,
+  "arcLength": 6,
+  "title": "Start the builder from Default",
+  "conceptId": "builder-default",
+  "difficulty": "easy",
+  "estimatedMinutes": 6,
+  "scenario": "Callers should be able to create an empty builder using the standard Default trait.",
+  "instructions": "Implement Default for RequestBuilder. Both method and path should start as None.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Default should produce the same empty state every time."
+    },
+    {
+      "level": 2,
+      "body": "Option fields usually start as None in an empty builder."
+    },
+    {
+      "level": 3,
+      "body": "You can also call Self { method: None, path: None } directly.",
+      "solutionCode": "pub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl Default for RequestBuilder {\n    fn default() -> Self {\n        Self {\n            method: None,\n            path: None,\n        }\n    }\n}"
+    }
+  ],
+  "completionExplanation": "Default makes the builder easy to construct and compose with APIs that expect defaultable values. The empty state is explicit through Option fields.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "impl_trait_for_type",
+            "traitName": "Default",
+            "typeName": "RequestBuilder"
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "method: None",
+              "path: None"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}
