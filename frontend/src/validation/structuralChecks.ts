@@ -20,7 +20,8 @@ type TupleStructFieldsCheck = Extract<
   { type: "tuple_struct_fields" }
 >;
 
-const RUST_IDENTIFIER = /^([A-Za-z_][A-Za-z0-9_]*)\s*(?:=\s*[^({]+)?$/;
+const ENUM_VARIANT_IDENTIFIER = /^([A-Za-z_][A-Za-z0-9_]*)\b/;
+const IDENTIFIER_SNIPPET = /^[A-Za-z_][A-Za-z0-9_:]*$/;
 
 const escapeRegex = (value: string) =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -31,6 +32,16 @@ const stripRustComments = (source: string) =>
       comment.replace(/[^\n\r]/g, " "),
     )
     .replace(/\/\/[^\n\r]*/g, "");
+
+const skipWhitespace = (source: string, index: number) => {
+  let cursor = index;
+
+  while (cursor < source.length && /\s/.test(source[cursor])) {
+    cursor += 1;
+  }
+
+  return cursor;
+};
 
 const optionalGenericsPattern = "(?:\\s*<[^>{}]*>)?";
 
@@ -103,6 +114,22 @@ const extractDelimitedBody = (
   openDelimiter: string,
   closeDelimiter: string,
 ) => {
+  const closeIndex = findMatchingDelimiter(
+    source,
+    openIndex,
+    openDelimiter,
+    closeDelimiter,
+  );
+
+  return closeIndex < 0 ? null : source.slice(openIndex + 1, closeIndex);
+};
+
+const findMatchingDelimiter = (
+  source: string,
+  openIndex: number,
+  openDelimiter: string,
+  closeDelimiter: string,
+) => {
   let depth = 1;
 
   for (let index = openIndex + 1; index < source.length; index += 1) {
@@ -114,11 +141,11 @@ const extractDelimitedBody = (
     );
 
     if (depth === 0) {
-      return source.slice(openIndex + 1, index);
+      return index;
     }
   }
 
-  return null;
+  return -1;
 };
 
 const extractNamedDelimitedBody = (
@@ -135,8 +162,8 @@ const extractNamedDelimitedBody = (
     : extractDelimitedBody(source, openIndex, openDelimiter, closeDelimiter);
 };
 
-const OPEN_DEPTH_CHARS = new Set(["(", "[", "{"]);
-const CLOSE_DEPTH_CHARS = new Set([")", "]", "}"]);
+const OPEN_DEPTH_CHARS = new Set(["(", "[", "{", "<"]);
+const CLOSE_DEPTH_CHARS = new Set([")", "]", "}", ">"]);
 
 const updateDepth = (char: string, depth: number) => {
   if (OPEN_DEPTH_CHARS.has(char)) {
@@ -175,6 +202,22 @@ const normalizeWhitespace = (value: string) => value.replace(/\s+/g, " ").trim()
 const includesAll = (source: string, snippets: string[]) =>
   snippets.every((snippet) => source.includes(snippet));
 
+const snippetBoundaryClass = (snippet: string) =>
+  snippet.includes("::") ? "A-Za-z0-9_:" : "A-Za-z0-9_";
+
+const boundedSnippetPattern = (snippet: string) =>
+  new RegExp(
+    `(^|[^${snippetBoundaryClass(snippet)}])${escapeRegex(snippet)}(?=$|[^${snippetBoundaryClass(snippet)}])`,
+  );
+
+const includesBoundedSnippet = (source: string, snippet: string) =>
+  boundedSnippetPattern(snippet).test(source);
+
+const includesForbiddenSnippet = (source: string, snippet: string) =>
+  IDENTIFIER_SNIPPET.test(snippet)
+    ? includesBoundedSnippet(source, snippet)
+    : source.includes(snippet);
+
 const failure = (name: string, message: string): ValidationFailure => ({
   name,
   message,
@@ -187,11 +230,11 @@ const missingSnippetFailures = (source: string, snippets: string[]) =>
 
 const forbiddenSnippetFailures = (source: string, snippets: string[]) =>
   snippets
-    .filter((snippet) => source.includes(snippet))
+    .filter((snippet) => includesForbiddenSnippet(source, snippet))
     .map((snippet) => failure(snippet, `Remove forbidden snippet: ${snippet}.`));
 
-const getUnitVariantName = (entry: string) => {
-  const match = RUST_IDENTIFIER.exec(entry.trim());
+const getEnumVariantName = (entry: string) => {
+  const match = ENUM_VARIANT_IDENTIFIER.exec(entry.trim());
 
   return match?.[1] ?? null;
 };
@@ -217,7 +260,7 @@ const runEnumUnitVariantsCheck = (
   }
 
   const variants = new Set(
-    splitTopLevelEntries(body).map(getUnitVariantName).filter(isString),
+    splitTopLevelEntries(body).map(getEnumVariantName).filter(isString),
   );
   const missing = missingVariantFailures(variants, check.requiredVariants);
 
@@ -226,12 +269,36 @@ const runEnumUnitVariantsCheck = (
     : missing;
 };
 
+const findTopLevelColon = (entry: string) => {
+  let depth = 0;
+
+  for (let index = 0; index < entry.length; index += 1) {
+    const char = entry[index];
+
+    if (char === ":" && depth === 0) {
+      return index;
+    }
+
+    depth = updateDepth(char, depth);
+  }
+
+  return -1;
+};
+
 const parseStructField = (entry: string) => {
-  const match = /^\s*(?:pub(?:\([^)]*\))?\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*:\s*([^,]+)\s*$/.exec(
-    entry,
+  const colonIndex = findTopLevelColon(entry);
+
+  if (colonIndex < 0) {
+    return null;
+  }
+
+  const fieldText = entry.slice(0, colonIndex).trim();
+  const typeText = normalizeWhitespace(entry.slice(colonIndex + 1).trim());
+  const match = /^(?:pub(?:\([^)]*\))?\s+)?([A-Za-z_][A-Za-z0-9_]*)$/.exec(
+    fieldText,
   );
 
-  return match ? { name: match[1], typeText: normalizeWhitespace(match[2]) } : null;
+  return match && typeText ? { name: match[1], typeText } : null;
 };
 
 const getStructFields = (body: string) =>
@@ -306,14 +373,76 @@ const extractImplBody = (source: string, implFor: string) => {
 };
 
 const functionPattern = (functionName: string) =>
-  new RegExp(
-    `\\b(?:pub\\s+)?fn\\s+${escapeRegex(functionName)}\\s*\\([^)]*\\)\\s*(?:->\\s*[^\\{;]+)?`,
-  );
+  new RegExp(`\\bfn\\s+${escapeRegex(functionName)}\\b`, "g");
 
+const signatureStartIndex = (source: string, fnIndex: number) => {
+  const lineStart = source.lastIndexOf("\n", fnIndex - 1) + 1;
+
+  return skipWhitespace(source, lineStart);
+};
+
+// fallow-ignore-next-line complexity
+const findSignatureTerminator = (source: string, startIndex: number) => {
+  let depth = 0;
+
+  for (let index = startIndex; index < source.length; index += 1) {
+    const char = source[index];
+
+    if ((char === "{" || char === ";") && depth === 0) {
+      return index;
+    }
+
+    depth = updateDepth(char, depth);
+  }
+
+  return -1;
+};
+
+// fallow-ignore-next-line complexity
 const findFunctionSignature = (source: string, functionName: string) => {
-  const match = functionPattern(functionName).exec(source);
+  const matches = source.matchAll(functionPattern(functionName));
 
-  return match ? normalizeWhitespace(match[0]) : null;
+  for (const match of matches) {
+    const fnIndex = match.index ?? -1;
+
+    if (fnIndex < 0) {
+      continue;
+    }
+
+    let cursor = skipWhitespace(source, fnIndex + match[0].length);
+
+    if (source[cursor] === "<") {
+      const genericEnd = findMatchingDelimiter(source, cursor, "<", ">");
+
+      if (genericEnd < 0) {
+        continue;
+      }
+
+      cursor = skipWhitespace(source, genericEnd + 1);
+    }
+
+    if (source[cursor] !== "(") {
+      continue;
+    }
+
+    const paramsEnd = findMatchingDelimiter(source, cursor, "(", ")");
+
+    if (paramsEnd < 0) {
+      continue;
+    }
+
+    const signatureEnd = findSignatureTerminator(source, paramsEnd + 1);
+
+    if (signatureEnd < 0) {
+      continue;
+    }
+
+    return normalizeWhitespace(
+      source.slice(signatureStartIndex(source, fnIndex), signatureEnd),
+    );
+  }
+
+  return null;
 };
 
 const methodSignatureFailures = (
@@ -385,8 +514,14 @@ const checkRunners = {
   tuple_struct_fields: runTupleStructFieldsCheck,
 };
 
-const runStructuralCheck = (source: string, check: StructuralCheck) =>
-  checkRunners[check.type](source, check as never);
+const runStructuralCheck = (
+  cleanSource: string,
+  rawSource: string,
+  check: StructuralCheck,
+) =>
+  check.type === "source_includes"
+    ? runSourceIncludesCheck(rawSource, check)
+    : checkRunners[check.type](cleanSource, check as never);
 
 export const runStructuralChecks = (
   source: string,
@@ -394,5 +529,5 @@ export const runStructuralChecks = (
 ) => {
   const cleanSource = stripRustComments(source);
 
-  return checks.flatMap((check) => runStructuralCheck(cleanSource, check));
+  return checks.flatMap((check) => runStructuralCheck(cleanSource, source, check));
 };

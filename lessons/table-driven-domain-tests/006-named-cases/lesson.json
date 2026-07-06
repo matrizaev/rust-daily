@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 2,
+  "id": "percentage-named-cases-006",
+  "arcId": "table-driven-domain-tests",
+  "arcTitle": "Table-driven domain tests",
+  "order": 90,
+  "day": 6,
+  "arcLength": 6,
+  "title": "Name table-driven test cases",
+  "conceptId": "percentage-named-test-cases",
+  "difficulty": "medium",
+  "estimatedMinutes": 8,
+  "scenario": "Named cases make failing table-driven tests easier to diagnose and easier for humans to scan.",
+  "instructions": "Create PercentageCase with name, input, and expected fields, then use it in a table-driven test.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Focus on the one public API shape requested by the lesson."
+    },
+    {
+      "level": 2,
+      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+    },
+    {
+      "level": 3,
+      "body": "A canonical idiomatic solution is shown below.",
+      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(&self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}\n\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    struct PercentageCase {\n        name: &'static str,\n        input: u16,\n        expected: Result<u8, PercentageError>,\n    }\n\n    #[test]\n    fn checks_named_percentage_cases() {\n        let cases = [\n            PercentageCase { name: \"zero\", input: 0, expected: Ok(0) },\n            PercentageCase { name: \"hundred\", input: 100, expected: Ok(100) },\n            PercentageCase { name: \"too large\", input: 101, expected: Err(PercentageError::OutOfRange) },\n        ];\n\n        for case in cases {\n            let actual = Percentage::try_from(case.input).map(|value| value.value());\n            assert_eq!(actual, case.expected, \"case failed: {}\", case.name);\n        }\n    }\n}"
+    }
+  ],
+  "completionExplanation": "This lesson keeps percentage-named-test-cases explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "struct PercentageCase",
+              "name:",
+              "case failed"
+            ],
+            "forbiddenSnippets": [
+              "unwrap",
+              "expect",
+              "panic!"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

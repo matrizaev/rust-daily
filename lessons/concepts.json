@@ -972,5 +972,829 @@
       "encapsulation"
     ],
     "masteryThreshold": 3
+  },
+  {
+    "id": "dto-struct-raw",
+    "name": "Define a raw register-user DTO",
+    "description": "An HTTP adapter receives partial, untrusted data. Start by representing that boundary data separately from the domain command.",
+    "prerequisites": [],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "dto-struct-raw-001"
+    ],
+    "tags": [
+      "conversion",
+      "dto",
+      "adapter"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "register-command-value",
+    "name": "Define a validated register command",
+    "description": "The application layer should receive a command type, not raw optional DTO fields. Keep command fields private and expose read-only accessors.",
+    "prerequisites": [],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "register-command-value-002"
+    ],
+    "tags": [
+      "domain",
+      "conversion",
+      "encapsulation"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "dto-tryfrom-validation",
+    "name": "Convert a DTO into a command with TryFrom",
+    "description": "A raw DTO can be missing required fields. TryFrom gives the adapter a standard fallible conversion into the application command.",
+    "prerequisites": [
+      "register-command-value"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "dto-tryfrom-command-003"
+    ],
+    "tags": [
+      "conversion",
+      "tryfrom",
+      "validation"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "dto-trim-validation",
+    "name": "Trim and reject empty DTO fields",
+    "description": "Boundary strings often contain whitespace. Normalize only after checking the DTO field exists, then reject empty normalized values explicitly.",
+    "prerequisites": [
+      "dto-tryfrom-validation"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "dto-trim-empty-004"
+    ],
+    "tags": [
+      "conversion",
+      "normalization",
+      "validation"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "dto-nested-conversions",
+    "name": "Convert a bulk DTO with indexed errors",
+    "description": "Batch adapter input needs useful error context. Preserve the row index when one nested DTO cannot become a command.",
+    "prerequisites": [
+      "dto-trim-validation"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "dto-bulk-conversion-005"
+    ],
+    "tags": [
+      "conversion",
+      "collections",
+      "errors"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "from-dto-outbound",
+    "name": "Convert a domain event into an outbound DTO",
+    "description": "Outbound adapters also need explicit boundaries. A domain event can become a transport DTO through an infallible From implementation.",
+    "prerequisites": [
+      "dto-nested-conversions"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "dto-outbound-from-006"
+    ],
+    "tags": [
+      "conversion",
+      "from",
+      "dto"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "wrap-collection",
+    "name": "Wrap order lines in a collection type",
+    "description": "A collection wrapper can own a Vec while keeping later invariants and iteration APIs under one type.",
+    "prerequisites": [],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "wrap-collection-001"
+    ],
+    "tags": [
+      "collections",
+      "domain",
+      "encapsulation"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "wrap-borrowed-iter",
+    "name": "Expose borrowed iteration with iter",
+    "description": "Callers often need to inspect a collection wrapper without consuming it. A borrowed iterator exposes a view without leaking fields.",
+    "prerequisites": [
+      "wrap-collection"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "wrap-borrowed-iter-002"
+    ],
+    "tags": [
+      "collections",
+      "borrowing",
+      "iterators"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "wrap-into-iterator",
+    "name": "Consume a wrapper with IntoIterator",
+    "description": "When callers are done with a wrapper, IntoIterator should let them move owned values out naturally.",
+    "prerequisites": [
+      "wrap-borrowed-iter"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "wrap-owned-intoiterator-003"
+    ],
+    "tags": [
+      "collections",
+      "conversion",
+      "intoiterator"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "wrap-ref-into-iterator",
+    "name": "Iterate over borrowed collection wrappers",
+    "description": "For loops over &OrderLines should borrow each line instead of consuming the wrapper.",
+    "prerequisites": [
+      "wrap-into-iterator"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "wrap-ref-intoiterator-004"
+    ],
+    "tags": [
+      "collections",
+      "borrowing",
+      "intoiterator"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "wrap-mut-into-iterator",
+    "name": "Iterate mutably over collection wrappers",
+    "description": "Some update operations should borrow the wrapper mutably and edit each line in place without exposing the Vec field.",
+    "prerequisites": [
+      "wrap-ref-into-iterator"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "wrap-mut-intoiterator-005"
+    ],
+    "tags": [
+      "collections",
+      "borrowing",
+      "mutation"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "wrap-nonempty-tryfrom",
+    "name": "Validate collection wrappers with TryFrom",
+    "description": "An order without lines is invalid. TryFrom<Vec<OrderLine>> can enforce that invariant at the wrapper boundary.",
+    "prerequisites": [
+      "wrap-mut-into-iterator"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "wrap-nonempty-tryfrom-006"
+    ],
+    "tags": [
+      "conversion",
+      "tryfrom",
+      "collections"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "config-err-enum",
+    "name": "Define ConfigLoadError variants",
+    "description": "A configuration loader can fail for different reasons. Start with an enum that keeps those reasons programmatic.",
+    "prerequisites": [],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "config-err-enum-001"
+    ],
+    "tags": [
+      "errors",
+      "configuration",
+      "enums"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "config-err-display",
+    "name": "Format ConfigLoadError for people",
+    "description": "Typed errors are for programs; Display provides stable human-readable messages at the boundary.",
+    "prerequisites": [
+      "config-err-enum"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "config-err-display-002"
+    ],
+    "tags": [
+      "errors",
+      "display",
+      "formatting"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "config-err-io-wrap",
+    "name": "Preserve I/O source errors",
+    "description": "When file reading fails, the high-level config error should keep the original std::io::Error as its source.",
+    "prerequisites": [
+      "config-err-display"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "config-err-io-source-003"
+    ],
+    "tags": [
+      "errors",
+      "source",
+      "io"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "config-err-from-io",
+    "name": "Convert io::Error with From",
+    "description": "A From implementation centralizes how low-level I/O errors become configuration errors and enables ? at call sites.",
+    "prerequisites": [
+      "config-err-io-wrap"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "config-err-from-io-004"
+    ],
+    "tags": [
+      "errors",
+      "from",
+      "conversion"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "config-err-parse-wrap",
+    "name": "Wrap ParseIntError for port parsing",
+    "description": "Parsing configuration values should keep lower-level parse details while returning the loader error type.",
+    "prerequisites": [
+      "config-err-from-io"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "config-err-parse-port-005"
+    ],
+    "tags": [
+      "errors",
+      "from",
+      "parsing"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "config-load-error-propagation",
+    "name": "Propagate loader errors with ?",
+    "description": "Once conversions exist, loader functions can stay small and let ? preserve the typed error boundary.",
+    "prerequisites": [
+      "config-err-parse-wrap"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "config-load-port-006"
+    ],
+    "tags": [
+      "errors",
+      "propagation",
+      "configuration"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "boundary-domain-error",
+    "name": "Define domain order errors",
+    "description": "Domain errors should name business-rule failures without mentioning databases, HTTP, or UI details.",
+    "prerequisites": [],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "boundary-domain-error-001"
+    ],
+    "tags": [
+      "domain",
+      "errors",
+      "architecture"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "boundary-repo-error",
+    "name": "Define repository boundary errors",
+    "description": "Repository failures are infrastructure boundary failures. Keep them distinct from domain rule failures.",
+    "prerequisites": [
+      "boundary-domain-error"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "boundary-repo-error-002"
+    ],
+    "tags": [
+      "errors",
+      "repository",
+      "boundary"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "boundary-usecase-error",
+    "name": "Define use-case error variants",
+    "description": "The application layer can compose domain and repository errors without leaking adapter response details.",
+    "prerequisites": [
+      "boundary-repo-error"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "boundary-usecase-error-003"
+    ],
+    "tags": [
+      "errors",
+      "application",
+      "boundary"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "boundary-domain-from",
+    "name": "Convert domain errors into use-case errors",
+    "description": "From keeps application orchestration code focused by centralizing conversion from domain errors.",
+    "prerequisites": [
+      "boundary-usecase-error"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "boundary-from-domain-004"
+    ],
+    "tags": [
+      "errors",
+      "from",
+      "application"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "boundary-retryable",
+    "name": "Classify retryable boundary errors",
+    "description": "Not every failure should be retried. Classification helpers let application code make decisions without string matching.",
+    "prerequisites": [
+      "boundary-domain-from"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "boundary-retryable-005"
+    ],
+    "tags": [
+      "errors",
+      "classification",
+      "recovery"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "boundary-http-status",
+    "name": "Translate application errors to status codes",
+    "description": "HTTP status codes belong at the adapter edge. Translate typed application errors there instead of putting HTTP concepts in domain code.",
+    "prerequisites": [
+      "boundary-retryable"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "boundary-status-code-006"
+    ],
+    "tags": [
+      "errors",
+      "http",
+      "adapter"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "register-domain-command",
+    "name": "Keep register-user domain types pure",
+    "description": "Domain types should not depend on HTTP, JSON, databases, or logging setup. Start with pure command and value-object types.",
+    "prerequisites": [],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "register-domain-command-001"
+    ],
+    "tags": [
+      "architecture",
+      "domain",
+      "boundaries"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "register-repository-port",
+    "name": "Define an application repository port",
+    "description": "Application code depends on domain types and port traits, not concrete database clients.",
+    "prerequisites": [
+      "register-domain-command"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "register-repository-port-002"
+    ],
+    "tags": [
+      "architecture",
+      "ports",
+      "traits"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "register-usecase-function",
+    "name": "Implement a use case over a port",
+    "description": "A use case coordinates domain rules and ports. It should be generic over the port trait so infrastructure stays replaceable.",
+    "prerequisites": [
+      "register-repository-port"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "register-usecase-003"
+    ],
+    "tags": [
+      "architecture",
+      "application",
+      "ports"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "register-adapter-dto",
+    "name": "Translate adapter DTOs at the edge",
+    "description": "Adapter DTOs should be converted into domain commands before use-case logic runs.",
+    "prerequisites": [
+      "register-usecase-function"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "register-adapter-dto-004"
+    ],
+    "tags": [
+      "architecture",
+      "adapters",
+      "conversion"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "register-inmemory-repo",
+    "name": "Implement an infrastructure repository",
+    "description": "Infrastructure implements application ports. The application trait stays the dependency boundary.",
+    "prerequisites": [
+      "register-adapter-dto"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "register-inmemory-repo-005"
+    ],
+    "tags": [
+      "architecture",
+      "infrastructure",
+      "ports"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "register-handler-boundary",
+    "name": "Map a handler boundary without framework leakage",
+    "description": "A handler adapter should translate request DTOs, call the use case, and return response data without pushing HTTP concepts into domain code.",
+    "prerequisites": [
+      "register-inmemory-repo"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "register-handler-boundary-006"
+    ],
+    "tags": [
+      "architecture",
+      "adapters",
+      "boundaries"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "log-event-struct",
+    "name": "Represent a structured log event",
+    "description": "Structured logging starts with events that have names and levels instead of ad-hoc strings.",
+    "prerequisites": [],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "log-event-001"
+    ],
+    "tags": [
+      "logging",
+      "events",
+      "levels"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "log-event-fields",
+    "name": "Attach request fields to log events",
+    "description": "Useful logs carry fields such as request_id and attempt count so operators can filter and correlate events.",
+    "prerequisites": [
+      "log-event-struct"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "log-fields-002"
+    ],
+    "tags": [
+      "logging",
+      "fields",
+      "observability"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "log-redacted-secret",
+    "name": "Redact secrets in formatted output",
+    "description": "Logging helpers should make accidental secret exposure difficult. A wrapper can intentionally hide sensitive values when formatted.",
+    "prerequisites": [
+      "log-event-fields"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "log-redacted-secret-003"
+    ],
+    "tags": [
+      "logging",
+      "redaction",
+      "security"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "log-request-span",
+    "name": "Create events from a request span",
+    "description": "A span carries context shared by multiple events. Request-scoped fields should not be rebuilt by every call site.",
+    "prerequisites": [
+      "log-redacted-secret"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "log-request-span-004"
+    ],
+    "tags": [
+      "logging",
+      "spans",
+      "context"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "log-error-kind",
+    "name": "Log error kinds as fields",
+    "description": "Logs should capture error category fields without relying on fragile message parsing.",
+    "prerequisites": [
+      "log-request-span"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "log-error-kind-005"
+    ],
+    "tags": [
+      "logging",
+      "errors",
+      "fields"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "log-boundary-event",
+    "name": "Create logging events at the application boundary",
+    "description": "Domain code should stay free of logging setup. Application boundaries can create events with meaningful fields.",
+    "prerequisites": [
+      "log-error-kind"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "log-boundary-event-006"
+    ],
+    "tags": [
+      "logging",
+      "application",
+      "boundaries"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "percentage-newtype",
+    "name": "Define a bounded Percentage type",
+    "description": "A percentage should not be represented as any arbitrary integer throughout the codebase.",
+    "prerequisites": [],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "percentage-newtype-001"
+    ],
+    "tags": [
+      "testing",
+      "domain",
+      "bounded-values"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "percentage-valid-table-tests",
+    "name": "Write table-driven valid percentage tests",
+    "description": "Several valid boundary cases should be easy to scan. A table-driven test keeps inputs and expected values together.",
+    "prerequisites": [
+      "percentage-newtype"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "percentage-valid-table-tests-002"
+    ],
+    "tags": [
+      "tests",
+      "table-driven",
+      "domain"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "percentage-invalid-table-tests",
+    "name": "Write table-driven invalid percentage tests",
+    "description": "Invalid cases deserve precise tests too. Table-driven tests make it clear which inputs should fail.",
+    "prerequisites": [
+      "percentage-valid-table-tests"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "percentage-invalid-table-tests-003"
+    ],
+    "tags": [
+      "tests",
+      "table-driven",
+      "errors"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "percentage-display-tests",
+    "name": "Test Display for Percentage",
+    "description": "Formatting is public behavior. A small table keeps display expectations obvious.",
+    "prerequisites": [
+      "percentage-invalid-table-tests"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "percentage-display-tests-004"
+    ],
+    "tags": [
+      "tests",
+      "display",
+      "docs"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "percentage-doc-example",
+    "name": "Document Percentage with an executable example",
+    "description": "A doc example should show normal usage and handle fallible APIs without unwrap or expect.",
+    "prerequisites": [
+      "percentage-display-tests"
+    ],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "percentage-doc-example-005"
+    ],
+    "tags": [
+      "docs",
+      "examples",
+      "tests"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "percentage-named-test-cases",
+    "name": "Name table-driven test cases",
+    "description": "Named cases make failing table-driven tests easier to diagnose and easier for humans to scan.",
+    "prerequisites": [
+      "percentage-doc-example"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "percentage-named-cases-006"
+    ],
+    "tags": [
+      "tests",
+      "table-driven",
+      "diagnostics"
+    ],
+    "masteryThreshold": 3
   }
 ]

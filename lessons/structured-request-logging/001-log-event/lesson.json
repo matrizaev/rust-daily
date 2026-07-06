@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 2,
+  "id": "log-event-001",
+  "arcId": "structured-request-logging",
+  "arcTitle": "Structured request logging",
+  "order": 79,
+  "day": 1,
+  "arcLength": 6,
+  "title": "Represent a structured log event",
+  "conceptId": "log-event-struct",
+  "difficulty": "easy",
+  "estimatedMinutes": 6,
+  "scenario": "Structured logging starts with events that have names and levels instead of ad-hoc strings.",
+  "instructions": "Define LogLevel and LogEvent with event_name and level fields.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Focus on the one public API shape requested by the lesson."
+    },
+    {
+      "level": 2,
+      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+    },
+    {
+      "level": 3,
+      "body": "A canonical idiomatic solution is shown below.",
+      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogEvent {\n    pub event_name: String,\n    pub level: LogLevel,\n}"
+    }
+  ],
+  "completionExplanation": "This lesson keeps log-event-struct explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "enum_unit_variants",
+            "enumName": "LogLevel",
+            "requiredVariants": [
+              "Info",
+              "Warn",
+              "Error"
+            ]
+          },
+          {
+            "type": "struct_fields",
+            "structName": "LogEvent",
+            "requiredFields": [
+              {
+                "name": "event_name",
+                "typeIncludes": [
+                  "String"
+                ]
+              },
+              {
+                "name": "level",
+                "typeIncludes": [
+                  "LogLevel"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 2,
+  "id": "register-command-value-002",
+  "arcId": "dto-conversions",
+  "arcTitle": "Converting DTOs into domain commands",
+  "order": 50,
+  "day": 2,
+  "arcLength": 6,
+  "title": "Define a validated register command",
+  "conceptId": "register-command-value",
+  "difficulty": "easy",
+  "estimatedMinutes": 6,
+  "scenario": "The application layer should receive a command type, not raw optional DTO fields. Keep command fields private and expose read-only accessors.",
+  "instructions": "Define RegisterUserCommand with private email and display_name fields, a constructor, and borrowed accessors.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Focus on the one public API shape requested by the lesson."
+    },
+    {
+      "level": 2,
+      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+    },
+    {
+      "level": 3,
+      "body": "A canonical idiomatic solution is shown below.",
+      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}"
+    }
+  ],
+  "completionExplanation": "This lesson keeps register-command-value explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "struct_fields",
+            "structName": "RegisterUserCommand",
+            "requiredFields": [
+              {
+                "name": "email",
+                "typeIncludes": [
+                  "String"
+                ]
+              },
+              {
+                "name": "display_name",
+                "typeIncludes": [
+                  "String"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "impl_method",
+            "implFor": "RegisterUserCommand",
+            "methodName": "email",
+            "requiredSignatureIncludes": [
+              "&self",
+              "&str"
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "display_name"
+            ],
+            "forbiddenSnippets": [
+              "pub email",
+              "pub display_name"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

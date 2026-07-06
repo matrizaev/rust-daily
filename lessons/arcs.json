@@ -62,5 +62,61 @@
     "orderStart": 43,
     "targetLessonCount": 6,
     "description": "Configure hostnames and ports with strong typing, validation, defaults, and composition."
+  },
+  {
+    "id": "dto-conversions",
+    "title": "Converting DTOs into domain commands",
+    "pillar": "conversion",
+    "orderStart": 49,
+    "targetLessonCount": 6,
+    "description": "Translate raw adapter data into validated domain commands and outbound DTOs with standard conversions."
+  },
+  {
+    "id": "collection-wrappers",
+    "title": "Exposing iteration on collection wrappers",
+    "pillar": "conversion",
+    "orderStart": 55,
+    "targetLessonCount": 6,
+    "description": "Wrap collections while exposing idiomatic iteration and fallible construction APIs."
+  },
+  {
+    "id": "config-loader-errors",
+    "title": "Hierarchical configuration loader errors",
+    "pillar": "errors",
+    "orderStart": 61,
+    "targetLessonCount": 6,
+    "description": "Design configuration loading errors with Display, Error, source preservation, From, and typed propagation."
+  },
+  {
+    "id": "boundary-error-mapping",
+    "title": "Translating errors across boundaries",
+    "pillar": "errors",
+    "orderStart": 67,
+    "targetLessonCount": 6,
+    "description": "Map domain and repository failures into application and adapter-safe error responses."
+  },
+  {
+    "id": "register-user-use-case",
+    "title": "Register user use case boundaries",
+    "pillar": "architecture",
+    "orderStart": 73,
+    "targetLessonCount": 6,
+    "description": "Keep domain, application ports, infrastructure implementations, DTO adapters, and handler boundaries separate."
+  },
+  {
+    "id": "structured-request-logging",
+    "title": "Structured request logging",
+    "pillar": "logging",
+    "orderStart": 79,
+    "targetLessonCount": 6,
+    "description": "Represent logs as structured events with levels, request fields, spans, error kinds, and redaction."
+  },
+  {
+    "id": "table-driven-domain-tests",
+    "title": "Table-driven domain tests",
+    "pillar": "testing",
+    "orderStart": 85,
+    "targetLessonCount": 6,
+    "description": "Use table-driven tests and executable docs to document bounded domain values."
   }
 ]

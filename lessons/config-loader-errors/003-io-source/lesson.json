@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 2,
+  "id": "config-err-io-source-003",
+  "arcId": "config-loader-errors",
+  "arcTitle": "Hierarchical configuration loader errors",
+  "order": 63,
+  "day": 3,
+  "arcLength": 6,
+  "title": "Preserve I/O source errors",
+  "conceptId": "config-err-io-wrap",
+  "difficulty": "medium",
+  "estimatedMinutes": 8,
+  "scenario": "When file reading fails, the high-level config error should keep the original std::io::Error as its source.",
+  "instructions": "Change FileRead to store std::io::Error and implement std::error::Error::source for that variant.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Focus on the one public API shape requested by the lesson."
+    },
+    {
+      "level": 2,
+      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+    },
+    {
+      "level": 3,
+      "body": "A canonical idiomatic solution is shown below.",
+      "solutionCode": "use std::error::Error;\nuse std::fmt;\nuse std::io;\n\n#[derive(Debug)]\npub enum ConfigLoadError {\n    MissingEnvironment,\n    InvalidPort,\n    FileRead(io::Error),\n}\n\nimpl fmt::Display for ConfigLoadError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        write!(f, \"config load failed\")\n    }\n}\n\nimpl Error for ConfigLoadError {\n    fn source(&self) -> Option<&(dyn Error + 'static)> {\n        match self {\n            ConfigLoadError::FileRead(error) => Some(error),\n            ConfigLoadError::MissingEnvironment | ConfigLoadError::InvalidPort => None,\n        }\n    }\n}"
+    }
+  ],
+  "completionExplanation": "This lesson keeps config-err-io-wrap explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "impl_trait_for_type",
+            "traitName": "Error",
+            "typeName": "ConfigLoadError"
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "fn source",
+              "FileRead(error) => Some(error)"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

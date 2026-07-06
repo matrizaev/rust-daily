@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 2,
+  "id": "log-error-kind-005",
+  "arcId": "structured-request-logging",
+  "arcTitle": "Structured request logging",
+  "order": 83,
+  "day": 5,
+  "arcLength": 6,
+  "title": "Log error kinds as fields",
+  "conceptId": "log-error-kind",
+  "difficulty": "medium",
+  "estimatedMinutes": 8,
+  "scenario": "Logs should capture error category fields without relying on fragile message parsing.",
+  "instructions": "Define ErrorKind and error_event that records request_id and error_kind.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Focus on the one public API shape requested by the lesson."
+    },
+    {
+      "level": 2,
+      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+    },
+    {
+      "level": 3,
+      "body": "A canonical idiomatic solution is shown below.",
+      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ErrorKind {\n    Validation,\n    RepositoryUnavailable,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogEvent {\n    pub event_name: String,\n    pub request_id: String,\n    pub error_kind: ErrorKind,\n}\n\npub fn error_event(request_id: impl Into<String>, error_kind: ErrorKind) -> LogEvent {\n    LogEvent {\n        event_name: \"request.failed\".to_owned(),\n        request_id: request_id.into(),\n        error_kind,\n    }\n}"
+    }
+  ],
+  "completionExplanation": "This lesson keeps log-error-kind explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "enum_unit_variants",
+            "enumName": "ErrorKind",
+            "requiredVariants": [
+              "Validation",
+              "RepositoryUnavailable"
+            ]
+          },
+          {
+            "type": "function_signature",
+            "functionName": "error_event",
+            "requiredSignatureIncludes": [
+              "LogEvent"
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "error_kind"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

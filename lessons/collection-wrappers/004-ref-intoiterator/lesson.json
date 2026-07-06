@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 2,
+  "id": "wrap-ref-intoiterator-004",
+  "arcId": "collection-wrappers",
+  "arcTitle": "Exposing iteration on collection wrappers",
+  "order": 58,
+  "day": 4,
+  "arcLength": 6,
+  "title": "Iterate over borrowed collection wrappers",
+  "conceptId": "wrap-ref-into-iterator",
+  "difficulty": "medium",
+  "estimatedMinutes": 8,
+  "scenario": "For loops over &OrderLines should borrow each line instead of consuming the wrapper.",
+  "instructions": "Implement IntoIterator for &OrderLines, yielding &OrderLine values.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Focus on the one public API shape requested by the lesson."
+    },
+    {
+      "level": 2,
+      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+    },
+    {
+      "level": 3,
+      "body": "A canonical idiomatic solution is shown below.",
+      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self { Self { lines } }\n}\n\nimpl<'a> IntoIterator for &'a OrderLines {\n    type Item = &'a OrderLine;\n    type IntoIter = std::slice::Iter<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.iter()\n    }\n}"
+    }
+  ],
+  "completionExplanation": "This lesson keeps wrap-ref-into-iterator explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "impl<'a> IntoIterator for &'a OrderLines",
+              "type Item = &'a OrderLine",
+              "std::slice::Iter"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

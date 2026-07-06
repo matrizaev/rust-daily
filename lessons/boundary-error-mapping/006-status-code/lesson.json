@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 2,
+  "id": "boundary-status-code-006",
+  "arcId": "boundary-error-mapping",
+  "arcTitle": "Translating errors across boundaries",
+  "order": 72,
+  "day": 6,
+  "arcLength": 6,
+  "title": "Translate application errors to status codes",
+  "conceptId": "boundary-http-status",
+  "difficulty": "medium",
+  "estimatedMinutes": 8,
+  "scenario": "HTTP status codes belong at the adapter edge. Translate typed application errors there instead of putting HTTP concepts in domain code.",
+  "instructions": "Implement status_code(&CreateOrderUseCaseError) -> u16 with 400 for domain errors, 409 for repository conflicts, and 503 for repository unavailability.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Focus on the one public API shape requested by the lesson."
+    },
+    {
+      "level": 2,
+      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+    },
+    {
+      "level": 3,
+      "body": "A canonical idiomatic solution is shown below.",
+      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderError {\n    EmptyOrder,\n    InvalidQuantity,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RepositoryError {\n    Unavailable,\n    Conflict,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderUseCaseError {\n    Domain(CreateOrderError),\n    Repository(RepositoryError),\n}\n\npub fn status_code(error: &CreateOrderUseCaseError) -> u16 {\n    match error {\n        CreateOrderUseCaseError::Domain(_) => 400,\n        CreateOrderUseCaseError::Repository(RepositoryError::Conflict) => 409,\n        CreateOrderUseCaseError::Repository(RepositoryError::Unavailable) => 503,\n    }\n}"
+    }
+  ],
+  "completionExplanation": "This lesson keeps boundary-http-status explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "function_signature",
+            "functionName": "status_code",
+            "requiredSignatureIncludes": [
+              "&CreateOrderUseCaseError",
+              "u16"
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "400",
+              "409",
+              "503"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

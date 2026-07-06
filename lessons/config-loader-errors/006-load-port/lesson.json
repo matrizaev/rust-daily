@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 2,
+  "id": "config-load-port-006",
+  "arcId": "config-loader-errors",
+  "arcTitle": "Hierarchical configuration loader errors",
+  "order": 66,
+  "day": 6,
+  "arcLength": 6,
+  "title": "Propagate loader errors with ?",
+  "conceptId": "config-load-error-propagation",
+  "difficulty": "medium",
+  "estimatedMinutes": 8,
+  "scenario": "Once conversions exist, loader functions can stay small and let ? preserve the typed error boundary.",
+  "instructions": "Implement load_port by reading APP_PORT from a lookup function and parsing it with parse_port.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Focus on the one public API shape requested by the lesson."
+    },
+    {
+      "level": 2,
+      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+    },
+    {
+      "level": 3,
+      "body": "A canonical idiomatic solution is shown below.",
+      "solutionCode": "use std::num::ParseIntError;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum ConfigLoadError {\n    MissingEnvironment,\n    InvalidPort,\n}\n\nimpl From<ParseIntError> for ConfigLoadError {\n    fn from(_error: ParseIntError) -> Self {\n        ConfigLoadError::InvalidPort\n    }\n}\n\npub fn parse_port(value: &str) -> Result<u16, ConfigLoadError> {\n    Ok(value.parse::<u16>()?)\n}\n\npub fn load_port(lookup: impl Fn(&str) -> Option<String>) -> Result<u16, ConfigLoadError> {\n    let raw = lookup(\"APP_PORT\").ok_or(ConfigLoadError::MissingEnvironment)?;\n    let port = parse_port(raw.as_str())?;\n\n    Ok(port)\n}"
+    }
+  ],
+  "completionExplanation": "This lesson keeps config-load-error-propagation explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "function_signature",
+            "functionName": "load_port",
+            "requiredSignatureIncludes": [
+              "Result<u16, ConfigLoadError>"
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "ok_or(ConfigLoadError::MissingEnvironment)?",
+              "parse_port(raw.as_str())?"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

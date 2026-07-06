@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 2,
+  "id": "boundary-retryable-005",
+  "arcId": "boundary-error-mapping",
+  "arcTitle": "Translating errors across boundaries",
+  "order": 71,
+  "day": 5,
+  "arcLength": 6,
+  "title": "Classify retryable boundary errors",
+  "conceptId": "boundary-retryable",
+  "difficulty": "medium",
+  "estimatedMinutes": 7,
+  "scenario": "Not every failure should be retried. Classification helpers let application code make decisions without string matching.",
+  "instructions": "Implement is_retryable for CreateOrderUseCaseError. Only Repository(Unavailable) should return true.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Focus on the one public API shape requested by the lesson."
+    },
+    {
+      "level": 2,
+      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+    },
+    {
+      "level": 3,
+      "body": "A canonical idiomatic solution is shown below.",
+      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderError {\n    EmptyOrder,\n    InvalidQuantity,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RepositoryError {\n    Unavailable,\n    Conflict,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderUseCaseError {\n    Domain(CreateOrderError),\n    Repository(RepositoryError),\n}\n\npub fn is_retryable(error: CreateOrderUseCaseError) -> bool {\n    matches!(\n        error,\n        CreateOrderUseCaseError::Repository(RepositoryError::Unavailable)\n    )\n}"
+    }
+  ],
+  "completionExplanation": "This lesson keeps boundary-retryable explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "function_signature",
+            "functionName": "is_retryable",
+            "requiredSignatureIncludes": [
+              "bool"
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "matches!",
+              "RepositoryError::Unavailable"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

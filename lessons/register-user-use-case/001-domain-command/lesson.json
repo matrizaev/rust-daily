@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 2,
+  "id": "register-domain-command-001",
+  "arcId": "register-user-use-case",
+  "arcTitle": "Register user use case boundaries",
+  "order": 73,
+  "day": 1,
+  "arcLength": 6,
+  "title": "Keep register-user domain types pure",
+  "conceptId": "register-domain-command",
+  "difficulty": "medium",
+  "estimatedMinutes": 8,
+  "scenario": "Domain types should not depend on HTTP, JSON, databases, or logging setup. Start with pure command and value-object types.",
+  "instructions": "Define a domain module with EmailAddress and RegisterUserCommand. Keep fields private and expose borrowed accessors.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Focus on the one public API shape requested by the lesson."
+    },
+    {
+      "level": 2,
+      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+    },
+    {
+      "level": 3,
+      "body": "A canonical idiomatic solution is shown below.",
+      "solutionCode": "pub mod domain {\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct EmailAddress(String);\n\n    impl EmailAddress {\n        pub fn new(value: impl Into<String>) -> Self {\n            Self(value.into())\n        }\n\n        pub fn as_str(&self) -> &str {\n            &self.0\n        }\n    }\n\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct RegisterUserCommand {\n        email: EmailAddress,\n        display_name: String,\n    }\n\n    impl RegisterUserCommand {\n        pub fn new(email: EmailAddress, display_name: impl Into<String>) -> Self {\n            Self { email, display_name: display_name.into() }\n        }\n\n        pub fn email(&self) -> &EmailAddress { &self.email }\n        pub fn display_name(&self) -> &str { &self.display_name }\n    }\n}"
+    }
+  ],
+  "completionExplanation": "This lesson keeps register-domain-command explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "pub mod domain",
+              "RegisterUserCommand",
+              "EmailAddress"
+            ],
+            "forbiddenSnippets": [
+              "http",
+              "serde",
+              "sql",
+              "tracing"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}
