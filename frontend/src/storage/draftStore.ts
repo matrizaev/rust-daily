@@ -21,20 +21,22 @@ const hasStringFileMap = (files: unknown) =>
   typeof files === "object" &&
   Object.values(files).every((value) => typeof value === "string");
 
-// fallow-ignore-next-line complexity
+const isObject = (record: unknown): record is object =>
+  typeof record === "object" && record !== null;
+
+const hasDraftContent = (candidate: Partial<DraftRecord>) =>
+  typeof candidate.code === "string" || hasStringFileMap(candidate.files);
+
 const isDraftCandidate = (
   record: unknown,
   lessonId: string,
 ): record is DraftCandidate => {
-  if (!record || typeof record !== "object") {
+  if (!isObject(record)) {
     return false;
   }
-
   const candidate = record as Partial<DraftRecord>;
-  const hasDraftContent =
-    typeof candidate.code === "string" || hasStringFileMap(candidate.files);
 
-  return candidate.lessonId === lessonId && hasDraftContent;
+  return candidate.lessonId === lessonId && hasDraftContent(candidate);
 };
 
 const normalizeFiles = (record: DraftCandidate) => {

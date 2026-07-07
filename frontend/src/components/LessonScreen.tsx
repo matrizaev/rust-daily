@@ -28,7 +28,8 @@ import { runValidation } from "../validation/validationClient";
 
 const SAVE_DELAY_MS = 450;
 const DEFAULT_EDITABLE_PATH = "src/lib.rs";
-const loadCodeEditor = () => import("./CodeEditor");
+const loadCodeEditor = () =>
+  import("./CodeEditor").then(({ CodeEditor }) => ({ default: CodeEditor }));
 const CodeEditor = lazy(loadCodeEditor);
 
 type LessonScreenProps = {
@@ -375,7 +376,7 @@ const ReadonlyFilesPanel = ({ lesson }: { lesson: Lesson }) => {
   );
 };
 
-function LessonScreen(props: LessonScreenProps) {
+export function LessonScreen(props: LessonScreenProps) {
   const {
     concept,
     lesson,
@@ -469,6 +470,3 @@ function LessonScreen(props: LessonScreenProps) {
     </main>
   );
 }
-
-// fallow-ignore-next-line unused-export
-export default LessonScreen;

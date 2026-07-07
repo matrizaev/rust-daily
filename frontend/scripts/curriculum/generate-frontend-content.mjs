@@ -54,27 +54,27 @@ const testFilesDuplicateLessonFiles = (lessonFiles, testFiles) => {
   );
 };
 
-// fallow-ignore-next-line complexity
-const inlineBackendValidation = async (
+const inlineAllValidation = async (
+  lessonJsonPath,
+  validation,
+  lessonFiles,
+) => ({
+  ...validation,
+  validations: await Promise.all(
+    validation.validations.map((step) =>
+      inlineBackendValidation(lessonJsonPath, step, lessonFiles),
+    ),
+  ),
+});
+
+const shouldInlineTestFiles = (validation) =>
+  validation.mode === "backend-cargo-test" && Array.isArray(validation.testFiles);
+
+const inlineBackendTestValidation = async (
   lessonJsonPath,
   validation,
   lessonFiles,
 ) => {
-  if (validation.mode === "all") {
-    return {
-      ...validation,
-      validations: await Promise.all(
-        validation.validations.map((step) =>
-          inlineBackendValidation(lessonJsonPath, step, lessonFiles),
-        ),
-      ),
-    };
-  }
-
-  if (validation.mode !== "backend-cargo-test" || !Array.isArray(validation.testFiles)) {
-    return validation;
-  }
-
   const testFiles = await Promise.all(
     validation.testFiles.map((file) => inlineFile(lessonJsonPath, file)),
   );
@@ -91,16 +91,36 @@ const inlineBackendValidation = async (
   };
 };
 
-// fallow-ignore-next-line complexity
+const inlineBackendValidation = async (
+  lessonJsonPath,
+  validation,
+  lessonFiles,
+) => {
+  if (validation.mode === "all") {
+    return inlineAllValidation(lessonJsonPath, validation, lessonFiles);
+  }
+
+  if (!shouldInlineTestFiles(validation)) {
+    return validation;
+  }
+
+  return inlineBackendTestValidation(lessonJsonPath, validation, lessonFiles);
+};
+
+const inlineLessonFiles = async (lessonJsonPath, lesson) =>
+  Array.isArray(lesson.files)
+    ? Promise.all(lesson.files.map((file) => inlineFile(lessonJsonPath, file)))
+    : [];
+
+const inlineLessonValidation = (lessonJsonPath, lesson, files) =>
+  lesson.validation
+    ? inlineBackendValidation(lessonJsonPath, lesson.validation, files)
+    : undefined;
+
 const frontendLessonFromSource = async (lessonJsonPath) => {
   const lesson = await readJson(lessonJsonPath);
-  const files = Array.isArray(lesson.files)
-    ? await Promise.all(lesson.files.map((file) => inlineFile(lessonJsonPath, file)))
-    : [];
-  const editableFile = files.find((file) => file.role === "editable");
-  const validation = lesson.validation
-    ? await inlineBackendValidation(lessonJsonPath, lesson.validation, files)
-    : undefined;
+  const files = await inlineLessonFiles(lessonJsonPath, lesson);
+  const validation = await inlineLessonValidation(lessonJsonPath, lesson, files);
   const {
     author: _author,
     starterCode: _starterCode,

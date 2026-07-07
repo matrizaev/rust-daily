@@ -40,7 +40,40 @@ export const push = (errors, message) => {
   errors.push(message);
 };
 
-// fallow-ignore-next-line complexity
+const hintObjectKind = (allowString) =>
+  allowString ? "a string or object" : "an object";
+
+const validateHintShape = (errors, lessonId, hint, index, allowString) => {
+  if (allowString && typeof hint === "string") {
+    return false;
+  }
+
+  if (!isRecord(hint)) {
+    push(errors, `${lessonId} hint ${index + 1} must be ${hintObjectKind(allowString)}.`);
+    return false;
+  }
+
+  return true;
+};
+
+const validateHintLevel = (errors, lessonId, hint, index) => {
+  if (hint.level !== index + 1) {
+    push(errors, `${lessonId} hint ${index + 1} must use level ${index + 1}.`);
+  }
+};
+
+const validateHintBody = (errors, lessonId, hint, index) => {
+  if (!isString(hint.body)) {
+    push(errors, `${lessonId} hint ${index + 1} must have body.`);
+  }
+};
+
+const validateHintSolution = (errors, lessonId, hint, index) => {
+  if ("solutionCode" in hint && typeof hint.solutionCode !== "string") {
+    push(errors, `${lessonId} hint ${index + 1} solutionCode must be a string.`);
+  }
+};
+
 export const validateHintObject = (
   errors,
   lessonId,
@@ -48,28 +81,13 @@ export const validateHintObject = (
   index,
   { allowString = false } = {},
 ) => {
-  if (allowString && typeof hint === "string") {
+  if (!validateHintShape(errors, lessonId, hint, index, allowString)) {
     return;
   }
 
-  if (!isRecord(hint)) {
-    const kind = allowString ? "a string or object" : "an object";
-
-    push(errors, `${lessonId} hint ${index + 1} must be ${kind}.`);
-    return;
-  }
-
-  if (hint.level !== index + 1) {
-    push(errors, `${lessonId} hint ${index + 1} must use level ${index + 1}.`);
-  }
-
-  if (!isString(hint.body)) {
-    push(errors, `${lessonId} hint ${index + 1} must have body.`);
-  }
-
-  if ("solutionCode" in hint && typeof hint.solutionCode !== "string") {
-    push(errors, `${lessonId} hint ${index + 1} solutionCode must be a string.`);
-  }
+  validateHintLevel(errors, lessonId, hint, index);
+  validateHintBody(errors, lessonId, hint, index);
+  validateHintSolution(errors, lessonId, hint, index);
 };
 
 export const reportErrorsOrLog = (errors, failureSummary, successSummary) => {
@@ -91,26 +109,25 @@ export const pathExists = async (path) => {
   }
 };
 
-// fallow-ignore-next-line complexity
 const findFiles = async (root, filename) => {
   if (!(await pathExists(root))) {
     return [];
   }
 
   const entries = await readdir(root, { withFileTypes: true });
-  const results = [];
+  const childResults = await Promise.all(
+    entries.map(async (entry) => {
+      const path = join(root, entry.name);
 
-  for (const entry of entries) {
-    const path = join(root, entry.name);
+      if (entry.isDirectory()) {
+        return findFiles(path, filename);
+      }
 
-    if (entry.isDirectory()) {
-      results.push(...await findFiles(path, filename));
-    } else if (entry.isFile() && entry.name === filename) {
-      results.push(path);
-    }
-  }
+      return entry.isFile() && entry.name === filename ? [path] : [];
+    }),
+  );
 
-  return results.sort();
+  return childResults.flat().sort();
 };
 
 export const findLessonJsonFiles = () => findFiles(LESSONS_ROOT, "lesson.json");
