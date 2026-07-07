@@ -1,6 +1,8 @@
 pub struct Config {
     pub service_url: String,
     pub max_connections: usize,
+    pub use_tls: bool,
+    pub timeout_seconds: Option<u64>,
 }
 
 pub enum ConfigError {

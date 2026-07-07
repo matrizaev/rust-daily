@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 2,
+  "id": "log-message-cow-004",
+  "arcId": "log-lines",
+  "arcTitle": "Inspect log lines",
+  "order": 18,
+  "day": 4,
+  "arcLength": 5,
+  "title": "Allow borrowed or owned messages",
+  "conceptId": "cow-strings",
+  "difficulty": "advanced",
+  "estimatedMinutes": 10,
+  "scenario": "Most log messages can be borrowed, but some normalized messages need owned text. Cow supports both without forcing allocation every time.",
+  "instructions": "Define LogMessage<'a> with text: Cow<'a, str>. Import Cow from std::borrow.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "content": "// TODO: import Cow and define LogMessage with text that can be borrowed or owned.\n"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "content": "use std::borrow::Cow;\n\nuse rust_daily_lesson::LogMessage;\n\n#[test]\nfn log_message_can_borrow_or_own_text() {\n    let borrowed = LogMessage { text: Cow::Borrowed(\"started\") };\n    let owned = LogMessage { text: Cow::Owned(\"normalized\".to_owned()) };\n\n    assert_eq!(borrowed.text, \"started\");\n    assert_eq!(owned.text, \"normalized\");\n}\n"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Cow means clone-on-write and lives in std::borrow."
+    },
+    {
+      "level": 2,
+      "body": "The borrowed form for text is str, so the field type is Cow<'a, str>."
+    },
+    {
+      "level": 3,
+      "body": "This is useful when most data can be borrowed but a few cases need ownership.",
+      "solutionCode": "use std::borrow::Cow;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogMessage<'a> {\n    pub text: Cow<'a, str>,\n}"
+    }
+  ],
+  "completionExplanation": "Cow lets the API accept borrowed text by default while still supporting owned normalized messages. It avoids unnecessary allocation without giving up flexibility.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "struct_fields",
+            "structName": "LogMessage",
+            "requiredFields": [
+              {
+                "name": "text",
+                "typeIncludes": [
+                  "Cow",
+                  "str"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "std::borrow::Cow",
+              "Cow<'a, str>"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std"
+      }
+    ]
+  }
+}

@@ -1,11 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
 import conceptsData from "./content/concepts.json";
-import lessonsData from "./content/lessons.json";
 import DailyHome from "./components/DailyHome";
-import LessonScreen from "./components/LessonScreen";
 import PwaStatus from "./components/PwaStatus";
-import SettingsScreen from "./components/SettingsScreen";
-import { normalizeLessons } from "./content/normalizeLessons";
+import {
+  getLessonById,
+  getLessonIndex,
+  loadLesson,
+  mergeLesson,
+  prefetchLessonDetail,
+} from "./content/lessonContent";
 import { getProgressSummary } from "./progress/progressSelectors";
 import {
   loadProgress,
@@ -26,9 +29,15 @@ import {
   type EffectiveTheme,
   type UserSettings,
 } from "./storage/settingsStore";
-import type { Concept, Lesson, RawLesson } from "./types/lesson";
+import type { Concept, Lesson, LessonIndexEntry } from "./types/lesson";
 
-const lessons = normalizeLessons(lessonsData as RawLesson[]);
+const loadLessonScreen = () => import("./components/LessonScreen");
+const loadSettingsScreen = () => import("./components/SettingsScreen");
+
+const LessonScreen = lazy(loadLessonScreen);
+const SettingsScreen = lazy(loadSettingsScreen);
+
+const lessons = getLessonIndex();
 const concepts = conceptsData as Concept[];
 
 const lessonHash = (lessonId: string) => `#lesson/${lessonId}`;
@@ -66,12 +75,38 @@ const getRouteFromHash = (): AppRoute => {
   return { kind: "home" };
 };
 
-const findConcept = (lesson: Lesson) =>
+const findConcept = (lesson: Lesson | LessonIndexEntry) =>
   concepts.find((concept) => concept.id === lesson.conceptId) ?? null;
+
+const nextLessonId = (lessonId: string) => {
+  const currentIndex = lessons.findIndex((lesson) => lesson.id === lessonId);
+
+  if (currentIndex < 0) {
+    return null;
+  }
+
+  return lessons[currentIndex + 1]?.id ?? null;
+};
 
 const getIsOffline = () => !navigator.onLine;
 
 type UpdateServiceWorker = () => Promise<void>;
+
+const RouteLoadingScreen = ({
+  title,
+  body,
+}: {
+  title: string;
+  body: string;
+}) => (
+  <main className="app-shell daily-shell">
+    <section className="daily-overview" aria-live="polite">
+      <p className="eyebrow">Loading</p>
+      <h1>{title}</h1>
+      <p>{body}</p>
+    </section>
+  </main>
+);
 
 const useAppRoute = () => {
   const [route, setRoute] = useState<AppRoute>(() => getRouteFromHash());
@@ -236,22 +271,103 @@ const useLessonSelection = (route: AppRoute, progress: ReturnType<typeof loadPro
     [progress],
   );
 
-  const activeLesson = useMemo(
-    () =>
-      route.kind === "lesson"
-        ? lessons.find((lesson) => lesson.id === route.lessonId) ?? dailyLesson
-        : null,
-    [dailyLesson, route],
+  const requestedLesson = useMemo(
+    () => (route.kind === "lesson" ? getLessonById(route.lessonId) : null),
+    [route],
   );
 
+  const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
+  const [isLessonLoading, setIsLessonLoading] = useState(false);
+  const [lessonLoadFailed, setLessonLoadFailed] = useState(false);
+
+  useEffect(() => {
+    if (route.kind !== "lesson") {
+      setActiveLesson(null);
+      setIsLessonLoading(false);
+      setLessonLoadFailed(false);
+      return;
+    }
+
+    let isActive = true;
+    setActiveLesson(null);
+    setIsLessonLoading(true);
+    setLessonLoadFailed(false);
+
+    const requestedLessonId = requestedLesson?.id ?? dailyLesson.id;
+
+    const loadActiveLesson = async () => {
+      const lesson = await loadLesson(requestedLessonId);
+
+      if (lesson) {
+        return lesson;
+      }
+
+      if (requestedLessonId === dailyLesson.id) {
+        return null;
+      }
+
+      const dailyLessonDetail = await loadLesson(dailyLesson.id);
+
+      return dailyLessonDetail
+        ? mergeLesson(dailyLesson, dailyLessonDetail)
+        : null;
+    };
+
+    void loadActiveLesson()
+      .then((lesson) => {
+        if (!isActive) {
+          return;
+        }
+
+        setActiveLesson(lesson);
+        setIsLessonLoading(false);
+      })
+      .catch(() => {
+        if (!isActive) {
+          return;
+        }
+
+        setActiveLesson(null);
+        setIsLessonLoading(false);
+        setLessonLoadFailed(true);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [dailyLesson, requestedLesson, route]);
+
   const activeConcept = useMemo(() => {
-    return findConcept(activeLesson ?? dailyLesson);
-  }, [activeLesson, dailyLesson]);
+    return findConcept(activeLesson ?? requestedLesson ?? dailyLesson);
+  }, [activeLesson, dailyLesson, requestedLesson]);
+
+  useEffect(() => {
+    prefetchLessonDetail(dailyLesson.id);
+    const upcomingLessonId = nextLessonId(dailyLesson.id);
+
+    if (upcomingLessonId) {
+      prefetchLessonDetail(upcomingLessonId);
+    }
+  }, [dailyLesson.id]);
+
+  useEffect(() => {
+    if (!activeLesson) {
+      return;
+    }
+
+    const upcomingLessonId = nextLessonId(activeLesson.id);
+
+    if (upcomingLessonId) {
+      prefetchLessonDetail(upcomingLessonId);
+    }
+  }, [activeLesson]);
 
   return {
     activeConcept,
     activeLesson,
     dailyLesson,
+    isLessonLoading,
+    lessonLoadFailed,
   };
 };
 
@@ -260,6 +376,8 @@ const useNavigationActions = (
   dailyLessonId: string,
 ) => {
   const handleContinue = useCallback(() => {
+    void loadLessonScreen();
+    prefetchLessonDetail(dailyLessonId);
     window.location.hash = lessonHash(dailyLessonId);
     setRoute({ kind: "lesson", lessonId: dailyLessonId });
   }, [dailyLessonId, setRoute]);
@@ -270,6 +388,7 @@ const useNavigationActions = (
   }, [setRoute]);
 
   const handleOpenSettings = useCallback(() => {
+    void loadSettingsScreen();
     window.location.hash = settingsHash;
     setRoute({ kind: "settings" });
   }, [setRoute]);
@@ -281,12 +400,19 @@ const useNavigationActions = (
   };
 };
 
+// fallow-ignore-next-line complexity
 function App() {
   const [route, setRoute] = useAppRoute();
   const pwa = usePwaState();
   const { settings, handleSettingsChange } = useSettingsState();
   const progressState = useProgressState();
-  const { activeConcept, activeLesson, dailyLesson } = useLessonSelection(
+  const {
+    activeConcept,
+    activeLesson,
+    dailyLesson,
+    isLessonLoading,
+    lessonLoadFailed,
+  } = useLessonSelection(
     route,
     progressState.progress,
   );
@@ -301,15 +427,45 @@ function App() {
           updateAvailable={pwa.updateAvailable}
           onReloadUpdate={pwa.handleReloadUpdate}
         />
-        <SettingsScreen
-          settings={settings}
-          summary={progressState.summary}
-          onDeleteDrafts={progressState.handleDeleteDrafts}
-          onDeleteProgress={progressState.handleDeleteProgress}
-          onExportProgress={progressState.handleExportProgress}
-          onImportProgress={progressState.handleImportProgress}
-          onReturnHome={navigation.handleReturnHome}
-          onSettingsChange={handleSettingsChange}
+        <Suspense
+          fallback={
+            <RouteLoadingScreen
+              title="Loading settings…"
+              body="Preparing your local preferences and progress tools."
+            />
+          }
+        >
+          <SettingsScreen
+            settings={settings}
+            summary={progressState.summary}
+            onDeleteDrafts={progressState.handleDeleteDrafts}
+            onDeleteProgress={progressState.handleDeleteProgress}
+            onExportProgress={progressState.handleExportProgress}
+            onImportProgress={progressState.handleImportProgress}
+            onReturnHome={navigation.handleReturnHome}
+            onSettingsChange={handleSettingsChange}
+          />
+        </Suspense>
+      </>
+    );
+  }
+
+  if (route.kind === "lesson" && (isLessonLoading || lessonLoadFailed || !activeLesson)) {
+    return (
+      <>
+        <PwaStatus
+          isOffline={pwa.isOffline}
+          isUpdating={pwa.isUpdating}
+          updateAvailable={pwa.updateAvailable}
+          onReloadUpdate={pwa.handleReloadUpdate}
+        />
+        <RouteLoadingScreen
+          title={lessonLoadFailed ? "Lesson unavailable" : "Loading lesson…"}
+          body={
+            lessonLoadFailed
+              ? "This lesson could not be loaded right now. Try reconnecting, refreshing, or returning home."
+              : "Fetching the lesson content, starter files, and validation steps."
+          }
         />
       </>
     );
@@ -324,15 +480,24 @@ function App() {
           updateAvailable={pwa.updateAvailable}
           onReloadUpdate={pwa.handleReloadUpdate}
         />
-        <LessonScreen
-          concept={activeConcept}
-          editorFontSize={settings.editorFontSize}
-          lesson={activeLesson}
-          onOpenSettings={navigation.handleOpenSettings}
-          onProgressChange={progressState.handleProgressChange}
-          onReturnHome={navigation.handleReturnHome}
-          progress={progressState.progress}
-        />
+        <Suspense
+          fallback={
+            <RouteLoadingScreen
+              title="Loading lesson…"
+              body="Preparing the Rust editor and validation tools."
+            />
+          }
+        >
+          <LessonScreen
+            concept={activeConcept}
+            editorFontSize={settings.editorFontSize}
+            lesson={activeLesson}
+            onOpenSettings={navigation.handleOpenSettings}
+            onProgressChange={progressState.handleProgressChange}
+            onReturnHome={navigation.handleReturnHome}
+            progress={progressState.progress}
+          />
+        </Suspense>
       </>
     );
   }

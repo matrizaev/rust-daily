@@ -3,7 +3,7 @@
   "id": "config-borrowed-key-006",
   "arcId": "config-service",
   "arcTitle": "Configure a small service",
-  "order": 6,
+  "order": 26,
   "day": 6,
   "arcLength": 6,
   "title": "Borrow setting keys",
@@ -11,7 +11,7 @@
   "difficulty": "medium",
   "estimatedMinutes": 7,
   "scenario": "A lookup helper should not take ownership of a key just to compare it with stored names.",
-  "instructions": "Change get_setting so key is borrowed as &str and the returned value is borrowed from settings as Option<&str>.",
+  "instructions": "Keep the Config, ConfigError, and validate behavior from earlier lessons. Change get_setting so key is borrowed as &str and the returned value is borrowed from settings as Option<&str>.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -36,7 +36,7 @@
     {
       "level": 3,
       "body": "as_str converts a String reference into a string slice.",
-      "solutionCode": "pub fn get_setting<'a>(settings: &'a [(String, String)], key: &str) -> Option<&'a str> {\n    settings\n        .iter()\n        .find(|(name, _value)| name.as_str() == key)\n        .map(|(_name, value)| value.as_str())\n}"
+      "solutionCode": "pub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n    pub timeout_seconds: Option<u64>,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ConfigError {\n    EmptyServiceUrl,\n    ZeroConnections,\n}\n\nimpl Config {\n    pub fn validate(&self) -> Result<(), ConfigError> {\n        if self.service_url.is_empty() {\n            return Err(ConfigError::EmptyServiceUrl);\n        }\n\n        if self.max_connections == 0 {\n            return Err(ConfigError::ZeroConnections);\n        }\n\n        Ok(())\n    }\n}\n\npub fn get_setting<'a>(settings: &'a [(String, String)], key: &str) -> Option<&'a str> {\n    settings\n        .iter()\n        .find(|(name, _value)| name.as_str() == key)\n        .map(|(_name, value)| value.as_str())\n}"
     }
   ],
   "completionExplanation": "Borrowing keeps the lookup API lightweight. The caller keeps its key, and the returned value can point into the existing settings data.",
@@ -47,6 +47,53 @@
         "mode": "structural",
         "timeoutMs": 10000,
         "checks": [
+          {
+            "type": "struct_fields",
+            "structName": "Config",
+            "requiredFields": [
+              {
+                "name": "service_url",
+                "typeIncludes": [
+                  "String"
+                ]
+              },
+              {
+                "name": "max_connections",
+                "typeIncludes": [
+                  "usize"
+                ]
+              },
+              {
+                "name": "use_tls",
+                "typeIncludes": [
+                  "bool"
+                ]
+              },
+              {
+                "name": "timeout_seconds",
+                "typeIncludes": [
+                  "Option",
+                  "u64"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "impl_method",
+            "implFor": "Config",
+            "methodName": "validate",
+            "requiredSignatureIncludes": [
+              "Result<(), ConfigError>"
+            ]
+          },
+          {
+            "type": "enum_unit_variants",
+            "enumName": "ConfigError",
+            "requiredVariants": [
+              "EmptyServiceUrl",
+              "ZeroConnections"
+            ]
+          },
           {
             "type": "function_signature",
             "functionName": "get_setting",

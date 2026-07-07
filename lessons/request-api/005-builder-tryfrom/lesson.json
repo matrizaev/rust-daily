@@ -3,7 +3,7 @@
   "id": "request-builder-tryfrom-005",
   "arcId": "request-api",
   "arcTitle": "Build a request API",
-  "order": 29,
+  "order": 25,
   "day": 5,
   "arcLength": 6,
   "title": "Convert RawRequest with TryFrom",

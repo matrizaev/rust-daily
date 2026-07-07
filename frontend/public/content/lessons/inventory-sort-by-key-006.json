@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 2,
+  "id": "inventory-sort-by-key-006",
+  "arcId": "inventory-summary",
+  "arcTitle": "Summarize inventory",
+  "order": 27,
+  "day": 6,
+  "arcLength": 6,
+  "title": "Sort items by borrowed comparison",
+  "conceptId": "sort-by-key",
+  "difficulty": "easy",
+  "estimatedMinutes": 5,
+  "scenario": "Before rendering an inventory table, the service wants stable alphabetical ordering by item name without allocating temporary sort keys.",
+  "instructions": "Implement sort_by_name without cloning item names. Sort the mutable slice by comparing each item's borrowed name.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "content": "pub struct Item {\n    pub name: String,\n    pub quantity: u32,\n}\n\npub fn sort_by_name(items: &mut [Item]) {\n    // TODO: sort by borrowed item names without cloning.\n}\n"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "content": "use rust_daily_lesson::{sort_by_name, Item};\n\n#[test]\nfn sorts_items_by_name() {\n    let mut items = vec![\n        Item { name: \"Mouse\".to_owned(), quantity: 4 },\n        Item { name: \"Keyboard\".to_owned(), quantity: 10 },\n    ];\n\n    sort_by_name(&mut items);\n\n    assert_eq!(items[0].name, \"Keyboard\");\n    assert_eq!(items[1].name, \"Mouse\");\n}\n"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Slices expose in-place sorting methods."
+    },
+    {
+      "level": 2,
+      "body": "For String fields, sort_by with name.cmp(&other.name) avoids allocating cloned keys."
+    },
+    {
+      "level": 3,
+      "body": "The comparison closure receives two item references: left and right.",
+      "solutionCode": "pub struct Item {\n    pub name: String,\n    pub quantity: u32,\n}\n\npub fn sort_by_name(items: &mut [Item]) {\n    items.sort_by(|left, right| left.name.cmp(&right.name));\n}"
+    }
+  ],
+  "completionExplanation": "Sorting by borrowed comparison keeps the ordering rule close to the sort call without cloning every String. That is usually the better API choice when the key is already stored in each item.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "function_signature",
+            "functionName": "sort_by_name",
+            "requiredSignatureIncludes": [
+              "&mut [Item]"
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "sort_by",
+              ".cmp(&"
+            ],
+            "forbiddenSnippets": [
+              "clone",
+              "to_owned",
+              "to_string",
+              "sort_by_key"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std"
+      }
+    ]
+  }
+}

@@ -3,7 +3,7 @@
   "id": "request-builder-default-003",
   "arcId": "request-api",
   "arcTitle": "Build a request API",
-  "order": 27,
+  "order": 15,
   "day": 3,
   "arcLength": 6,
   "title": "Start the builder from Default",

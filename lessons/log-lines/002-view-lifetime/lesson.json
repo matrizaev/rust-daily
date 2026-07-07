@@ -3,7 +3,7 @@
   "id": "log-view-lifetime-002",
   "arcId": "log-lines",
   "arcTitle": "Inspect log lines",
-  "order": 21,
+  "order": 9,
   "day": 2,
   "arcLength": 5,
   "title": "Create a lifetime-backed view",

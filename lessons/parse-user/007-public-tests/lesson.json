@@ -3,7 +3,7 @@
   "id": "parse-user-public-tests-007",
   "arcId": "parse-user",
   "arcTitle": "Parse a user from text",
-  "order": 13,
+  "order": 30,
   "day": 7,
   "arcLength": 7,
   "title": "Write parser behavior checks",

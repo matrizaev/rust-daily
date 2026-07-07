@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 2,
+  "id": "inventory-fold-total-003",
+  "arcId": "inventory-summary",
+  "arcTitle": "Summarize inventory",
+  "order": 13,
+  "day": 3,
+  "arcLength": 6,
+  "title": "Fold quantities into a total",
+  "conceptId": "fold-sum",
+  "difficulty": "easy",
+  "estimatedMinutes": 6,
+  "scenario": "Inventory reporting often needs a single total count across many items.",
+  "instructions": "Implement total_quantity with iter().fold. Add each item quantity into the accumulator.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "content": "pub struct Item {\n    pub quantity: u32,\n}\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    // TODO: fold item quantities into one total.\n    0\n}\n"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "content": "use rust_daily_lesson::{total_quantity, Item};\n\n#[test]\nfn folds_quantities_into_total() {\n    let items = vec![Item { quantity: 2 }, Item { quantity: 5 }];\n\n    assert_eq!(total_quantity(&items), 7);\n    assert_eq!(total_quantity(&[]), 0);\n}\n"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "fold starts with an initial accumulator value."
+    },
+    {
+      "level": 2,
+      "body": "The accumulator and the item reference are the closure arguments."
+    },
+    {
+      "level": 3,
+      "body": "The initial total should be 0.",
+      "solutionCode": "pub struct Item {\n    pub quantity: u32,\n}\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    items.iter().fold(0, |total, item| total + item.quantity)\n}"
+    }
+  ],
+  "completionExplanation": "fold makes the accumulation explicit: start at zero, visit each item, and return the next total. It is useful when the reducer logic is more than a plain field projection.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "function_signature",
+            "functionName": "total_quantity",
+            "requiredSignatureIncludes": [
+              "u32"
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "fold"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std"
+      }
+    ]
+  }
+}

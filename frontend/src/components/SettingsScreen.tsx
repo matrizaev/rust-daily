@@ -280,4 +280,5 @@ function SettingsScreen({
   );
 }
 
+// fallow-ignore-next-line unused-export
 export default SettingsScreen;

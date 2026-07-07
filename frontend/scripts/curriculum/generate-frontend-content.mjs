@@ -1,8 +1,10 @@
 import { mkdir, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
 import {
   findLessonJsonFiles,
   FRONTEND_CONCEPTS_PATH,
+  FRONTEND_LESSON_DETAILS_DIR,
+  FRONTEND_LESSON_INDEX_PATH,
   FRONTEND_LESSONS_PATH,
   pathExists,
   readJson,
@@ -29,13 +31,41 @@ const inlineFile = async (lessonJsonPath, file) => {
   };
 };
 
-const inlineBackendValidation = async (lessonJsonPath, validation) => {
+const lessonIndexFromDetail = (lesson) => {
+  const {
+    files: _files,
+    hints: _hints,
+    completionExplanation: _completionExplanation,
+    validation: _validation,
+    instructions: _instructions,
+    ...indexLesson
+  } = lesson;
+
+  return indexLesson;
+};
+
+const testFilesDuplicateLessonFiles = (lessonFiles, testFiles) => {
+  const lessonFileContents = new Map(
+    lessonFiles.map((file) => [file.path, file.content]),
+  );
+
+  return testFiles.every(
+    (file) => lessonFileContents.get(file.path) === file.content,
+  );
+};
+
+// fallow-ignore-next-line complexity
+const inlineBackendValidation = async (
+  lessonJsonPath,
+  validation,
+  lessonFiles,
+) => {
   if (validation.mode === "all") {
     return {
       ...validation,
       validations: await Promise.all(
         validation.validations.map((step) =>
-          inlineBackendValidation(lessonJsonPath, step),
+          inlineBackendValidation(lessonJsonPath, step, lessonFiles),
         ),
       ),
     };
@@ -45,11 +75,19 @@ const inlineBackendValidation = async (lessonJsonPath, validation) => {
     return validation;
   }
 
+  const testFiles = await Promise.all(
+    validation.testFiles.map((file) => inlineFile(lessonJsonPath, file)),
+  );
+
+  if (testFilesDuplicateLessonFiles(lessonFiles, testFiles)) {
+    const { testFiles: _testFiles, ...validationWithoutTestFiles } = validation;
+
+    return validationWithoutTestFiles;
+  }
+
   return {
     ...validation,
-    testFiles: await Promise.all(
-      validation.testFiles.map((file) => inlineFile(lessonJsonPath, file)),
-    ),
+    testFiles,
   };
 };
 
@@ -61,7 +99,7 @@ const frontendLessonFromSource = async (lessonJsonPath) => {
     : [];
   const editableFile = files.find((file) => file.role === "editable");
   const validation = lesson.validation
-    ? await inlineBackendValidation(lessonJsonPath, lesson.validation)
+    ? await inlineBackendValidation(lessonJsonPath, lesson.validation, files)
     : undefined;
   const {
     author: _author,
@@ -72,7 +110,6 @@ const frontendLessonFromSource = async (lessonJsonPath) => {
   return {
     ...shippedLesson,
     files,
-    starterCode: editableFile?.content ?? lesson.starterCode ?? "",
     validation,
   };
 };
@@ -105,6 +142,16 @@ const writeJson = async (path, value) => {
   await writeFile(path, `${JSON.stringify(value, null, 2)}\n`);
 };
 
+const writeLessonDetails = async (lessons) =>
+  Promise.all(
+    lessons.map((lesson) =>
+      writeJson(
+        join(FRONTEND_LESSON_DETAILS_DIR, `${lesson.id}.json`),
+        lesson,
+      ),
+    ),
+  );
+
 const main = async () => {
   const [currentLessons, currentConcepts, sourceLessons] = await Promise.all([
     readJson(FRONTEND_LESSONS_PATH),
@@ -115,11 +162,14 @@ const main = async () => {
     ? await readJson(SOURCE_CONCEPTS_PATH)
     : [];
   const lessons = sortLessons(mergeById(currentLessons, sourceLessons));
+  const lessonIndex = lessons.map(lessonIndexFromDetail);
   const concepts = mergeById(currentConcepts, sourceConcepts);
 
   await Promise.all([
     writeJson(FRONTEND_LESSONS_PATH, lessons),
+    writeJson(FRONTEND_LESSON_INDEX_PATH, lessonIndex),
     writeJson(FRONTEND_CONCEPTS_PATH, concepts),
+    writeLessonDetails(lessons),
   ]);
 
   console.log(`Generated ${lessons.length} lessons and ${concepts.length} concepts.`);

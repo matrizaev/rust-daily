@@ -1,16 +1,16 @@
 import { CheckCircle2, Circle, PlayCircle } from "lucide-react";
-import type { Lesson } from "../types/lesson";
+import type { LessonIndexEntry } from "../types/lesson";
 import type { ProgressStore } from "../types/progress";
 
 type CurriculumPathProps = {
   activeLessonId: string;
-  lessons: Lesson[];
+  lessons: LessonIndexEntry[];
   progress: ProgressStore;
 };
 
 type PathItemState = "completed" | "current" | "upcoming";
 
-const orderedLessons = (lessons: Lesson[]) =>
+const orderedLessons = (lessons: LessonIndexEntry[]) =>
   [...lessons].sort((left, right) => left.order - right.order);
 
 const completedLessonIds = (progress: ProgressStore) =>

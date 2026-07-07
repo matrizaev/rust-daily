@@ -12,6 +12,18 @@ export const FRONTEND_LESSONS_PATH = join(
   "content",
   "lessons.json",
 );
+export const FRONTEND_LESSON_INDEX_PATH = join(
+  FRONTEND_DIR,
+  "src",
+  "content",
+  "lessonIndex.json",
+);
+export const FRONTEND_LESSON_DETAILS_DIR = join(
+  FRONTEND_DIR,
+  "public",
+  "content",
+  "lessons",
+);
 export const FRONTEND_CONCEPTS_PATH = join(
   FRONTEND_DIR,
   "src",

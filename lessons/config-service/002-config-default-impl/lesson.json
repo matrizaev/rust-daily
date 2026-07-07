@@ -3,7 +3,7 @@
   "id": "config-default-impl-002",
   "arcId": "config-service",
   "arcTitle": "Configure a small service",
-  "order": 2,
+  "order": 6,
   "day": 2,
   "arcLength": 6,
   "title": "Give Config sensible defaults",

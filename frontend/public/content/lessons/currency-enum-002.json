@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 2,
+  "id": "currency-enum-002",
+  "arcId": "money-value-object",
+  "arcTitle": "Money and currency domain representation",
+  "order": 38,
+  "day": 2,
+  "arcLength": 6,
+  "title": "Add supported Currency variants",
+  "conceptId": "currency-enum",
+  "difficulty": "easy",
+  "estimatedMinutes": 5,
+  "scenario": "The payment gateway is expanding. We need to support British Pounds (GBP) in our Currency representation.",
+  "instructions": "Add Gbp to the Currency enum.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub enum Currency {\r\n    Usd,\r\n    Eur,\r\n    // TODO: Add British Pounds (Gbp)\r\n}\r\n"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "content": "use rust_daily_lesson::Currency;\r\n\r\n#[test]\r\nfn currency_variants() {\r\n    assert_ne!(Currency::Usd, Currency::Eur);\r\n    assert_ne!(Currency::Eur, Currency::Gbp);\r\n}\r\n"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Enums are updated by adding new variants separated by commas."
+    },
+    {
+      "level": 2,
+      "body": "Add Gbp as a variant to the Currency enum."
+    },
+    {
+      "level": 3,
+      "body": "A canonical solution adds Gbp to the enum.",
+      "solutionCode": "pub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}"
+    }
+  ],
+  "completionExplanation": "Updating the enum extends the supported domain concepts without altering the rest of the type structure.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "enum_unit_variants",
+            "enumName": "Currency",
+            "requiredVariants": [
+              "Usd",
+              "Eur",
+              "Gbp"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std"
+      }
+    ]
+  }
+}

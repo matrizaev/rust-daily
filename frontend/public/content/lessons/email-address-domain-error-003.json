@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 2,
+  "id": "email-address-domain-error-003",
+  "arcId": "email-address-value-object",
+  "arcTitle": "Email address value object",
+  "order": 33,
+  "day": 3,
+  "arcLength": 6,
+  "title": "Name the missing domain case",
+  "conceptId": "email-validation-error",
+  "difficulty": "medium",
+  "estimatedMinutes": 8,
+  "scenario": "An address with @ but no domain should not be accepted. The error type should name that failure instead of reusing a vague variant.",
+  "instructions": "Add MissingDomain to EmailValidationError and update TryFrom<&str> so text ending with @ returns that variant.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct EmailAddress {\n    value: String,\n}\n\nimpl EmailAddress {\n    pub fn as_str(&self) -> &str {\n        &self.value\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum EmailValidationError {\n    Empty,\n    MissingAt,\n}\n\nimpl TryFrom<&str> for EmailAddress {\n    type Error = EmailValidationError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        if value.is_empty() {\n            return Err(EmailValidationError::Empty);\n        }\n\n        if !value.contains('@') {\n            return Err(EmailValidationError::MissingAt);\n        }\n\n        Ok(Self {\n            value: value.to_owned(),\n        })\n    }\n}\n"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "content": "use rust_daily_lesson::{EmailAddress, EmailValidationError};\n\n#[test]\nfn rejects_missing_domain() {\n    assert_eq!(\n        EmailAddress::try_from(\"ada@\"),\n        Err(EmailValidationError::MissingDomain)\n    );\n}\n\n#[test]\nfn keeps_other_validation_cases_specific() {\n    assert_eq!(EmailAddress::try_from(\"\"), Err(EmailValidationError::Empty));\n    assert_eq!(\n        EmailAddress::try_from(\"ada.example.com\"),\n        Err(EmailValidationError::MissingAt)\n    );\n}\n"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "The enum should have one variant for each failure mode callers may handle differently."
+    },
+    {
+      "level": 2,
+      "body": "Use split_once('@') or another clear check to see whether any text exists after @."
+    },
+    {
+      "level": 3,
+      "body": "A canonical solution adds a variant and checks the domain part before constructing the value.",
+      "solutionCode": "pub enum EmailValidationError {\n    Empty,\n    MissingAt,\n    MissingDomain,\n}\n\nimpl TryFrom<&str> for EmailAddress {\n    type Error = EmailValidationError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        if value.is_empty() {\n            return Err(EmailValidationError::Empty);\n        }\n\n        let (_local, domain) = value\n            .split_once('@')\n            .ok_or(EmailValidationError::MissingAt)?;\n\n        if domain.is_empty() {\n            return Err(EmailValidationError::MissingDomain);\n        }\n\n        Ok(Self { value: value.to_owned() })\n    }\n}"
+    }
+  ],
+  "completionExplanation": "A distinct MissingDomain variant keeps validation errors programmatic. Callers can match the exact case without parsing message text.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "enum_unit_variants",
+            "enumName": "EmailValidationError",
+            "requiredVariants": [
+              "Empty",
+              "MissingAt",
+              "MissingDomain"
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "MissingDomain"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std"
+      }
+    ]
+  }
+}

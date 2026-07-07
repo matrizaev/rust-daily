@@ -3,7 +3,7 @@
   "id": "from-parse-int-error-005",
   "arcId": "parse-user",
   "arcTitle": "Parse a user from text",
-  "order": 11,
+  "order": 22,
   "day": 5,
   "arcLength": 7,
   "title": "Convert ParseIntError with From",

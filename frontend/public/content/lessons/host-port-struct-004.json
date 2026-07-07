@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 2,
+  "id": "host-port-struct-004",
+  "arcId": "host-port-config",
+  "arcTitle": "Host and port configuration modeling",
+  "order": 46,
+  "day": 4,
+  "arcLength": 6,
+  "title": "Compose Host and Port into Endpoint",
+  "conceptId": "host-port-composite",
+  "difficulty": "medium",
+  "estimatedMinutes": 8,
+  "scenario": "Hosts and ports travel together as a network endpoint. The composite type should keep the relationship explicit without exposing mutable internals.",
+  "instructions": "Define an Endpoint struct with private host: Host and port: Port fields. Provide Endpoint::new(host: Host, port: Port) -> Self, host(&self) -> &Host, and port(&self) -> Port.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "content": "use std::num::NonZeroU16;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Port(NonZeroU16);\n\nimpl Port {\n    pub fn new(value: u16) -> Option<Self> {\n        NonZeroU16::new(value).map(Self)\n    }\n\n    pub fn value(&self) -> u16 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Host(String);\n\nimpl Host {\n    pub fn as_str(&self) -> &str {\n        &self.0\n    }\n}\n\nimpl TryFrom<&str> for Host {\n    type Error = HostValidationError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        if value.is_empty() {\n            return Err(HostValidationError::Empty);\n        }\n\n        if value.contains(char::is_whitespace) {\n            return Err(HostValidationError::InvalidCharacters);\n        }\n\n        Ok(Self(value.to_owned()))\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum HostValidationError {\n    Empty,\n    InvalidCharacters,\n}\n\n// TODO: Define Endpoint with private host and port fields, plus constructor and accessors.\n"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "content": "use rust_daily_lesson::{Endpoint, Host, Port};\n\nfn valid_host() -> Result<Host, String> {\n    Host::try_from(\"127.0.0.1\").map_err(|error| format!(\"invalid test host: {error:?}\"))\n}\n\nfn valid_port() -> Result<Port, String> {\n    Port::new(80).ok_or_else(|| \"port fixture must be non-zero\".to_owned())\n}\n\n#[test]\nfn endpoint_composites() -> Result<(), String> {\n    let host = valid_host()?;\n    let port = valid_port()?;\n    let endpoint = Endpoint::new(host.clone(), port);\n\n    assert_eq!(endpoint.host(), &host);\n    assert_eq!(endpoint.port(), port);\n\n    Ok(())\n}\n"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Define Endpoint as a named-field struct, but leave the fields private."
+    },
+    {
+      "level": 2,
+      "body": "The host accessor can return &Host to avoid cloning; Port is Copy, so its accessor can return Port."
+    },
+    {
+      "level": 3,
+      "body": "A canonical solution composes existing value objects behind a narrow API.",
+      "solutionCode": "pub struct Endpoint {\n    host: Host,\n    port: Port,\n}\n\nimpl Endpoint {\n    pub fn new(host: Host, port: Port) -> Self {\n        Self { host, port }\n    }\n\n    pub fn host(&self) -> &Host {\n        &self.host\n    }\n\n    pub fn port(&self) -> Port {\n        self.port\n    }\n}"
+    }
+  ],
+  "completionExplanation": "Composing validated value objects makes the endpoint relationship explicit. Keeping Endpoint fields private preserves the ability to add endpoint-level rules later without breaking callers.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "struct_fields",
+            "structName": "Endpoint",
+            "requiredFields": [
+              {
+                "name": "host",
+                "typeIncludes": [
+                  "Host"
+                ]
+              },
+              {
+                "name": "port",
+                "typeIncludes": [
+                  "Port"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "impl_method",
+            "implFor": "Endpoint",
+            "methodName": "new",
+            "requiredSignatureIncludes": [
+              "pub fn new",
+              "host: Host",
+              "port: Port",
+              "Self"
+            ]
+          },
+          {
+            "type": "impl_method",
+            "implFor": "Endpoint",
+            "methodName": "host",
+            "requiredSignatureIncludes": [
+              "pub fn host",
+              "&self",
+              "&Host"
+            ]
+          },
+          {
+            "type": "impl_method",
+            "implFor": "Endpoint",
+            "methodName": "port",
+            "requiredSignatureIncludes": [
+              "pub fn port",
+              "&self",
+              "Port"
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "struct Endpoint"
+            ],
+            "forbiddenSnippets": [
+              "pub host",
+              "pub port",
+              ".unwrap()",
+              ".expect("
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std"
+      }
+    ]
+  }
+}

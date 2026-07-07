@@ -3,7 +3,7 @@
   "id": "inventory-fold-total-003",
   "arcId": "inventory-summary",
   "arcTitle": "Summarize inventory",
-  "order": 16,
+  "order": 13,
   "day": 3,
   "arcLength": 6,
   "title": "Fold quantities into a total",

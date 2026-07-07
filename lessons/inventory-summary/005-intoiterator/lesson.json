@@ -3,7 +3,7 @@
   "id": "inventory-intoiterator-005",
   "arcId": "inventory-summary",
   "arcTitle": "Summarize inventory",
-  "order": 18,
+  "order": 23,
   "day": 5,
   "arcLength": 6,
   "title": "Make Inventory iterable",

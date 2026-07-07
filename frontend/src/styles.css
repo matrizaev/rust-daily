@@ -661,6 +661,18 @@ p {
   background: var(--editor-bg);
 }
 
+.code-editor-loading {
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.code-editor-loading p {
+  margin: 0;
+}
+
 .workspace-footer {
   justify-content: space-between;
   gap: 12px;

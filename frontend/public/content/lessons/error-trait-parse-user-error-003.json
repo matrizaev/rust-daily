@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 2,
+  "id": "error-trait-parse-user-error-003",
+  "arcId": "parse-user",
+  "arcTitle": "Parse a user from text",
+  "order": 12,
+  "day": 3,
+  "arcLength": 7,
+  "title": "Mark the parse error as an Error",
+  "conceptId": "error-trait",
+  "difficulty": "easy",
+  "estimatedMinutes": 5,
+  "scenario": "The parser error now has Display. Implementing the standard Error trait lets it fit into normal Rust error handling APIs.",
+  "instructions": "Add an implementation of std::error::Error for ParseUserError. No custom methods are needed yet.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "content": "use std::fmt;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId,\n}\n\nimpl std::fmt::Display for ParseUserError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            ParseUserError::MissingId => write!(f, \"missing id\"),\n            ParseUserError::MissingName => write!(f, \"missing name\"),\n            ParseUserError::MissingEmail => write!(f, \"missing email\"),\n            ParseUserError::InvalidId => write!(f, \"invalid id\"),\n        }\n    }\n}\n\n// TODO: implement std::error::Error for ParseUserError.\n"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "content": "use rust_daily_lesson::ParseUserError;\n\nfn assert_error<E: std::error::Error>() {}\n\n#[test]\nfn parse_user_error_is_standard_error() {\n    assert_error::<ParseUserError>();\n}\n"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Error is the standard marker trait for error values."
+    },
+    {
+      "level": 2,
+      "body": "Because Display and Debug already exist, this implementation can be empty."
+    },
+    {
+      "level": 3,
+      "body": "The form is impl std::error::Error for ParseUserError {}.",
+      "solutionCode": "use std::fmt;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId,\n}\n\nimpl std::fmt::Display for ParseUserError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            ParseUserError::MissingId => write!(f, \"missing id\"),\n            ParseUserError::MissingName => write!(f, \"missing name\"),\n            ParseUserError::MissingEmail => write!(f, \"missing email\"),\n            ParseUserError::InvalidId => write!(f, \"invalid id\"),\n        }\n    }\n}\n\nimpl std::error::Error for ParseUserError {}"
+    }
+  ],
+  "completionExplanation": "Implementing Error makes ParseUserError compatible with APIs that accept standard Rust errors. Empty implementations are common when there is no source error to expose.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "impl_trait_for_type",
+            "traitName": "std::error::Error",
+            "typeName": "ParseUserError"
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std"
+      }
+    ]
+  }
+}

@@ -3,7 +3,7 @@
   "id": "log-entry-borrowed-001",
   "arcId": "log-lines",
   "arcTitle": "Inspect log lines",
-  "order": 20,
+  "order": 4,
   "day": 1,
   "arcLength": 5,
   "title": "Borrow fields in a log entry",

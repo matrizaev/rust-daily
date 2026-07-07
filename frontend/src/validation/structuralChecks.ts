@@ -228,6 +228,24 @@ const missingSnippetFailures = (source: string, snippets: string[]) =>
     .filter((snippet) => !source.includes(snippet))
     .map((snippet) => failure(snippet, `Missing required snippet: ${snippet}.`));
 
+const stripLifetimeAnnotations = (source: string) =>
+  source
+    .replace(/<\s*'[A-Za-z_][A-Za-z0-9_]*\s*>/g, "")
+    .replace(/&\s*'[A-Za-z_][A-Za-z0-9_]*\s+/g, "&")
+    .replace(/&\s*'[A-Za-z_][A-Za-z0-9_]*/g, "&");
+
+const signatureIncludesSnippet = (signature: string, snippet: string) =>
+  signature.includes(snippet) ||
+  stripLifetimeAnnotations(signature).includes(snippet);
+
+const missingSignatureSnippetFailures = (
+  signature: string,
+  snippets: string[],
+) =>
+  snippets
+    .filter((snippet) => !signatureIncludesSnippet(signature, snippet))
+    .map((snippet) => failure(snippet, `Missing required snippet: ${snippet}.`));
+
 const forbiddenSnippetFailures = (source: string, snippets: string[]) =>
   snippets
     .filter((snippet) => includesForbiddenSnippet(source, snippet))
@@ -454,7 +472,7 @@ const methodSignatureFailures = (
     return [failure(methodName, `${methodName} method was not found.`)];
   }
 
-  return missingSnippetFailures(signature, requiredIncludes);
+  return missingSignatureSnippetFailures(signature, requiredIncludes);
 };
 
 const runImplMethodCheck = (source: string, check: ImplMethodCheck) => {

@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 2,
+  "id": "wrap-owned-intoiterator-003",
+  "arcId": "collection-wrappers",
+  "arcTitle": "Exposing iteration on collection wrappers",
+  "order": 57,
+  "day": 3,
+  "arcLength": 6,
+  "title": "Consume a wrapper with IntoIterator",
+  "conceptId": "wrap-into-iterator",
+  "difficulty": "medium",
+  "estimatedMinutes": 8,
+  "scenario": "When callers are done with a wrapper, IntoIterator should let them move owned values out naturally.",
+  "instructions": "Implement IntoIterator for OrderLines, yielding owned OrderLine values.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self { Self { lines } }\n}\n\n// TODO: implement IntoIterator for OrderLines.\n"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "content": "use rust_daily_lesson::{OrderLine, OrderLines};\n\n#[test]\nfn consuming_iteration_moves_lines_out() {\n    let lines = OrderLines::new(vec![OrderLine { sku: \"A\".to_owned(), quantity: 2 }]);\n    let moved: Vec<_> = lines.into_iter().map(|line| line.sku).collect();\n\n    assert_eq!(moved, vec![\"A\".to_owned()]);\n}\n"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Focus on the one public API shape requested by the lesson."
+    },
+    {
+      "level": 2,
+      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+    },
+    {
+      "level": 3,
+      "body": "A canonical idiomatic solution is shown below.",
+      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self { Self { lines } }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}"
+    }
+  ],
+  "completionExplanation": "This lesson keeps wrap-into-iterator explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "impl_trait_for_type",
+            "traitName": "IntoIterator",
+            "typeName": "OrderLines"
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "type Item = OrderLine",
+              "std::vec::IntoIter<OrderLine>"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std"
+      }
+    ]
+  }
+}

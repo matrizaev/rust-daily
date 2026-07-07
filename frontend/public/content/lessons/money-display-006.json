@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 2,
+  "id": "money-display-006",
+  "arcId": "money-value-object",
+  "arcTitle": "Money and currency domain representation",
+  "order": 42,
+  "day": 6,
+  "arcLength": 6,
+  "title": "Implement Display for Money",
+  "conceptId": "money-display-format",
+  "difficulty": "easy",
+  "estimatedMinutes": 6,
+  "scenario": "The UI needs to render formatted prices like $19.99, €5.00, or £7.25 without exposing Money's private fields.",
+  "instructions": "Implement std::fmt::Display for Money. Use '$' for USD, '€' for EUR, '£' for GBP, and output cents formatted to two decimal places.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "content": "use std::fmt;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\nimpl Money {\n    pub fn new(amount: u64, currency: Currency) -> Self {\n        Self { amount, currency }\n    }\n\n    pub fn amount(&self) -> u64 {\n        self.amount\n    }\n\n    pub fn currency(&self) -> Currency {\n        self.currency\n    }\n}\n\n// TODO: Implement std::fmt::Display for Money.\n"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "content": "use rust_daily_lesson::{Currency, Money};\n\n#[test]\nfn formats_correctly() {\n    assert_eq!(Money::new(1999, Currency::Usd).to_string(), \"$19.99\");\n    assert_eq!(Money::new(500, Currency::Eur).to_string(), \"€5.00\");\n    assert_eq!(Money::new(725, Currency::Gbp).to_string(), \"£7.25\");\n    assert_eq!(Money::new(5, Currency::Usd).to_string(), \"$0.05\");\n}\n"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Write an impl fmt::Display for Money block."
+    },
+    {
+      "level": 2,
+      "body": "Match on Currency for the symbol, then use amount / 100 and amount % 100 with {:02} for cents."
+    },
+    {
+      "level": 3,
+      "body": "A canonical solution formats all supported currencies through the Display trait.",
+      "solutionCode": "impl fmt::Display for Money {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        let symbol = match self.currency {\n            Currency::Usd => \"$\",\n            Currency::Eur => \"€\",\n            Currency::Gbp => \"£\",\n        };\n        let major = self.amount / 100;\n        let minor = self.amount % 100;\n\n        write!(f, \"{}{}.{:02}\", symbol, major, minor)\n    }\n}"
+    }
+  ],
+  "completionExplanation": "Display provides the standard formatting API while the value object keeps its representation private. Matching every supported currency also prevents enum additions from being silently ignored.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "impl_trait_for_type",
+            "traitName": "std::fmt::Display",
+            "typeName": "Money"
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std"
+      }
+    ]
+  }
+}

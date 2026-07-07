@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 2,
+  "id": "log-fields-002",
+  "arcId": "structured-request-logging",
+  "arcTitle": "Structured request logging",
+  "order": 80,
+  "day": 2,
+  "arcLength": 6,
+  "title": "Attach request fields to log events",
+  "conceptId": "log-event-fields",
+  "difficulty": "easy",
+  "estimatedMinutes": 7,
+  "scenario": "Useful logs carry fields such as request_id and attempt count so operators can filter and correlate events.",
+  "instructions": "Add LogFields and include fields on LogEvent.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel { Info, Warn, Error }\n\n// TODO: define LogFields and LogEvent with structured fields.\n"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "content": "use rust_daily_lesson::{LogEvent, LogFields, LogLevel};\n\n#[test]\nfn event_carries_structured_fields() {\n    let event = LogEvent {\n        event_name: \"request.retry\".to_owned(),\n        level: LogLevel::Warn,\n        fields: LogFields { request_id: \"req-1\".to_owned(), user_id: Some(\"user-1\".to_owned()), attempt: 2 },\n    };\n\n    assert_eq!(event.fields.request_id, \"req-1\");\n    assert_eq!(event.fields.attempt, 2);\n}\n"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Focus on the one public API shape requested by the lesson."
+    },
+    {
+      "level": 2,
+      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+    },
+    {
+      "level": 3,
+      "body": "A canonical idiomatic solution is shown below.",
+      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel { Info, Warn, Error }\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogFields {\n    pub request_id: String,\n    pub user_id: Option<String>,\n    pub attempt: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogEvent {\n    pub event_name: String,\n    pub level: LogLevel,\n    pub fields: LogFields,\n}"
+    }
+  ],
+  "completionExplanation": "This lesson keeps log-event-fields explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "struct_fields",
+            "structName": "LogFields",
+            "requiredFields": [
+              {
+                "name": "request_id",
+                "typeIncludes": [
+                  "String"
+                ]
+              },
+              {
+                "name": "user_id",
+                "typeIncludes": [
+                  "Option",
+                  "String"
+                ]
+              },
+              {
+                "name": "attempt",
+                "typeIncludes": [
+                  "u32"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "struct_fields",
+            "structName": "LogEvent",
+            "requiredFields": [
+              {
+                "name": "fields",
+                "typeIncludes": [
+                  "LogFields"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std"
+      }
+    ]
+  }
+}

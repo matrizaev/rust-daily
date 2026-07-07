@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 2,
+  "id": "inventory-item-struct-001",
+  "arcId": "inventory-summary",
+  "arcTitle": "Summarize inventory",
+  "order": 3,
+  "day": 1,
+  "arcLength": 6,
+  "title": "Define an inventory item",
+  "conceptId": "domain-structs",
+  "difficulty": "easy",
+  "estimatedMinutes": 5,
+  "scenario": "Inventory summaries need a small domain type before helpers can work with names and quantities.",
+  "instructions": "Define Item with sku: String, name: String, quantity: u32, and reserved: u32.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "content": "// TODO: define the Item struct used by inventory summaries.\n"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "content": "use rust_daily_lesson::Item;\n\n#[test]\nfn item_names_inventory_fields() {\n    let item = Item {\n        sku: \"SKU-1\".to_owned(),\n        name: \"Keyboard\".to_owned(),\n        quantity: 10,\n        reserved: 3,\n    };\n\n    assert_eq!(item.sku, \"SKU-1\");\n    assert_eq!(item.name, \"Keyboard\");\n    assert_eq!(item.quantity, 10);\n    assert_eq!(item.reserved, 3);\n}\n"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Use a struct when each value has a distinct role."
+    },
+    {
+      "level": 2,
+      "body": "The user-facing name and SKU are owned strings."
+    },
+    {
+      "level": 3,
+      "body": "Quantities are small non-negative counts, so u32 is enough here.",
+      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Item {\n    pub sku: String,\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}"
+    }
+  ],
+  "completionExplanation": "The Item struct gives later helpers a clear vocabulary. Named fields make summary code easier to read than tuple positions.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "struct_fields",
+            "structName": "Item",
+            "requiredFields": [
+              {
+                "name": "sku",
+                "typeIncludes": [
+                  "String"
+                ]
+              },
+              {
+                "name": "name",
+                "typeIncludes": [
+                  "String"
+                ]
+              },
+              {
+                "name": "quantity",
+                "typeIncludes": [
+                  "u32"
+                ]
+              },
+              {
+                "name": "reserved",
+                "typeIncludes": [
+                  "u32"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std"
+      }
+    ]
+  }
+}

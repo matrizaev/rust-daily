@@ -1,5 +1,5 @@
 import { toLocalDate } from "../progress/date";
-import type { Lesson } from "../types/lesson";
+import type { LessonIndexEntry } from "../types/lesson";
 import type { ProgressStore } from "../types/progress";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -16,7 +16,7 @@ const dayIndex = (now: Date) => {
 };
 
 const firstIncompleteLesson = (
-  lessons: Lesson[],
+  lessons: LessonIndexEntry[],
   completedLessonIds: Set<string>,
 ) =>
   [...lessons]
@@ -24,7 +24,7 @@ const firstIncompleteLesson = (
     .find((lesson) => !completedLessonIds.has(lesson.id)) ?? null;
 
 export const selectDailyLesson = (
-  lessons: Lesson[],
+  lessons: LessonIndexEntry[],
   progress: ProgressStore,
   now = new Date(),
 ) => {

@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import {
   isNumber,
   isRecord,
@@ -9,6 +9,8 @@ import {
 } from "./curriculum/shared.mjs";
 
 const LESSONS_PATH = new URL("../src/content/lessons.json", import.meta.url);
+const LESSON_INDEX_PATH = new URL("../src/content/lessonIndex.json", import.meta.url);
+const LESSON_DETAILS_DIR = new URL("../public/content/lessons/", import.meta.url);
 const CONCEPTS_PATH = new URL("../src/content/concepts.json", import.meta.url);
 const MINIMUM_LESSON_COUNT = 30;
 const DIFFICULTIES = new Set(["easy", "medium", "advanced"]);
@@ -39,6 +41,36 @@ const FORBIDDEN_PROMISES = [
   "tests passed",
   "run tests",
 ];
+const LESSON_INDEX_FIELDS = [
+  "schemaVersion",
+  "id",
+  "arcId",
+  "arcTitle",
+  "order",
+  "day",
+  "arcLength",
+  "title",
+  "conceptId",
+  "difficulty",
+  "estimatedMinutes",
+  "scenario",
+];
+const LESSON_DETAIL_FIELDS = [
+  ...LESSON_INDEX_FIELDS,
+  "instructions",
+  "files",
+  "hints",
+  "completionExplanation",
+  "validation",
+];
+const INDEX_FORBIDDEN_DETAIL_FIELDS = [
+  "instructions",
+  "starterCode",
+  "files",
+  "hints",
+  "completionExplanation",
+  "validation",
+];
 
 const readJson = async (path) => JSON.parse(await readFile(path, "utf8"));
 
@@ -62,6 +94,7 @@ const validationSteps = (validation) =>
   Array.isArray(validation.validations)
     ? validation.validations
     : [];
+const jsonEqual = (left, right) => JSON.stringify(left) === JSON.stringify(right);
 
 const validationHasRuntimeMode = (validation) =>
   RUST_RUNTIME_VALIDATION_MODES.has(validationMode(validation)) ||
@@ -249,8 +282,17 @@ const validateBackendValidation = (errors, lesson, validation) => {
     validation.testFiles.every(
       (file) => isRecord(file) && isString(file.path) && isString(file.content),
     );
+  const hasEmbeddedTestFiles =
+    Array.isArray(lesson.files) &&
+    lesson.files.some(
+      (file) =>
+        isRecord(file) &&
+        file.role === "test" &&
+        isString(file.path) &&
+        isString(file.content),
+    );
 
-  if (!hasTestCode && !hasTestFiles) {
+  if (!hasTestCode && !hasTestFiles && !hasEmbeddedTestFiles) {
     push(errors, `${lesson.id} backend validation must have testCode or testFiles.`);
   }
 };
@@ -431,7 +473,131 @@ const validateArcs = (errors, lessons) => {
   }
 };
 
-const validateContent = (lessons, concepts) => {
+const pickFields = (record, fields) =>
+  Object.fromEntries(fields.map((field) => [field, record?.[field]]));
+
+const lessonDetailPath = (lessonId) =>
+  new URL(`${encodeURIComponent(lessonId)}.json`, LESSON_DETAILS_DIR);
+
+const lessonDetailFileName = (lessonId) => `${lessonId}.json`;
+
+const readLessonDetails = async (lessons) =>
+  Object.fromEntries(
+    await Promise.all(
+      lessons.map(async (lesson) => [
+        lesson.id,
+        await readJson(lessonDetailPath(lesson.id)),
+      ]),
+    ),
+  );
+
+const readLessonDetailFileNames = async () =>
+  (await readdir(LESSON_DETAILS_DIR))
+    .filter((name) => name.endsWith(".json"))
+    .sort();
+
+const reportMissingLessonDetailFile = (errors, actualFileNames, fileName) => {
+  if (!actualFileNames.includes(fileName)) {
+    push(errors, `Missing lesson detail file ${fileName}.`);
+  }
+};
+
+const reportUnexpectedLessonDetailFile = (errors, expectedFileNames, fileName) => {
+  if (!expectedFileNames.includes(fileName)) {
+    push(errors, `Unexpected lesson detail file ${fileName}.`);
+  }
+};
+
+const validateLessonIndexShape = (errors, lessonIndex) => {
+  if (!Array.isArray(lessonIndex)) {
+    push(errors, "Lesson index file must contain an array.");
+    return;
+  }
+
+  lessonIndex.forEach((lesson) => {
+    validateRequiredFields(
+      errors,
+      `Lesson index ${lesson.id ?? "(missing id)"}`,
+      lesson,
+      LESSON_INDEX_FIELDS,
+    );
+
+    INDEX_FORBIDDEN_DETAIL_FIELDS.forEach((field) => {
+      if (field in lesson) {
+        push(errors, `${lesson.id} index entry must not include ${field}.`);
+      }
+    });
+  });
+};
+
+const validateLessonIndexParity = (errors, lessons, lessonIndex) => {
+  if (!Array.isArray(lessonIndex)) {
+    return;
+  }
+
+  if (lessonIndex.length !== lessons.length) {
+    push(
+      errors,
+      `Lesson index has ${lessonIndex.length} entries; expected ${lessons.length}.`,
+    );
+  }
+
+  lessons.forEach((lesson, index) => {
+    const indexLesson = lessonIndex[index];
+
+    if (!indexLesson || indexLesson.id !== lesson.id) {
+      push(errors, `${lesson.id} is not at the same position in lessonIndex.json.`);
+      return;
+    }
+
+    const expected = pickFields(lesson, LESSON_INDEX_FIELDS);
+    const actual = pickFields(indexLesson, LESSON_INDEX_FIELDS);
+
+    if (!jsonEqual(actual, expected)) {
+      push(errors, `${lesson.id} index entry does not match lessons.json.`);
+    }
+  });
+};
+
+const validateLessonDetailParity = (errors, lessons, lessonDetails) => {
+  lessons.forEach((lesson) => {
+    const detail = lessonDetails[lesson.id];
+
+    validateRequiredFields(
+      errors,
+      `Lesson detail ${lesson.id}`,
+      detail,
+      LESSON_DETAIL_FIELDS,
+    );
+
+    if (!jsonEqual(pickFields(detail, LESSON_DETAIL_FIELDS), pickFields(lesson, LESSON_DETAIL_FIELDS))) {
+      push(errors, `${lesson.id} detail file does not match lessons.json.`);
+    }
+  });
+};
+
+const validateLessonDetailFileSet = async (errors, lessons) => {
+  const expectedFileNames = lessons.map((lesson) => lessonDetailFileName(lesson.id)).sort();
+  const actualFileNames = await readLessonDetailFileNames();
+
+  expectedFileNames.forEach((fileName) =>
+    reportMissingLessonDetailFile(errors, actualFileNames, fileName),
+  );
+  actualFileNames.forEach((fileName) =>
+    reportUnexpectedLessonDetailFile(errors, expectedFileNames, fileName),
+  );
+};
+
+const validateRuntimeLessonContent = async (errors, lessons, lessonIndex) => {
+  validateLessonIndexShape(errors, lessonIndex);
+  validateLessonIndexParity(errors, lessons, lessonIndex);
+  await validateLessonDetailFileSet(errors, lessons);
+
+  const lessonDetails = await readLessonDetails(lessons);
+  validateLessonDetailParity(errors, lessons, lessonDetails);
+};
+
+const validateContent = async (lessons, concepts, lessonIndex) => {
   const errors = [];
 
   if (!Array.isArray(lessons) || lessons.length < MINIMUM_LESSON_COUNT) {
@@ -448,14 +614,16 @@ const validateContent = (lessons, concepts) => {
   validateUniqueIds(errors, lessons, concepts);
   validateConceptLinks(errors, lessons, concepts);
   validateArcs(errors, lessons);
+  await validateRuntimeLessonContent(errors, lessons, lessonIndex);
 
   return errors;
 };
 
 const main = async () => {
   const lessons = await readJson(LESSONS_PATH);
+  const lessonIndex = await readJson(LESSON_INDEX_PATH);
   const concepts = await readJson(CONCEPTS_PATH);
-  const errors = validateContent(lessons, concepts);
+  const errors = await validateContent(lessons, concepts, lessonIndex);
 
   reportErrorsOrLog(
     errors,
