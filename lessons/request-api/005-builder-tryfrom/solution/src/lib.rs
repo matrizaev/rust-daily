@@ -1,5 +1,10 @@
 use std::convert::TryFrom;
 
+pub struct RequestBuilder {
+    method: Option<String>,
+    path: Option<String>,
+}
+
 pub struct RawRequest {
     pub method: Option<String>,
     pub path: Option<String>,
@@ -9,6 +14,7 @@ pub struct RawRequest {
 pub struct Request {
     pub method: String,
     pub path: String,
+    pub body: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -24,6 +30,34 @@ impl TryFrom<RawRequest> for Request {
         let method = value.method.ok_or(BuildError::MissingMethod)?;
         let path = value.path.ok_or(BuildError::MissingPath)?;
 
-        Ok(Self { method, path })
+        Ok(Self { method, path, body: None })
     }
+}
+
+
+impl RequestBuilder {
+    pub fn method(mut self, method: impl Into<String>) -> Self {
+            self.method = Some(method.into());
+            self
+        }
+}
+
+
+impl Default for RequestBuilder {
+    fn default() -> Self {
+        Self {
+            method: None,
+            path: None,
+        }
+    }
+}
+
+
+impl RequestBuilder {
+    pub fn build(self) -> Result<Request, BuildError> {
+            let method = self.method.ok_or(BuildError::MissingMethod)?;
+            let path = self.path.ok_or(BuildError::MissingPath)?;
+
+            Ok(Request { method, path, body: None })
+        }
 }

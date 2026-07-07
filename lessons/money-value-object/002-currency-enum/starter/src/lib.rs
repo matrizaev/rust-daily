@@ -2,5 +2,13 @@
 pub enum Currency {
     Usd,
     Eur,
-    // TODO: Add British Pounds (Gbp)
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Money {
+    amount: u64,
+    currency: Currency,
+}
+
+// Continue from the previous lesson.
+// TODO: Add British Pounds (Gbp)

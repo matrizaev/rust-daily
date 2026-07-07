@@ -16,7 +16,7 @@
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "pub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl RequestBuilder {\n    pub fn new() -> Self {\n        Self { method: None, path: None }\n    }\n\n    // TODO: add a consuming method setter.\n}\n"
+      "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Request {\n    pub method: String,\n    pub path: String,\n    pub body: Option<String>,\n}\n\n// Continue from the previous lesson.\n// TODO: add a consuming method setter.\n"
     },
     {
       "path": "tests/public.rs",

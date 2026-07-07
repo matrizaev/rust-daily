@@ -1,8 +1,12 @@
-pub enum LogLevel {
-    // TODO: add the supported log levels.
+pub struct LogEntry<'a> {
+    pub level: &'a str,
+    pub message: &'a str,
 }
 
-pub fn severity(level: LogLevel) -> u8 {
-    // TODO: map Info to 1, Warn to 2, and Error to 3.
-    0
+pub struct LogView<'a> {
+    pub entries: &'a [LogEntry<'a>],
 }
+
+// Continue from the previous lesson.
+// TODO: add the supported log levels.
+// TODO: map Info to 1, Warn to 2, and Error to 3.

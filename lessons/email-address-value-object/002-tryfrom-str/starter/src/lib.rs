@@ -3,16 +3,5 @@ pub struct EmailAddress {
     value: String,
 }
 
-impl EmailAddress {
-    pub fn as_str(&self) -> &str {
-        &self.value
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum EmailValidationError {
-    Empty,
-    MissingAt,
-}
-
+// Continue from the previous lesson.
 // TODO: implement TryFrom<&str> for EmailAddress.

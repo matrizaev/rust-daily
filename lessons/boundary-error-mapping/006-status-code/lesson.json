@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Focus on the one public API shape requested by the lesson."
+      "body": "Keep the Translating errors across boundaries code active and implement status_code(&CreateOrderUseCaseError) -> u16 with 400 for domain errors, 409 for repository conflicts, and 503 for repository unavailability."
     },
     {
       "level": 2,
-      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
     },
     {
       "level": 3,
-      "body": "A canonical idiomatic solution is shown below.",
-      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderError {\n    EmptyOrder,\n    InvalidQuantity,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RepositoryError {\n    Unavailable,\n    Conflict,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderUseCaseError {\n    Domain(CreateOrderError),\n    Repository(RepositoryError),\n}\n\npub fn status_code(error: &CreateOrderUseCaseError) -> u16 {\n    match error {\n        CreateOrderUseCaseError::Domain(_) => 400,\n        CreateOrderUseCaseError::Repository(RepositoryError::Conflict) => 409,\n        CreateOrderUseCaseError::Repository(RepositoryError::Unavailable) => 503,\n    }\n}"
+      "body": "One complete solution for Translate application errors to status codes is shown below.",
+      "solutionCode": "use std::error::Error;\nuse std::fmt;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderError {\n    EmptyOrder,\n    InvalidQuantity,\n}\n\nimpl fmt::Display for CreateOrderError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            CreateOrderError::EmptyOrder => write!(f, \"empty order\"),\n            CreateOrderError::InvalidQuantity => write!(f, \"invalid quantity\"),\n        }\n    }\n}\n\nimpl Error for CreateOrderError {}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RepositoryError {\n    Unavailable,\n    Conflict,\n}\n\nimpl fmt::Display for RepositoryError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            RepositoryError::Unavailable => write!(f, \"repository unavailable\"),\n            RepositoryError::Conflict => write!(f, \"repository conflict\"),\n        }\n    }\n}\n\nimpl Error for RepositoryError {}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderUseCaseError {\n    Domain(CreateOrderError),\n    Repository(RepositoryError),\n}\n\nimpl fmt::Display for CreateOrderUseCaseError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            CreateOrderUseCaseError::Domain(error) => write!(f, \"domain error: {error}\"),\n            CreateOrderUseCaseError::Repository(error) => write!(f, \"repository error: {error}\"),\n        }\n    }\n}\n\nimpl Error for CreateOrderUseCaseError {\n    fn source(&self) -> Option<&(dyn Error + 'static)> {\n        match self {\n            CreateOrderUseCaseError::Domain(error) => Some(error),\n            CreateOrderUseCaseError::Repository(error) => Some(error),\n        }\n    }\n}\n\nimpl From<CreateOrderError> for CreateOrderUseCaseError {\n    fn from(error: CreateOrderError) -> Self {\n        CreateOrderUseCaseError::Domain(error)\n    }\n}\n\npub fn is_retryable(error: CreateOrderUseCaseError) -> bool {\n    matches!(\n        error,\n        CreateOrderUseCaseError::Repository(RepositoryError::Unavailable),\n    )\n}\n\npub fn status_code(error: &CreateOrderUseCaseError) -> u16 {\n    match error {\n        CreateOrderUseCaseError::Domain(_) => 400,\n        CreateOrderUseCaseError::Repository(RepositoryError::Conflict) => 409,\n        CreateOrderUseCaseError::Repository(RepositoryError::Unavailable) => 503,\n    }\n}"
     }
   ],
-  "completionExplanation": "This lesson keeps boundary-http-status explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "completionExplanation": "Translate application errors to status codes now extends the active Translating errors across boundaries code with boundary http status. The previous lesson's behavior remains in the main solution rather than an archived module.",
   "validation": {
     "mode": "all",
     "validations": [

@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import {
   findLessonJsonFiles,
@@ -13,13 +14,19 @@ import {
   validateHintObject,
 } from "./shared.mjs";
 
+const lessonDir = (lessonJsonPath) => dirname(lessonJsonPath);
+const lessonSourcePath = (lessonJsonPath, sourcePath) =>
+  join(lessonDir(lessonJsonPath), sourcePath);
+const readLessonSource = async (lessonJsonPath, sourcePath) =>
+  readFile(lessonSourcePath(lessonJsonPath, sourcePath), "utf8");
+
 const validateSourcePath = async (errors, lessonJsonPath, sourcePath, label) => {
   if (!isString(sourcePath)) {
     push(errors, `${label} must have sourcePath.`);
     return;
   }
 
-  const fullPath = join(dirname(lessonJsonPath), sourcePath);
+  const fullPath = lessonSourcePath(lessonJsonPath, sourcePath);
 
   if (!(await pathExists(fullPath))) {
     push(errors, `${label} references missing file ${sourcePath}.`);
@@ -182,7 +189,7 @@ const validateAuthor = async (errors, lessonJsonPath, lesson) => {
     return;
   }
 
-  if (!(await pathExists(join(dirname(lessonJsonPath), lesson.author.solutionPath)))) {
+  if (!(await pathExists(lessonSourcePath(lessonJsonPath, lesson.author.solutionPath)))) {
     push(errors, `${lesson.id} references missing solutionPath.`);
   }
 };
@@ -226,6 +233,269 @@ const validateLessonConcept = (errors, lesson, conceptIds) => {
   }
 };
 
+const editableSourcePath = (lesson) =>
+  lesson.files.find((file) => file.role === "editable")?.sourcePath ?? null;
+
+const solutionSourcePath = (lesson) =>
+  isRecord(lesson.author) && isString(lesson.author.solutionPath)
+    ? join(lesson.author.solutionPath, "src", "lib.rs")
+    : null;
+
+const readEditableStarter = async (lessonJsonPath, lesson) => {
+  const sourcePath = editableSourcePath(lesson);
+
+  return sourcePath ? await readLessonSource(lessonJsonPath, sourcePath) : "";
+};
+
+const readSolution = async (lessonJsonPath, lesson) => {
+  const sourcePath = solutionSourcePath(lesson);
+
+  return sourcePath ? await readLessonSource(lessonJsonPath, sourcePath) : "";
+};
+
+const normalizedSource = (source) => source.trim().replace(/\r\n/g, "\n");
+
+const FORBIDDEN_CUMULATIVE_SOURCE_SNIPPETS = [
+  "previous_lesson_solution",
+  "#[allow(dead_code)]",
+];
+
+const validateActiveSource = (errors, lesson, label, source) => {
+  const forbiddenSnippet = FORBIDDEN_CUMULATIVE_SOURCE_SNIPPETS.find((snippet) =>
+    source.includes(snippet),
+  );
+
+  if (forbiddenSnippet) {
+    push(
+      errors,
+      `${lesson.id} ${label} must keep previous work active; remove ${forbiddenSnippet}.`,
+    );
+  }
+};
+
+const starterBeginsWithPreviousSolution = (starter, previousSolution) =>
+  normalizedSource(previousSolution).length > 0 &&
+  normalizedSource(starter).startsWith(normalizedSource(previousSolution));
+
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const structuralChecks = (lesson) =>
+  validationSteps(lesson.validation)
+    .filter((validation) => validation?.mode === "structural")
+    .flatMap((validation) => Array.isArray(validation.checks) ? validation.checks : []);
+
+const CUMULATIVE_STRUCTURAL_TYPES = new Set([
+  "impl_trait_for_type",
+  "impl_method",
+  "function_signature",
+]);
+
+const cumulativeStructuralChecks = (lesson) =>
+  structuralChecks(lesson).filter((check) => CUMULATIVE_STRUCTURAL_TYPES.has(check.type));
+
+const findBlockStart = (source, keyword, name) => {
+  const pattern = new RegExp(`${keyword}\\s+${escapeRegExp(name)}[^\\{]*\\{`);
+  const match = pattern.exec(source);
+
+  return match ? match.index + match[0].length - 1 : -1;
+};
+
+const updateBraceDepth = (depth, character) => {
+  if (character === "{") {
+    return depth + 1;
+  }
+
+  if (character === "}") {
+    return depth - 1;
+  }
+
+  return depth;
+};
+
+const findMatchingBrace = (source, start) => {
+  let depth = 0;
+
+  for (let index = start; index < source.length; index += 1) {
+    depth = updateBraceDepth(depth, source[index]);
+
+    if (source[index] === "}" && depth === 0) {
+      return index;
+    }
+  }
+
+  return -1;
+};
+
+const findBlockBody = (source, keyword, name) => {
+  const start = findBlockStart(source, keyword, name);
+  const end = start === -1 ? -1 : findMatchingBrace(source, start);
+
+  return end === -1 ? null : source.slice(start + 1, end);
+};
+
+const hasStructField = (source, structName, field) => {
+  const body = findBlockBody(source, "struct", structName);
+
+  if (!body) {
+    return false;
+  }
+
+  const fieldPattern = new RegExp(`${escapeRegExp(field.name)}\\s*:\\s*([^,\\n]+)`);
+  const match = fieldPattern.exec(body);
+
+  return Boolean(match) && field.typeIncludes.every((part) => match[1].includes(part));
+};
+
+const hasTupleStructTypes = (source, structName, requiredTypes) => {
+  const pattern = new RegExp(`struct\\s+${escapeRegExp(structName)}\\s*\\(([^)]*)\\)`);
+  const match = pattern.exec(source);
+
+  return Boolean(match) && requiredTypes.every((part) => match[1].includes(part));
+};
+
+const hasEnumVariant = (source, enumName, variant) => {
+  const body = findBlockBody(source, "enum", enumName);
+
+  return Boolean(body && new RegExp(`\\b${escapeRegExp(variant)}\\b`).test(body));
+};
+
+const hasTraitImpl = (source, traitName, typeName) => {
+  const genericStart = traitName.indexOf("<");
+  const traitPath = genericStart === -1 ? traitName : traitName.slice(0, genericStart);
+  const genericSuffix = genericStart === -1 ? "" : traitName.slice(genericStart);
+  const traitLeaf = traitPath.includes("::")
+    ? `${traitPath.split("::").at(-1)}${genericSuffix}`
+    : traitName;
+  const pattern = new RegExp(
+    `impl(?:\\s*<[^>{}]+>)?\\s+(?:[A-Za-z_][A-Za-z0-9_]*::)*${escapeRegExp(traitLeaf)}(?:\\s*<[^>{}]+>)?\\s+for\\s+[^\\{;]*${escapeRegExp(typeName)}\\b`,
+  );
+
+  return pattern.test(source);
+};
+
+const hasFunctionWithIncludes = (source, functionName, requiredIncludes) => {
+  const functionPattern = new RegExp(`fn\\s+${escapeRegExp(functionName)}\\b[^\\{;]*`);
+  const match = functionPattern.exec(source);
+  const comparableSource = source.replace(/&'[A-Za-z_][A-Za-z0-9_]*\s+/g, "&");
+
+  return Boolean(match) && requiredIncludes.every((part) => comparableSource.includes(part));
+};
+
+const solutionSatisfiesCheck = (source, check) => {
+  const checks = {
+    enum_unit_variants: () =>
+      check.requiredVariants.every((variant) => hasEnumVariant(source, check.enumName, variant)),
+    struct_fields: () =>
+      check.requiredFields.every((field) => hasStructField(source, check.structName, field)),
+    tuple_struct_fields: () =>
+      hasTupleStructTypes(source, check.structName, check.requiredTypes),
+    impl_trait_for_type: () =>
+      hasTraitImpl(source, check.traitName, check.typeName),
+    impl_method: () =>
+      hasFunctionWithIncludes(source, check.methodName, check.requiredSignatureIncludes),
+    function_signature: () =>
+      hasFunctionWithIncludes(source, check.functionName, check.requiredSignatureIncludes),
+    source_includes: () =>
+      check.requiredSnippets.every((snippet) => source.includes(snippet)) &&
+      (check.forbiddenSnippets ?? []).every((snippet) => !source.includes(snippet)),
+  };
+
+  return checks[check.type]?.() ?? true;
+};
+
+const validateSolutionSatisfiesStructuralChecks = async (
+  errors,
+  current,
+  requiredLessonRecords,
+) => {
+  const solution = await readSolution(current.lessonJsonPath, current.lesson);
+
+  for (const required of requiredLessonRecords) {
+    for (const check of cumulativeStructuralChecks(required.lesson)) {
+      if (!solutionSatisfiesCheck(solution, check)) {
+        push(
+          errors,
+          `${current.lesson.id} solution must preserve ${required.lesson.id} structural check ${check.type}.`,
+        );
+      }
+    }
+  }
+};
+
+const lessonSortKey = (lesson) => [lesson.arcId, lesson.day, lesson.order, lesson.id];
+
+const sortLessonsByArcDay = (lessons) =>
+  [...lessons].sort((left, right) => {
+    const [leftArc, leftDay, leftOrder, leftId] = lessonSortKey(left.lesson);
+    const [rightArc, rightDay, rightOrder, rightId] = lessonSortKey(right.lesson);
+
+    return (
+      leftArc.localeCompare(rightArc) ||
+      leftDay - rightDay ||
+      leftOrder - rightOrder ||
+      leftId.localeCompare(rightId)
+    );
+  });
+
+const validateCumulativeLesson = async (
+  errors,
+  previous,
+  current,
+) => {
+  const previousSolution = await readSolution(previous.lessonJsonPath, previous.lesson);
+  const currentStarter = await readEditableStarter(current.lessonJsonPath, current.lesson);
+
+  if (!starterBeginsWithPreviousSolution(currentStarter, previousSolution)) {
+    push(
+      errors,
+      `${current.lesson.id} starter must begin with previous lesson ${previous.lesson.id} solution.`,
+    );
+  }
+};
+
+const validateNoHistoricalSourceModules = async (errors, lessonRecord) => {
+  const starter = await readEditableStarter(lessonRecord.lessonJsonPath, lessonRecord.lesson);
+  const solution = await readSolution(lessonRecord.lessonJsonPath, lessonRecord.lesson);
+
+  validateActiveSource(errors, lessonRecord.lesson, "starter", starter);
+  validateActiveSource(errors, lessonRecord.lesson, "solution", solution);
+};
+
+const validateCumulativeArcLessons = async (errors, arcLessons) => {
+  const ordered = sortLessonsByArcDay(arcLessons);
+
+  await Promise.all(
+    ordered.slice(1).map((lesson, index) =>
+      validateCumulativeLesson(errors, ordered[index], lesson),
+    ),
+  );
+
+  await Promise.all(
+    ordered.map((lesson, index) =>
+      validateSolutionSatisfiesStructuralChecks(errors, lesson, ordered.slice(0, index + 1)),
+    ),
+  );
+};
+
+const validateCumulativeLessons = async (errors, lessonRecords) => {
+  const arcIds = [...new Set(lessonRecords.map(({ lesson }) => lesson.arcId))];
+
+  await Promise.all(
+    lessonRecords.map((lessonRecord) =>
+      validateNoHistoricalSourceModules(errors, lessonRecord),
+    ),
+  );
+
+  await Promise.all(
+    arcIds.map((arcId) =>
+      validateCumulativeArcLessons(
+        errors,
+        lessonRecords.filter(({ lesson }) => lesson.arcId === arcId),
+      ),
+    ),
+  );
+};
+
 const validateLesson = async (errors, lessonJsonPath, conceptIds) => {
   const lesson = await readJson(lessonJsonPath);
   const label = repoRelativePath(lessonJsonPath);
@@ -249,12 +519,18 @@ const main = async () => {
   const conceptIds = new Set(concepts.map((concept) => concept.id));
   const lessonJsonFiles = await findLessonJsonFiles();
   const errors = [];
-  const lessons = [];
+  const lessonRecords = [];
 
   for (const lessonJsonPath of lessonJsonFiles) {
-    lessons.push(await validateLesson(errors, lessonJsonPath, conceptIds));
+    lessonRecords.push({
+      lesson: await validateLesson(errors, lessonJsonPath, conceptIds),
+      lessonJsonPath,
+    });
   }
 
+  await validateCumulativeLessons(errors, lessonRecords);
+
+  const lessons = lessonRecords.map(({ lesson }) => lesson);
   const duplicateIds = lessons
     .map((lesson) => lesson.id)
     .filter((id, index, ids) => ids.indexOf(id) !== index);

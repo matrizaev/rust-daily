@@ -10,6 +10,11 @@ pub struct OrderLines {
 
 impl OrderLines {
     pub fn new(lines: Vec<OrderLine>) -> Self { Self { lines } }
+
+    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {
+        self.lines.iter()
+    }
 }
 
+// Continue from the previous lesson.
 // TODO: implement IntoIterator for OrderLines.

@@ -16,7 +16,7 @@
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self { Self { lines } }\n}\n\n// TODO: implement IntoIterator for OrderLines.\n"
+      "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self { Self { lines } }\n\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: implement IntoIterator for OrderLines.\n"
     },
     {
       "path": "tests/public.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Focus on the one public API shape requested by the lesson."
+      "body": "Keep the Exposing iteration on collection wrappers code active and implement IntoIterator for OrderLines, yielding owned OrderLine values."
     },
     {
       "level": 2,
-      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
     },
     {
       "level": 3,
-      "body": "A canonical idiomatic solution is shown below.",
-      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self { Self { lines } }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}"
+      "body": "One complete solution for Consume a wrapper with IntoIterator is shown below.",
+      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self { Self { lines } }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}\n\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n            self.lines.iter()\n        }\n}"
     }
   ],
-  "completionExplanation": "This lesson keeps wrap-into-iterator explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "completionExplanation": "Consume a wrapper with IntoIterator now extends the active Exposing iteration on collection wrappers code with wrap into iterator. The previous lesson's behavior remains in the main solution rather than an archived module.",
   "validation": {
     "mode": "all",
     "validations": [

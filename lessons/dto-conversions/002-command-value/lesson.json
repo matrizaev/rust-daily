@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Focus on the one public API shape requested by the lesson."
+      "body": "Keep the Converting DTOs into domain commands code active and define RegisterUserCommand with private email and display_name fields, a constructor, and borrowed accessors."
     },
     {
       "level": 2,
-      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
     },
     {
       "level": 3,
-      "body": "A canonical idiomatic solution is shown below.",
+      "body": "One complete solution for Define a validated register command is shown below.",
       "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}"
     }
   ],
-  "completionExplanation": "This lesson keeps register-command-value explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "completionExplanation": "Define a validated register command now extends the active Converting DTOs into domain commands code with register command value. The previous lesson's behavior remains in the main solution rather than an archived module.",
   "validation": {
     "mode": "all",
     "validations": [

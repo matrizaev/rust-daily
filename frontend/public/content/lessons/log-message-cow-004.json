@@ -16,7 +16,7 @@
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "// TODO: import Cow and define LogMessage with text that can be borrowed or owned.\n"
+      "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn severity(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 1,\n        LogLevel::Warn => 2,\n        LogLevel::Error => 3,\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: import Cow and define LogMessage with text that can be borrowed or owned.\n"
     },
     {
       "path": "tests/public.rs",

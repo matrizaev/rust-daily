@@ -16,7 +16,7 @@
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub enum Currency {\r\n    Usd,\r\n    Eur,\r\n    // TODO: Add British Pounds (Gbp)\r\n}\r\n"
+      "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\n// Continue from the previous lesson.\n// TODO: Add British Pounds (Gbp)\n"
     },
     {
       "path": "tests/public.rs",
@@ -36,7 +36,7 @@
     {
       "level": 3,
       "body": "A canonical solution adds Gbp to the enum.",
-      "solutionCode": "pub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}"
+      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}"
     }
   ],
   "completionExplanation": "Updating the enum extends the supported domain concepts without altering the rest of the type structure.",

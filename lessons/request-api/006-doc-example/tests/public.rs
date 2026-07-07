@@ -7,6 +7,7 @@ fn documented_builder_flow_works() {
         Ok(Request {
             method: "GET".to_owned(),
             path: "/health".to_owned(),
+            body: None,
         })
     );
 }

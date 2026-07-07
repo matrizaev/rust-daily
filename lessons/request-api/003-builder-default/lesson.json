@@ -36,7 +36,7 @@
     {
       "level": 3,
       "body": "You can also call Self { method: None, path: None } directly.",
-      "solutionCode": "pub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl Default for RequestBuilder {\n    fn default() -> Self {\n        Self {\n            method: None,\n            path: None,\n        }\n    }\n}"
+      "solutionCode": "pub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl Default for RequestBuilder {\n    fn default() -> Self {\n        Self {\n            method: None,\n            path: None,\n        }\n    }\n}\n\n\nimpl RequestBuilder {\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n            self.method = Some(method.into());\n            self\n        }\n}"
     }
   ],
   "completionExplanation": "Default makes the builder easy to construct and compose with APIs that expect defaultable values. The empty state is explicit through Option fields.",

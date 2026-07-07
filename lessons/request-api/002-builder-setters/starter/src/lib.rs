@@ -1,12 +1,9 @@
-pub struct RequestBuilder {
-    method: Option<String>,
-    path: Option<String>,
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Request {
+    pub method: String,
+    pub path: String,
+    pub body: Option<String>,
 }
 
-impl RequestBuilder {
-    pub fn new() -> Self {
-        Self { method: None, path: None }
-    }
-
-    // TODO: add a consuming method setter.
-}
+// Continue from the previous lesson.
+// TODO: add a consuming method setter.

@@ -25,4 +25,19 @@ impl TryFrom<u16> for Percentage {
 }
 
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn accepts_valid_percentages() {
+        let cases = [(0, 0), (50, 50), (100, 100)];
+
+        for (input, expected) in cases {
+            assert_eq!(Percentage::try_from(input).map(|value| value.value()), Ok(expected));
+        }
+    }
+}
+
+// Continue from the previous lesson.
 // TODO: add table-driven tests for invalid cases.

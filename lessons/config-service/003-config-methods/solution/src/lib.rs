@@ -4,6 +4,16 @@ pub struct Config {
     pub use_tls: bool,
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            service_url: "http://localhost:8080".to_owned(),
+            max_connections: 32,
+            use_tls: false,
+        }
+    }
+}
+
 impl Config {
     pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {
         self.service_url = service_url.into();

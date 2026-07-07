@@ -1,3 +1,6 @@
+use std::fmt;
+use std::num::ParseIntError;
+
 use std::convert::TryFrom;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -46,5 +49,27 @@ impl TryFrom<&str> for User {
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         parse_user(value)
+    }
+}
+
+
+impl std::fmt::Display for ParseUserError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ParseUserError::MissingId => write!(f, "missing id"),
+            ParseUserError::MissingName => write!(f, "missing name"),
+            ParseUserError::MissingEmail => write!(f, "missing email"),
+            ParseUserError::InvalidId => write!(f, "invalid id"),
+        }
+    }
+}
+
+
+impl std::error::Error for ParseUserError {}
+
+
+impl From<ParseIntError> for ParseUserError {
+    fn from(_error: ParseIntError) -> Self {
+        ParseUserError::InvalidId
     }
 }

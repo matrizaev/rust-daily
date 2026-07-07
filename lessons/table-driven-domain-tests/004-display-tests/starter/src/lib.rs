@@ -25,4 +25,19 @@ impl TryFrom<u16> for Percentage {
 }
 
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rejects_invalid_percentages() {
+        let invalid_values = [101, 150, 1_000];
+
+        for input in invalid_values {
+            assert_eq!(Percentage::try_from(input), Err(PercentageError::OutOfRange));
+        }
+    }
+}
+
+// Continue from the previous lesson.
 // TODO: implement Display and add display tests.

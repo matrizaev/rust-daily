@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Focus on the one public API shape requested by the lesson."
+      "body": "Keep the Register user use case boundaries code active and define an application module with a UserRepository trait that checks for email existence and saves a NewUser."
     },
     {
       "level": 2,
-      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
     },
     {
       "level": 3,
-      "body": "A canonical idiomatic solution is shown below.",
+      "body": "One complete solution for Define an application repository port is shown below.",
       "solutionCode": "pub mod domain {\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct EmailAddress(pub String);\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct UserId(pub u64);\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct NewUser { pub email: EmailAddress, pub display_name: String }\n}\n\npub mod application {\n    use super::domain::{EmailAddress, NewUser, UserId};\n\n    #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n    pub enum RepositoryError { Unavailable }\n\n    pub trait UserRepository {\n        fn exists_by_email(&self, email: &EmailAddress) -> Result<bool, RepositoryError>;\n        fn save(&mut self, user: NewUser) -> Result<UserId, RepositoryError>;\n    }\n}"
     }
   ],
-  "completionExplanation": "This lesson keeps register-repository-port explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "completionExplanation": "Define an application repository port now extends the active Register user use case boundaries code with register repository port. The previous lesson's behavior remains in the main solution rather than an archived module.",
   "validation": {
     "mode": "all",
     "validations": [

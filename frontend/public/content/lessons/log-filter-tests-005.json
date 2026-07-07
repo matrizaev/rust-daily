@@ -16,7 +16,7 @@
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "pub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub struct LogEntry<'a> {\n    pub level: LogLevel,\n    pub message: &'a str,\n}\n\npub fn alert_messages<'a>(entries: &'a [LogEntry<'a>]) -> Vec<&'a str> {\n    entries\n        .iter()\n        .filter_map(|entry| match entry.level {\n            LogLevel::Warn | LogLevel::Error => Some(entry.message),\n            LogLevel::Info => None,\n        })\n        .collect()\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn keeps_warning_and_error_messages() {\n        // TODO: assert that alert messages include warning and error text.\n    }\n\n    #[test]\n    fn skips_info_messages() {\n        // TODO: assert that info text is not returned.\n    }\n}\n"
+      "content": "use std::borrow::Cow;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogMessage<'a> {\n    pub text: Cow<'a, str>,\n}\n\n// Continue from the previous lesson.\n// TODO: assert that alert messages include warning and error text.\n// TODO: assert that info text is not returned.\n"
     },
     {
       "path": "tests/public.rs",

@@ -16,7 +16,7 @@
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\nimpl Money {\n    pub fn new(amount: u64, currency: Currency) -> Self {\n        Self { amount, currency }\n    }\n\n    pub fn amount(&self) -> u64 {\n        self.amount\n    }\n\n    pub fn currency(&self) -> Currency {\n        self.currency\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum MoneyAddError {\n    CurrencyMismatch { left: Currency, right: Currency },\n    AmountOverflow,\n}\n\nimpl Money {\n    // TODO: Implement checked_add without panicking.\n}\n"
+      "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\nimpl Money {\n    pub fn new(amount: u64, currency: Currency) -> Self {\n        Self { amount, currency }\n    }\n\n    pub fn amount(&self) -> u64 {\n        self.amount\n    }\n\n    pub fn currency(&self) -> Currency {\n        self.currency\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: Implement checked_add without panicking.\n"
     },
     {
       "path": "tests/public.rs",
@@ -36,7 +36,7 @@
     {
       "level": 3,
       "body": "A canonical solution returns programmatic errors for both domain and arithmetic failures.",
-      "solutionCode": "impl Money {\n    pub fn checked_add(self, rhs: Self) -> Result<Self, MoneyAddError> {\n        if self.currency != rhs.currency {\n            return Err(MoneyAddError::CurrencyMismatch {\n                left: self.currency,\n                right: rhs.currency,\n            });\n        }\n\n        let amount = self\n            .amount\n            .checked_add(rhs.amount)\n            .ok_or(MoneyAddError::AmountOverflow)?;\n\n        Ok(Self {\n            amount,\n            currency: self.currency,\n        })\n    }\n}"
+      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\nimpl Money {\n    pub fn new(amount: u64, currency: Currency) -> Self {\n        Self { amount, currency }\n    }\n\n    pub fn amount(&self) -> u64 {\n        self.amount\n    }\n\n    pub fn currency(&self) -> Currency {\n        self.currency\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum MoneyAddError {\n    CurrencyMismatch { left: Currency, right: Currency },\n    AmountOverflow,\n}\n\nimpl Money {\n    pub fn checked_add(self, rhs: Self) -> Result<Self, MoneyAddError> {\n        if self.currency != rhs.currency {\n            return Err(MoneyAddError::CurrencyMismatch {\n                left: self.currency,\n                right: rhs.currency,\n            });\n        }\n\n        let amount = self\n            .amount\n            .checked_add(rhs.amount)\n            .ok_or(MoneyAddError::AmountOverflow)?;\n\n        Ok(Self {\n            amount,\n            currency: self.currency,\n        })\n    }\n}"
     }
   ],
   "completionExplanation": "Fallible domain operations should make failure visible in the type signature. A Result keeps currency mismatches and overflow recoverable and testable, while avoiding panics in library code.",

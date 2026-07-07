@@ -20,3 +20,10 @@ impl IntoIterator for OrderLines {
         self.lines.into_iter()
     }
 }
+
+
+impl OrderLines {
+    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {
+            self.lines.iter()
+        }
+}

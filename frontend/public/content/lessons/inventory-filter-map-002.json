@@ -16,7 +16,7 @@
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "pub struct Item {\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\npub fn available_names(items: &[Item]) -> Vec<&str> {\n    // TODO: use filter_map to collect names with available stock.\n    Vec::new()\n}\n"
+      "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Item {\n    pub sku: String,\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\n// Continue from the previous lesson.\n// TODO: use filter_map to collect names with available stock.\n"
     },
     {
       "path": "tests/public.rs",

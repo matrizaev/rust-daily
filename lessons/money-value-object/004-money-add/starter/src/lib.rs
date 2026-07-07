@@ -25,12 +25,5 @@ impl Money {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum MoneyAddError {
-    CurrencyMismatch { left: Currency, right: Currency },
-    AmountOverflow,
-}
-
-impl Money {
-    // TODO: Implement checked_add without panicking.
-}
+// Continue from the previous lesson.
+// TODO: Implement checked_add without panicking.

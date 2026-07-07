@@ -43,3 +43,13 @@ impl RequestBuilder {
         Ok(Request { method, path })
     }
 }
+
+
+impl Default for RequestBuilder {
+    fn default() -> Self {
+        Self {
+            method: None,
+            path: None,
+        }
+    }
+}

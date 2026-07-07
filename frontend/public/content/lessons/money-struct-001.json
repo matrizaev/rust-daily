@@ -16,7 +16,7 @@
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub enum Currency {\r\n    Usd,\r\n    Eur,\r\n}\r\n\r\n// TODO: Define a public Money struct with private amount (u64) and currency (Currency) fields.\r\n"
+      "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub enum Currency {\r\n    Usd,\r\n    Eur,\r\n}\r\n\r\n// TODO: Define a public Money struct with private amount (u64) and currency (Currency) fields.\n"
     },
     {
       "path": "tests/public.rs",
@@ -36,7 +36,7 @@
     {
       "level": 3,
       "body": "A canonical solution defines the Money struct with private fields.",
-      "solutionCode": "pub struct Money {\n    amount: u64,\n    currency: Currency,\n}"
+      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}"
     }
   ],
   "completionExplanation": "The Money struct keeps the amount and currency together as one domain value. Private fields prevent callers from mutating the representation directly, which gives later constructors and methods a single place to preserve invariants.",

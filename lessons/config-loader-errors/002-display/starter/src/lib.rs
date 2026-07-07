@@ -1,5 +1,3 @@
-use std::fmt;
-
 #[derive(Debug)]
 pub enum ConfigLoadError {
     MissingEnvironment,
@@ -7,4 +5,5 @@ pub enum ConfigLoadError {
     FileRead,
 }
 
+// Continue from the previous lesson.
 // TODO: implement Display for ConfigLoadError.

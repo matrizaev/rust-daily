@@ -24,5 +24,5 @@ impl TryFrom<u16> for Percentage {
     }
 }
 
-
+// Continue from the previous lesson.
 // TODO: add table-driven tests for valid cases.

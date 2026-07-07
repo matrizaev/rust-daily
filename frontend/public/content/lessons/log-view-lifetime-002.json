@@ -16,7 +16,7 @@
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "pub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n// TODO: define LogView that borrows a slice of entries.\n"
+      "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n// Continue from the previous lesson.\n// TODO: define LogView that borrows a slice of entries.\n"
     },
     {
       "path": "tests/public.rs",

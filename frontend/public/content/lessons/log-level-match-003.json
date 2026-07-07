@@ -16,7 +16,7 @@
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "pub enum LogLevel {\n    // TODO: add the supported log levels.\n}\n\npub fn severity(level: LogLevel) -> u8 {\n    // TODO: map Info to 1, Warn to 2, and Error to 3.\n    0\n}\n"
+      "content": "pub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n// Continue from the previous lesson.\n// TODO: add the supported log levels.\n// TODO: map Info to 1, Warn to 2, and Error to 3.\n"
     },
     {
       "path": "tests/public.rs",

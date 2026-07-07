@@ -26,11 +26,31 @@ impl Money {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum MoneyParseError {
-    Empty,
-    InvalidDigits,
-    TooManyDecimalPlaces,
+pub enum MoneyAddError {
+    CurrencyMismatch { left: Currency, right: Currency },
     AmountOverflow,
 }
 
+impl Money {
+    pub fn checked_add(self, rhs: Self) -> Result<Self, MoneyAddError> {
+        if self.currency != rhs.currency {
+            return Err(MoneyAddError::CurrencyMismatch {
+                left: self.currency,
+                right: rhs.currency,
+            });
+        }
+
+        let amount = self
+            .amount
+            .checked_add(rhs.amount)
+            .ok_or(MoneyAddError::AmountOverflow)?;
+
+        Ok(Self {
+            amount,
+            currency: self.currency,
+        })
+    }
+}
+
+// Continue from the previous lesson.
 // TODO: Implement TryFrom<&str> for Money with USD currency.

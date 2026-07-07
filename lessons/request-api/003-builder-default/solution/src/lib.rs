@@ -11,3 +11,11 @@ impl Default for RequestBuilder {
         }
     }
 }
+
+
+impl RequestBuilder {
+    pub fn method(mut self, method: impl Into<String>) -> Self {
+            self.method = Some(method.into());
+            self
+        }
+}

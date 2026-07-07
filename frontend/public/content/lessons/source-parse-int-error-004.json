@@ -16,7 +16,7 @@
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "use std::num::ParseIntError;\n\n#[derive(Debug)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId,\n}\n\npub fn parse_id(id_text: &str) -> Result<u64, ParseUserError> {\n    id_text\n        .parse::<u64>()\n        .map_err(|_error| ParseUserError::InvalidId)\n}\n"
+      "content": "use std::fmt;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId,\n}\n\nimpl std::fmt::Display for ParseUserError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            ParseUserError::MissingId => write!(f, \"missing id\"),\n            ParseUserError::MissingName => write!(f, \"missing name\"),\n            ParseUserError::MissingEmail => write!(f, \"missing email\"),\n            ParseUserError::InvalidId => write!(f, \"invalid id\"),\n        }\n    }\n}\n\nimpl std::error::Error for ParseUserError {}\n\n// Continue from the previous lesson.\n// TODO: complete this lesson's next change.\n"
     },
     {
       "path": "tests/public.rs",
@@ -36,7 +36,7 @@
     {
       "level": 3,
       "body": "After the change, InvalidId should look like InvalidId(ParseIntError).",
-      "solutionCode": "use std::num::ParseIntError;\n\n#[derive(Debug)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId(ParseIntError),\n}\n\npub fn parse_id(id_text: &str) -> Result<u64, ParseUserError> {\n    id_text.parse::<u64>().map_err(ParseUserError::InvalidId)\n}"
+      "solutionCode": "use std::fmt;\n\nuse std::num::ParseIntError;\n\n#[derive(Debug)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId(ParseIntError),\n}\n\npub fn parse_id(id_text: &str) -> Result<u64, ParseUserError> {\n    id_text.parse::<u64>().map_err(ParseUserError::InvalidId)\n}\n\n\nimpl std::fmt::Display for ParseUserError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            ParseUserError::MissingId => write!(f, \"missing id\"),\n            ParseUserError::MissingName => write!(f, \"missing name\"),\n            ParseUserError::MissingEmail => write!(f, \"missing email\"),\n            ParseUserError::InvalidId(_) => write!(f, \"invalid id\"),\n        }\n    }\n}\n\n\nimpl std::error::Error for ParseUserError {}"
     }
   ],
   "completionExplanation": "The parse error now keeps its original source. That makes the high-level error useful while preserving details for logging, debugging, or later Error::source support.",

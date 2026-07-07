@@ -16,7 +16,7 @@
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(&self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}\n\n\n// TODO: implement Display and add display tests.\n"
+      "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(&self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}\n\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn rejects_invalid_percentages() {\n        let invalid_values = [101, 150, 1_000];\n\n        for input in invalid_values {\n            assert_eq!(Percentage::try_from(input), Err(PercentageError::OutOfRange));\n        }\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: implement Display and add display tests.\n"
     },
     {
       "path": "tests/public.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Focus on the one public API shape requested by the lesson."
+      "body": "Keep the Table-driven domain tests code active and implement Display for Percentage and add table-driven display tests."
     },
     {
       "level": 2,
-      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
     },
     {
       "level": 3,
-      "body": "A canonical idiomatic solution is shown below.",
+      "body": "One complete solution for Test Display for Percentage is shown below.",
       "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(&self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}\n\n\nimpl std::fmt::Display for Percentage {\n    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        write!(f, \"{}%\", self.0)\n    }\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn formats_percentages() {\n        let cases = [(0, \"0%\"), (50, \"50%\"), (100, \"100%\")];\n\n        for (input, expected) in cases {\n            assert_eq!(Percentage::try_from(input).map(|value| value.to_string()), Ok(expected.to_owned()));\n        }\n    }\n}"
     }
   ],
-  "completionExplanation": "This lesson keeps percentage-display-tests explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "completionExplanation": "Test Display for Percentage now extends the active Table-driven domain tests code with percentage display tests. The previous lesson's behavior remains in the main solution rather than an archived module.",
   "validation": {
     "mode": "all",
     "validations": [

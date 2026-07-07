@@ -338,13 +338,27 @@ Hint usage should not punish the user harshly, but repeated reliance on high-lev
 
 ### 8.5 Learning Arcs
 
-Lessons may build on previous lessons, but only inside a short learning arc.
+Lessons must build on previous lessons inside their short learning arc. This is
+a hard content-authoring requirement: lesson N in an arc starts from lesson
+N-1's completed active solution, then adds exactly one new concept-sized task.
 
 An arc is a 3-10 lesson sequence around one tiny domain or API slice. Each daily lesson adds one concept to the same small piece of Rust. At the end of the arc, the learner has a finished micro-artifact rather than a partially completed long project.
 
 Arc rules:
 
 - Each arc has a clear domain, start point, and end point.
+- For every lesson after the first lesson in an arc, the editable starter must
+  begin from the previous lesson's active reference solution before adding the
+  new task.
+- For every lesson after the first lesson in an arc, the reference solution must
+  preserve previous active behavior while completing the new task. It may evolve
+  existing code directly; it must not hide earlier work in archived modules.
+- Source files must not contain `previous_lesson_solution` modules, nested
+  historical copies, or `#[allow(dead_code)]` wrappers used to fake cumulative
+  continuity.
+- A lesson must not silently reset, remove, or simplify previously implemented
+  arc functionality unless the lesson explicitly asks the learner to refactor it
+  while preserving behavior.
 - Each lesson in the arc must remain completable in 5-10 minutes.
 - The editable codebase must stay small enough for tablet use.
 - The final arc lesson should leave behind a coherent Rust module, mini-crate, or API slice.
@@ -455,7 +469,11 @@ The `starter/`, `tests/`, and `solution/` directories keep lessons easy to test 
 
 ### 9.4 Starter Code
 
-Starter code should be minimal but realistic.
+Starter code should be minimal but realistic. Inside an arc, starter code is
+cumulative: every lesson after day 1 must begin from the previous lesson's
+active reference solution and only leave the new lesson's work incomplete.
+Reference solutions are cumulative in behavior: lesson N's solution preserves
+lesson N-1's active API and behavior while completing the new change.
 
 Rules:
 
@@ -464,6 +482,10 @@ Rules:
 - Use `todo!()` or comments only where the learner must act.
 - Keep the editable area small.
 - Prefer a single editable file for easy and medium lessons.
+- Do not drop types, functions, trait impls, tests, or behavior completed in
+  earlier lessons of the same arc.
+- Do not park previous work in `previous_lesson_solution`, `#[allow(dead_code)]`,
+  or similar archive wrappers.
 
 ### 9.5 Public Tests
 
@@ -1223,6 +1245,12 @@ Every lesson must pass:
 
 - Starter project compiles or intentionally fails in the expected way.
 - Reference solution passes authoring tests.
+- For every non-first lesson in an arc, the starter begins from the previous
+  lesson's active reference solution so the arc is cumulative.
+- For every non-first lesson in an arc, the reference solution preserves the
+  previous lesson's active API and behavior while completing the new task.
+- Source validation rejects archived continuity markers such as
+  `previous_lesson_solution` and `#[allow(dead_code)]` wrappers.
 - Configured validation metadata or bundle is generated successfully.
 - Configured validation fails against incomplete starter code when appropriate.
 - Metadata is valid.

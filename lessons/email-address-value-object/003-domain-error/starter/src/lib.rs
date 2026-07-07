@@ -32,3 +32,6 @@ impl TryFrom<&str> for EmailAddress {
         })
     }
 }
+
+// Continue from the previous lesson.
+// TODO: complete this lesson's next change.

@@ -36,7 +36,7 @@
     {
       "level": 3,
       "body": "A canonical solution defines the Money struct with private fields.",
-      "solutionCode": "pub struct Money {\n    amount: u64,\n    currency: Currency,\n}"
+      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}"
     }
   ],
   "completionExplanation": "The Money struct keeps the amount and currency together as one domain value. Private fields prevent callers from mutating the representation directly, which gives later constructors and methods a single place to preserve invariants.",

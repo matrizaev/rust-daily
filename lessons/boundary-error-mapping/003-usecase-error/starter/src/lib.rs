@@ -1,8 +1,4 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CreateOrderError {
-    EmptyOrder,
-    InvalidQuantity,
-}
+use std::fmt;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RepositoryError {
@@ -10,4 +6,14 @@ pub enum RepositoryError {
     Conflict,
 }
 
+impl fmt::Display for RepositoryError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            RepositoryError::Unavailable => write!(f, "repository unavailable"),
+            RepositoryError::Conflict => write!(f, "repository conflict"),
+        }
+    }
+}
+
+// Continue from the previous lesson.
 // TODO: define CreateOrderUseCaseError.

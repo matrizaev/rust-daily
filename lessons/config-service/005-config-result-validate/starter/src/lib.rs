@@ -5,12 +5,23 @@ pub struct Config {
     pub timeout_seconds: Option<u64>,
 }
 
-pub enum ConfigError {
-    // TODO: add validation error variants.
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            service_url: "http://localhost:8080".to_owned(),
+            max_connections: 32,
+            use_tls: false,
+            timeout_seconds: None,
+        }
+    }
 }
 
 impl Config {
-    pub fn validate(&self) -> bool {
-        !self.service_url.is_empty() && self.max_connections > 0
+    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {
+        self.service_url = service_url.into();
+        self
     }
 }
+
+// Continue from the previous lesson.
+// TODO: add validation error variants.

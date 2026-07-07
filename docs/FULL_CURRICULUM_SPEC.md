@@ -48,6 +48,30 @@ Lessons should teach Rust that a reviewer would accept in production:
 
 Do not teach clever code for its own sake. A lesson should prefer readable Rust over dense Rust.
 
+### 3.1.1 Lessons Must Actively Build Within An Arc
+
+Every non-first lesson in an arc must continue from the previous lesson's active
+solution. The learner should edit the same public API and domain model as it
+evolves across the arc.
+
+Required rules:
+
+- A later lesson's starter must be the previous lesson's solution with only the
+  next exercise gap introduced.
+- A later lesson's solution must preserve the previous active API and behavior,
+  then add or refine the current lesson's focused concept.
+- Public tests from earlier lessons in the same arc must keep passing against
+  later active solutions unless the arc explicitly teaches a breaking API
+  migration and updates the tests and instructions to explain it.
+- Source files must not hide prior work inside `#[allow(dead_code)]` modules,
+  `previous_lesson_solution` modules, archived copies, or similar textual
+  history. Prior work should remain active code.
+- Generated content and validators should reject nested historical solution
+  modules. Textual inclusion is not enough to prove cumulative learning.
+
+If an arc needs to replace a model, the lesson should teach that migration as the
+primary concept and keep the transition explicit in the active code and tests.
+
 ### 3.2 Strong Domain Types First
 
 The curriculum should repeatedly replace weak representations with named types.

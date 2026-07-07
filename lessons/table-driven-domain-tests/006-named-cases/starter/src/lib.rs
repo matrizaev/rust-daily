@@ -1,3 +1,11 @@
+/// A bounded percentage value from 0 through 100.
+///
+/// ```
+/// use rust_daily_lesson::Percentage;
+///
+/// assert_eq!(Percentage::try_from(75).map(|value| value.value()), Ok(75));
+/// assert!(Percentage::try_from(101).is_err());
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Percentage(u8);
 
@@ -25,4 +33,11 @@ impl TryFrom<u16> for Percentage {
 }
 
 
+impl std::fmt::Display for Percentage {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}%", self.0)
+    }
+}
+
+// Continue from the previous lesson.
 // TODO: add named table-driven cases for percentage boundaries.

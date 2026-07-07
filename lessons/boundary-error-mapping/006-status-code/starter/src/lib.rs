@@ -1,3 +1,5 @@
+use std::fmt;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CreateOrderError {
     EmptyOrder,
@@ -16,4 +18,29 @@ pub enum CreateOrderUseCaseError {
     Repository(RepositoryError),
 }
 
+pub fn is_retryable(error: CreateOrderUseCaseError) -> bool {
+    matches!(
+        error,
+        CreateOrderUseCaseError::Repository(RepositoryError::Unavailable)
+    )
+}
+
+
+impl fmt::Display for RepositoryError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            RepositoryError::Unavailable => write!(f, "repository unavailable"),
+            RepositoryError::Conflict => write!(f, "repository conflict"),
+        }
+    }
+}
+
+
+impl From<CreateOrderError> for CreateOrderUseCaseError {
+    fn from(error: CreateOrderError) -> Self {
+        CreateOrderUseCaseError::Domain(error)
+    }
+}
+
+// Continue from the previous lesson.
 // TODO: implement adapter status-code translation.

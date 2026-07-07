@@ -19,8 +19,20 @@ impl RegisterUserCommand {
 pub enum RegisterUserValidationError {
     MissingEmail,
     MissingDisplayName,
-    EmptyEmail,
-    EmptyDisplayName,
 }
 
+impl TryFrom<RegisterUserDto> for RegisterUserCommand {
+    type Error = RegisterUserValidationError;
+
+    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {
+        let email = value.email.ok_or(RegisterUserValidationError::MissingEmail)?;
+        let display_name = value
+            .display_name
+            .ok_or(RegisterUserValidationError::MissingDisplayName)?;
+
+        Ok(Self { email, display_name })
+    }
+}
+
+// Continue from the previous lesson.
 // TODO: implement TryFrom<RegisterUserDto> with trimming and empty checks.

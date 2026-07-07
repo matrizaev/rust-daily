@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Focus on the one public API shape requested by the lesson."
+      "body": "Keep the Structured request logging code active and add LogFields and include fields on LogEvent."
     },
     {
       "level": 2,
-      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
     },
     {
       "level": 3,
-      "body": "A canonical idiomatic solution is shown below.",
+      "body": "One complete solution for Attach request fields to log events is shown below.",
       "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel { Info, Warn, Error }\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogFields {\n    pub request_id: String,\n    pub user_id: Option<String>,\n    pub attempt: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogEvent {\n    pub event_name: String,\n    pub level: LogLevel,\n    pub fields: LogFields,\n}"
     }
   ],
-  "completionExplanation": "This lesson keeps log-event-fields explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "completionExplanation": "Attach request fields to log events now extends the active Structured request logging code with log event fields. The previous lesson's behavior remains in the main solution rather than an archived module.",
   "validation": {
     "mode": "all",
     "validations": [

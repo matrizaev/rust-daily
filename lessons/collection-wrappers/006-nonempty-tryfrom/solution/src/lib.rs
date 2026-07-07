@@ -29,3 +29,20 @@ impl TryFrom<Vec<OrderLine>> for OrderLines {
         Ok(Self { lines })
     }
 }
+
+
+impl OrderLines {
+    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {
+            self.lines.iter()
+        }
+}
+
+
+impl IntoIterator for OrderLines {
+    type Item = OrderLine;
+    type IntoIter = std::vec::IntoIter<OrderLine>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.lines.into_iter()
+    }
+}

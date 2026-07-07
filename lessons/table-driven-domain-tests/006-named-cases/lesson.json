@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Focus on the one public API shape requested by the lesson."
+      "body": "Keep the Table-driven domain tests code active and create PercentageCase with name, input, and expected fields, then use it in a table-driven test."
     },
     {
       "level": 2,
-      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
     },
     {
       "level": 3,
-      "body": "A canonical idiomatic solution is shown below.",
-      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(&self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}\n\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    struct PercentageCase {\n        name: &'static str,\n        input: u16,\n        expected: Result<u8, PercentageError>,\n    }\n\n    #[test]\n    fn checks_named_percentage_cases() {\n        let cases = [\n            PercentageCase { name: \"zero\", input: 0, expected: Ok(0) },\n            PercentageCase { name: \"hundred\", input: 100, expected: Ok(100) },\n            PercentageCase { name: \"too large\", input: 101, expected: Err(PercentageError::OutOfRange) },\n        ];\n\n        for case in cases {\n            let actual = Percentage::try_from(case.input).map(|value| value.value());\n            assert_eq!(actual, case.expected, \"case failed: {}\", case.name);\n        }\n    }\n}"
+      "body": "One complete solution for Name table-driven test cases is shown below.",
+      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(&self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}\n\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    struct PercentageCase {\n        name: &'static str,\n        input: u16,\n        expected: Result<u8, PercentageError>,\n    }\n\n    #[test]\n    fn checks_named_percentage_cases() {\n        let cases = [\n            PercentageCase { name: \"zero\", input: 0, expected: Ok(0) },\n            PercentageCase { name: \"hundred\", input: 100, expected: Ok(100) },\n            PercentageCase { name: \"too large\", input: 101, expected: Err(PercentageError::OutOfRange) },\n        ];\n\n        for case in cases {\n            let actual = Percentage::try_from(case.input).map(|value| value.value());\n            assert_eq!(actual, case.expected, \"case failed: {}\", case.name);\n        }\n    }\n}\n\n\nimpl std::fmt::Display for Percentage {\n    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        write!(f, \"{}%\", self.0)\n    }\n}"
     }
   ],
-  "completionExplanation": "This lesson keeps percentage-named-test-cases explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "completionExplanation": "Name table-driven test cases now extends the active Table-driven domain tests code with percentage named test cases. The previous lesson's behavior remains in the main solution rather than an archived module.",
   "validation": {
     "mode": "all",
     "validations": [

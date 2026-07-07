@@ -2,6 +2,7 @@
 pub struct Request {
     pub method: String,
     pub path: String,
+    pub body: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -25,6 +26,7 @@ pub enum BuildError {
 ///     Ok(Request {
 ///         method: "GET".to_owned(),
 ///         path: "/health".to_owned(),
+///         body: None,
 ///     })
 /// );
 /// ```
@@ -57,6 +59,24 @@ impl RequestBuilder {
         let method = self.method.ok_or(BuildError::MissingMethod)?;
         let path = self.path.ok_or(BuildError::MissingPath)?;
 
-        Ok(Request { method, path })
+        Ok(Request { method, path, body: None })
+    }
+}
+
+
+pub struct RawRequest {
+    pub method: Option<String>,
+    pub path: Option<String>,
+}
+
+
+impl TryFrom<RawRequest> for Request {
+    type Error = BuildError;
+
+    fn try_from(value: RawRequest) -> Result<Self, Self::Error> {
+        let method = value.method.ok_or(BuildError::MissingMethod)?;
+        let path = value.path.ok_or(BuildError::MissingPath)?;
+
+        Ok(Self { method, path, body: None })
     }
 }

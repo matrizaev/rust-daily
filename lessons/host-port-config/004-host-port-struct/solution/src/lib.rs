@@ -16,6 +16,18 @@ impl Port {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Host(String);
 
+fn validate_host(value: &str) -> Result<(), HostValidationError> {
+    if value.is_empty() {
+        return Err(HostValidationError::Empty);
+    }
+
+    if value.contains(char::is_whitespace) {
+        return Err(HostValidationError::InvalidCharacters);
+    }
+
+    Ok(())
+}
+
 impl Host {
     pub fn as_str(&self) -> &str {
         &self.0
@@ -61,5 +73,16 @@ impl Endpoint {
 
     pub fn port(&self) -> Port {
         self.port
+    }
+}
+
+
+impl TryFrom<String> for Host {
+    type Error = HostValidationError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        validate_host(value.as_str())?;
+
+        Ok(Self(value))
     }
 }

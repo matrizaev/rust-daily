@@ -16,6 +16,19 @@ pub enum EmailValidationError {
     MissingDomain,
 }
 
+impl std::fmt::Display for EmailValidationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Empty => write!(f, "email address is empty"),
+            Self::MissingAt => write!(f, "email address is missing @"),
+            Self::MissingDomain => write!(f, "email address is missing a domain"),
+        }
+    }
+}
+
+impl std::error::Error for EmailValidationError {}
+
+
 impl TryFrom<&str> for EmailAddress {
     type Error = EmailValidationError;
 
@@ -24,12 +37,8 @@ impl TryFrom<&str> for EmailAddress {
             return Err(EmailValidationError::Empty);
         }
 
-        let (_local, domain) = value
-            .split_once('@')
-            .ok_or(EmailValidationError::MissingAt)?;
-
-        if domain.is_empty() {
-            return Err(EmailValidationError::MissingDomain);
+        if !value.contains('@') {
+            return Err(EmailValidationError::MissingAt);
         }
 
         Ok(Self {
@@ -38,4 +47,12 @@ impl TryFrom<&str> for EmailAddress {
     }
 }
 
+
+impl std::fmt::Display for EmailAddress {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.value)
+    }
+}
+
+// Continue from the previous lesson.
 // TODO: implement std::str::FromStr for EmailAddress.

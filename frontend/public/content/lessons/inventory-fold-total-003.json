@@ -16,12 +16,12 @@
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "pub struct Item {\n    pub quantity: u32,\n}\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    // TODO: fold item quantities into one total.\n    0\n}\n"
+      "content": "pub struct Item {\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\npub fn available_names(items: &[Item]) -> Vec<&str> {\n    items\n        .iter()\n        .filter_map(|item| {\n            if item.quantity > item.reserved {\n                Some(item.name.as_str())\n            } else {\n                None\n            }\n        })\n        .collect()\n}\n\n// Continue from the previous lesson.\n// TODO: fold item quantities into one total.\n"
     },
     {
       "path": "tests/public.rs",
       "role": "test",
-      "content": "use rust_daily_lesson::{total_quantity, Item};\n\n#[test]\nfn folds_quantities_into_total() {\n    let items = vec![Item { quantity: 2 }, Item { quantity: 5 }];\n\n    assert_eq!(total_quantity(&items), 7);\n    assert_eq!(total_quantity(&[]), 0);\n}\n"
+      "content": "use rust_daily_lesson::{total_quantity, Item};\n\n#[test]\nfn folds_quantities_into_total() {\n    let items = vec![\n        Item { sku: \"a\".to_owned(), name: \"A\".to_owned(), quantity: 2, reserved: 0 },\n        Item { sku: \"b\".to_owned(), name: \"B\".to_owned(), quantity: 5, reserved: 0 },\n    ];\n\n    assert_eq!(total_quantity(&items), 7);\n    assert_eq!(total_quantity(&[]), 0);\n}\n"
     }
   ],
   "hints": [
@@ -36,7 +36,7 @@
     {
       "level": 3,
       "body": "The initial total should be 0.",
-      "solutionCode": "pub struct Item {\n    pub quantity: u32,\n}\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    items.iter().fold(0, |total, item| total + item.quantity)\n}"
+      "solutionCode": "pub struct Item {\n    pub sku: String,\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    items.iter().fold(0, |total, item| total + item.quantity)\n}\n\n\npub fn available_names(items: &[Item]) -> Vec<&str> {\n    items\n        .iter()\n        .filter_map(|item| {\n            if item.quantity > item.reserved {\n                Some(item.name.as_str())\n            } else {\n                None\n            }\n        })\n        .collect()\n}"
     }
   ],
   "completionExplanation": "fold makes the accumulation explicit: start at zero, visit each item, and return the next total. It is useful when the reducer logic is more than a plain field projection.",

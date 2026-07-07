@@ -4,8 +4,6 @@ use std::num::NonZeroU16;
 pub struct Port(NonZeroU16);
 
 impl Port {
-    pub const LOCAL_DEVELOPMENT: Self = Self(NonZeroU16::MIN.saturating_add(8079));
-
     pub fn new(value: u16) -> Option<Self> {
         NonZeroU16::new(value).map(Self)
     }
@@ -18,11 +16,19 @@ impl Port {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Host(String);
 
-impl Host {
-    pub fn localhost() -> Self {
-        Self("localhost".to_owned())
+fn validate_host(value: &str) -> Result<(), HostValidationError> {
+    if value.is_empty() {
+        return Err(HostValidationError::Empty);
     }
 
+    if value.contains(char::is_whitespace) {
+        return Err(HostValidationError::InvalidCharacters);
+    }
+
+    Ok(())
+}
+
+impl Host {
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -70,4 +76,16 @@ impl Endpoint {
     }
 }
 
+
+impl TryFrom<String> for Host {
+    type Error = HostValidationError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        validate_host(value.as_str())?;
+
+        Ok(Self(value))
+    }
+}
+
+// Continue from the previous lesson.
 // TODO: Implement Default for Endpoint without unwrap or expect.

@@ -13,6 +13,24 @@ impl Port {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HostValidationError {
+    Empty,
+    InvalidCharacters,
+}
+
+fn validate_host(value: &str) -> Result<(), HostValidationError> {
+    if value.is_empty() {
+        return Err(HostValidationError::Empty);
+    }
+
+    if value.contains(char::is_whitespace) {
+        return Err(HostValidationError::InvalidCharacters);
+    }
+
+    Ok(())
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Host(String);
 
@@ -26,22 +44,21 @@ impl TryFrom<&str> for Host {
     type Error = HostValidationError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        if value.is_empty() {
-            return Err(HostValidationError::Empty);
-        }
-
-        if value.contains(char::is_whitespace) {
-            return Err(HostValidationError::InvalidCharacters);
-        }
+        validate_host(value)?;
 
         Ok(Self(value.to_owned()))
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum HostValidationError {
-    Empty,
-    InvalidCharacters,
+impl TryFrom<String> for Host {
+    type Error = HostValidationError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        validate_host(value.as_str())?;
+
+        Ok(Self(value))
+    }
 }
 
+// Continue from the previous lesson.
 // TODO: Define Endpoint with private host and port fields, plus constructor and accessors.

@@ -16,7 +16,7 @@
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "pub mod domain {\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct EmailAddress(pub String);\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct UserId(pub u64);\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct RegisterUserCommand { pub email: EmailAddress, pub display_name: String }\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct NewUser { pub email: EmailAddress, pub display_name: String }\n}\n\npub mod application {\n    use super::domain::{EmailAddress, NewUser, RegisterUserCommand, UserId};\n\n    #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n    pub enum RepositoryError { Unavailable }\n    #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n    pub enum RegisterUserError { DuplicateEmail, Repository(RepositoryError) }\n\n    pub trait UserRepository {\n        fn exists_by_email(&self, email: &EmailAddress) -> Result<bool, RepositoryError>;\n        fn save(&mut self, user: NewUser) -> Result<UserId, RepositoryError>;\n    }\n\n    // TODO: implement register_user.\n}\n"
+      "content": "pub mod domain {\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct EmailAddress(pub String);\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct UserId(pub u64);\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct NewUser { pub email: EmailAddress, pub display_name: String }\n}\n\npub mod application {\n    use super::domain::{EmailAddress, NewUser, UserId};\n\n    #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n    pub enum RepositoryError { Unavailable }\n\n    pub trait UserRepository {\n        fn exists_by_email(&self, email: &EmailAddress) -> Result<bool, RepositoryError>;\n        fn save(&mut self, user: NewUser) -> Result<UserId, RepositoryError>;\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: implement register_user.\n"
     },
     {
       "path": "tests/public.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Focus on the one public API shape requested by the lesson."
+      "body": "Keep the Register user use case boundaries code active and implement register_user over UserRepository. Return DuplicateEmail if the email already exists; otherwise save the new user."
     },
     {
       "level": 2,
-      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
     },
     {
       "level": 3,
-      "body": "A canonical idiomatic solution is shown below.",
+      "body": "One complete solution for Implement a use case over a port is shown below.",
       "solutionCode": "pub mod domain {\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct EmailAddress(pub String);\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct UserId(pub u64);\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct RegisterUserCommand { pub email: EmailAddress, pub display_name: String }\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct NewUser { pub email: EmailAddress, pub display_name: String }\n}\n\npub mod application {\n    use super::domain::{NewUser, RegisterUserCommand, UserId};\n    use super::domain::EmailAddress;\n\n    #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n    pub enum RepositoryError { Unavailable }\n    #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n    pub enum RegisterUserError { DuplicateEmail, Repository(RepositoryError) }\n\n    pub trait UserRepository {\n        fn exists_by_email(&self, email: &EmailAddress) -> Result<bool, RepositoryError>;\n        fn save(&mut self, user: NewUser) -> Result<UserId, RepositoryError>;\n    }\n\n    pub fn register_user<R: UserRepository>(repo: &mut R, command: RegisterUserCommand) -> Result<UserId, RegisterUserError> {\n        if repo.exists_by_email(&command.email).map_err(RegisterUserError::Repository)? {\n            return Err(RegisterUserError::DuplicateEmail);\n        }\n\n        repo.save(NewUser { email: command.email, display_name: command.display_name })\n            .map_err(RegisterUserError::Repository)\n    }\n}"
     }
   ],
-  "completionExplanation": "This lesson keeps register-usecase-function explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "completionExplanation": "Implement a use case over a port now extends the active Register user use case boundaries code with register usecase function. The previous lesson's behavior remains in the main solution rather than an archived module.",
   "validation": {
     "mode": "all",
     "validations": [

@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Focus on the one public API shape requested by the lesson."
+      "body": "Keep the Register user use case boundaries code active and define RegisterUserRequest and implement TryFrom<RegisterUserRequest> for domain::RegisterUserCommand."
     },
     {
       "level": 2,
-      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
     },
     {
       "level": 3,
-      "body": "A canonical idiomatic solution is shown below.",
-      "solutionCode": "pub mod domain {\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct EmailAddress(pub String);\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct RegisterUserCommand { pub email: EmailAddress, pub display_name: String }\n}\n\npub mod adapters {\n    use super::domain::{EmailAddress, RegisterUserCommand};\n\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct RegisterUserRequest { pub email: String, pub display_name: String }\n    #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n    pub enum RequestError { EmptyEmail, EmptyDisplayName }\n\n    impl TryFrom<RegisterUserRequest> for RegisterUserCommand {\n        type Error = RequestError;\n\n        fn try_from(value: RegisterUserRequest) -> Result<Self, Self::Error> {\n            let email = value.email.trim();\n            let display_name = value.display_name.trim();\n            if email.is_empty() { return Err(RequestError::EmptyEmail); }\n            if display_name.is_empty() { return Err(RequestError::EmptyDisplayName); }\n\n            Ok(Self { email: EmailAddress(email.to_owned()), display_name: display_name.to_owned() })\n        }\n    }\n}"
+      "body": "One complete solution for Translate adapter DTOs at the edge is shown below.",
+      "solutionCode": "pub mod domain {\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct EmailAddress(pub String);\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct RegisterUserCommand { pub email: EmailAddress, pub display_name: String }\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct UserId(pub u64);\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct NewUser { pub email: EmailAddress, pub display_name: String }\n}\n\npub mod application {\n    use super::domain::{EmailAddress, NewUser, RegisterUserCommand, UserId};\n\n    #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n    pub enum RepositoryError { Unavailable }\n    #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n    pub enum RegisterUserError { DuplicateEmail, Repository(RepositoryError) }\n\n    pub trait UserRepository {\n        fn exists_by_email(&self, email: &EmailAddress) -> Result<bool, RepositoryError>;\n        fn save(&mut self, user: NewUser) -> Result<UserId, RepositoryError>;\n    }\n\n    pub fn register_user<R: UserRepository>(repo: &mut R, command: RegisterUserCommand) -> Result<UserId, RegisterUserError> {\n        if repo.exists_by_email(&command.email).map_err(RegisterUserError::Repository)? {\n            return Err(RegisterUserError::DuplicateEmail);\n        }\n\n        repo.save(NewUser { email: command.email, display_name: command.display_name })\n            .map_err(RegisterUserError::Repository)\n    }\n}\n\npub mod adapters {\n    use super::domain::{EmailAddress, RegisterUserCommand};\n\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct RegisterUserRequest { pub email: String, pub display_name: String }\n    #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n    pub enum RequestError { EmptyEmail, EmptyDisplayName }\n\n    impl TryFrom<RegisterUserRequest> for RegisterUserCommand {\n        type Error = RequestError;\n\n        fn try_from(value: RegisterUserRequest) -> Result<Self, Self::Error> {\n            let email = value.email.trim();\n            let display_name = value.display_name.trim();\n            if email.is_empty() { return Err(RequestError::EmptyEmail); }\n            if display_name.is_empty() { return Err(RequestError::EmptyDisplayName); }\n\n            Ok(Self { email: EmailAddress(email.to_owned()), display_name: display_name.to_owned() })\n        }\n    }\n}"
     }
   ],
-  "completionExplanation": "This lesson keeps register-adapter-dto explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "completionExplanation": "Translate adapter DTOs at the edge now extends the active Register user use case boundaries code with register adapter dto. The previous lesson's behavior remains in the main solution rather than an archived module.",
   "validation": {
     "mode": "all",
     "validations": [

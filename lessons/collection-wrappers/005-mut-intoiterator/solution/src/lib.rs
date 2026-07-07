@@ -20,3 +20,10 @@ impl<'a> IntoIterator for &'a mut OrderLines {
         self.lines.iter_mut()
     }
 }
+
+
+impl OrderLines {
+    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {
+            self.lines.iter()
+        }
+}

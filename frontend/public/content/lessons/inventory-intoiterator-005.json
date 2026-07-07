@@ -16,12 +16,12 @@
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "pub struct Item {\n    pub name: String,\n}\n\npub struct Inventory {\n    items: Vec<Item>,\n}\n\nimpl Inventory {\n    pub fn new(items: Vec<Item>) -> Self {\n        Self { items }\n    }\n}\n\n// TODO: implement IntoIterator for Inventory.\n"
+      "content": "pub struct Item {\n    pub sku: String,\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\npub fn reorder_notes(notes: &[String]) -> Vec<String> {\n    let mut relevant_notes = Vec::new();\n\n    for note in notes {\n        let normalized = note.trim().to_lowercase();\n        if normalized.is_empty() {\n            continue;\n        }\n\n        let is_inventory_note =\n            normalized.contains(\"urgent\") || normalized.contains(\"stock\");\n        if is_inventory_note {\n            relevant_notes.push(normalized);\n        }\n    }\n\n    relevant_notes\n}\n\n\npub fn available_names(items: &[Item]) -> Vec<&str> {\n    items\n        .iter()\n        .filter_map(|item| {\n            if item.quantity > item.reserved {\n                Some(item.name.as_str())\n            } else {\n                None\n            }\n        })\n        .collect()\n}\n\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    items.iter().fold(0, |total, item| total + item.quantity)\n}\n\n// Continue from the previous lesson.\n// TODO: implement IntoIterator for Inventory.\n"
     },
     {
       "path": "tests/public.rs",
       "role": "test",
-      "content": "use rust_daily_lesson::{Inventory, Item};\n\n#[test]\nfn inventory_consumes_into_items() {\n    let inventory = Inventory::new(vec![\n        Item { name: \"Keyboard\".to_owned() },\n        Item { name: \"Mouse\".to_owned() },\n    ]);\n    let names: Vec<_> = inventory.into_iter().map(|item| item.name).collect();\n\n    assert_eq!(names, vec![\"Keyboard\".to_owned(), \"Mouse\".to_owned()]);\n}\n"
+      "content": "use rust_daily_lesson::{Inventory, Item};\n\n#[test]\nfn inventory_consumes_into_items() {\n    let inventory = Inventory::new(vec![\n        Item { sku: \"keyboard\".to_owned(), name: \"Keyboard\".to_owned(), quantity: 10, reserved: 0 },\n        Item { sku: \"mouse\".to_owned(), name: \"Mouse\".to_owned(), quantity: 4, reserved: 0 },\n    ]);\n    let names: Vec<_> = inventory.into_iter().map(|item| item.name).collect();\n\n    assert_eq!(names, vec![\"Keyboard\".to_owned(), \"Mouse\".to_owned()]);\n}\n"
     }
   ],
   "hints": [
@@ -36,7 +36,7 @@
     {
       "level": 3,
       "body": "The associated IntoIter type can reuse std::vec::IntoIter<Item>.",
-      "solutionCode": "pub struct Item {\n    pub name: String,\n}\n\npub struct Inventory {\n    items: Vec<Item>,\n}\n\nimpl Inventory {\n    pub fn new(items: Vec<Item>) -> Self {\n        Self { items }\n    }\n}\n\nimpl IntoIterator for Inventory {\n    type Item = Item;\n    type IntoIter = std::vec::IntoIter<Item>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.items.into_iter()\n    }\n}"
+      "solutionCode": "pub struct Item {\n    pub sku: String,\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\npub struct Inventory {\n    items: Vec<Item>,\n}\n\nimpl Inventory {\n    pub fn new(items: Vec<Item>) -> Self {\n        Self { items }\n    }\n}\n\nimpl IntoIterator for Inventory {\n    type Item = Item;\n    type IntoIter = std::vec::IntoIter<Item>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.items.into_iter()\n    }\n}\n\n\npub fn available_names(items: &[Item]) -> Vec<&str> {\n    items\n        .iter()\n        .filter_map(|item| {\n            if item.quantity > item.reserved {\n                Some(item.name.as_str())\n            } else {\n                None\n            }\n        })\n        .collect()\n}\n\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    items.iter().fold(0, |total, item| total + item.quantity)\n}\n\n\npub fn reorder_notes(notes: &[String]) -> Vec<String> {\n    let mut relevant_notes = Vec::new();\n\n    for note in notes {\n        let normalized = note.trim().to_lowercase();\n        if normalized.is_empty() {\n            continue;\n        }\n\n        let is_inventory_note =\n            normalized.contains(\"urgent\") || normalized.contains(\"stock\");\n        if is_inventory_note {\n            relevant_notes.push(normalized);\n        }\n    }\n\n    relevant_notes\n}"
     }
   ],
   "completionExplanation": "IntoIterator lets Inventory participate in for loops and iterator adapters without exposing its internal field as public API.",

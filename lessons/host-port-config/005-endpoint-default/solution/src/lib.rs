@@ -18,6 +18,18 @@ impl Port {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Host(String);
 
+fn validate_host(value: &str) -> Result<(), HostValidationError> {
+    if value.is_empty() {
+        return Err(HostValidationError::Empty);
+    }
+
+    if value.contains(char::is_whitespace) {
+        return Err(HostValidationError::InvalidCharacters);
+    }
+
+    Ok(())
+}
+
 impl Host {
     pub fn localhost() -> Self {
         Self("localhost".to_owned())
@@ -73,5 +85,16 @@ impl Endpoint {
 impl Default for Endpoint {
     fn default() -> Self {
         Self::new(Host::localhost(), Port::LOCAL_DEVELOPMENT)
+    }
+}
+
+
+impl TryFrom<String> for Host {
+    type Error = HostValidationError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        validate_host(value.as_str())?;
+
+        Ok(Self(value))
     }
 }

@@ -1,3 +1,6 @@
+use std::fmt;
+use std::num::ParseIntError;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct User {
     pub id: u64,
@@ -61,5 +64,36 @@ mod tests {
             parse_user("42,Ada"),
             Err(ParseUserError::MissingEmail)
         ));
+    }
+}
+
+
+impl std::fmt::Display for ParseUserError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ParseUserError::MissingId => write!(f, "missing id"),
+            ParseUserError::MissingName => write!(f, "missing name"),
+            ParseUserError::MissingEmail => write!(f, "missing email"),
+            ParseUserError::InvalidId => write!(f, "invalid id"),
+        }
+    }
+}
+
+
+impl std::error::Error for ParseUserError {}
+
+
+impl From<ParseIntError> for ParseUserError {
+    fn from(_error: ParseIntError) -> Self {
+        ParseUserError::InvalidId
+    }
+}
+
+
+impl TryFrom<&str> for User {
+    type Error = ParseUserError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        parse_user(value)
     }
 }

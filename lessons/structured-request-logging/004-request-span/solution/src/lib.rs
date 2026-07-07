@@ -1,3 +1,17 @@
+use std::fmt;
+
+pub struct Secret(String);
+
+impl Secret {
+    pub fn new(value: impl Into<String>) -> Self {
+        Self(value.into())
+    }
+
+    pub fn expose(&self) -> &str {
+        &self.0
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LogEvent {
     pub event_name: String,
@@ -22,5 +36,12 @@ impl RequestSpan {
             request_id: self.request_id.clone(),
             path: self.path.clone(),
         }
+    }
+}
+
+
+impl fmt::Display for Secret {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[redacted]")
     }
 }

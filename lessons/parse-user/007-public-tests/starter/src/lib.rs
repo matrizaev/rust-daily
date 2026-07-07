@@ -1,3 +1,8 @@
+use std::fmt;
+use std::num::ParseIntError;
+
+use std::convert::TryFrom;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct User {
     pub id: u64,
@@ -39,17 +44,36 @@ pub fn parse_user(input: &str) -> Result<User, ParseUserError> {
     })
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+impl TryFrom<&str> for User {
+    type Error = ParseUserError;
 
-    #[test]
-    fn parses_valid_user() {
-        // TODO: assert that a complete input returns the expected User.
-    }
-
-    #[test]
-    fn rejects_missing_email() {
-        // TODO: assert that an input without email returns MissingEmail.
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        parse_user(value)
     }
 }
+
+
+impl std::fmt::Display for ParseUserError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ParseUserError::MissingId => write!(f, "missing id"),
+            ParseUserError::MissingName => write!(f, "missing name"),
+            ParseUserError::MissingEmail => write!(f, "missing email"),
+            ParseUserError::InvalidId => write!(f, "invalid id"),
+        }
+    }
+}
+
+
+impl std::error::Error for ParseUserError {}
+
+
+impl From<ParseIntError> for ParseUserError {
+    fn from(_error: ParseIntError) -> Self {
+        ParseUserError::InvalidId
+    }
+}
+
+// Continue from the previous lesson.
+// TODO: assert that a complete input returns the expected User.
+// TODO: assert that an input without email returns MissingEmail.

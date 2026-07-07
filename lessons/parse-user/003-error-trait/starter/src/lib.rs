@@ -19,4 +19,5 @@ impl std::fmt::Display for ParseUserError {
     }
 }
 
+// Continue from the previous lesson.
 // TODO: implement std::error::Error for ParseUserError.

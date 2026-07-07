@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Focus on the one public API shape requested by the lesson."
+      "body": "Keep the Converting DTOs into domain commands code active and implement From<UserRegistered> for UserRegisteredDto. Convert user_id to String and move the email."
     },
     {
       "level": 2,
-      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
     },
     {
       "level": 3,
-      "body": "A canonical idiomatic solution is shown below.",
-      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct UserRegistered {\n    pub user_id: u64,\n    pub email: String,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct UserRegisteredDto {\n    pub id: String,\n    pub email: String,\n}\n\nimpl From<UserRegistered> for UserRegisteredDto {\n    fn from(value: UserRegistered) -> Self {\n        Self {\n            id: value.user_id.to_string(),\n            email: value.email,\n        }\n    }\n}"
+      "body": "One complete solution for Convert a domain event into an outbound DTO is shown below.",
+      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self { email: email.into(), display_name: display_name.into() }\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n    EmptyEmail,\n    EmptyDisplayName,\n}\n\npub struct BulkRegisterDto {\n    pub users: Vec<RegisterUserDto>,\n}\n\npub struct BulkRegisterCommand {\n    commands: Vec<RegisterUserCommand>,\n}\n\nimpl BulkRegisterCommand {\n    pub fn commands(&self) -> &[RegisterUserCommand] {\n        &self.commands\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BulkRegisterError {\n    EmptyBatch,\n    InvalidUser { index: usize, error: RegisterUserValidationError },\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct UserRegistered {\n    pub user_id: u64,\n    pub email: String,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct UserRegisteredDto {\n    pub id: String,\n    pub email: String,\n}\n\nimpl From<UserRegistered> for UserRegisteredDto {\n    fn from(value: UserRegistered) -> Self {\n        Self {\n            id: value.user_id.to_string(),\n            email: value.email,\n        }\n    }\n}\n\n\nimpl RegisterUserCommand {\n    pub fn email(&self) -> &str {\n            &self.email\n        }\n}\n\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        let email = value.email.ok_or(RegisterUserValidationError::MissingEmail)?;\n        let display_name = value\n            .display_name\n            .ok_or(RegisterUserValidationError::MissingDisplayName)?;\n\n        Ok(Self { email, display_name })\n    }\n}\n\n\nimpl TryFrom<BulkRegisterDto> for BulkRegisterCommand {\n    type Error = BulkRegisterError;\n\n    fn try_from(value: BulkRegisterDto) -> Result<Self, Self::Error> {\n        if value.users.is_empty() {\n            return Err(BulkRegisterError::EmptyBatch);\n        }\n\n        let mut commands = Vec::with_capacity(value.users.len());\n        for (index, dto) in value.users.into_iter().enumerate() {\n            let command = RegisterUserCommand::try_from(dto)\n                .map_err(|error| BulkRegisterError::InvalidUser { index, error })?;\n            commands.push(command);\n        }\n\n        Ok(Self { commands })\n    }\n}"
     }
   ],
-  "completionExplanation": "This lesson keeps from-dto-outbound explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "completionExplanation": "Convert a domain event into an outbound DTO now extends the active Converting DTOs into domain commands code with from dto outbound. The previous lesson's behavior remains in the main solution rather than an archived module.",
   "validation": {
     "mode": "all",
     "validations": [

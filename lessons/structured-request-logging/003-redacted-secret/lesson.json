@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Focus on the one public API shape requested by the lesson."
+      "body": "Keep the Structured request logging code active and define Secret and implement Display so it always writes [redacted]."
     },
     {
       "level": 2,
-      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
     },
     {
       "level": 3,
-      "body": "A canonical idiomatic solution is shown below.",
+      "body": "One complete solution for Redact secrets in formatted output is shown below.",
       "solutionCode": "use std::fmt;\n\npub struct Secret(String);\n\nimpl Secret {\n    pub fn new(value: impl Into<String>) -> Self { Self(value.into()) }\n    pub fn expose(&self) -> &str { &self.0 }\n}\n\nimpl fmt::Display for Secret {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        write!(f, \"[redacted]\")\n    }\n}"
     }
   ],
-  "completionExplanation": "This lesson keeps log-redacted-secret explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "completionExplanation": "Redact secrets in formatted output now extends the active Structured request logging code with log redacted secret. The previous lesson's behavior remains in the main solution rather than an archived module.",
   "validation": {
     "mode": "all",
     "validations": [

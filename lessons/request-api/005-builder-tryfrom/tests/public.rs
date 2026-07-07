@@ -10,6 +10,7 @@ fn converts_complete_raw_request() {
         Ok(Request {
             method: "GET".to_owned(),
             path: "/health".to_owned(),
+            body: None,
         })
     );
 }

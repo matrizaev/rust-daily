@@ -36,7 +36,7 @@
     {
       "level": 3,
       "body": "A canonical solution keeps the representation private.",
-      "solutionCode": "pub struct EmailAddress {\n    value: String,\n}"
+      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct EmailAddress {\n    value: String,\n}"
     }
   ],
   "completionExplanation": "A private field lets EmailAddress own its text while reserving construction for validating APIs. That is the first step toward making invalid email values harder to represent.",
