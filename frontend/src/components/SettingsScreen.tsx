@@ -65,7 +65,7 @@ const SettingsSection = ({
   </section>
 );
 
-function SettingsScreen({
+export function SettingsScreen({
   settings,
   summary,
   onDeleteDrafts,
@@ -279,6 +279,3 @@ function SettingsScreen({
     </main>
   );
 }
-
-// fallow-ignore-next-line unused-export
-export default SettingsScreen;

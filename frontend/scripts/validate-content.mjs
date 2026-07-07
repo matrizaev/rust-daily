@@ -269,30 +269,36 @@ const validateStructuralValidation = (errors, lesson, validation) => {
   );
 };
 
-// fallow-ignore-next-line complexity
+const hasBackendTestCode = (validation) => isString(validation.testCode);
+
+const hasBackendTestFiles = (validation) =>
+  Array.isArray(validation.testFiles) &&
+  validation.testFiles.length > 0 &&
+  validation.testFiles.every(
+    (file) => isRecord(file) && isString(file.path) && isString(file.content),
+  );
+
+const hasEmbeddedTestFiles = (lesson) =>
+  Array.isArray(lesson.files) &&
+  lesson.files.some(
+    (file) =>
+      isRecord(file) &&
+      file.role === "test" &&
+      isString(file.path) &&
+      isString(file.content),
+  );
+
+const hasAnyBackendTest = (lesson, validation) =>
+  hasBackendTestCode(validation) ||
+  hasBackendTestFiles(validation) ||
+  hasEmbeddedTestFiles(lesson);
+
 const validateBackendValidation = (errors, lesson, validation) => {
   if (!hasPositiveTimeout(validation)) {
     push(errors, `${lesson.id} backend validation must have timeoutMs.`);
   }
 
-  const hasTestCode = isString(validation.testCode);
-  const hasTestFiles =
-    Array.isArray(validation.testFiles) &&
-    validation.testFiles.length > 0 &&
-    validation.testFiles.every(
-      (file) => isRecord(file) && isString(file.path) && isString(file.content),
-    );
-  const hasEmbeddedTestFiles =
-    Array.isArray(lesson.files) &&
-    lesson.files.some(
-      (file) =>
-        isRecord(file) &&
-        file.role === "test" &&
-        isString(file.path) &&
-        isString(file.content),
-    );
-
-  if (!hasTestCode && !hasTestFiles && !hasEmbeddedTestFiles) {
+  if (!hasAnyBackendTest(lesson, validation)) {
     push(errors, `${lesson.id} backend validation must have testCode or testFiles.`);
   }
 };

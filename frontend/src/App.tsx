@@ -31,8 +31,14 @@ import {
 } from "./storage/settingsStore";
 import type { Concept, Lesson, LessonIndexEntry } from "./types/lesson";
 
-const loadLessonScreen = () => import("./components/LessonScreen");
-const loadSettingsScreen = () => import("./components/SettingsScreen");
+const loadLessonScreen = () =>
+  import("./components/LessonScreen").then(({ LessonScreen }) => ({
+    default: LessonScreen,
+  }));
+const loadSettingsScreen = () =>
+  import("./components/SettingsScreen").then(({ SettingsScreen }) => ({
+    default: SettingsScreen,
+  }));
 
 const LessonScreen = lazy(loadLessonScreen);
 const SettingsScreen = lazy(loadSettingsScreen);
@@ -400,7 +406,237 @@ const useNavigationActions = (
   };
 };
 
-// fallow-ignore-next-line complexity
+type PwaState = ReturnType<typeof usePwaState>;
+type ProgressState = ReturnType<typeof useProgressState>;
+type NavigationActions = ReturnType<typeof useNavigationActions>;
+
+const PwaBanner = ({ pwa }: { pwa: PwaState }) => (
+  <PwaStatus
+    isOffline={pwa.isOffline}
+    isUpdating={pwa.isUpdating}
+    updateAvailable={pwa.updateAvailable}
+    onReloadUpdate={pwa.handleReloadUpdate}
+  />
+);
+
+const SettingsRoute = ({
+  handleSettingsChange,
+  navigation,
+  progressState,
+  pwa,
+  settings,
+}: {
+  handleSettingsChange: (settings: UserSettings) => void;
+  navigation: NavigationActions;
+  progressState: ProgressState;
+  pwa: PwaState;
+  settings: UserSettings;
+}) => (
+  <>
+    <PwaBanner pwa={pwa} />
+    <Suspense
+      fallback={
+        <RouteLoadingScreen
+          title="Loading settings…"
+          body="Preparing your local preferences and progress tools."
+        />
+      }
+    >
+      <SettingsScreen
+        settings={settings}
+        summary={progressState.summary}
+        onDeleteDrafts={progressState.handleDeleteDrafts}
+        onDeleteProgress={progressState.handleDeleteProgress}
+        onExportProgress={progressState.handleExportProgress}
+        onImportProgress={progressState.handleImportProgress}
+        onReturnHome={navigation.handleReturnHome}
+        onSettingsChange={handleSettingsChange}
+      />
+    </Suspense>
+  </>
+);
+
+const LessonStatusRoute = ({
+  lessonLoadFailed,
+  pwa,
+}: {
+  lessonLoadFailed: boolean;
+  pwa: PwaState;
+}) => (
+  <>
+    <PwaBanner pwa={pwa} />
+    <RouteLoadingScreen
+      title={lessonLoadFailed ? "Lesson unavailable" : "Loading lesson…"}
+      body={
+        lessonLoadFailed
+          ? "This lesson could not be loaded right now. Try reconnecting, refreshing, or returning home."
+          : "Fetching the lesson content, starter files, and validation steps."
+      }
+    />
+  </>
+);
+
+const LessonRoute = ({
+  activeConcept,
+  activeLesson,
+  navigation,
+  progressState,
+  pwa,
+  settings,
+}: {
+  activeConcept: Concept | null;
+  activeLesson: Lesson;
+  navigation: NavigationActions;
+  progressState: ProgressState;
+  pwa: PwaState;
+  settings: UserSettings;
+}) => (
+  <>
+    <PwaBanner pwa={pwa} />
+    <Suspense
+      fallback={
+        <RouteLoadingScreen
+          title="Loading lesson…"
+          body="Preparing the Rust editor and validation tools."
+        />
+      }
+    >
+      <LessonScreen
+        concept={activeConcept}
+        editorFontSize={settings.editorFontSize}
+        lesson={activeLesson}
+        onOpenSettings={navigation.handleOpenSettings}
+        onProgressChange={progressState.handleProgressChange}
+        onReturnHome={navigation.handleReturnHome}
+        progress={progressState.progress}
+      />
+    </Suspense>
+  </>
+);
+
+const HomeRoute = ({
+  activeConcept,
+  dailyLesson,
+  navigation,
+  progressState,
+  pwa,
+}: {
+  activeConcept: Concept | null;
+  dailyLesson: LessonIndexEntry;
+  navigation: NavigationActions;
+  progressState: ProgressState;
+  pwa: PwaState;
+}) => (
+  <>
+    <PwaBanner pwa={pwa} />
+    <DailyHome
+      concept={activeConcept}
+      lesson={dailyLesson}
+      lessons={lessons}
+      onContinue={navigation.handleContinue}
+      onOpenSettings={navigation.handleOpenSettings}
+      progress={progressState.progress}
+      summary={progressState.summary}
+    />
+  </>
+);
+
+const isLessonStatusRoute = ({
+  activeLesson,
+  isLessonLoading,
+  lessonLoadFailed,
+  route,
+}: {
+  activeLesson: Lesson | null;
+  isLessonLoading: boolean;
+  lessonLoadFailed: boolean;
+  route: AppRoute;
+}) => {
+  const lessonHasNoContent = activeLesson === null;
+  const lessonIsPending = isLessonLoading || lessonLoadFailed || lessonHasNoContent;
+
+  return route.kind === "lesson" && lessonIsPending;
+};
+
+const AppRouteView = ({
+  activeConcept,
+  activeLesson,
+  dailyLesson,
+  handleSettingsChange,
+  isLessonLoading,
+  lessonLoadFailed,
+  navigation,
+  progressState,
+  pwa,
+  route,
+  settings,
+}: {
+  activeConcept: Concept | null;
+  activeLesson: Lesson | null;
+  dailyLesson: LessonIndexEntry;
+  handleSettingsChange: (settings: UserSettings) => void;
+  isLessonLoading: boolean;
+  lessonLoadFailed: boolean;
+  navigation: NavigationActions;
+  progressState: ProgressState;
+  pwa: PwaState;
+  route: AppRoute;
+  settings: UserSettings;
+}) => {
+  const lessonRoute = activeLesson ? (
+    <LessonRoute
+      activeConcept={activeConcept}
+      activeLesson={activeLesson}
+      navigation={navigation}
+      progressState={progressState}
+      pwa={pwa}
+      settings={settings}
+    />
+  ) : null;
+  const routeCandidates = [
+    {
+      matches: route.kind === "settings",
+      element: (
+        <SettingsRoute
+          handleSettingsChange={handleSettingsChange}
+          navigation={navigation}
+          progressState={progressState}
+          pwa={pwa}
+          settings={settings}
+        />
+      ),
+    },
+    {
+      matches: isLessonStatusRoute({
+        activeLesson,
+        isLessonLoading,
+        lessonLoadFailed,
+        route,
+      }),
+      element: (
+        <LessonStatusRoute
+          lessonLoadFailed={lessonLoadFailed}
+          pwa={pwa}
+        />
+      ),
+    },
+    {
+      matches: activeLesson !== null,
+      element: lessonRoute,
+    },
+  ];
+
+  return routeCandidates.find((candidate) => candidate.matches)?.element ?? (
+    <HomeRoute
+      activeConcept={activeConcept}
+      dailyLesson={dailyLesson}
+      navigation={navigation}
+      progressState={progressState}
+      pwa={pwa}
+    />
+  );
+};
+
 function App() {
   const [route, setRoute] = useAppRoute();
   const pwa = usePwaState();
@@ -418,108 +654,20 @@ function App() {
   );
   const navigation = useNavigationActions(setRoute, dailyLesson.id);
 
-  if (route.kind === "settings") {
-    return (
-      <>
-        <PwaStatus
-          isOffline={pwa.isOffline}
-          isUpdating={pwa.isUpdating}
-          updateAvailable={pwa.updateAvailable}
-          onReloadUpdate={pwa.handleReloadUpdate}
-        />
-        <Suspense
-          fallback={
-            <RouteLoadingScreen
-              title="Loading settings…"
-              body="Preparing your local preferences and progress tools."
-            />
-          }
-        >
-          <SettingsScreen
-            settings={settings}
-            summary={progressState.summary}
-            onDeleteDrafts={progressState.handleDeleteDrafts}
-            onDeleteProgress={progressState.handleDeleteProgress}
-            onExportProgress={progressState.handleExportProgress}
-            onImportProgress={progressState.handleImportProgress}
-            onReturnHome={navigation.handleReturnHome}
-            onSettingsChange={handleSettingsChange}
-          />
-        </Suspense>
-      </>
-    );
-  }
-
-  if (route.kind === "lesson" && (isLessonLoading || lessonLoadFailed || !activeLesson)) {
-    return (
-      <>
-        <PwaStatus
-          isOffline={pwa.isOffline}
-          isUpdating={pwa.isUpdating}
-          updateAvailable={pwa.updateAvailable}
-          onReloadUpdate={pwa.handleReloadUpdate}
-        />
-        <RouteLoadingScreen
-          title={lessonLoadFailed ? "Lesson unavailable" : "Loading lesson…"}
-          body={
-            lessonLoadFailed
-              ? "This lesson could not be loaded right now. Try reconnecting, refreshing, or returning home."
-              : "Fetching the lesson content, starter files, and validation steps."
-          }
-        />
-      </>
-    );
-  }
-
-  if (activeLesson) {
-    return (
-      <>
-        <PwaStatus
-          isOffline={pwa.isOffline}
-          isUpdating={pwa.isUpdating}
-          updateAvailable={pwa.updateAvailable}
-          onReloadUpdate={pwa.handleReloadUpdate}
-        />
-        <Suspense
-          fallback={
-            <RouteLoadingScreen
-              title="Loading lesson…"
-              body="Preparing the Rust editor and validation tools."
-            />
-          }
-        >
-          <LessonScreen
-            concept={activeConcept}
-            editorFontSize={settings.editorFontSize}
-            lesson={activeLesson}
-            onOpenSettings={navigation.handleOpenSettings}
-            onProgressChange={progressState.handleProgressChange}
-            onReturnHome={navigation.handleReturnHome}
-            progress={progressState.progress}
-          />
-        </Suspense>
-      </>
-    );
-  }
-
   return (
-    <>
-      <PwaStatus
-        isOffline={pwa.isOffline}
-        isUpdating={pwa.isUpdating}
-        updateAvailable={pwa.updateAvailable}
-        onReloadUpdate={pwa.handleReloadUpdate}
-      />
-      <DailyHome
-        concept={activeConcept}
-        lesson={dailyLesson}
-        lessons={lessons}
-        onContinue={navigation.handleContinue}
-        onOpenSettings={navigation.handleOpenSettings}
-        progress={progressState.progress}
-        summary={progressState.summary}
-      />
-    </>
+    <AppRouteView
+      activeConcept={activeConcept}
+      activeLesson={activeLesson}
+      dailyLesson={dailyLesson}
+      handleSettingsChange={handleSettingsChange}
+      isLessonLoading={isLessonLoading}
+      lessonLoadFailed={lessonLoadFailed}
+      navigation={navigation}
+      progressState={progressState}
+      pwa={pwa}
+      route={route}
+      settings={settings}
+    />
   );
 }
 

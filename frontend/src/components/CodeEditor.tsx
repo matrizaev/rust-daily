@@ -181,7 +181,7 @@ const syncEditorDocument = (view: EditorView | null, value: string) => {
   });
 };
 
-function CodeEditor({
+export function CodeEditor({
   value,
   onChange,
   ariaLabel,
@@ -258,6 +258,3 @@ function CodeEditor({
 
   return <div className="code-editor" ref={hostRef} />;
 }
-
-// fallow-ignore-next-line unused-export
-export default CodeEditor;

@@ -399,14 +399,16 @@ const signatureStartIndex = (source: string, fnIndex: number) => {
   return skipWhitespace(source, lineStart);
 };
 
-// fallow-ignore-next-line complexity
+const isTopLevelSignatureEnd = (char: string, depth: number) =>
+  (char === "{" || char === ";") && depth === 0;
+
 const findSignatureTerminator = (source: string, startIndex: number) => {
   let depth = 0;
 
   for (let index = startIndex; index < source.length; index += 1) {
     const char = source[index];
 
-    if ((char === "{" || char === ";") && depth === 0) {
+    if (isTopLevelSignatureEnd(char, depth)) {
       return index;
     }
 
@@ -416,48 +418,72 @@ const findSignatureTerminator = (source: string, startIndex: number) => {
   return -1;
 };
 
-// fallow-ignore-next-line complexity
+const functionMatchIndex = (match: RegExpMatchArray) => match.index ?? -1;
+
+const skipFunctionGenerics = (source: string, cursor: number) => {
+  if (source[cursor] !== "<") {
+    return cursor;
+  }
+
+  const genericEnd = findMatchingDelimiter(source, cursor, "<", ">");
+
+  return genericEnd < 0 ? -1 : skipWhitespace(source, genericEnd + 1);
+};
+
+const hasFunctionParams = (source: string, cursor: number) =>
+  cursor >= 0 && source[cursor] === "(";
+
+const getFunctionParamsEnd = (source: string, cursor: number) =>
+  hasFunctionParams(source, cursor)
+    ? findMatchingDelimiter(source, cursor, "(", ")")
+    : -1;
+
+const getSignatureEnd = (source: string, cursor: number) => {
+  const paramsEnd = getFunctionParamsEnd(source, cursor);
+
+  return paramsEnd < 0 ? -1 : findSignatureTerminator(source, paramsEnd + 1);
+};
+
+const normalizedFunctionSignatureAt = (
+  source: string,
+  functionName: string,
+  fnIndex: number,
+  matchText: string,
+) => {
+  const nameEnd = fnIndex + matchText.length;
+  let cursor = skipWhitespace(source, nameEnd);
+
+  cursor = skipFunctionGenerics(source, cursor);
+  const signatureEnd = getSignatureEnd(source, cursor);
+  if (signatureEnd < 0) {
+    return null;
+  }
+
+  return normalizeWhitespace(
+    source.slice(signatureStartIndex(source, fnIndex), signatureEnd),
+  );
+};
+
 const findFunctionSignature = (source: string, functionName: string) => {
   const matches = source.matchAll(functionPattern(functionName));
 
   for (const match of matches) {
-    const fnIndex = match.index ?? -1;
+    const fnIndex = functionMatchIndex(match);
 
     if (fnIndex < 0) {
       continue;
     }
 
-    let cursor = skipWhitespace(source, fnIndex + match[0].length);
-
-    if (source[cursor] === "<") {
-      const genericEnd = findMatchingDelimiter(source, cursor, "<", ">");
-
-      if (genericEnd < 0) {
-        continue;
-      }
-
-      cursor = skipWhitespace(source, genericEnd + 1);
-    }
-
-    if (source[cursor] !== "(") {
-      continue;
-    }
-
-    const paramsEnd = findMatchingDelimiter(source, cursor, "(", ")");
-
-    if (paramsEnd < 0) {
-      continue;
-    }
-
-    const signatureEnd = findSignatureTerminator(source, paramsEnd + 1);
-
-    if (signatureEnd < 0) {
-      continue;
-    }
-
-    return normalizeWhitespace(
-      source.slice(signatureStartIndex(source, fnIndex), signatureEnd),
+    const signature = normalizedFunctionSignatureAt(
+      source,
+      functionName,
+      fnIndex,
+      match[0],
     );
+
+    if (signature) {
+      return signature;
+    }
   }
 
   return null;

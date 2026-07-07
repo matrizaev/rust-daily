@@ -26,36 +26,63 @@ const validateSourcePath = async (errors, lessonJsonPath, sourcePath, label) => 
   }
 };
 
-// fallow-ignore-next-line complexity
+const VALID_FILE_ROLES = new Set(["editable", "readonly", "test"]);
+
+const validateEditableFileCount = (errors, lesson) => {
+  const editableFiles = lesson.files.filter((file) => file.role === "editable");
+
+  if (editableFiles.length !== 1) {
+    push(errors, `${lesson.id} must have exactly one editable file for this implementation slice.`);
+  }
+};
+
+const validateFileRecord = (errors, lesson, file) => {
+  if (!isRecord(file) || !isString(file.path) || !isString(file.role)) {
+    push(errors, `${lesson.id} has an invalid file entry.`);
+    return false;
+  }
+
+  return true;
+};
+
+const validateFileRole = (errors, lesson, file) => {
+  if (!VALID_FILE_ROLES.has(file.role)) {
+    push(errors, `${lesson.id} file ${file.path} has invalid role ${file.role}.`);
+  }
+};
+
+const validateFilePath = (errors, lesson, file) => {
+  if (file.path.includes("..") || file.path.startsWith("/")) {
+    push(errors, `${lesson.id} file ${file.path} must be relative and safe.`);
+  }
+};
+
+const validateFileSource = async (errors, lessonJsonPath, lesson, file) => {
+  if (file.content === undefined) {
+    await validateSourcePath(errors, lessonJsonPath, file.sourcePath, `${lesson.id} ${file.path}`);
+  }
+};
+
+const validateFile = async (errors, lessonJsonPath, lesson, file) => {
+  if (!validateFileRecord(errors, lesson, file)) {
+    return;
+  }
+
+  validateFileRole(errors, lesson, file);
+  validateFilePath(errors, lesson, file);
+  await validateFileSource(errors, lessonJsonPath, lesson, file);
+};
+
 const validateFiles = async (errors, lessonJsonPath, lesson) => {
   if (!Array.isArray(lesson.files) || lesson.files.length === 0) {
     push(errors, `${lesson.id} must define files.`);
     return;
   }
 
-  const editableFiles = lesson.files.filter((file) => file.role === "editable");
-
-  if (editableFiles.length !== 1) {
-    push(errors, `${lesson.id} must have exactly one editable file for this implementation slice.`);
-  }
+  validateEditableFileCount(errors, lesson);
 
   for (const file of lesson.files) {
-    if (!isRecord(file) || !isString(file.path) || !isString(file.role)) {
-      push(errors, `${lesson.id} has an invalid file entry.`);
-      continue;
-    }
-
-    if (!["editable", "readonly", "test"].includes(file.role)) {
-      push(errors, `${lesson.id} file ${file.path} has invalid role ${file.role}.`);
-    }
-
-    if (file.path.includes("..") || file.path.startsWith("/")) {
-      push(errors, `${lesson.id} file ${file.path} must be relative and safe.`);
-    }
-
-    if (file.content === undefined) {
-      await validateSourcePath(errors, lessonJsonPath, file.sourcePath, `${lesson.id} ${file.path}`);
-    }
+    await validateFile(errors, lessonJsonPath, lesson, file);
   }
 };
 
@@ -64,7 +91,62 @@ const validationSteps = (validation) =>
     ? validation.validations
     : [validation];
 
-// fallow-ignore-next-line complexity
+const validationTestFiles = (validation) =>
+  Array.isArray(validation.testFiles) ? validation.testFiles : [];
+
+const hasBackendTestInput = (validation) =>
+  isString(validation.testCode) || validationTestFiles(validation).length > 0;
+
+const validateBackendTestPresence = (errors, lesson, validation) => {
+  if (!hasBackendTestInput(validation)) {
+    push(errors, `${lesson.id} backend validation must define testCode or testFiles.`);
+  }
+};
+
+const validateBackendTestFileSources = async (
+  errors,
+  lessonJsonPath,
+  lesson,
+  validation,
+) => {
+  await Promise.all(
+    validationTestFiles(validation).map((testFile) =>
+      validateSourcePath(
+        errors,
+        lessonJsonPath,
+        testFile.sourcePath,
+        `${lesson.id} backend test ${testFile.path}`,
+      ),
+    ),
+  );
+};
+
+const validateBackendTestFiles = async (
+  errors,
+  lessonJsonPath,
+  lesson,
+  validation,
+) => {
+  validateBackendTestPresence(errors, lesson, validation);
+  await validateBackendTestFileSources(errors, lessonJsonPath, lesson, validation);
+};
+
+const isBackendCargoTestValidation = (validation) =>
+  validation?.mode === "backend-cargo-test";
+
+const validateBackendValidationStep = async (
+  errors,
+  lessonJsonPath,
+  lesson,
+  validation,
+) => {
+  if (!isBackendCargoTestValidation(validation)) {
+    return;
+  }
+
+  await validateBackendTestFiles(errors, lessonJsonPath, lesson, validation);
+};
+
 const validateValidation = async (errors, lessonJsonPath, lesson) => {
   if (!isRecord(lesson.validation)) {
     push(errors, `${lesson.id} must define validation.`);
@@ -72,25 +154,7 @@ const validateValidation = async (errors, lessonJsonPath, lesson) => {
   }
 
   for (const validation of validationSteps(lesson.validation)) {
-    if (validation?.mode !== "backend-cargo-test") {
-      continue;
-    }
-
-    const hasTestCode = isString(validation.testCode);
-    const testFiles = Array.isArray(validation.testFiles) ? validation.testFiles : [];
-
-    if (!hasTestCode && testFiles.length === 0) {
-      push(errors, `${lesson.id} backend validation must define testCode or testFiles.`);
-    }
-
-    for (const testFile of testFiles) {
-      await validateSourcePath(
-        errors,
-        lessonJsonPath,
-        testFile.sourcePath,
-        `${lesson.id} backend test ${testFile.path}`,
-      );
-    }
+    await validateBackendValidationStep(errors, lessonJsonPath, lesson, validation);
   }
 };
 
@@ -123,42 +187,52 @@ const validateAuthor = async (errors, lessonJsonPath, lesson) => {
   }
 };
 
-// fallow-ignore-next-line complexity
-const validateLesson = async (errors, lessonJsonPath, conceptIds) => {
-  const lesson = await readJson(lessonJsonPath);
-  const label = repoRelativePath(lessonJsonPath);
-  const required = [
-    "schemaVersion",
-    "id",
-    "arcId",
-    "arcTitle",
-    "order",
-    "day",
-    "arcLength",
-    "title",
-    "conceptId",
-    "difficulty",
-    "estimatedMinutes",
-    "scenario",
-    "instructions",
-    "hints",
-    "completionExplanation",
-    "validation",
-  ];
+const REQUIRED_LESSON_FIELDS = [
+  "schemaVersion",
+  "id",
+  "arcId",
+  "arcTitle",
+  "order",
+  "day",
+  "arcLength",
+  "title",
+  "conceptId",
+  "difficulty",
+  "estimatedMinutes",
+  "scenario",
+  "instructions",
+  "hints",
+  "completionExplanation",
+  "validation",
+];
 
-  for (const field of required) {
+const validateRequiredLessonFields = (errors, label, lesson) => {
+  for (const field of REQUIRED_LESSON_FIELDS) {
     if (!(field in lesson)) {
       push(errors, `${label} is missing ${field}.`);
     }
   }
+};
 
+const validateLessonOrder = (errors, lesson) => {
   if (!isNumber(lesson.order)) {
     push(errors, `${lesson.id} must define numeric order.`);
   }
+};
 
+const validateLessonConcept = (errors, lesson, conceptIds) => {
   if (!conceptIds.has(lesson.conceptId)) {
     push(errors, `${lesson.id} references missing concept ${lesson.conceptId}.`);
   }
+};
+
+const validateLesson = async (errors, lessonJsonPath, conceptIds) => {
+  const lesson = await readJson(lessonJsonPath);
+  const label = repoRelativePath(lessonJsonPath);
+
+  validateRequiredLessonFields(errors, label, lesson);
+  validateLessonOrder(errors, lesson);
+  validateLessonConcept(errors, lesson, conceptIds);
 
   await validateFiles(errors, lessonJsonPath, lesson);
   await validateValidation(errors, lessonJsonPath, lesson);
