@@ -11,7 +11,7 @@
   "difficulty": "medium",
   "estimatedMinutes": 8,
   "scenario": "A request builder should support chained calls without exposing all its intermediate fields.",
-  "instructions": "Add RequestBuilder::method(mut self, method: impl Into<String>) -> Self. Store the method and return self.",
+  "instructions": "Add RequestBuilder struct with optional path and method fields and implement RequestBuilder::method(mut self, method: impl Into<String>) -> Self and RequestBuilder::new() -> Self.",
   "files": [
     {
       "path": "src/lib.rs",
