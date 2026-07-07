@@ -1,5 +1,5 @@
-use std::fmt;
 use std::error::Error;
+use std::fmt;
 
 use std::io;
 
@@ -16,7 +16,6 @@ impl From<io::Error> for ConfigLoadError {
     }
 }
 
-
 impl fmt::Display for ConfigLoadError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -26,7 +25,6 @@ impl fmt::Display for ConfigLoadError {
         }
     }
 }
-
 
 impl Error for ConfigLoadError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {

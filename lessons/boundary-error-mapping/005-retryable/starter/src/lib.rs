@@ -24,7 +24,6 @@ impl From<CreateOrderError> for CreateOrderUseCaseError {
     }
 }
 
-
 impl fmt::Display for RepositoryError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

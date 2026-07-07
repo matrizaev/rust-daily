@@ -21,7 +21,7 @@
     {
       "path": "tests/public.rs",
       "role": "test",
-      "content": "use rust_daily_lesson::{available_names, Item};\n\n#[test]\nfn collects_only_available_item_names() {\n    let items = vec![\n        Item { name: \"Keyboard\".to_owned(), quantity: 10, reserved: 2 },\n        Item { name: \"Mouse\".to_owned(), quantity: 4, reserved: 4 },\n    ];\n\n    assert_eq!(available_names(&items), vec![\"Keyboard\"]);\n}\n"
+      "content": "use rust_daily_lesson::{available_names, Item};\n\n#[test]\nfn collects_only_available_item_names() {\n    let items = vec![\n        Item {\n            name: \"Keyboard\".to_owned(),\n            sku: \"1\".to_owned(),\n            quantity: 10,\n            reserved: 2,\n        },\n        Item {\n            name: \"Mouse\".to_owned(),\n            sku: \"2\".to_owned(),\n            quantity: 4,\n            reserved: 4,\n        },\n    ];\n\n    assert_eq!(available_names(&items), vec![\"Keyboard\"]);\n}\n"
     }
   ],
   "hints": [
