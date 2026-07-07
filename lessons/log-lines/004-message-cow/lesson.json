@@ -3,7 +3,7 @@
   "id": "log-message-cow-004",
   "arcId": "log-lines",
   "arcTitle": "Inspect log lines",
-  "order": 23,
+  "order": 18,
   "day": 4,
   "arcLength": 5,
   "title": "Allow borrowed or owned messages",

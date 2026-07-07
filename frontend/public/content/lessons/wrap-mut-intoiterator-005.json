@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 2,
+  "id": "wrap-mut-intoiterator-005",
+  "arcId": "collection-wrappers",
+  "arcTitle": "Exposing iteration on collection wrappers",
+  "order": 59,
+  "day": 5,
+  "arcLength": 6,
+  "title": "Iterate mutably over collection wrappers",
+  "conceptId": "wrap-mut-into-iterator",
+  "difficulty": "medium",
+  "estimatedMinutes": 8,
+  "scenario": "Some update operations should borrow the wrapper mutably and edit each line in place without exposing the Vec field.",
+  "instructions": "Implement IntoIterator for &mut OrderLines, yielding &mut OrderLine values.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self { Self { lines } }\n}\n\n// TODO: implement IntoIterator for &mut OrderLines.\n"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "content": "use rust_daily_lesson::{OrderLine, OrderLines};\n\n#[test]\nfn mutable_iteration_updates_lines_in_place() {\n    let mut lines = OrderLines::new(vec![OrderLine { sku: \"A\".to_owned(), quantity: 2 }]);\n\n    for line in &mut lines {\n        line.quantity += 1;\n    }\n\n    let quantities: Vec<_> = (&mut lines).into_iter().map(|line| line.quantity).collect();\n    assert_eq!(quantities, vec![3]);\n}\n"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Focus on the one public API shape requested by the lesson."
+    },
+    {
+      "level": 2,
+      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+    },
+    {
+      "level": 3,
+      "body": "A canonical idiomatic solution is shown below.",
+      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self { Self { lines } }\n}\n\nimpl<'a> IntoIterator for &'a mut OrderLines {\n    type Item = &'a mut OrderLine;\n    type IntoIter = std::slice::IterMut<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.iter_mut()\n    }\n}"
+    }
+  ],
+  "completionExplanation": "This lesson keeps wrap-mut-into-iterator explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "impl<'a> IntoIterator for &'a mut OrderLines",
+              "type Item = &'a mut OrderLine",
+              "iter_mut"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std"
+      }
+    ]
+  }
+}

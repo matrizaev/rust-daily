@@ -34,7 +34,25 @@ def with_file_content(base_path: Path, file_record: dict) -> dict:
     return normalized
 
 
-def normalize_validation(base_path: Path, validation: dict | None) -> dict | None:
+def test_files_match_lesson_files(
+    lesson_files: list[dict],
+    test_files: list[dict],
+) -> bool:
+    lesson_file_content = {
+        file_record.get("path"): file_record.get("content")
+        for file_record in lesson_files
+    }
+    return all(
+        lesson_file_content.get(test_file.get("path")) == test_file.get("content")
+        for test_file in test_files
+    )
+
+
+def normalize_validation(
+    base_path: Path,
+    validation: dict | None,
+    lesson_files: list[dict],
+) -> dict | None:
     if validation is None:
         return None
 
@@ -59,7 +77,8 @@ def normalize_validation(base_path: Path, validation: dict | None) -> dict | Non
             if source_path:
                 normalized_test_file["content"] = (base_path / source_path).read_text()
             test_files.append(normalized_test_file)
-        normalized_step["testFiles"] = test_files
+        if test_files and not test_files_match_lesson_files(lesson_files, test_files):
+            normalized_step["testFiles"] = test_files
         normalized_steps.append(normalized_step)
 
     return {
@@ -92,13 +111,15 @@ def source_lesson_dir(lesson: dict) -> Path:
 def normalize_source_lesson_for_frontend(lesson: dict) -> dict:
     lesson_dir = source_lesson_dir(lesson)
     normalized = {key: value for key, value in lesson.items() if key != "author"}
-    normalized["files"] = [
+    lesson_files = [
         with_file_content(lesson_dir, file_record)
         for file_record in lesson.get("files", [])
     ]
+    normalized["files"] = lesson_files
     normalized["validation"] = normalize_validation(
         lesson_dir,
         lesson.get("validation"),
+        lesson_files,
     )
     return normalized
 
@@ -107,7 +128,7 @@ def main() -> int:
     arcs = load_json(ROOT / "lessons/arcs.json")
     concepts = load_json(ROOT / "lessons/concepts.json")
     source_lessons = load_source_lessons()
-    frontend_lessons = load_json(ROOT / "frontend/src/content/lessons.json")
+    frontend_lessons = load_json(ROOT / "frontend/src/content/lessonIndex.json")
     frontend_concepts = load_json(ROOT / "frontend/src/content/concepts.json")
 
     arc_ids = {arc["id"] for arc in arcs}
@@ -234,7 +255,9 @@ def main() -> int:
             continue
 
         normalized_source = normalize_source_lesson_for_frontend(source_lesson)
-        comparable_fields = [
+        detail_path = ROOT / "frontend/public/content/lessons" / f"{source_lesson["id"]}.json"
+        frontend_detail = load_json(detail_path) if detail_path.exists() else None
+        index_fields = [
             "schemaVersion",
             "id",
             "arcId",
@@ -247,34 +270,40 @@ def main() -> int:
             "difficulty",
             "estimatedMinutes",
             "scenario",
+        ]
+        for field_name in index_fields:
+            if normalize_newlines(frontend_lesson.get(field_name)) != normalize_newlines(
+                normalized_source.get(field_name)
+            ):
+                print_error(
+                    errors,
+                    f'  FRONTEND INDEX MISMATCH for lesson "{source_lesson["id"]}" field "{field_name}"',
+                )
+
+        if frontend_detail is None:
+            print_error(
+                errors,
+                f'  MISSING frontend detail for lesson "{source_lesson["id"]}"',
+            )
+            continue
+
+        detail_fields = [
+            "schemaVersion",
+            "id",
             "instructions",
             "files",
             "hints",
             "completionExplanation",
             "validation",
         ]
-        for field_name in comparable_fields:
-            if normalize_newlines(frontend_lesson.get(field_name)) != normalize_newlines(
+        for field_name in detail_fields:
+            if normalize_newlines(frontend_detail.get(field_name)) != normalize_newlines(
                 normalized_source.get(field_name)
             ):
                 print_error(
                     errors,
-                    f'  FRONTEND MISMATCH for lesson "{source_lesson["id"]}" field "{field_name}"',
+                    f'  FRONTEND DETAIL MISMATCH for lesson "{source_lesson["id"]}" field "{field_name}"',
                 )
-
-        normalized_starter = ""
-        for file_record in normalized_source.get("files", []):
-            if file_record.get("role") == "editable":
-                normalized_starter = file_record.get("content", "")
-                break
-
-        if normalize_newlines(frontend_lesson.get("starterCode")) != normalize_newlines(
-            normalized_starter
-        ):
-            print_error(
-                errors,
-                f'  FRONTEND MISMATCH for lesson "{source_lesson["id"]}" field "starterCode"',
-            )
 
     print(f"\n=== Summary: {len(errors)} error(s) found ===")
     return 1 if errors else 0

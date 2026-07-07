@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 2,
+  "id": "config-struct-fields-001",
+  "arcId": "config-service",
+  "arcTitle": "Configure a small service",
+  "order": 1,
+  "day": 1,
+  "arcLength": 6,
+  "title": "Shape a service Config",
+  "conceptId": "struct-field-design",
+  "difficulty": "easy",
+  "estimatedMinutes": 6,
+  "scenario": "A tiny service needs configuration that can be owned by the service and moved between setup functions.",
+  "instructions": "Define Config with owned fields: service_url: String, max_connections: usize, and use_tls: bool.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "content": "// TODO: define Config with owned fields for the service settings.\n"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "content": "use rust_daily_lesson::Config;\n\n#[test]\nfn config_groups_owned_service_settings() {\n    let config = Config {\n        service_url: \"http://localhost:8080\".to_owned(),\n        max_connections: 32,\n        use_tls: false,\n    };\n\n    assert_eq!(config.service_url, \"http://localhost:8080\");\n    assert_eq!(config.max_connections, 32);\n    assert!(!config.use_tls);\n}\n"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Use a struct when a few named values travel together."
+    },
+    {
+      "level": 2,
+      "body": "String is appropriate when Config owns its service URL."
+    },
+    {
+      "level": 3,
+      "body": "Booleans are fine for small binary flags such as TLS on or off.",
+      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n}"
+    }
+  ],
+  "completionExplanation": "The Config type gives the service one explicit setup object. Owned fields make the value easy to store without tying it to temporary input lifetimes.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "struct_fields",
+            "structName": "Config",
+            "requiredFields": [
+              {
+                "name": "service_url",
+                "typeIncludes": [
+                  "String"
+                ]
+              },
+              {
+                "name": "max_connections",
+                "typeIncludes": [
+                  "usize"
+                ]
+              },
+              {
+                "name": "use_tls",
+                "typeIncludes": [
+                  "bool"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std"
+      }
+    ]
+  }
+}

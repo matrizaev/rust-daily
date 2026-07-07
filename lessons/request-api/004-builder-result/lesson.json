@@ -3,7 +3,7 @@
   "id": "request-builder-result-004",
   "arcId": "request-api",
   "arcTitle": "Build a request API",
-  "order": 28,
+  "order": 19,
   "day": 4,
   "arcLength": 6,
   "title": "Validate builder output",

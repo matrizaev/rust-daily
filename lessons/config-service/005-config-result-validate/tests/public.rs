@@ -6,6 +6,8 @@ fn validate_reports_specific_failures() {
         Config {
             service_url: String::new(),
             max_connections: 8,
+            use_tls: true,
+            timeout_seconds: Some(30),
         }
         .validate(),
         Err(ConfigError::EmptyServiceUrl)
@@ -14,6 +16,8 @@ fn validate_reports_specific_failures() {
         Config {
             service_url: "https://api.example.com".to_owned(),
             max_connections: 0,
+            use_tls: true,
+            timeout_seconds: Some(30),
         }
         .validate(),
         Err(ConfigError::ZeroConnections)
@@ -21,11 +25,13 @@ fn validate_reports_specific_failures() {
 }
 
 #[test]
-fn validate_accepts_valid_config() {
+fn validate_accepts_valid_config_with_timeout() {
     assert_eq!(
         Config {
             service_url: "https://api.example.com".to_owned(),
             max_connections: 8,
+            use_tls: true,
+            timeout_seconds: Some(30),
         }
         .validate(),
         Ok(())

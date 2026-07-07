@@ -78,20 +78,31 @@ const result = (
 const buildRunUrl = (backendUrl: string) =>
   `${backendUrl.trim().replace(/\/+$/, "")}/run`;
 
-const testCodeFromValidation = (
-  validation: BackendValidationRequest["validation"],
+const joinTestFiles = (files: Array<{ path: string; content: string }>) =>
+  files
+    .map((file) => `// ${file.path}\n${file.content}`)
+    .join("\n\n");
+
+const requestTestFiles = (request: BackendValidationRequest) =>
+  Object.entries(request.files)
+    .filter(([path]) => path.startsWith("tests/"))
+    .sort(([leftPath], [rightPath]) => leftPath.localeCompare(rightPath))
+    .map(([path, content]) => ({ path, content }));
+
+const testCodeFromRequest = (
+  request: BackendValidationRequest,
 ) => {
+  const { validation } = request;
+
   if (typeof validation.testCode === "string") {
     return validation.testCode;
   }
 
   if (validation.testFiles?.length) {
-    return validation.testFiles
-      .map((file) => `// ${file.path}\n${file.content}`)
-      .join("\n\n");
+    return joinTestFiles(validation.testFiles);
   }
 
-  return "";
+  return joinTestFiles(requestTestFiles(request));
 };
 
 const buildRunRequest = (
@@ -104,7 +115,7 @@ const buildRunRequest = (
     },
     {
       path: "tests/lesson.rs",
-      content: testCodeFromValidation(request.validation),
+      content: testCodeFromRequest(request),
     },
   ],
 });

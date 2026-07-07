@@ -3,7 +3,7 @@
   "id": "config-methods-003",
   "arcId": "config-service",
   "arcTitle": "Configure a small service",
-  "order": 3,
+  "order": 11,
   "day": 3,
   "arcLength": 6,
   "title": "Add a small Config setter",

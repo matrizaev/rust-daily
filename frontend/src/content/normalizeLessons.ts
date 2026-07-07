@@ -1,4 +1,10 @@
-import type { Lesson, LessonFile, LessonHint, RawLesson } from "../types/lesson";
+import type {
+  Lesson,
+  LessonFile,
+  LessonHint,
+  LessonIndexEntry,
+  RawLesson,
+} from "../types/lesson";
 
 const DEFAULT_EDITABLE_PATH = "src/lib.rs";
 
@@ -58,5 +64,12 @@ const normalizeLesson = (lesson: RawLesson, index: number): Lesson => {
   };
 };
 
-export const normalizeLessons = (lessons: RawLesson[]) =>
+const normalizeLessons = (lessons: RawLesson[]) =>
   lessons.map((lesson, index) => normalizeLesson(lesson, index));
+
+export const normalizeLessonIndex = (lessons: LessonIndexEntry[]) =>
+  lessons.map((lesson, index) => ({
+    ...lesson,
+    schemaVersion: lesson.schemaVersion ?? 1,
+    order: lesson.order ?? index + 1,
+  })) satisfies LessonIndexEntry[];

@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 2,
+  "id": "wrap-borrowed-iter-002",
+  "arcId": "collection-wrappers",
+  "arcTitle": "Exposing iteration on collection wrappers",
+  "order": 56,
+  "day": 2,
+  "arcLength": 6,
+  "title": "Expose borrowed iteration with iter",
+  "conceptId": "wrap-borrowed-iter",
+  "difficulty": "easy",
+  "estimatedMinutes": 6,
+  "scenario": "Callers often need to inspect a collection wrapper without consuming it. A borrowed iterator exposes a view without leaking fields.",
+  "instructions": "Add OrderLines::iter(&self) -> std::slice::Iter<'_, OrderLine>.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self { Self { lines } }\n\n    // TODO: add iter(&self).\n}\n"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "content": "use rust_daily_lesson::{OrderLine, OrderLines};\n\n#[test]\nfn iter_borrows_lines() {\n    let lines = OrderLines::new(vec![OrderLine { sku: \"A\".to_owned(), quantity: 2 }]);\n    let skus: Vec<_> = lines.iter().map(|line| line.sku.as_str()).collect();\n\n    assert_eq!(skus, vec![\"A\"]);\n}\n"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Focus on the one public API shape requested by the lesson."
+    },
+    {
+      "level": 2,
+      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+    },
+    {
+      "level": 3,
+      "body": "A canonical idiomatic solution is shown below.",
+      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self { Self { lines } }\n\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}"
+    }
+  ],
+  "completionExplanation": "This lesson keeps wrap-borrowed-iter explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "impl_method",
+            "implFor": "OrderLines",
+            "methodName": "iter",
+            "requiredSignatureIncludes": [
+              "&self",
+              "std::slice::Iter",
+              "OrderLine"
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "self.lines.iter()"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std"
+      }
+    ]
+  }
+}

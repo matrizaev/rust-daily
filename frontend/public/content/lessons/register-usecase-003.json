@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 2,
+  "id": "register-usecase-003",
+  "arcId": "register-user-use-case",
+  "arcTitle": "Register user use case boundaries",
+  "order": 75,
+  "day": 3,
+  "arcLength": 6,
+  "title": "Implement a use case over a port",
+  "conceptId": "register-usecase-function",
+  "difficulty": "medium",
+  "estimatedMinutes": 9,
+  "scenario": "A use case coordinates domain rules and ports. It should be generic over the port trait so infrastructure stays replaceable.",
+  "instructions": "Implement register_user over UserRepository. Return DuplicateEmail if the email already exists; otherwise save the new user.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "content": "pub mod domain {\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct EmailAddress(pub String);\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct UserId(pub u64);\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct RegisterUserCommand { pub email: EmailAddress, pub display_name: String }\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct NewUser { pub email: EmailAddress, pub display_name: String }\n}\n\npub mod application {\n    use super::domain::{EmailAddress, NewUser, RegisterUserCommand, UserId};\n\n    #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n    pub enum RepositoryError { Unavailable }\n    #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n    pub enum RegisterUserError { DuplicateEmail, Repository(RepositoryError) }\n\n    pub trait UserRepository {\n        fn exists_by_email(&self, email: &EmailAddress) -> Result<bool, RepositoryError>;\n        fn save(&mut self, user: NewUser) -> Result<UserId, RepositoryError>;\n    }\n\n    // TODO: implement register_user.\n}\n"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "content": "use rust_daily_lesson::application::{register_user, RegisterUserError, RepositoryError, UserRepository};\nuse rust_daily_lesson::domain::{EmailAddress, NewUser, RegisterUserCommand, UserId};\n\nstruct FakeRepo { exists: bool }\nimpl UserRepository for FakeRepo {\n    fn exists_by_email(&self, _email: &EmailAddress) -> Result<bool, RepositoryError> { Ok(self.exists) }\n    fn save(&mut self, _user: NewUser) -> Result<UserId, RepositoryError> { Ok(UserId(7)) }\n}\n\n#[test]\nfn usecase_saves_new_user() {\n    let mut repo = FakeRepo { exists: false };\n    let command = RegisterUserCommand { email: EmailAddress(\"ada@example.com\".to_owned()), display_name: \"Ada\".to_owned() };\n    assert_eq!(register_user(&mut repo, command), Ok(UserId(7)));\n}\n\n#[test]\nfn usecase_rejects_duplicate_email() {\n    let mut repo = FakeRepo { exists: true };\n    let command = RegisterUserCommand { email: EmailAddress(\"ada@example.com\".to_owned()), display_name: \"Ada\".to_owned() };\n    assert_eq!(register_user(&mut repo, command), Err(RegisterUserError::DuplicateEmail));\n}\n"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Focus on the one public API shape requested by the lesson."
+    },
+    {
+      "level": 2,
+      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+    },
+    {
+      "level": 3,
+      "body": "A canonical idiomatic solution is shown below.",
+      "solutionCode": "pub mod domain {\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct EmailAddress(pub String);\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct UserId(pub u64);\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct RegisterUserCommand { pub email: EmailAddress, pub display_name: String }\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct NewUser { pub email: EmailAddress, pub display_name: String }\n}\n\npub mod application {\n    use super::domain::{NewUser, RegisterUserCommand, UserId};\n    use super::domain::EmailAddress;\n\n    #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n    pub enum RepositoryError { Unavailable }\n    #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n    pub enum RegisterUserError { DuplicateEmail, Repository(RepositoryError) }\n\n    pub trait UserRepository {\n        fn exists_by_email(&self, email: &EmailAddress) -> Result<bool, RepositoryError>;\n        fn save(&mut self, user: NewUser) -> Result<UserId, RepositoryError>;\n    }\n\n    pub fn register_user<R: UserRepository>(repo: &mut R, command: RegisterUserCommand) -> Result<UserId, RegisterUserError> {\n        if repo.exists_by_email(&command.email).map_err(RegisterUserError::Repository)? {\n            return Err(RegisterUserError::DuplicateEmail);\n        }\n\n        repo.save(NewUser { email: command.email, display_name: command.display_name })\n            .map_err(RegisterUserError::Repository)\n    }\n}"
+    }
+  ],
+  "completionExplanation": "This lesson keeps register-usecase-function explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "function_signature",
+            "functionName": "register_user",
+            "requiredSignatureIncludes": [
+              "UserRepository",
+              "Result<UserId, RegisterUserError>"
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "DuplicateEmail",
+              "map_err(RegisterUserError::Repository)"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std"
+      }
+    ]
+  }
+}

@@ -3,7 +3,7 @@
   "id": "inventory-sort-by-key-006",
   "arcId": "inventory-summary",
   "arcTitle": "Summarize inventory",
-  "order": 19,
+  "order": 27,
   "day": 6,
   "arcLength": 6,
   "title": "Sort items by borrowed comparison",

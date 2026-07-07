@@ -3,7 +3,7 @@
   "id": "error-trait-parse-user-error-003",
   "arcId": "parse-user",
   "arcTitle": "Parse a user from text",
-  "order": 9,
+  "order": 12,
   "day": 3,
   "arcLength": 7,
   "title": "Mark the parse error as an Error",

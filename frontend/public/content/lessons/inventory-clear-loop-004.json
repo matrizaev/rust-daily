@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 2,
+  "id": "inventory-clear-loop-004",
+  "arcId": "inventory-summary",
+  "arcTitle": "Summarize inventory",
+  "order": 17,
+  "day": 4,
+  "arcLength": 6,
+  "title": "Choose clarity over clever chains",
+  "conceptId": "iterator-judgment",
+  "difficulty": "medium",
+  "estimatedMinutes": 8,
+  "scenario": "Iterator chains are powerful, but a dense chain can hide business rules. This helper should be easy to scan.",
+  "instructions": "Refactor reorder_notes into a clearer shape. A small loop or named intermediate values are both fine if the priority rule is obvious.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "content": "pub fn reorder_notes(notes: &[String]) -> Vec<String> {\n    notes\n        .iter()\n        .filter(|note| !note.trim().is_empty())\n        .map(|note| note.trim().to_lowercase())\n        .filter(|note| note.contains(\"urgent\") || note.contains(\"stock\"))\n        .collect()\n}\n"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "content": "use rust_daily_lesson::reorder_notes;\n\n#[test]\nfn keeps_inventory_notes_in_normalized_order() {\n    let notes = vec![\n        \"  URGENT restock batteries \".to_owned(),\n        \"\".to_owned(),\n        \"general reminder\".to_owned(),\n        \"low STOCK on cables\".to_owned(),\n    ];\n\n    assert_eq!(\n        reorder_notes(&notes),\n        vec![\n            \"urgent restock batteries\".to_owned(),\n            \"low stock on cables\".to_owned(),\n        ]\n    );\n}\n"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "The goal is not always fewer lines."
+    },
+    {
+      "level": 2,
+      "body": "Name a boolean such as is_inventory_note if that makes the rule clearer."
+    },
+    {
+      "level": 3,
+      "body": "A loop is idiomatic when each step deserves a name.",
+      "solutionCode": "pub fn reorder_notes(notes: &[String]) -> Vec<String> {\n    let mut relevant_notes = Vec::new();\n\n    for note in notes {\n        let normalized = note.trim().to_lowercase();\n        if normalized.is_empty() {\n            continue;\n        }\n\n        let is_inventory_note =\n            normalized.contains(\"urgent\") || normalized.contains(\"stock\");\n        if is_inventory_note {\n            relevant_notes.push(normalized);\n        }\n    }\n\n    relevant_notes\n}"
+    }
+  ],
+  "completionExplanation": "Idiomatic Rust values clarity over using an iterator chain everywhere. The best shape is the one that makes the business rule easiest to verify.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "function_signature",
+            "functionName": "reorder_notes",
+            "requiredSignatureIncludes": [
+              "Vec<String>"
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "for note in notes",
+              "is_inventory_note"
+            ],
+            "forbiddenSnippets": [
+              ".filter(",
+              ".filter_map("
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std"
+      }
+    ]
+  }
+}

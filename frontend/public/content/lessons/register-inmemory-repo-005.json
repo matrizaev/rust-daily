@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 2,
+  "id": "register-inmemory-repo-005",
+  "arcId": "register-user-use-case",
+  "arcTitle": "Register user use case boundaries",
+  "order": 77,
+  "day": 5,
+  "arcLength": 6,
+  "title": "Implement an infrastructure repository",
+  "conceptId": "register-inmemory-repo",
+  "difficulty": "medium",
+  "estimatedMinutes": 9,
+  "scenario": "Infrastructure implements application ports. The application trait stays the dependency boundary.",
+  "instructions": "Implement InMemoryUserRepository for the UserRepository port.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "content": "pub mod domain {\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct EmailAddress(pub String);\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct UserId(pub u64);\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct NewUser { pub email: EmailAddress, pub display_name: String }\n}\n\npub mod application {\n    use super::domain::{EmailAddress, NewUser, UserId};\n    #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n    pub enum RepositoryError { Unavailable }\n    pub trait UserRepository {\n        fn exists_by_email(&self, email: &EmailAddress) -> Result<bool, RepositoryError>;\n        fn save(&mut self, user: NewUser) -> Result<UserId, RepositoryError>;\n    }\n}\n\npub mod infrastructure {\n    use super::application::{RepositoryError, UserRepository};\n    use super::domain::{EmailAddress, NewUser, UserId};\n\n    pub struct InMemoryUserRepository { users: Vec<NewUser>, next_id: u64 }\n\n    impl InMemoryUserRepository { pub fn new() -> Self { Self { users: Vec::new(), next_id: 1 } } }\n\n    // TODO: implement UserRepository.\n}\n"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "content": "use rust_daily_lesson::application::UserRepository;\nuse rust_daily_lesson::domain::{EmailAddress, NewUser, UserId};\nuse rust_daily_lesson::infrastructure::InMemoryUserRepository;\n\n#[test]\nfn infrastructure_repo_implements_port() {\n    let mut repo = InMemoryUserRepository::new();\n    let email = EmailAddress(\"ada@example.com\".to_owned());\n\n    assert_eq!(repo.exists_by_email(&email), Ok(false));\n    assert_eq!(repo.save(NewUser { email: email.clone(), display_name: \"Ada\".to_owned() }), Ok(UserId(1)));\n    assert_eq!(repo.exists_by_email(&email), Ok(true));\n}\n"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Focus on the one public API shape requested by the lesson."
+    },
+    {
+      "level": 2,
+      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+    },
+    {
+      "level": 3,
+      "body": "A canonical idiomatic solution is shown below.",
+      "solutionCode": "pub mod domain {\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct EmailAddress(pub String);\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct UserId(pub u64);\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct NewUser { pub email: EmailAddress, pub display_name: String }\n}\n\npub mod application {\n    use super::domain::{EmailAddress, NewUser, UserId};\n    #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n    pub enum RepositoryError { Unavailable }\n    pub trait UserRepository {\n        fn exists_by_email(&self, email: &EmailAddress) -> Result<bool, RepositoryError>;\n        fn save(&mut self, user: NewUser) -> Result<UserId, RepositoryError>;\n    }\n}\n\npub mod infrastructure {\n    use super::application::{RepositoryError, UserRepository};\n    use super::domain::{EmailAddress, NewUser, UserId};\n\n    pub struct InMemoryUserRepository { users: Vec<NewUser>, next_id: u64 }\n\n    impl InMemoryUserRepository { pub fn new() -> Self { Self { users: Vec::new(), next_id: 1 } } }\n\n    impl UserRepository for InMemoryUserRepository {\n        fn exists_by_email(&self, email: &EmailAddress) -> Result<bool, RepositoryError> {\n            Ok(self.users.iter().any(|user| user.email == *email))\n        }\n\n        fn save(&mut self, user: NewUser) -> Result<UserId, RepositoryError> {\n            let id = UserId(self.next_id);\n            self.next_id += 1;\n            self.users.push(user);\n            Ok(id)\n        }\n    }\n}"
+    }
+  ],
+  "completionExplanation": "This lesson keeps register-inmemory-repo explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "impl_trait_for_type",
+            "traitName": "UserRepository",
+            "typeName": "InMemoryUserRepository"
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "pub mod infrastructure",
+              "users.iter().any"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std"
+      }
+    ]
+  }
+}

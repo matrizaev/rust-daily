@@ -259,4 +259,5 @@ function CodeEditor({
   return <div className="code-editor" ref={hostRef} />;
 }
 
+// fallow-ignore-next-line unused-export
 export default CodeEditor;

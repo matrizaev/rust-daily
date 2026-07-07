@@ -70,6 +70,25 @@ export default defineConfig({
               },
             },
           },
+          {
+            urlPattern: ({ request, url }) =>
+              request.method === "GET" &&
+              url.origin === self.location.origin &&
+              url.pathname.includes("/content/lessons/") &&
+              url.pathname.endsWith(".json"),
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "rust-daily-lesson-content",
+              networkTimeoutSeconds: 3,
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+              expiration: {
+                maxEntries: 120,
+                maxAgeSeconds: 30 * 24 * 60 * 60,
+              },
+            },
+          },
         ],
       },
     }),

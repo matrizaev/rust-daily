@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 2,
+  "id": "dto-bulk-conversion-005",
+  "arcId": "dto-conversions",
+  "arcTitle": "Converting DTOs into domain commands",
+  "order": 53,
+  "day": 5,
+  "arcLength": 6,
+  "title": "Convert a bulk DTO with indexed errors",
+  "conceptId": "dto-nested-conversions",
+  "difficulty": "medium",
+  "estimatedMinutes": 10,
+  "scenario": "Batch adapter input needs useful error context. Preserve the row index when one nested DTO cannot become a command.",
+  "instructions": "Implement TryFrom<BulkRegisterDto> for BulkRegisterCommand. Reject empty batches and return InvalidUser { index, error } for the first invalid nested DTO.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn email(&self) -> &str { &self.email }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        Ok(Self {\n            email: value.email.ok_or(RegisterUserValidationError::MissingEmail)?,\n            display_name: value.display_name.ok_or(RegisterUserValidationError::MissingDisplayName)?,\n        })\n    }\n}\n\npub struct BulkRegisterDto {\n    pub users: Vec<RegisterUserDto>,\n}\n\npub struct BulkRegisterCommand {\n    commands: Vec<RegisterUserCommand>,\n}\n\nimpl BulkRegisterCommand {\n    pub fn commands(&self) -> &[RegisterUserCommand] { &self.commands }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BulkRegisterError {\n    EmptyBatch,\n    InvalidUser { index: usize, error: RegisterUserValidationError },\n}\n\n// TODO: implement TryFrom<BulkRegisterDto> for BulkRegisterCommand.\n"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "content": "use rust_daily_lesson::{\n    BulkRegisterCommand, BulkRegisterDto, BulkRegisterError, RegisterUserDto,\n    RegisterUserValidationError,\n};\n\n#[test]\nfn converts_bulk_dto() {\n    let bulk = BulkRegisterCommand::try_from(BulkRegisterDto {\n        users: vec![RegisterUserDto {\n            email: Some(\"ada@example.com\".to_owned()),\n            display_name: Some(\"Ada\".to_owned()),\n        }],\n    });\n\n    assert_eq!(bulk.map(|bulk| bulk.commands().len()), Ok(1));\n}\n\n#[test]\nfn reports_invalid_user_index() {\n    let result = BulkRegisterCommand::try_from(BulkRegisterDto {\n        users: vec![RegisterUserDto {\n            email: None,\n            display_name: Some(\"Ada\".to_owned()),\n        }],\n    });\n\n    assert!(matches!(\n        result,\n        Err(BulkRegisterError::InvalidUser {\n            index: 0,\n            error: RegisterUserValidationError::MissingEmail,\n        })\n    ));\n}\n"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Focus on the one public API shape requested by the lesson."
+    },
+    {
+      "level": 2,
+      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+    },
+    {
+      "level": 3,
+      "body": "A canonical idiomatic solution is shown below.",
+      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn email(&self) -> &str { &self.email }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        Ok(Self {\n            email: value.email.ok_or(RegisterUserValidationError::MissingEmail)?,\n            display_name: value.display_name.ok_or(RegisterUserValidationError::MissingDisplayName)?,\n        })\n    }\n}\n\npub struct BulkRegisterDto {\n    pub users: Vec<RegisterUserDto>,\n}\n\npub struct BulkRegisterCommand {\n    commands: Vec<RegisterUserCommand>,\n}\n\nimpl BulkRegisterCommand {\n    pub fn commands(&self) -> &[RegisterUserCommand] { &self.commands }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BulkRegisterError {\n    EmptyBatch,\n    InvalidUser { index: usize, error: RegisterUserValidationError },\n}\n\nimpl TryFrom<BulkRegisterDto> for BulkRegisterCommand {\n    type Error = BulkRegisterError;\n\n    fn try_from(value: BulkRegisterDto) -> Result<Self, Self::Error> {\n        if value.users.is_empty() {\n            return Err(BulkRegisterError::EmptyBatch);\n        }\n\n        let mut commands = Vec::with_capacity(value.users.len());\n        for (index, dto) in value.users.into_iter().enumerate() {\n            let command = RegisterUserCommand::try_from(dto)\n                .map_err(|error| BulkRegisterError::InvalidUser { index, error })?;\n            commands.push(command);\n        }\n\n        Ok(Self { commands })\n    }\n}"
+    }
+  ],
+  "completionExplanation": "This lesson keeps dto-nested-conversions explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "impl_trait_for_type",
+            "traitName": "TryFrom<BulkRegisterDto>",
+            "typeName": "BulkRegisterCommand"
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "enumerate()",
+              "InvalidUser { index, error }"
+            ],
+            "forbiddenSnippets": [
+              "unwrap",
+              "expect",
+              "panic!"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std"
+      }
+    ]
+  }
+}

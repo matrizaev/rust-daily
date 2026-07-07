@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 2,
+  "id": "tryfrom-user-str-006",
+  "arcId": "parse-user",
+  "arcTitle": "Parse a user from text",
+  "order": 29,
+  "day": 6,
+  "arcLength": 7,
+  "title": "Parse User with TryFrom",
+  "conceptId": "tryfrom-user",
+  "difficulty": "medium",
+  "estimatedMinutes": 9,
+  "scenario": "Parsing a User from text is a fallible conversion. TryFrom<&str> gives callers a standard API for that operation.",
+  "instructions": "Implement TryFrom<&str> for User. Set type Error to ParseUserError and delegate to parse_user.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "content": "use std::convert::TryFrom;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct User {\n    pub id: u64,\n    pub name: String,\n    pub email: String,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId,\n}\n\npub fn parse_user(input: &str) -> Result<User, ParseUserError> {\n    let mut parts = input.split(',');\n\n    let id_text = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingId)?;\n    let id = id_text\n        .parse::<u64>()\n        .map_err(|_| ParseUserError::InvalidId)?;\n    let name = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingName)?;\n    let email = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingEmail)?;\n\n    Ok(User {\n        id,\n        name: name.to_owned(),\n        email: email.to_owned(),\n    })\n}\n\n// TODO: implement TryFrom<&str> for User.\n"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "content": "use rust_daily_lesson::{ParseUserError, User};\n\n#[test]\nfn tryfrom_parses_valid_user() {\n    assert_eq!(\n        User::try_from(\"42,Ada,ada@example.com\"),\n        Ok(User {\n            id: 42,\n            name: \"Ada\".to_owned(),\n            email: \"ada@example.com\".to_owned(),\n        })\n    );\n}\n\n#[test]\nfn tryfrom_returns_parse_errors() {\n    assert_eq!(User::try_from(\"\"), Err(ParseUserError::MissingId));\n    assert_eq!(User::try_from(\"42,Ada\"), Err(ParseUserError::MissingEmail));\n}\n"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "TryFrom uses an associated Error type."
+    },
+    {
+      "level": 2,
+      "body": "The conversion method is try_from(value: &str) -> Result<Self, Self::Error>."
+    },
+    {
+      "level": 3,
+      "body": "Delegate to the existing parser so this lesson adds a standard API without duplicating parser logic.",
+      "solutionCode": "use std::convert::TryFrom;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct User {\n    pub id: u64,\n    pub name: String,\n    pub email: String,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId,\n}\n\npub fn parse_user(input: &str) -> Result<User, ParseUserError> {\n    let mut parts = input.split(',');\n\n    let id_text = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingId)?;\n    let id = id_text\n        .parse::<u64>()\n        .map_err(|_| ParseUserError::InvalidId)?;\n    let name = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingName)?;\n    let email = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingEmail)?;\n\n    Ok(User {\n        id,\n        name: name.to_owned(),\n        email: email.to_owned(),\n    })\n}\n\nimpl TryFrom<&str> for User {\n    type Error = ParseUserError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        parse_user(value)\n    }\n}"
+    }
+  ],
+  "completionExplanation": "TryFrom communicates that parsing can fail and gives callers a standard conversion shape. Delegating keeps one parsing implementation instead of two drifting copies.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "impl_trait_for_type",
+            "traitName": "TryFrom<&str>",
+            "typeName": "User"
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "type Error = ParseUserError",
+              "fn try_from",
+              "parse_user(value)"
+            ],
+            "forbiddenSnippets": [
+              "panic!",
+              ".unwrap()",
+              ".expect("
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std"
+      }
+    ]
+  }
+}

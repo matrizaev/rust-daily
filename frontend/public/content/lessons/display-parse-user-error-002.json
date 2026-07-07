@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 2,
+  "id": "display-parse-user-error-002",
+  "arcId": "parse-user",
+  "arcTitle": "Parse a user from text",
+  "order": 7,
+  "day": 2,
+  "arcLength": 7,
+  "title": "Format parse errors for people",
+  "conceptId": "display-parse-error",
+  "difficulty": "easy",
+  "estimatedMinutes": 8,
+  "scenario": "Callers can match on ParseUserError, but logs and command-line output still need clear human-readable messages.",
+  "instructions": "Implement std::fmt::Display for ParseUserError. Use a match on self and write a short message for each variant.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "content": "use std::fmt;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId,\n}\n\n// TODO: implement std::fmt::Display for ParseUserError.\n"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "content": "use rust_daily_lesson::ParseUserError;\n\n#[test]\nfn formats_parse_errors_for_people() {\n    assert_eq!(ParseUserError::MissingId.to_string(), \"missing id\");\n    assert_eq!(ParseUserError::MissingName.to_string(), \"missing name\");\n    assert_eq!(ParseUserError::MissingEmail.to_string(), \"missing email\");\n    assert_eq!(ParseUserError::InvalidId.to_string(), \"invalid id\");\n}\n"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Display is implemented with fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result."
+    },
+    {
+      "level": 2,
+      "body": "A match on self keeps one message next to each error case."
+    },
+    {
+      "level": 3,
+      "body": "Use write!(f, \"...\") inside each match arm.",
+      "solutionCode": "use std::fmt;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId,\n}\n\nimpl std::fmt::Display for ParseUserError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            ParseUserError::MissingId => write!(f, \"missing id\"),\n            ParseUserError::MissingName => write!(f, \"missing name\"),\n            ParseUserError::MissingEmail => write!(f, \"missing email\"),\n            ParseUserError::InvalidId => write!(f, \"invalid id\"),\n        }\n    }\n}"
+    }
+  ],
+  "completionExplanation": "Display separates the typed error representation from the text shown to users. The enum stays useful for programs, while fmt gives each case a stable message.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "impl_trait_for_type",
+            "traitName": "std::fmt::Display",
+            "typeName": "ParseUserError"
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "fn fmt",
+              "match self"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std"
+      }
+    ]
+  }
+}

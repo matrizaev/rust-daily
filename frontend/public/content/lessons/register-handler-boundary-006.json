@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 2,
+  "id": "register-handler-boundary-006",
+  "arcId": "register-user-use-case",
+  "arcTitle": "Register user use case boundaries",
+  "order": 78,
+  "day": 6,
+  "arcLength": 6,
+  "title": "Map a handler boundary without framework leakage",
+  "conceptId": "register-handler-boundary",
+  "difficulty": "medium",
+  "estimatedMinutes": 10,
+  "scenario": "A handler adapter should translate request DTOs, call the use case, and return response data without pushing HTTP concepts into domain code.",
+  "instructions": "Implement handle_register_user by converting the request, calling register_user, and mapping outcomes to Response values.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserRequest { pub email: String, pub display_name: String }\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand { pub email: String, pub display_name: String }\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct UserId(pub u64);\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserError { InvalidRequest, DuplicateEmail, RepositoryUnavailable }\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Response { pub status: u16 }\n\npub trait RegisterUserUseCase {\n    fn register_user(&mut self, command: RegisterUserCommand) -> Result<UserId, RegisterUserError>;\n}\n\nimpl TryFrom<RegisterUserRequest> for RegisterUserCommand {\n    type Error = RegisterUserError;\n    fn try_from(value: RegisterUserRequest) -> Result<Self, Self::Error> {\n        if value.email.trim().is_empty() { return Err(RegisterUserError::InvalidRequest); }\n        Ok(Self { email: value.email, display_name: value.display_name })\n    }\n}\n\n// TODO: implement handle_register_user.\n"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "content": "use rust_daily_lesson::{handle_register_user, RegisterUserCommand, RegisterUserError, RegisterUserRequest, RegisterUserUseCase, UserId};\n\nstruct FakeUseCase { result: Result<UserId, RegisterUserError> }\nimpl RegisterUserUseCase for FakeUseCase {\n    fn register_user(&mut self, _command: RegisterUserCommand) -> Result<UserId, RegisterUserError> { self.result }\n}\n\n#[test]\nfn handler_maps_usecase_outcomes() {\n    let request = RegisterUserRequest { email: \"ada@example.com\".to_owned(), display_name: \"Ada\".to_owned() };\n    let mut ok = FakeUseCase { result: Ok(UserId(1)) };\n    let mut duplicate = FakeUseCase { result: Err(RegisterUserError::DuplicateEmail) };\n\n    assert_eq!(handle_register_user(&mut ok, request.clone()).status, 201);\n    assert_eq!(handle_register_user(&mut duplicate, request).status, 409);\n}\n\n#[test]\nfn handler_rejects_invalid_request_before_usecase() {\n    let mut use_case = FakeUseCase { result: Ok(UserId(1)) };\n    let response = handle_register_user(&mut use_case, RegisterUserRequest { email: \" \".to_owned(), display_name: \"Ada\".to_owned() });\n\n    assert_eq!(response.status, 400);\n}\n"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Focus on the one public API shape requested by the lesson."
+    },
+    {
+      "level": 2,
+      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+    },
+    {
+      "level": 3,
+      "body": "A canonical idiomatic solution is shown below.",
+      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserRequest { pub email: String, pub display_name: String }\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand { pub email: String, pub display_name: String }\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct UserId(pub u64);\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserError { InvalidRequest, DuplicateEmail, RepositoryUnavailable }\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Response { pub status: u16 }\n\npub trait RegisterUserUseCase {\n    fn register_user(&mut self, command: RegisterUserCommand) -> Result<UserId, RegisterUserError>;\n}\n\nimpl TryFrom<RegisterUserRequest> for RegisterUserCommand {\n    type Error = RegisterUserError;\n    fn try_from(value: RegisterUserRequest) -> Result<Self, Self::Error> {\n        if value.email.trim().is_empty() { return Err(RegisterUserError::InvalidRequest); }\n        Ok(Self { email: value.email, display_name: value.display_name })\n    }\n}\n\npub fn handle_register_user<U: RegisterUserUseCase>(use_case: &mut U, request: RegisterUserRequest) -> Response {\n    let command = match RegisterUserCommand::try_from(request) {\n        Ok(command) => command,\n        Err(RegisterUserError::InvalidRequest) => return Response { status: 400 },\n        Err(RegisterUserError::DuplicateEmail | RegisterUserError::RepositoryUnavailable) => return Response { status: 500 },\n    };\n\n    match use_case.register_user(command) {\n        Ok(_) => Response { status: 201 },\n        Err(RegisterUserError::DuplicateEmail) => Response { status: 409 },\n        Err(RegisterUserError::RepositoryUnavailable) => Response { status: 503 },\n        Err(RegisterUserError::InvalidRequest) => Response { status: 400 },\n    }\n}"
+    }
+  ],
+  "completionExplanation": "This lesson keeps register-handler-boundary explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "function_signature",
+            "functionName": "handle_register_user",
+            "requiredSignatureIncludes": [
+              "RegisterUserUseCase",
+              "Response"
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "RegisterUserCommand::try_from",
+              "use_case.register_user",
+              "201",
+              "409",
+              "503"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std"
+      }
+    ]
+  }
+}

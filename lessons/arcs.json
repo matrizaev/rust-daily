@@ -11,7 +11,7 @@
     "id": "parse-user",
     "title": "Parse a user from text",
     "pillar": "errors",
-    "orderStart": 7,
+    "orderStart": 2,
     "targetLessonCount": 7,
     "description": "Build a parser around typed errors, Display, Error, sources, From, TryFrom, and behavior checks."
   },
@@ -19,7 +19,7 @@
     "id": "inventory-summary",
     "title": "Summarize inventory",
     "pillar": "collections",
-    "orderStart": 14,
+    "orderStart": 3,
     "targetLessonCount": 6,
     "description": "Use structs, borrowed collection outputs, folds, readable loops, IntoIterator, and borrowed sort comparisons."
   },
@@ -27,7 +27,7 @@
     "id": "log-lines",
     "title": "Inspect log lines",
     "pillar": "ownership",
-    "orderStart": 20,
+    "orderStart": 4,
     "targetLessonCount": 5,
     "description": "Represent log entries and views with borrowing, lifetimes, pattern matching, Cow, and focused tests."
   },
@@ -35,7 +35,7 @@
     "id": "request-api",
     "title": "Build a request API",
     "pillar": "traits",
-    "orderStart": 25,
+    "orderStart": 5,
     "targetLessonCount": 6,
     "description": "Design a small request builder with consuming setters, Default, Result, TryFrom, and doc examples."
   },

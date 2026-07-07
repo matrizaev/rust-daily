@@ -8,14 +8,14 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import type { ProgressSummary as ProgressSummaryData } from "../progress/progressSelectors";
-import type { Concept, Lesson } from "../types/lesson";
+import type { Concept, LessonIndexEntry } from "../types/lesson";
 import type { ProgressStore } from "../types/progress";
 import CurriculumPath from "./CurriculumPath";
 import ProgressSummary from "./ProgressSummary";
 
 type DailyHomeProps = {
-  lesson: Lesson;
-  lessons: Lesson[];
+  lesson: LessonIndexEntry;
+  lessons: LessonIndexEntry[];
   concept: Concept | null;
   onContinue: () => void;
   onOpenSettings: () => void;
@@ -86,7 +86,7 @@ const LessonFacts = ({ lesson, concept }: LessonFactsProps) => (
   </dl>
 );
 
-const DailyHeading = ({ lesson }: { lesson: Lesson }) => (
+const DailyHeading = ({ lesson }: { lesson: LessonIndexEntry }) => (
   <div className="daily-heading">
     <p className="eyebrow">Next lesson</p>
     <h1 id="daily-title">{lesson.title}</h1>

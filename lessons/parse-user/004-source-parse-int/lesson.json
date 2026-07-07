@@ -3,7 +3,7 @@
   "id": "source-parse-int-error-004",
   "arcId": "parse-user",
   "arcTitle": "Parse a user from text",
-  "order": 10,
+  "order": 20,
   "day": 4,
   "arcLength": 7,
   "title": "Preserve the ID parse source",

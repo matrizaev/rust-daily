@@ -3,7 +3,7 @@
   "id": "error-enum-parse-user-001",
   "arcId": "parse-user",
   "arcTitle": "Parse a user from text",
-  "order": 7,
+  "order": 2,
   "day": 1,
   "arcLength": 7,
   "title": "Design a parse error enum",

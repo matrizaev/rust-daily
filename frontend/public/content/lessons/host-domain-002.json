@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 2,
+  "id": "host-domain-002",
+  "arcId": "host-port-config",
+  "arcTitle": "Host and port configuration modeling",
+  "order": 44,
+  "day": 2,
+  "arcLength": 6,
+  "title": "Define and validate a Host value object",
+  "conceptId": "host-domain",
+  "difficulty": "medium",
+  "estimatedMinutes": 8,
+  "scenario": "Hosts arrive as borrowed text from configuration and adapters. We want a domain type that rejects empty values and whitespace before storing an owned String.",
+  "instructions": "Define a Host tuple struct with a private String field. Expose Host::as_str(&self) -> &str and implement TryFrom<&str> for Host using HostValidationError.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum HostValidationError {\n    Empty,\n    InvalidCharacters,\n}\n\n// TODO: Define Host as a public tuple struct with a private String field.\n\nimpl Host {\n    // TODO: Expose as_str(&self) -> &str.\n}\n\n// TODO: Implement TryFrom<&str> for Host.\n"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "content": "use rust_daily_lesson::{Host, HostValidationError};\n\n#[test]\nfn host_representation_is_validated() {\n    assert_eq!(\n        Host::try_from(\"localhost\").map(|host| host.as_str().to_owned()),\n        Ok(\"localhost\".to_owned())\n    );\n    assert_eq!(Host::try_from(\"\"), Err(HostValidationError::Empty));\n    assert_eq!(\n        Host::try_from(\"bad host\"),\n        Err(HostValidationError::InvalidCharacters)\n    );\n}\n"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Wrap the owned String in Host, but validate from &str so callers do not allocate before validation."
+    },
+    {
+      "level": 2,
+      "body": "Return Empty for an empty string and InvalidCharacters if the input contains whitespace; allocate only when returning Ok."
+    },
+    {
+      "level": 3,
+      "body": "A canonical solution validates borrowed text before storing an owned string.",
+      "solutionCode": "pub struct Host(String);\n\nimpl Host {\n    pub fn as_str(&self) -> &str {\n        &self.0\n    }\n}\n\nimpl TryFrom<&str> for Host {\n    type Error = HostValidationError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        if value.is_empty() {\n            return Err(HostValidationError::Empty);\n        }\n\n        if value.contains(char::is_whitespace) {\n            return Err(HostValidationError::InvalidCharacters);\n        }\n\n        Ok(Self(value.to_owned()))\n    }\n}"
+    }
+  ],
+  "completionExplanation": "A validated value object keeps raw strings at the boundary. Implementing TryFrom<&str> avoids forcing callers to allocate invalid input, while Host owns the accepted value after validation.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "tuple_struct_fields",
+            "structName": "Host",
+            "requiredTypes": [
+              "String"
+            ]
+          },
+          {
+            "type": "impl_method",
+            "implFor": "Host",
+            "methodName": "as_str",
+            "requiredSignatureIncludes": [
+              "&self",
+              "&str"
+            ]
+          },
+          {
+            "type": "impl_trait_for_type",
+            "traitName": "TryFrom<&str>",
+            "typeName": "Host"
+          },
+          {
+            "type": "enum_unit_variants",
+            "enumName": "HostValidationError",
+            "requiredVariants": [
+              "Empty",
+              "InvalidCharacters"
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "to_owned"
+            ],
+            "forbiddenSnippets": [
+              "new_unchecked",
+              ".unwrap()",
+              ".expect(",
+              "panic!"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std"
+      }
+    ]
+  }
+}

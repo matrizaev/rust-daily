@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 2,
+  "id": "email-validation-error-display-005",
+  "arcId": "email-address-value-object",
+  "arcTitle": "Email address value object",
+  "order": 35,
+  "day": 5,
+  "arcLength": 6,
+  "title": "Format validation errors",
+  "conceptId": "display-email-validation-error",
+  "difficulty": "easy",
+  "estimatedMinutes": 7,
+  "scenario": "EmailValidationError is useful to match on, but logs and UI messages need human-readable text.",
+  "instructions": "Implement Display for EmailValidationError and then implement std::error::Error for it.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub enum EmailValidationError {\n    Empty,\n    MissingAt,\n    MissingDomain,\n}\n\n// TODO: implement Display for EmailValidationError.\n\n// TODO: implement std::error::Error for EmailValidationError.\n"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "content": "use rust_daily_lesson::EmailValidationError;\n\nfn assert_error<E: std::error::Error>() {}\n\n#[test]\nfn validation_error_is_a_standard_error() {\n    assert_error::<EmailValidationError>();\n}\n\n#[test]\nfn display_messages_are_human_readable() {\n    assert_eq!(EmailValidationError::Empty.to_string(), \"email address is empty\");\n    assert_eq!(\n        EmailValidationError::MissingAt.to_string(),\n        \"email address is missing @\"\n    );\n    assert_eq!(\n        EmailValidationError::MissingDomain.to_string(),\n        \"email address is missing a domain\"\n    );\n}\n"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Keep the enum variants programmatic. Display is where human-facing text belongs."
+    },
+    {
+      "level": 2,
+      "body": "Match on self inside fmt. The Error implementation can be empty once Debug and Display exist."
+    },
+    {
+      "level": 3,
+      "body": "A canonical solution gives every variant its own message and marks the enum as a standard error.",
+      "solutionCode": "impl std::fmt::Display for EmailValidationError {\n    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        match self {\n            Self::Empty => write!(f, \"email address is empty\"),\n            Self::MissingAt => write!(f, \"email address is missing @\"),\n            Self::MissingDomain => write!(f, \"email address is missing a domain\"),\n        }\n    }\n}\n\nimpl std::error::Error for EmailValidationError {}"
+    }
+  ],
+  "completionExplanation": "Display keeps user-facing text separate from programmatic error variants. Implementing Error lets the validation error fit standard Rust error APIs.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "impl_trait_for_type",
+            "traitName": "std::fmt::Display",
+            "typeName": "EmailValidationError"
+          },
+          {
+            "type": "impl_trait_for_type",
+            "traitName": "std::error::Error",
+            "typeName": "EmailValidationError"
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std"
+      }
+    ]
+  }
+}

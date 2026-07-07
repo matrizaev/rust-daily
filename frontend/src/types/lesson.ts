@@ -47,6 +47,32 @@ export type Lesson = {
   validation?: LessonValidation;
 };
 
+export type LessonIndexEntry = Omit<
+  Lesson,
+  | "starterCode"
+  | "files"
+  | "hints"
+  | "completionExplanation"
+  | "validation"
+  | "instructions"
+>;
+
+export type LessonDetail = Omit<
+  Pick<
+    Lesson,
+    | "schemaVersion"
+    | "id"
+    | "instructions"
+    | "starterCode"
+    | "files"
+    | "hints"
+    | "completionExplanation"
+    | "validation"
+  >,
+  "starterCode"
+> &
+  Partial<Pick<Lesson, "starterCode">>;
+
 export type RawLesson = Omit<
   Lesson,
   "schemaVersion" | "order" | "starterCode" | "files" | "hints"

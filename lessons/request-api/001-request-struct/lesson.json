@@ -3,7 +3,7 @@
   "id": "request-struct-001",
   "arcId": "request-api",
   "arcTitle": "Build a request API",
-  "order": 25,
+  "order": 5,
   "day": 1,
   "arcLength": 6,
   "title": "Define the Request surface",

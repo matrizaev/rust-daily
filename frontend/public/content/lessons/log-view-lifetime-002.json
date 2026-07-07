@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 2,
+  "id": "log-view-lifetime-002",
+  "arcId": "log-lines",
+  "arcTitle": "Inspect log lines",
+  "order": 9,
+  "day": 2,
+  "arcLength": 5,
+  "title": "Create a lifetime-backed view",
+  "conceptId": "lifetime-view",
+  "difficulty": "medium",
+  "estimatedMinutes": 8,
+  "scenario": "A log view should borrow a slice of entries and expose helper methods without taking ownership.",
+  "instructions": "Define LogView<'a> with entries: &'a [LogEntry<'a>].",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "content": "pub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n// TODO: define LogView that borrows a slice of entries.\n"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "content": "use rust_daily_lesson::{LogEntry, LogView};\n\n#[test]\nfn view_borrows_slice_of_entries() {\n    let entries = [LogEntry { level: \"WARN\", message: \"slow\" }];\n    let view = LogView { entries: &entries };\n\n    assert_eq!(view.entries.len(), 1);\n    assert_eq!(view.entries[0].message, \"slow\");\n}\n"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "The view borrows the slice, so the field starts with &'a."
+    },
+    {
+      "level": 2,
+      "body": "The entries inside the slice also carry the same lifetime."
+    },
+    {
+      "level": 3,
+      "body": "This is a view type, not an owning collection.",
+      "solutionCode": "pub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}"
+    }
+  ],
+  "completionExplanation": "The view type captures the relationship between the borrowed slice and the borrowed text inside each entry. The lifetime keeps those references tied together.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "struct_fields",
+            "structName": "LogView",
+            "requiredFields": [
+              {
+                "name": "entries",
+                "typeIncludes": [
+                  "&'a",
+                  "[LogEntry"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std"
+      }
+    ]
+  }
+}

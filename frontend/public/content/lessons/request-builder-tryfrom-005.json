@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 2,
+  "id": "request-builder-tryfrom-005",
+  "arcId": "request-api",
+  "arcTitle": "Build a request API",
+  "order": 25,
+  "day": 5,
+  "arcLength": 6,
+  "title": "Convert RawRequest with TryFrom",
+  "conceptId": "tryfrom-request",
+  "difficulty": "medium",
+  "estimatedMinutes": 8,
+  "scenario": "A small input DTO can be converted into a validated Request using the same fallible conversion pattern as parser code.",
+  "instructions": "Implement TryFrom<RawRequest> for Request. Use BuildError as the associated error type.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "content": "use std::convert::TryFrom;\n\npub struct RawRequest {\n    pub method: Option<String>,\n    pub path: Option<String>,\n}\n\npub struct Request {\n    pub method: String,\n    pub path: String,\n}\n\npub enum BuildError {\n    MissingMethod,\n    MissingPath,\n}\n\n// TODO: implement TryFrom<RawRequest> for Request.\n"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "content": "use rust_daily_lesson::{BuildError, RawRequest, Request};\n\n#[test]\nfn converts_complete_raw_request() {\n    assert_eq!(\n        Request::try_from(RawRequest {\n            method: Some(\"GET\".to_owned()),\n            path: Some(\"/health\".to_owned()),\n        }),\n        Ok(Request {\n            method: \"GET\".to_owned(),\n            path: \"/health\".to_owned(),\n        })\n    );\n}\n\n#[test]\nfn reports_missing_request_fields() {\n    assert_eq!(\n        Request::try_from(RawRequest { method: None, path: Some(\"/health\".to_owned()) }),\n        Err(BuildError::MissingMethod)\n    );\n    assert_eq!(\n        Request::try_from(RawRequest { method: Some(\"GET\".to_owned()), path: None }),\n        Err(BuildError::MissingPath)\n    );\n}\n"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "TryFrom is appropriate because RawRequest may be missing required data."
+    },
+    {
+      "level": 2,
+      "body": "The associated Error type should be BuildError."
+    },
+    {
+      "level": 3,
+      "body": "Use ok_or to extract each Option or return the matching BuildError.",
+      "solutionCode": "use std::convert::TryFrom;\n\npub struct RawRequest {\n    pub method: Option<String>,\n    pub path: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Request {\n    pub method: String,\n    pub path: String,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BuildError {\n    MissingMethod,\n    MissingPath,\n}\n\nimpl TryFrom<RawRequest> for Request {\n    type Error = BuildError;\n\n    fn try_from(value: RawRequest) -> Result<Self, Self::Error> {\n        let method = value.method.ok_or(BuildError::MissingMethod)?;\n        let path = value.path.ok_or(BuildError::MissingPath)?;\n\n        Ok(Self { method, path })\n    }\n}"
+    }
+  ],
+  "completionExplanation": "TryFrom turns a possibly incomplete input type into a validated domain type. The conversion API clearly communicates that failure is possible.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "impl_trait_for_type",
+            "traitName": "TryFrom<RawRequest>",
+            "typeName": "Request"
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "type Error = BuildError",
+              "fn try_from"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std"
+      }
+    ]
+  }
+}

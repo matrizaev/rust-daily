@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 2,
+  "id": "wrap-nonempty-tryfrom-006",
+  "arcId": "collection-wrappers",
+  "arcTitle": "Exposing iteration on collection wrappers",
+  "order": 60,
+  "day": 6,
+  "arcLength": 6,
+  "title": "Validate collection wrappers with TryFrom",
+  "conceptId": "wrap-nonempty-tryfrom",
+  "difficulty": "medium",
+  "estimatedMinutes": 8,
+  "scenario": "An order without lines is invalid. TryFrom<Vec<OrderLine>> can enforce that invariant at the wrapper boundary.",
+  "instructions": "Implement TryFrom<Vec<OrderLine>> for OrderLines and return OrderLinesError::Empty when the vector has no lines.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn len(&self) -> usize { self.lines.len() }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum OrderLinesError {\n    Empty,\n}\n\n// TODO: implement TryFrom<Vec<OrderLine>> for OrderLines.\n"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "content": "use rust_daily_lesson::{OrderLine, OrderLines, OrderLinesError};\n\n#[test]\nfn validates_nonempty_lines() {\n    assert_eq!(OrderLines::try_from(Vec::new()), Err(OrderLinesError::Empty));\n    assert_eq!(\n        OrderLines::try_from(vec![OrderLine { sku: \"A\".to_owned(), quantity: 1 }]).map(|lines| lines.len()),\n        Ok(1)\n    );\n}\n"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Focus on the one public API shape requested by the lesson."
+    },
+    {
+      "level": 2,
+      "body": "Prefer standard traits, typed errors, borrowed views, and explicit boundary conversions."
+    },
+    {
+      "level": 3,
+      "body": "A canonical idiomatic solution is shown below.",
+      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn len(&self) -> usize { self.lines.len() }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum OrderLinesError {\n    Empty,\n}\n\nimpl TryFrom<Vec<OrderLine>> for OrderLines {\n    type Error = OrderLinesError;\n\n    fn try_from(lines: Vec<OrderLine>) -> Result<Self, Self::Error> {\n        if lines.is_empty() {\n            return Err(OrderLinesError::Empty);\n        }\n\n        Ok(Self { lines })\n    }\n}"
+    }
+  ],
+  "completionExplanation": "This lesson keeps wrap-nonempty-tryfrom explicit in the type system and checks public behavior without relying on panics or unchecked shortcuts.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "impl_trait_for_type",
+            "traitName": "TryFrom<Vec<OrderLine>>",
+            "typeName": "OrderLines"
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "OrderLinesError::Empty"
+            ],
+            "forbiddenSnippets": [
+              "unwrap",
+              "expect",
+              "panic!"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std"
+      }
+    ]
+  }
+}

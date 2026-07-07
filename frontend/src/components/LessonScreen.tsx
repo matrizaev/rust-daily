@@ -1,6 +1,5 @@
 import { ArrowLeft, Settings } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import CodeEditor from "./CodeEditor";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CompletionPanel from "./CompletionPanel";
 import HintPanel from "./HintPanel";
 import LessonActions from "./LessonActions";
@@ -29,6 +28,8 @@ import { runValidation } from "../validation/validationClient";
 
 const SAVE_DELAY_MS = 450;
 const DEFAULT_EDITABLE_PATH = "src/lib.rs";
+const loadCodeEditor = () => import("./CodeEditor");
+const CodeEditor = lazy(loadCodeEditor);
 
 type LessonScreenProps = {
   lesson: Lesson;
@@ -118,20 +119,29 @@ const unsupportedResult = (): ValidationResult => ({
 const getFooterCheckCopy = () =>
   "Checks run locally in your browser and on the configured Rust runner.";
 
+const EditorLoadingFallback = () => (
+  <div className="code-editor code-editor-loading" aria-live="polite">
+    <p>Loading editor…</p>
+  </div>
+);
+
 const shouldCompleteLesson = (result: ValidationResult) =>
   result.status === "passed" || result.status === "self_check";
 
 const buildValidationRequest = (
-  lessonId: string,
+  lesson: Lesson,
   validation: LessonValidation,
   code: string,
   filePath: string,
 ) => ({
-  lessonId,
+  lessonId: lesson.id,
   validation,
-  files: {
-    [filePath]: code,
-  },
+  files: Object.fromEntries(
+    lesson.files.map((file) => [
+      file.path,
+      file.path === filePath ? code : file.content,
+    ]),
+  ),
 });
 
 const shouldMarkStale = (
@@ -254,7 +264,7 @@ const useValidationRunner = (
     setState(runningValidationState);
 
     const result = await runValidation(
-      buildValidationRequest(lesson.id, validation, requestCode, filePath),
+      buildValidationRequest(lesson, validation, requestCode, filePath),
     );
 
     setCheckedCode(requestCode);
@@ -429,13 +439,15 @@ function LessonScreen(props: LessonScreenProps) {
             onRevealHint={draft.handleRevealHint}
           />
 
-          <CodeEditor
-            key={lesson.id}
-            ariaLabel={`${lesson.title} ${draft.filePath} Rust editor`}
-            fontSize={editorFontSize}
-            value={draft.code}
-            onChange={draft.setCode}
-          />
+          <Suspense fallback={<EditorLoadingFallback />}>
+            <CodeEditor
+              key={lesson.id}
+              ariaLabel={`${lesson.title} ${draft.filePath} Rust editor`}
+              fontSize={editorFontSize}
+              value={draft.code}
+              onChange={draft.setCode}
+            />
+          </Suspense>
 
           <ReadonlyFilesPanel lesson={lesson} />
 
@@ -458,4 +470,5 @@ function LessonScreen(props: LessonScreenProps) {
   );
 }
 
+// fallow-ignore-next-line unused-export
 export default LessonScreen;
