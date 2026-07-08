@@ -11,7 +11,7 @@
   "difficulty": "medium",
   "estimatedMinutes": 8,
   "scenario": "HTTP status codes belong at the adapter edge. Translate typed application errors there instead of putting HTTP concepts in domain code.",
-  "instructions": "Implement status_code(&CreateOrderUseCaseError) -> u16 with 400 for domain errors, 409 for repository conflicts, and 503 for repository unavailability.",
+  "instructions": "Implement status_code(&CreateOrderUseCaseError) -> u16 at the adapter boundary: 400 for domain errors, 409 for repository conflicts, and 503 for repository unavailability.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Keep the Translating errors across boundaries code active and implement status_code(&CreateOrderUseCaseError) -> u16 with 400 for domain errors, 409 for repository conflicts, and 503 for repository unavailability."
+      "body": "Add pub fn status_code(error: &CreateOrderUseCaseError) -> u16 below is_retryable."
     },
     {
       "level": 2,
-      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+      "body": "Match the typed error: any Domain(_) maps to 400, Repository(Conflict) maps to 409, and Repository(Unavailable) maps to 503."
     },
     {
       "level": 3,
       "body": "One complete solution for Translate application errors to status codes is shown below.",
-      "solutionCode": "use std::error::Error;\nuse std::fmt;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderError {\n    EmptyOrder,\n    InvalidQuantity,\n}\n\nimpl fmt::Display for CreateOrderError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            CreateOrderError::EmptyOrder => write!(f, \"empty order\"),\n            CreateOrderError::InvalidQuantity => write!(f, \"invalid quantity\"),\n        }\n    }\n}\n\nimpl Error for CreateOrderError {}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RepositoryError {\n    Unavailable,\n    Conflict,\n}\n\nimpl fmt::Display for RepositoryError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            RepositoryError::Unavailable => write!(f, \"repository unavailable\"),\n            RepositoryError::Conflict => write!(f, \"repository conflict\"),\n        }\n    }\n}\n\nimpl Error for RepositoryError {}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderUseCaseError {\n    Domain(CreateOrderError),\n    Repository(RepositoryError),\n}\n\nimpl fmt::Display for CreateOrderUseCaseError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            CreateOrderUseCaseError::Domain(error) => write!(f, \"domain error: {error}\"),\n            CreateOrderUseCaseError::Repository(error) => write!(f, \"repository error: {error}\"),\n        }\n    }\n}\n\nimpl Error for CreateOrderUseCaseError {\n    fn source(&self) -> Option<&(dyn Error + 'static)> {\n        match self {\n            CreateOrderUseCaseError::Domain(error) => Some(error),\n            CreateOrderUseCaseError::Repository(error) => Some(error),\n        }\n    }\n}\n\nimpl From<CreateOrderError> for CreateOrderUseCaseError {\n    fn from(error: CreateOrderError) -> Self {\n        CreateOrderUseCaseError::Domain(error)\n    }\n}\n\npub fn is_retryable(error: CreateOrderUseCaseError) -> bool {\n    matches!(\n        error,\n        CreateOrderUseCaseError::Repository(RepositoryError::Unavailable),\n    )\n}\n\npub fn status_code(error: &CreateOrderUseCaseError) -> u16 {\n    match error {\n        CreateOrderUseCaseError::Domain(_) => 400,\n        CreateOrderUseCaseError::Repository(RepositoryError::Conflict) => 409,\n        CreateOrderUseCaseError::Repository(RepositoryError::Unavailable) => 503,\n    }\n}"
+      "solutionCode": "use std::fmt;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderError {\n    EmptyOrder,\n    InvalidQuantity,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RepositoryError {\n    Unavailable,\n    Conflict,\n}\n\nimpl fmt::Display for RepositoryError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            RepositoryError::Unavailable => write!(f, \"repository unavailable\"),\n            RepositoryError::Conflict => write!(f, \"repository conflict\"),\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderUseCaseError {\n    Domain(CreateOrderError),\n    Repository(RepositoryError),\n}\n\nimpl From<CreateOrderError> for CreateOrderUseCaseError {\n    fn from(error: CreateOrderError) -> Self {\n        CreateOrderUseCaseError::Domain(error)\n    }\n}\n\npub fn is_retryable(error: CreateOrderUseCaseError) -> bool {\n    matches!(\n        error,\n        CreateOrderUseCaseError::Repository(RepositoryError::Unavailable),\n    )\n}\n\npub fn status_code(error: &CreateOrderUseCaseError) -> u16 {\n    match error {\n        CreateOrderUseCaseError::Domain(_) => 400,\n        CreateOrderUseCaseError::Repository(RepositoryError::Conflict) => 409,\n        CreateOrderUseCaseError::Repository(RepositoryError::Unavailable) => 503,\n    }\n}"
     }
   ],
-  "completionExplanation": "Translate application errors to status codes now extends the active Translating errors across boundaries code with boundary http status. The previous lesson's behavior remains in the main solution rather than an archived module.",
+  "completionExplanation": "status_code now performs the HTTP translation at the adapter edge while domain and use-case errors stay free of HTTP-specific variants.",
   "validation": {
     "mode": "all",
     "validations": [

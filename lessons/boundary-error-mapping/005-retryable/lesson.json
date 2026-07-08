@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Keep the Translating errors across boundaries code active and implement is_retryable for CreateOrderUseCaseError. Only Repository(Unavailable) should return true."
+      "body": "Add pub fn is_retryable(error: CreateOrderUseCaseError) -> bool."
     },
     {
       "level": 2,
-      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+      "body": "Use matches! so only CreateOrderUseCaseError::Repository(RepositoryError::Unavailable) returns true."
     },
     {
       "level": 3,
       "body": "One complete solution for Classify retryable boundary errors is shown below.",
-      "solutionCode": "use std::fmt;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderError {\n    EmptyOrder,\n    InvalidQuantity,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RepositoryError {\n    Unavailable,\n    Conflict,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderUseCaseError {\n    Domain(CreateOrderError),\n    Repository(RepositoryError),\n}\n\npub fn is_retryable(error: CreateOrderUseCaseError) -> bool {\n    matches!(\n        error,\n        CreateOrderUseCaseError::Repository(RepositoryError::Unavailable)\n    )\n}\n\n\nimpl fmt::Display for RepositoryError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            RepositoryError::Unavailable => write!(f, \"repository unavailable\"),\n            RepositoryError::Conflict => write!(f, \"repository conflict\"),\n        }\n    }\n}\n\n\nimpl From<CreateOrderError> for CreateOrderUseCaseError {\n    fn from(error: CreateOrderError) -> Self {\n        CreateOrderUseCaseError::Domain(error)\n    }\n}"
+      "solutionCode": "use std::fmt;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderError {\n    EmptyOrder,\n    InvalidQuantity,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RepositoryError {\n    Unavailable,\n    Conflict,\n}\n\nimpl fmt::Display for RepositoryError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            RepositoryError::Unavailable => write!(f, \"repository unavailable\"),\n            RepositoryError::Conflict => write!(f, \"repository conflict\"),\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderUseCaseError {\n    Domain(CreateOrderError),\n    Repository(RepositoryError),\n}\n\nimpl From<CreateOrderError> for CreateOrderUseCaseError {\n    fn from(error: CreateOrderError) -> Self {\n        CreateOrderUseCaseError::Domain(error)\n    }\n}\n\npub fn is_retryable(error: CreateOrderUseCaseError) -> bool {\n    matches!(\n        error,\n        CreateOrderUseCaseError::Repository(RepositoryError::Unavailable)\n    )\n}"
     }
   ],
-  "completionExplanation": "Classify retryable boundary errors now extends the active Translating errors across boundaries code with boundary retryable. The previous lesson's behavior remains in the main solution rather than an archived module.",
+  "completionExplanation": "is_retryable now classifies retry decisions from typed errors instead of relying on strings or status codes.",
   "validation": {
     "mode": "all",
     "validations": [

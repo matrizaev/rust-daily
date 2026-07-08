@@ -11,7 +11,7 @@
   "difficulty": "medium",
   "estimatedMinutes": 7,
   "scenario": "The application layer can compose domain and repository errors without leaking adapter response details.",
-  "instructions": "Define CreateOrderUseCaseError with Domain(CreateOrderError) and Repository(RepositoryError).",
+  "instructions": "Keep the domain and repository errors from the starter. Define CreateOrderUseCaseError with Domain(CreateOrderError) and Repository(RepositoryError).",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Keep the Translating errors across boundaries code active and define CreateOrderUseCaseError with Domain(CreateOrderError) and Repository(RepositoryError)."
+      "body": "Add a public CreateOrderUseCaseError enum; do not replace CreateOrderError or RepositoryError."
     },
     {
       "level": 2,
-      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+      "body": "The Domain variant should carry CreateOrderError, and the Repository variant should carry RepositoryError."
     },
     {
       "level": 3,
       "body": "One complete solution for Define use-case error variants is shown below.",
-      "solutionCode": "use std::fmt;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderError {\n    EmptyOrder,\n    InvalidQuantity,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RepositoryError {\n    Unavailable,\n    Conflict,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderUseCaseError {\n    Domain(CreateOrderError),\n    Repository(RepositoryError),\n}\n\n\nimpl fmt::Display for RepositoryError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            RepositoryError::Unavailable => write!(f, \"repository unavailable\"),\n            RepositoryError::Conflict => write!(f, \"repository conflict\"),\n        }\n    }\n}"
+      "solutionCode": "use std::fmt;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderError {\n    EmptyOrder,\n    InvalidQuantity,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RepositoryError {\n    Unavailable,\n    Conflict,\n}\n\nimpl fmt::Display for RepositoryError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            RepositoryError::Unavailable => write!(f, \"repository unavailable\"),\n            RepositoryError::Conflict => write!(f, \"repository conflict\"),\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderUseCaseError {\n    Domain(CreateOrderError),\n    Repository(RepositoryError),\n}"
     }
   ],
-  "completionExplanation": "Define use-case error variants now extends the active Translating errors across boundaries code with boundary usecase error. The previous lesson's behavior remains in the main solution rather than an archived module.",
+  "completionExplanation": "CreateOrderUseCaseError now composes domain and repository failures without introducing adapter details.",
   "validation": {
     "mode": "all",
     "validations": [

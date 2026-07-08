@@ -12,20 +12,6 @@ pub enum RepositoryError {
     Conflict,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CreateOrderUseCaseError {
-    Domain(CreateOrderError),
-    Repository(RepositoryError),
-}
-
-pub fn is_retryable(error: CreateOrderUseCaseError) -> bool {
-    matches!(
-        error,
-        CreateOrderUseCaseError::Repository(RepositoryError::Unavailable)
-    )
-}
-
-
 impl fmt::Display for RepositoryError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -35,9 +21,21 @@ impl fmt::Display for RepositoryError {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CreateOrderUseCaseError {
+    Domain(CreateOrderError),
+    Repository(RepositoryError),
+}
 
 impl From<CreateOrderError> for CreateOrderUseCaseError {
     fn from(error: CreateOrderError) -> Self {
         CreateOrderUseCaseError::Domain(error)
     }
+}
+
+pub fn is_retryable(error: CreateOrderUseCaseError) -> bool {
+    matches!(
+        error,
+        CreateOrderUseCaseError::Repository(RepositoryError::Unavailable)
+    )
 }

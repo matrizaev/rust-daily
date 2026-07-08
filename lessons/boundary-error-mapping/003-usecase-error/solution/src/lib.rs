@@ -12,13 +12,6 @@ pub enum RepositoryError {
     Conflict,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CreateOrderUseCaseError {
-    Domain(CreateOrderError),
-    Repository(RepositoryError),
-}
-
-
 impl fmt::Display for RepositoryError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -26,4 +19,10 @@ impl fmt::Display for RepositoryError {
             RepositoryError::Conflict => write!(f, "repository conflict"),
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CreateOrderUseCaseError {
+    Domain(CreateOrderError),
+    Repository(RepositoryError),
 }

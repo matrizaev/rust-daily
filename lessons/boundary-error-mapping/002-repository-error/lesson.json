@@ -11,7 +11,7 @@
   "difficulty": "easy",
   "estimatedMinutes": 7,
   "scenario": "Repository failures are infrastructure boundary failures. Keep them distinct from domain rule failures.",
-  "instructions": "Define RepositoryError with Unavailable and Conflict variants and implement Display.",
+  "instructions": "Keep CreateOrderError in place. Define RepositoryError with Unavailable and Conflict variants and implement Display for RepositoryError.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Keep the Translating errors across boundaries code active and define RepositoryError with Unavailable and Conflict variants and implement Display."
+      "body": "The starter already has CreateOrderError. Add RepositoryError below it with Unavailable and Conflict variants."
     },
     {
       "level": 2,
-      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+      "body": "Implement std::fmt::Display for RepositoryError with messages \"repository unavailable\" and \"repository conflict\"."
     },
     {
       "level": 3,
       "body": "One complete solution for Define repository boundary errors is shown below.",
-      "solutionCode": "use std::fmt;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RepositoryError {\n    Unavailable,\n    Conflict,\n}\n\nimpl fmt::Display for RepositoryError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            RepositoryError::Unavailable => write!(f, \"repository unavailable\"),\n            RepositoryError::Conflict => write!(f, \"repository conflict\"),\n        }\n    }\n}"
+      "solutionCode": "use std::fmt;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderError {\n    EmptyOrder,\n    InvalidQuantity,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RepositoryError {\n    Unavailable,\n    Conflict,\n}\n\nimpl fmt::Display for RepositoryError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            RepositoryError::Unavailable => write!(f, \"repository unavailable\"),\n            RepositoryError::Conflict => write!(f, \"repository conflict\"),\n        }\n    }\n}"
     }
   ],
-  "completionExplanation": "Define repository boundary errors now extends the active Translating errors across boundaries code with boundary repo error. The previous lesson's behavior remains in the main solution rather than an archived module.",
+  "completionExplanation": "RepositoryError now models infrastructure failures separately from CreateOrderError and provides stable boundary messages through Display.",
   "validation": {
     "mode": "all",
     "validations": [

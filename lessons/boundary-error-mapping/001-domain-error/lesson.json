@@ -27,11 +27,11 @@
   "hints": [
     {
       "level": 1,
-      "body": "Keep the Translating errors across boundaries code active and define CreateOrderError with EmptyOrder and InvalidQuantity variants."
+      "body": "Define a public CreateOrderError enum with EmptyOrder and InvalidQuantity variants."
     },
     {
       "level": 2,
-      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+      "body": "Derive Debug, Clone, Copy, PartialEq, and Eq so later lessons can compare and wrap these small value errors."
     },
     {
       "level": 3,
@@ -39,7 +39,7 @@
       "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderError {\n    EmptyOrder,\n    InvalidQuantity,\n}"
     }
   ],
-  "completionExplanation": "Define domain order errors now extends the active Translating errors across boundaries code with boundary domain error. The previous lesson's behavior remains in the main solution rather than an archived module.",
+  "completionExplanation": "CreateOrderError now names domain rule failures without pulling in repository or HTTP concepts.",
   "validation": {
     "mode": "all",
     "validations": [
