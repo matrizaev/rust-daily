@@ -11,7 +11,11 @@ pub enum ConfigLoadError {
 
 impl fmt::Display for ConfigLoadError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "config load failed")
+        match self {
+            ConfigLoadError::MissingEnvironment => write!(f, "missing environment"),
+            ConfigLoadError::InvalidPort => write!(f, "invalid port"),
+            ConfigLoadError::FileRead(_) => write!(f, "could not read config file"),
+        }
     }
 }
 

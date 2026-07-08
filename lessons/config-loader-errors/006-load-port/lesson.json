@@ -11,7 +11,7 @@
   "difficulty": "medium",
   "estimatedMinutes": 8,
   "scenario": "Once conversions exist, loader functions can stay small and let ? preserve the typed error boundary.",
-  "instructions": "Implement load_port by reading APP_PORT from a lookup function and parsing it with parse_port.",
+  "instructions": "Implement load_port by reading APP_PORT from the lookup function, returning MissingEnvironment when it is absent, and parsing it with parse_port.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,11 +27,11 @@
   "hints": [
     {
       "level": 1,
-      "body": "Keep the Hierarchical configuration loader errors code active and implement load_port by reading APP_PORT from a lookup function and parsing it with parse_port."
+      "body": "Call lookup(\"APP_PORT\") and convert None with ok_or(ConfigLoadError::MissingEnvironment)?."
     },
     {
       "level": 2,
-      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+      "body": "Pass the found string to parse_port with raw.as_str() and use ? so InvalidPort keeps the ParseIntError source."
     },
     {
       "level": 3,
@@ -39,7 +39,7 @@
       "solutionCode": "use std::error::Error;\nuse std::fmt;\nuse std::io;\nuse std::num::ParseIntError;\n\n#[derive(Debug)]\npub enum ConfigLoadError {\n    MissingEnvironment,\n    InvalidPort(ParseIntError),\n    FileRead(io::Error),\n}\n\nimpl fmt::Display for ConfigLoadError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            ConfigLoadError::MissingEnvironment => write!(f, \"missing environment\"),\n            ConfigLoadError::InvalidPort(_) => write!(f, \"invalid port\"),\n            ConfigLoadError::FileRead(_) => write!(f, \"could not read config file\"),\n        }\n    }\n}\n\nimpl Error for ConfigLoadError {\n    fn source(&self) -> Option<&(dyn Error + 'static)> {\n        match self {\n            ConfigLoadError::InvalidPort(error) => Some(error),\n            ConfigLoadError::FileRead(error) => Some(error),\n            ConfigLoadError::MissingEnvironment => None,\n        }\n    }\n}\n\nimpl From<io::Error> for ConfigLoadError {\n    fn from(error: io::Error) -> Self {\n        ConfigLoadError::FileRead(error)\n    }\n}\n\nimpl From<ParseIntError> for ConfigLoadError {\n    fn from(error: ParseIntError) -> Self {\n        ConfigLoadError::InvalidPort(error)\n    }\n}\n\npub fn parse_port(value: &str) -> Result<u16, ConfigLoadError> {\n    Ok(value.parse::<u16>()?)\n}\n\npub fn load_port(lookup: impl Fn(&str) -> Option<String>) -> Result<u16, ConfigLoadError> {\n    let raw = lookup(\"APP_PORT\").ok_or(ConfigLoadError::MissingEnvironment)?;\n    let port = parse_port(raw.as_str())?;\n\n    Ok(port)\n}"
     }
   ],
-  "completionExplanation": "Propagate loader errors with ? now extends the active Hierarchical configuration loader errors code with config load error propagation. The previous lesson's behavior remains in the main solution rather than an archived module.",
+  "completionExplanation": "load_port now handles both missing configuration and invalid port values through ConfigLoadError, using ? to keep the function small and preserve typed sources.",
   "validation": {
     "mode": "all",
     "validations": [

@@ -1,7 +1,6 @@
 use std::error::Error;
 use std::fmt;
 use std::io;
-
 use std::num::ParseIntError;
 
 #[derive(Debug)]
@@ -9,18 +8,6 @@ pub enum ConfigLoadError {
     MissingEnvironment,
     InvalidPort(ParseIntError),
     FileRead(io::Error),
-}
-
-impl From<ParseIntError> for ConfigLoadError {
-    fn from(error: ParseIntError) -> Self {
-        ConfigLoadError::InvalidPort(error)
-    }
-}
-
-pub fn parse_port(value: &str) -> Result<u16, ConfigLoadError> {
-    let port = value.parse::<u16>()?;
-
-    Ok(port)
 }
 
 impl fmt::Display for ConfigLoadError {
@@ -47,4 +34,14 @@ impl From<io::Error> for ConfigLoadError {
     fn from(error: io::Error) -> Self {
         ConfigLoadError::FileRead(error)
     }
+}
+
+impl From<ParseIntError> for ConfigLoadError {
+    fn from(error: ParseIntError) -> Self {
+        ConfigLoadError::InvalidPort(error)
+    }
+}
+
+pub fn parse_port(value: &str) -> Result<u16, ConfigLoadError> {
+    Ok(value.parse::<u16>()?)
 }

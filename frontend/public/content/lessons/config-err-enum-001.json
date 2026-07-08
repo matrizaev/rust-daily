@@ -27,11 +27,11 @@
   "hints": [
     {
       "level": 1,
-      "body": "Keep the Hierarchical configuration loader errors code active and define ConfigLoadError with MissingEnvironment, InvalidPort, and FileRead variants."
+      "body": "Create a public enum named ConfigLoadError with three unit variants: MissingEnvironment, InvalidPort, and FileRead."
     },
     {
       "level": 2,
-      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+      "body": "Derive Debug on the enum so the error type works with test output and later error implementations."
     },
     {
       "level": 3,
@@ -39,7 +39,7 @@
       "solutionCode": "#[derive(Debug)]\npub enum ConfigLoadError {\n    MissingEnvironment,\n    InvalidPort,\n    FileRead,\n}"
     }
   ],
-  "completionExplanation": "Define ConfigLoadError variants now extends the active Hierarchical configuration loader errors code with config err enum. The previous lesson's behavior remains in the main solution rather than an archived module.",
+  "completionExplanation": "ConfigLoadError now has programmatic variants for the three loader failure cases. Later lessons can attach formatting and source errors to this same enum.",
   "validation": {
     "mode": "all",
     "validations": [

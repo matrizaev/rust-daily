@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Keep the Hierarchical configuration loader errors code active and add InvalidPort(ParseIntError), implement From<ParseIntError>, and use ? in parse_port."
+      "body": "Change InvalidPort into InvalidPort(ParseIntError), then add From<ParseIntError> for ConfigLoadError."
     },
     {
       "level": 2,
-      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+      "body": "Add parse_port(value: &str) -> Result<u16, ConfigLoadError> and let value.parse::<u16>()? use your From implementation."
     },
     {
       "level": 3,
       "body": "One complete solution for Wrap ParseIntError for port parsing is shown below.",
-      "solutionCode": "use std::fmt;\nuse std::error::Error;\nuse std::io;\n\nuse std::num::ParseIntError;\n\n#[derive(Debug)]\npub enum ConfigLoadError {\n    MissingEnvironment,\n    InvalidPort(ParseIntError),\n    FileRead(io::Error),\n}\n\nimpl From<ParseIntError> for ConfigLoadError {\n    fn from(error: ParseIntError) -> Self {\n        ConfigLoadError::InvalidPort(error)\n    }\n}\n\npub fn parse_port(value: &str) -> Result<u16, ConfigLoadError> {\n    let port = value.parse::<u16>()?;\n\n    Ok(port)\n}\n\n\nimpl fmt::Display for ConfigLoadError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            ConfigLoadError::MissingEnvironment => write!(f, \"missing environment\"),\n            ConfigLoadError::InvalidPort(_) => write!(f, \"invalid port\"),\n            ConfigLoadError::FileRead(_) => write!(f, \"could not read config file\"),\n        }\n    }\n}\n\n\nimpl Error for ConfigLoadError {\n    fn source(&self) -> Option<&(dyn Error + 'static)> {\n        match self {\n            ConfigLoadError::FileRead(error) => Some(error),\n            ConfigLoadError::InvalidPort(error) => Some(error),\n            ConfigLoadError::MissingEnvironment => None,\n        }\n    }\n}\n\n\nimpl From<io::Error> for ConfigLoadError {\n    fn from(error: io::Error) -> Self {\n        ConfigLoadError::FileRead(error)\n    }\n}"
+      "solutionCode": "use std::error::Error;\nuse std::fmt;\nuse std::io;\nuse std::num::ParseIntError;\n\n#[derive(Debug)]\npub enum ConfigLoadError {\n    MissingEnvironment,\n    InvalidPort(ParseIntError),\n    FileRead(io::Error),\n}\n\nimpl fmt::Display for ConfigLoadError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            ConfigLoadError::MissingEnvironment => write!(f, \"missing environment\"),\n            ConfigLoadError::InvalidPort(_) => write!(f, \"invalid port\"),\n            ConfigLoadError::FileRead(_) => write!(f, \"could not read config file\"),\n        }\n    }\n}\n\nimpl Error for ConfigLoadError {\n    fn source(&self) -> Option<&(dyn Error + 'static)> {\n        match self {\n            ConfigLoadError::FileRead(error) => Some(error),\n            ConfigLoadError::InvalidPort(error) => Some(error),\n            ConfigLoadError::MissingEnvironment => None,\n        }\n    }\n}\n\nimpl From<io::Error> for ConfigLoadError {\n    fn from(error: io::Error) -> Self {\n        ConfigLoadError::FileRead(error)\n    }\n}\n\nimpl From<ParseIntError> for ConfigLoadError {\n    fn from(error: ParseIntError) -> Self {\n        ConfigLoadError::InvalidPort(error)\n    }\n}\n\npub fn parse_port(value: &str) -> Result<u16, ConfigLoadError> {\n    Ok(value.parse::<u16>()?)\n}"
     }
   ],
-  "completionExplanation": "Wrap ParseIntError for port parsing now extends the active Hierarchical configuration loader errors code with config err parse wrap. The previous lesson's behavior remains in the main solution rather than an archived module.",
+  "completionExplanation": "InvalidPort now preserves the underlying ParseIntError, parse_port returns the loader error type, and ? performs the conversion through From<ParseIntError>.",
   "validation": {
     "mode": "all",
     "validations": [

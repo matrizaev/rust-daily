@@ -1,6 +1,5 @@
 use std::error::Error;
 use std::fmt;
-
 use std::io;
 
 #[derive(Debug)]
@@ -8,12 +7,6 @@ pub enum ConfigLoadError {
     MissingEnvironment,
     InvalidPort,
     FileRead(io::Error),
-}
-
-impl From<io::Error> for ConfigLoadError {
-    fn from(error: io::Error) -> Self {
-        ConfigLoadError::FileRead(error)
-    }
 }
 
 impl fmt::Display for ConfigLoadError {
@@ -32,6 +25,12 @@ impl Error for ConfigLoadError {
             ConfigLoadError::FileRead(error) => Some(error),
             ConfigLoadError::MissingEnvironment | ConfigLoadError::InvalidPort => None,
         }
+    }
+}
+
+impl From<io::Error> for ConfigLoadError {
+    fn from(error: io::Error) -> Self {
+        ConfigLoadError::FileRead(error)
     }
 }
 

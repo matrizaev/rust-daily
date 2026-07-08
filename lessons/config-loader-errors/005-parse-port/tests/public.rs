@@ -1,3 +1,5 @@
+use std::error::Error;
+
 use rust_daily_lesson::{parse_port, ConfigLoadError};
 
 #[test]
@@ -7,5 +9,9 @@ fn parses_valid_port() {
 
 #[test]
 fn wraps_parse_port_error() {
-    assert!(matches!(parse_port("abc"), Err(ConfigLoadError::InvalidPort(_))));
+    let error = parse_port("abc").unwrap_err();
+
+    assert!(matches!(error, ConfigLoadError::InvalidPort(_)));
+    assert_eq!(error.to_string(), "invalid port");
+    assert!(error.source().is_some());
 }
