@@ -16,7 +16,7 @@
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "pub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl RequestBuilder {\n    pub fn new() -> Self {\n        Self { method: None, path: None }\n    }\n\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n        self.method = Some(method.into());\n        self\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: derive Default for RequestBuilder.\n"
+      "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Request {\n    pub method: String,\n    pub path: String,\n    pub body: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl RequestBuilder {\n    pub fn new() -> Self {\n        Self {\n            method: None,\n            path: None,\n        }\n    }\n\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n        self.method = Some(method.into());\n        self\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: derive Default for RequestBuilder.\n"
     },
     {
       "path": "tests/public.rs",
@@ -36,7 +36,7 @@
     {
       "level": 3,
       "body": "Add Default to the derive list on RequestBuilder.",
-      "solutionCode": "#[derive(Default)]\npub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl RequestBuilder {\n    pub fn new() -> Self {\n        Self::default()\n    }\n\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n        self.method = Some(method.into());\n        self\n    }\n}"
+      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Request {\n    pub method: String,\n    pub path: String,\n    pub body: Option<String>,\n}\n\n#[derive(Debug, Clone, Default, PartialEq, Eq)]\npub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl RequestBuilder {\n    pub fn new() -> Self {\n        Self::default()\n    }\n\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n        self.method = Some(method.into());\n        self\n    }\n}"
     }
   ],
   "completionExplanation": "Deriving Default is idiomatic when every field already has the desired default. Option fields make the empty builder state explicit by starting as None.",

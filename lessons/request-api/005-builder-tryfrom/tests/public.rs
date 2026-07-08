@@ -6,11 +6,12 @@ fn converts_complete_raw_request() {
         Request::try_from(RawRequest {
             method: Some("GET".to_owned()),
             path: Some("/health".to_owned()),
+            body: Some("{}".to_owned()),
         }),
         Ok(Request {
             method: "GET".to_owned(),
             path: "/health".to_owned(),
-            body: None,
+            body: Some("{}".to_owned()),
         })
     );
 }
@@ -18,11 +19,19 @@ fn converts_complete_raw_request() {
 #[test]
 fn reports_missing_request_fields() {
     assert_eq!(
-        Request::try_from(RawRequest { method: None, path: Some("/health".to_owned()) }),
+        Request::try_from(RawRequest {
+            method: None,
+            path: Some("/health".to_owned()),
+            body: None,
+        }),
         Err(BuildError::MissingMethod)
     );
     assert_eq!(
-        Request::try_from(RawRequest { method: Some("GET".to_owned()), path: None }),
+        Request::try_from(RawRequest {
+            method: Some("GET".to_owned()),
+            path: None,
+            body: None,
+        }),
         Err(BuildError::MissingPath)
     );
 }

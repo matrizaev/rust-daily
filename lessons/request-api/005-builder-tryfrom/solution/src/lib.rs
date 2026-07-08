@@ -1,5 +1,3 @@
-use std::convert::TryFrom;
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Request {
     pub method: String,
@@ -40,22 +38,28 @@ impl RequestBuilder {
         let method = self.method.ok_or(BuildError::MissingMethod)?;
         let path = self.path.ok_or(BuildError::MissingPath)?;
 
-        Ok(Request { method, path, body: None })
+        Ok(Request {
+            method,
+            path,
+            body: None,
+        })
     }
 }
 
 pub struct RawRequest {
     pub method: Option<String>,
     pub path: Option<String>,
+    pub body: Option<String>,
 }
 
-impl TryFrom<RawRequest> for Request {
+impl std::convert::TryFrom<RawRequest> for Request {
     type Error = BuildError;
 
     fn try_from(value: RawRequest) -> Result<Self, Self::Error> {
         let method = value.method.ok_or(BuildError::MissingMethod)?;
         let path = value.path.ok_or(BuildError::MissingPath)?;
+        let body = value.body;
 
-        Ok(Self { method, path, body: None })
+        Ok(Self { method, path, body })
     }
 }

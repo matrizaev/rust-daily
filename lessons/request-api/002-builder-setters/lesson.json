@@ -11,7 +11,7 @@
   "difficulty": "medium",
   "estimatedMinutes": 8,
   "scenario": "A request builder should support chained calls without exposing all its intermediate fields.",
-  "instructions": "Add RequestBuilder struct with optional path and method fields and implement RequestBuilder::method(mut self, method: impl Into<String>) -> Self and RequestBuilder::new() -> Self.",
+  "instructions": "Keep the Request type, then add RequestBuilder with optional method and path fields. Implement RequestBuilder::new() -> Self and RequestBuilder::method(mut self, method: impl Into<String>) -> Self.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -36,7 +36,7 @@
     {
       "level": 3,
       "body": "Return self after updating the field.",
-      "solutionCode": "pub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl RequestBuilder {\n    pub fn new() -> Self {\n        Self { method: None, path: None }\n    }\n\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n        self.method = Some(method.into());\n        self\n    }\n}"
+      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Request {\n    pub method: String,\n    pub path: String,\n    pub body: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl RequestBuilder {\n    pub fn new() -> Self {\n        Self {\n            method: None,\n            path: None,\n        }\n    }\n\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n        self.method = Some(method.into());\n        self\n    }\n}"
     }
   ],
   "completionExplanation": "Consuming setters make the builder ergonomic while preserving ownership. Each call returns the next builder state for the chain.",

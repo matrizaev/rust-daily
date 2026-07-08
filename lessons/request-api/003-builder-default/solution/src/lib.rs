@@ -1,4 +1,11 @@
-#[derive(Default)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Request {
+    pub method: String,
+    pub path: String,
+    pub body: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct RequestBuilder {
     method: Option<String>,
     path: Option<String>,

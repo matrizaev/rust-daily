@@ -1,4 +1,11 @@
-#[derive(Default)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Request {
+    pub method: String,
+    pub path: String,
+    pub body: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct RequestBuilder {
     method: Option<String>,
     path: Option<String>,
@@ -16,4 +23,4 @@ impl RequestBuilder {
 }
 
 // Continue from the previous lesson.
-// TODO: add path, build, Request, and specific BuildError variants.
+// TODO: add path, build, and specific BuildError variants.
