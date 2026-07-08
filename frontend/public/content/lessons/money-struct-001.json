@@ -16,12 +16,12 @@
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\r\npub enum Currency {\r\n    Usd,\r\n    Eur,\r\n}\r\n\r\n// TODO: Define a public Money struct with private amount (u64) and currency (Currency) fields.\n"
+      "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n}\n\n// TODO: Define a public Money struct with private amount (u64) and currency (Currency) fields.\n"
     },
     {
       "path": "tests/public.rs",
       "role": "test",
-      "content": "use rust_daily_lesson::Money;\r\n\r\n#[test]\r\nfn money_is_public() {\r\n    let _ = core::mem::size_of::<Money>();\r\n}\r\n"
+      "content": "use rust_daily_lesson::Money;\n\n#[test]\nfn money_is_public() {\n    let _ = core::mem::size_of::<Money>();\n}\n"
     }
   ],
   "hints": [

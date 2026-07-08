@@ -1,5 +1,3 @@
-use std::fmt;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Currency {
     Usd,
@@ -11,20 +9,6 @@ pub enum Currency {
 pub struct Money {
     amount: u64,
     currency: Currency,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum MoneyAddError {
-    CurrencyMismatch { left: Currency, right: Currency },
-    AmountOverflow,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum MoneyParseError {
-    Empty,
-    InvalidDigits,
-    TooManyDecimalPlaces,
-    AmountOverflow,
 }
 
 impl Money {
@@ -41,42 +25,40 @@ impl Money {
     }
 }
 
-impl fmt::Display for Money {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let symbol = match self.currency {
-            Currency::Usd => "$",
-            Currency::Eur => "€",
-            Currency::Gbp => "£",
-        };
-        let major = self.amount / 100;
-        let minor = self.amount % 100;
-
-        write!(f, "{}{}.{:02}", symbol, major, minor)
-    }
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MoneyAddError {
+    CurrencyMismatch { left: Currency, right: Currency },
+    AmountOverflow,
 }
-
 
 impl Money {
     pub fn checked_add(self, rhs: Self) -> Result<Self, MoneyAddError> {
-            if self.currency != rhs.currency {
-                return Err(MoneyAddError::CurrencyMismatch {
-                    left: self.currency,
-                    right: rhs.currency,
-                });
-            }
-
-            let amount = self
-                .amount
-                .checked_add(rhs.amount)
-                .ok_or(MoneyAddError::AmountOverflow)?;
-
-            Ok(Self {
-                amount,
-                currency: self.currency,
-            })
+        if self.currency != rhs.currency {
+            return Err(MoneyAddError::CurrencyMismatch {
+                left: self.currency,
+                right: rhs.currency,
+            });
         }
+
+        let amount = self
+            .amount
+            .checked_add(rhs.amount)
+            .ok_or(MoneyAddError::AmountOverflow)?;
+
+        Ok(Self {
+            amount,
+            currency: self.currency,
+        })
+    }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MoneyParseError {
+    Empty,
+    InvalidDigits,
+    TooManyDecimalPlaces,
+    AmountOverflow,
+}
 
 impl TryFrom<&str> for Money {
     type Error = MoneyParseError;
@@ -124,5 +106,19 @@ impl TryFrom<&str> for Money {
             .ok_or(MoneyParseError::AmountOverflow)?;
 
         Ok(Self::new(amount, Currency::Usd))
+    }
+}
+
+impl std::fmt::Display for Money {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let symbol = match self.currency {
+            Currency::Usd => "$",
+            Currency::Eur => "€",
+            Currency::Gbp => "£",
+        };
+        let major = self.amount / 100;
+        let minor = self.amount % 100;
+
+        write!(f, "{symbol}{major}.{minor:02}")
     }
 }

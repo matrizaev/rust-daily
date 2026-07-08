@@ -21,7 +21,7 @@
     {
       "path": "tests/public.rs",
       "role": "test",
-      "content": "use rust_daily_lesson::Currency;\r\n\r\n#[test]\r\nfn currency_variants() {\r\n    assert_ne!(Currency::Usd, Currency::Eur);\r\n    assert_ne!(Currency::Eur, Currency::Gbp);\r\n}\r\n"
+      "content": "use rust_daily_lesson::Currency;\n\n#[test]\nfn currency_variants() {\n    assert_ne!(Currency::Usd, Currency::Eur);\n    assert_ne!(Currency::Eur, Currency::Gbp);\n}\n"
     }
   ],
   "hints": [
@@ -36,7 +36,7 @@
     {
       "level": 3,
       "body": "A canonical solution adds Gbp to the enum.",
-      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}"
+      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}"
     }
   ],
   "completionExplanation": "Updating the enum extends the supported domain concepts without altering the rest of the type structure.",

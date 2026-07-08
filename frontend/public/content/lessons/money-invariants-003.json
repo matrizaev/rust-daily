@@ -16,7 +16,7 @@
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n// Continue from the previous lesson.\n// TODO: Implement new, amount, and currency methods.\n"
+      "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\n// Continue from the previous lesson.\n// TODO: Implement new, amount, and currency methods.\n"
     },
     {
       "path": "tests/public.rs",

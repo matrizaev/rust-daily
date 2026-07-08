@@ -5,5 +5,11 @@ pub enum Currency {
     Gbp,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Money {
+    amount: u64,
+    currency: Currency,
+}
+
 // Continue from the previous lesson.
 // TODO: Implement new, amount, and currency methods.
