@@ -1,3 +1,4 @@
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Item {
     pub sku: String,
     pub name: String,

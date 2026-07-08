@@ -3,8 +3,18 @@ use rust_daily_lesson::{sort_by_name, Item};
 #[test]
 fn sorts_items_by_name() {
     let mut items = vec![
-        Item { sku: "mouse".to_owned(), name: "Mouse".to_owned(), quantity: 4, reserved: 0 },
-        Item { sku: "keyboard".to_owned(), name: "Keyboard".to_owned(), quantity: 10, reserved: 0 },
+        Item {
+            sku: "mouse".to_owned(),
+            name: "Mouse".to_owned(),
+            quantity: 4,
+            reserved: 0,
+        },
+        Item {
+            sku: "keyboard".to_owned(),
+            name: "Keyboard".to_owned(),
+            quantity: 10,
+            reserved: 0,
+        },
     ];
 
     sort_by_name(&mut items);
