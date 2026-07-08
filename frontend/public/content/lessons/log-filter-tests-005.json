@@ -11,32 +11,32 @@
   "difficulty": "medium",
   "estimatedMinutes": 8,
   "scenario": "The log viewer should keep high-priority entries and discard routine information when asked for alerts.",
-  "instructions": "Fill in the TODO blocks with checks for keeping Error and Warn entries while excluding Info entries.",
+  "instructions": "The starter already defines AlertEntry and alert_messages. Fill in the two test TODO blocks with checks for keeping Error and Warn entries while excluding Info entries.",
   "files": [
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "use std::borrow::Cow;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogMessage<'a> {\n    pub text: Cow<'a, str>,\n}\n\n// Continue from the previous lesson.\n// TODO: assert that alert messages include warning and error text.\n// TODO: assert that info text is not returned.\n"
+      "content": "use std::borrow::Cow;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn severity(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 1,\n        LogLevel::Warn => 2,\n        LogLevel::Error => 3,\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogMessage<'a> {\n    pub text: Cow<'a, str>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct AlertEntry<'a> {\n    pub level: LogLevel,\n    pub message: LogMessage<'a>,\n}\n\npub fn alert_messages<'a>(entries: &'a [AlertEntry<'a>]) -> Vec<&'a str> {\n    entries\n        .iter()\n        .filter_map(|entry| match entry.level {\n            LogLevel::Warn | LogLevel::Error => Some(entry.message.text.as_ref()),\n            LogLevel::Info => None,\n        })\n        .collect()\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    fn entry(level: LogLevel, message: &'static str) -> AlertEntry<'static> {\n        AlertEntry {\n            level,\n            message: LogMessage {\n                text: message.into(),\n            },\n        }\n    }\n\n    #[test]\n    fn keeps_warning_and_error_messages() {\n        // TODO: assert that warning and error messages are returned in order.\n        todo!()\n    }\n\n    #[test]\n    fn skips_info_messages() {\n        // TODO: assert that info messages are not returned.\n        todo!()\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: fill in the two focused alert filter checks above.\n"
     },
     {
       "path": "tests/public.rs",
       "role": "test",
-      "content": "use rust_daily_lesson::{alert_messages, LogEntry, LogLevel};\n\n#[test]\nfn alert_filter_keeps_only_warnings_and_errors() {\n    let entries = [\n        LogEntry { level: LogLevel::Info, message: \"started\" },\n        LogEntry { level: LogLevel::Warn, message: \"slow response\" },\n        LogEntry { level: LogLevel::Error, message: \"write failed\" },\n    ];\n\n    assert_eq!(\n        alert_messages(&entries),\n        vec![\"slow response\", \"write failed\"]\n    );\n}\n"
+      "content": "use rust_daily_lesson::{alert_messages, AlertEntry, LogLevel, LogMessage};\n\nfn entry(level: LogLevel, message: &'static str) -> AlertEntry<'static> {\n    AlertEntry {\n        level,\n        message: LogMessage {\n            text: message.into(),\n        },\n    }\n}\n\n#[test]\nfn alert_filter_keeps_only_warnings_and_errors() {\n    let entries = [\n        entry(LogLevel::Info, \"started\"),\n        entry(LogLevel::Warn, \"slow response\"),\n        entry(LogLevel::Error, \"write failed\"),\n    ];\n\n    assert_eq!(\n        alert_messages(&entries),\n        vec![\"slow response\", \"write failed\"]\n    );\n}\n"
     }
   ],
   "hints": [
     {
       "level": 1,
-      "body": "Use a small array of LogEntry values to show each level."
+      "body": "Use the provided entry helper to build a small array of alert entries."
     },
     {
       "level": 2,
-      "body": "The first check should prove that warning and error messages are retained."
+      "body": "The first test should prove that warning and error messages are retained in order."
     },
     {
       "level": 3,
-      "body": "The second check should make the Info exclusion explicit.",
-      "solutionCode": "pub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub struct LogEntry<'a> {\n    pub level: LogLevel,\n    pub message: &'a str,\n}\n\npub fn alert_messages<'a>(entries: &'a [LogEntry<'a>]) -> Vec<&'a str> {\n    entries\n        .iter()\n        .filter_map(|entry| match entry.level {\n            LogLevel::Warn | LogLevel::Error => Some(entry.message),\n            LogLevel::Info => None,\n        })\n        .collect()\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn keeps_warning_and_error_messages() {\n        let entries = [\n            LogEntry { level: LogLevel::Warn, message: \"slow response\" },\n            LogEntry { level: LogLevel::Error, message: \"write failed\" },\n        ];\n\n        assert_eq!(\n            alert_messages(&entries),\n            vec![\"slow response\", \"write failed\"]\n        );\n    }\n\n    #[test]\n    fn skips_info_messages() {\n        let entries = [\n            LogEntry { level: LogLevel::Info, message: \"started\" },\n            LogEntry { level: LogLevel::Warn, message: \"slow response\" },\n        ];\n\n        assert_eq!(alert_messages(&entries), vec![\"slow response\"]);\n    }\n}"
+      "body": "The second test should make the Info exclusion explicit.",
+      "solutionCode": "use std::borrow::Cow;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn severity(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 1,\n        LogLevel::Warn => 2,\n        LogLevel::Error => 3,\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogMessage<'a> {\n    pub text: Cow<'a, str>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct AlertEntry<'a> {\n    pub level: LogLevel,\n    pub message: LogMessage<'a>,\n}\n\npub fn alert_messages<'a>(entries: &'a [AlertEntry<'a>]) -> Vec<&'a str> {\n    entries\n        .iter()\n        .filter_map(|entry| match entry.level {\n            LogLevel::Warn | LogLevel::Error => Some(entry.message.text.as_ref()),\n            LogLevel::Info => None,\n        })\n        .collect()\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    fn entry(level: LogLevel, message: &'static str) -> AlertEntry<'static> {\n        AlertEntry {\n            level,\n            message: LogMessage {\n                text: message.into(),\n            },\n        }\n    }\n\n    #[test]\n    fn keeps_warning_and_error_messages() {\n        let entries = [\n            entry(LogLevel::Warn, \"slow response\"),\n            entry(LogLevel::Error, \"write failed\"),\n        ];\n\n        assert_eq!(\n            alert_messages(&entries),\n            vec![\"slow response\", \"write failed\"]\n        );\n    }\n\n    #[test]\n    fn skips_info_messages() {\n        let entries = [\n            entry(LogLevel::Info, \"started\"),\n            entry(LogLevel::Warn, \"slow response\"),\n        ];\n\n        assert_eq!(alert_messages(&entries), vec![\"slow response\"]);\n    }\n}"
     }
   ],
   "completionExplanation": "Focused behavior checks document the alert filtering contract. They make the important inclusion and exclusion rules visible for the next reader.",
@@ -47,6 +47,13 @@
         "mode": "structural",
         "timeoutMs": 10000,
         "checks": [
+          {
+            "type": "function_signature",
+            "functionName": "alert_messages",
+            "requiredSignatureIncludes": [
+              "Vec<&str>"
+            ]
+          },
           {
             "type": "source_includes",
             "requiredSnippets": [

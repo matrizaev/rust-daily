@@ -11,12 +11,12 @@
   "difficulty": "easy",
   "estimatedMinutes": 6,
   "scenario": "The viewer needs a stable severity number for each known log level.",
-  "instructions": "Add LogLevel variants Info, Warn, and Error. Implement severity with a match on level.",
+  "instructions": "Keep the borrowed log entry and view code, then add LogLevel variants Info, Warn, and Error. Implement severity with a match on level.",
   "files": [
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "pub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n// Continue from the previous lesson.\n// TODO: add the supported log levels.\n// TODO: map Info to 1, Warn to 2, and Error to 3.\n"
+      "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n// Continue from the previous lesson.\n// TODO: add the supported log levels.\n// TODO: map Info to 1, Warn to 2, and Error to 3.\n"
     },
     {
       "path": "tests/public.rs",
@@ -35,8 +35,8 @@
     },
     {
       "level": 3,
-      "body": "A match expression is clearer than string comparisons here.",
-      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn severity(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 1,\n        LogLevel::Warn => 2,\n        LogLevel::Error => 3,\n    }\n}"
+      "body": "A match expression is clearer than string comparisons for typed log levels.",
+      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn severity(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 1,\n        LogLevel::Warn => 2,\n        LogLevel::Error => 3,\n    }\n}"
     }
   ],
   "completionExplanation": "Pattern matching keeps the mapping exhaustive and visible. Adding a new log level later will naturally point maintainers at this decision.",

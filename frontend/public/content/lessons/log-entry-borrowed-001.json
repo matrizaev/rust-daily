@@ -21,7 +21,7 @@
     {
       "path": "tests/public.rs",
       "role": "test",
-      "content": "use rust_daily_lesson::LogEntry;\n\n#[test]\nfn log_entry_borrows_text() {\n    let entry = LogEntry { level: \"INFO\", message: \"started\" };\n\n    assert_eq!(entry.level, \"INFO\");\n    assert_eq!(entry.message, \"started\");\n}\n"
+      "content": "use rust_daily_lesson::LogEntry;\n\n#[test]\nfn log_entry_borrows_text() {\n    let entry = LogEntry {\n        level: \"INFO\",\n        message: \"started\",\n    };\n\n    assert_eq!(entry.level, \"INFO\");\n    assert_eq!(entry.message, \"started\");\n}\n"
     }
   ],
   "hints": [

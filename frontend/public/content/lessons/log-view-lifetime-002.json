@@ -21,7 +21,7 @@
     {
       "path": "tests/public.rs",
       "role": "test",
-      "content": "use rust_daily_lesson::{LogEntry, LogView};\n\n#[test]\nfn view_borrows_slice_of_entries() {\n    let entries = [LogEntry { level: \"WARN\", message: \"slow\" }];\n    let view = LogView { entries: &entries };\n\n    assert_eq!(view.entries.len(), 1);\n    assert_eq!(view.entries[0].message, \"slow\");\n}\n"
+      "content": "use rust_daily_lesson::{LogEntry, LogView};\n\n#[test]\nfn view_borrows_slice_of_entries() {\n    let entries = [LogEntry {\n        level: \"WARN\",\n        message: \"slow\",\n    }];\n    let view = LogView { entries: &entries };\n\n    assert_eq!(view.entries.len(), 1);\n    assert_eq!(view.entries[0].message, \"slow\");\n}\n"
     }
   ],
   "hints": [
@@ -36,7 +36,7 @@
     {
       "level": 3,
       "body": "This is a view type, not an owning collection.",
-      "solutionCode": "pub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}"
+      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}"
     }
   ],
   "completionExplanation": "The view type captures the relationship between the borrowed slice and the borrowed text inside each entry. The lifetime keeps those references tied together.",

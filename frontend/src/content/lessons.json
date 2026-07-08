@@ -263,7 +263,7 @@
       {
         "path": "tests/public.rs",
         "role": "test",
-        "content": "use rust_daily_lesson::LogEntry;\n\n#[test]\nfn log_entry_borrows_text() {\n    let entry = LogEntry { level: \"INFO\", message: \"started\" };\n\n    assert_eq!(entry.level, \"INFO\");\n    assert_eq!(entry.message, \"started\");\n}\n"
+        "content": "use rust_daily_lesson::LogEntry;\n\n#[test]\nfn log_entry_borrows_text() {\n    let entry = LogEntry {\n        level: \"INFO\",\n        message: \"started\",\n    };\n\n    assert_eq!(entry.level, \"INFO\");\n    assert_eq!(entry.message, \"started\");\n}\n"
       }
     ],
     "hints": [
@@ -639,7 +639,7 @@
       {
         "path": "tests/public.rs",
         "role": "test",
-        "content": "use rust_daily_lesson::{LogEntry, LogView};\n\n#[test]\nfn view_borrows_slice_of_entries() {\n    let entries = [LogEntry { level: \"WARN\", message: \"slow\" }];\n    let view = LogView { entries: &entries };\n\n    assert_eq!(view.entries.len(), 1);\n    assert_eq!(view.entries[0].message, \"slow\");\n}\n"
+        "content": "use rust_daily_lesson::{LogEntry, LogView};\n\n#[test]\nfn view_borrows_slice_of_entries() {\n    let entries = [LogEntry {\n        level: \"WARN\",\n        message: \"slow\",\n    }];\n    let view = LogView { entries: &entries };\n\n    assert_eq!(view.entries.len(), 1);\n    assert_eq!(view.entries[0].message, \"slow\");\n}\n"
       }
     ],
     "hints": [
@@ -654,7 +654,7 @@
       {
         "level": 3,
         "body": "This is a view type, not an owning collection.",
-        "solutionCode": "pub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}"
+        "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}"
       }
     ],
     "completionExplanation": "The view type captures the relationship between the borrowed slice and the borrowed text inside each entry. The lifetime keeps those references tied together.",
@@ -975,12 +975,12 @@
     "difficulty": "easy",
     "estimatedMinutes": 6,
     "scenario": "The viewer needs a stable severity number for each known log level.",
-    "instructions": "Add LogLevel variants Info, Warn, and Error. Implement severity with a match on level.",
+    "instructions": "Keep the borrowed log entry and view code, then add LogLevel variants Info, Warn, and Error. Implement severity with a match on level.",
     "files": [
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "pub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n// Continue from the previous lesson.\n// TODO: add the supported log levels.\n// TODO: map Info to 1, Warn to 2, and Error to 3.\n"
+        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n// Continue from the previous lesson.\n// TODO: add the supported log levels.\n// TODO: map Info to 1, Warn to 2, and Error to 3.\n"
       },
       {
         "path": "tests/public.rs",
@@ -999,8 +999,8 @@
       },
       {
         "level": 3,
-        "body": "A match expression is clearer than string comparisons here.",
-        "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn severity(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 1,\n        LogLevel::Warn => 2,\n        LogLevel::Error => 3,\n    }\n}"
+        "body": "A match expression is clearer than string comparisons for typed log levels.",
+        "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn severity(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 1,\n        LogLevel::Warn => 2,\n        LogLevel::Error => 3,\n    }\n}"
       }
     ],
     "completionExplanation": "Pattern matching keeps the mapping exhaustive and visible. Adding a new log level later will naturally point maintainers at this decision.",
@@ -1269,17 +1269,17 @@
     "difficulty": "advanced",
     "estimatedMinutes": 10,
     "scenario": "Most log messages can be borrowed, but some normalized messages need owned text. Cow supports both without forcing allocation every time.",
-    "instructions": "Define LogMessage<'a> with text: Cow<'a, str>. Import Cow from std::borrow.",
+    "instructions": "Keep the existing log view and level code, then define LogMessage<'a> with text: Cow<'a, str>. Import Cow from std::borrow.",
     "files": [
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn severity(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 1,\n        LogLevel::Warn => 2,\n        LogLevel::Error => 3,\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: import Cow and define LogMessage with text that can be borrowed or owned.\n"
+        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn severity(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 1,\n        LogLevel::Warn => 2,\n        LogLevel::Error => 3,\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: import Cow and define LogMessage with text that can be borrowed or owned.\n"
       },
       {
         "path": "tests/public.rs",
         "role": "test",
-        "content": "use std::borrow::Cow;\n\nuse rust_daily_lesson::LogMessage;\n\n#[test]\nfn log_message_can_borrow_or_own_text() {\n    let borrowed = LogMessage { text: Cow::Borrowed(\"started\") };\n    let owned = LogMessage { text: Cow::Owned(\"normalized\".to_owned()) };\n\n    assert_eq!(borrowed.text, \"started\");\n    assert_eq!(owned.text, \"normalized\");\n}\n"
+        "content": "use std::borrow::Cow;\n\nuse rust_daily_lesson::LogMessage;\n\n#[test]\nfn log_message_can_borrow_or_own_text() {\n    let borrowed = LogMessage {\n        text: Cow::Borrowed(\"started\"),\n    };\n    let owned = LogMessage {\n        text: Cow::Owned(\"normalized\".to_owned()),\n    };\n\n    assert_eq!(borrowed.text, \"started\");\n    assert_eq!(owned.text, \"normalized\");\n}\n"
       }
     ],
     "hints": [
@@ -1294,7 +1294,7 @@
       {
         "level": 3,
         "body": "This is useful when most data can be borrowed but a few cases need ownership.",
-        "solutionCode": "use std::borrow::Cow;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogMessage<'a> {\n    pub text: Cow<'a, str>,\n}"
+        "solutionCode": "use std::borrow::Cow;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn severity(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 1,\n        LogLevel::Warn => 2,\n        LogLevel::Error => 3,\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogMessage<'a> {\n    pub text: Cow<'a, str>,\n}"
       }
     ],
     "completionExplanation": "Cow lets the API accept borrowed text by default while still supporting owned normalized messages. It avoids unnecessary allocation without giving up flexibility.",
@@ -1755,32 +1755,32 @@
     "difficulty": "medium",
     "estimatedMinutes": 8,
     "scenario": "The log viewer should keep high-priority entries and discard routine information when asked for alerts.",
-    "instructions": "Fill in the TODO blocks with checks for keeping Error and Warn entries while excluding Info entries.",
+    "instructions": "The starter already defines AlertEntry and alert_messages. Fill in the two test TODO blocks with checks for keeping Error and Warn entries while excluding Info entries.",
     "files": [
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "use std::borrow::Cow;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogMessage<'a> {\n    pub text: Cow<'a, str>,\n}\n\n// Continue from the previous lesson.\n// TODO: assert that alert messages include warning and error text.\n// TODO: assert that info text is not returned.\n"
+        "content": "use std::borrow::Cow;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn severity(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 1,\n        LogLevel::Warn => 2,\n        LogLevel::Error => 3,\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogMessage<'a> {\n    pub text: Cow<'a, str>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct AlertEntry<'a> {\n    pub level: LogLevel,\n    pub message: LogMessage<'a>,\n}\n\npub fn alert_messages<'a>(entries: &'a [AlertEntry<'a>]) -> Vec<&'a str> {\n    entries\n        .iter()\n        .filter_map(|entry| match entry.level {\n            LogLevel::Warn | LogLevel::Error => Some(entry.message.text.as_ref()),\n            LogLevel::Info => None,\n        })\n        .collect()\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    fn entry(level: LogLevel, message: &'static str) -> AlertEntry<'static> {\n        AlertEntry {\n            level,\n            message: LogMessage {\n                text: message.into(),\n            },\n        }\n    }\n\n    #[test]\n    fn keeps_warning_and_error_messages() {\n        // TODO: assert that warning and error messages are returned in order.\n        todo!()\n    }\n\n    #[test]\n    fn skips_info_messages() {\n        // TODO: assert that info messages are not returned.\n        todo!()\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: fill in the two focused alert filter checks above.\n"
       },
       {
         "path": "tests/public.rs",
         "role": "test",
-        "content": "use rust_daily_lesson::{alert_messages, LogEntry, LogLevel};\n\n#[test]\nfn alert_filter_keeps_only_warnings_and_errors() {\n    let entries = [\n        LogEntry { level: LogLevel::Info, message: \"started\" },\n        LogEntry { level: LogLevel::Warn, message: \"slow response\" },\n        LogEntry { level: LogLevel::Error, message: \"write failed\" },\n    ];\n\n    assert_eq!(\n        alert_messages(&entries),\n        vec![\"slow response\", \"write failed\"]\n    );\n}\n"
+        "content": "use rust_daily_lesson::{alert_messages, AlertEntry, LogLevel, LogMessage};\n\nfn entry(level: LogLevel, message: &'static str) -> AlertEntry<'static> {\n    AlertEntry {\n        level,\n        message: LogMessage {\n            text: message.into(),\n        },\n    }\n}\n\n#[test]\nfn alert_filter_keeps_only_warnings_and_errors() {\n    let entries = [\n        entry(LogLevel::Info, \"started\"),\n        entry(LogLevel::Warn, \"slow response\"),\n        entry(LogLevel::Error, \"write failed\"),\n    ];\n\n    assert_eq!(\n        alert_messages(&entries),\n        vec![\"slow response\", \"write failed\"]\n    );\n}\n"
       }
     ],
     "hints": [
       {
         "level": 1,
-        "body": "Use a small array of LogEntry values to show each level."
+        "body": "Use the provided entry helper to build a small array of alert entries."
       },
       {
         "level": 2,
-        "body": "The first check should prove that warning and error messages are retained."
+        "body": "The first test should prove that warning and error messages are retained in order."
       },
       {
         "level": 3,
-        "body": "The second check should make the Info exclusion explicit.",
-        "solutionCode": "pub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub struct LogEntry<'a> {\n    pub level: LogLevel,\n    pub message: &'a str,\n}\n\npub fn alert_messages<'a>(entries: &'a [LogEntry<'a>]) -> Vec<&'a str> {\n    entries\n        .iter()\n        .filter_map(|entry| match entry.level {\n            LogLevel::Warn | LogLevel::Error => Some(entry.message),\n            LogLevel::Info => None,\n        })\n        .collect()\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn keeps_warning_and_error_messages() {\n        let entries = [\n            LogEntry { level: LogLevel::Warn, message: \"slow response\" },\n            LogEntry { level: LogLevel::Error, message: \"write failed\" },\n        ];\n\n        assert_eq!(\n            alert_messages(&entries),\n            vec![\"slow response\", \"write failed\"]\n        );\n    }\n\n    #[test]\n    fn skips_info_messages() {\n        let entries = [\n            LogEntry { level: LogLevel::Info, message: \"started\" },\n            LogEntry { level: LogLevel::Warn, message: \"slow response\" },\n        ];\n\n        assert_eq!(alert_messages(&entries), vec![\"slow response\"]);\n    }\n}"
+        "body": "The second test should make the Info exclusion explicit.",
+        "solutionCode": "use std::borrow::Cow;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn severity(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 1,\n        LogLevel::Warn => 2,\n        LogLevel::Error => 3,\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogMessage<'a> {\n    pub text: Cow<'a, str>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct AlertEntry<'a> {\n    pub level: LogLevel,\n    pub message: LogMessage<'a>,\n}\n\npub fn alert_messages<'a>(entries: &'a [AlertEntry<'a>]) -> Vec<&'a str> {\n    entries\n        .iter()\n        .filter_map(|entry| match entry.level {\n            LogLevel::Warn | LogLevel::Error => Some(entry.message.text.as_ref()),\n            LogLevel::Info => None,\n        })\n        .collect()\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    fn entry(level: LogLevel, message: &'static str) -> AlertEntry<'static> {\n        AlertEntry {\n            level,\n            message: LogMessage {\n                text: message.into(),\n            },\n        }\n    }\n\n    #[test]\n    fn keeps_warning_and_error_messages() {\n        let entries = [\n            entry(LogLevel::Warn, \"slow response\"),\n            entry(LogLevel::Error, \"write failed\"),\n        ];\n\n        assert_eq!(\n            alert_messages(&entries),\n            vec![\"slow response\", \"write failed\"]\n        );\n    }\n\n    #[test]\n    fn skips_info_messages() {\n        let entries = [\n            entry(LogLevel::Info, \"started\"),\n            entry(LogLevel::Warn, \"slow response\"),\n        ];\n\n        assert_eq!(alert_messages(&entries), vec![\"slow response\"]);\n    }\n}"
       }
     ],
     "completionExplanation": "Focused behavior checks document the alert filtering contract. They make the important inclusion and exclusion rules visible for the next reader.",
@@ -1791,6 +1791,13 @@
           "mode": "structural",
           "timeoutMs": 10000,
           "checks": [
+            {
+              "type": "function_signature",
+              "functionName": "alert_messages",
+              "requiredSignatureIncludes": [
+                "Vec<&str>"
+              ]
+            },
             {
               "type": "source_includes",
               "requiredSnippets": [
