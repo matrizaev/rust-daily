@@ -7,13 +7,19 @@ fn converts_complete_dto() {
         display_name: Some("Ada".to_owned()),
     });
 
-    assert_eq!(command.map(|command| command.email().to_owned()), Ok("ada@example.com".to_owned()));
+    assert_eq!(
+        command.map(|command| command.email().to_owned()),
+        Ok("ada@example.com".to_owned())
+    );
 }
 
 #[test]
 fn reports_missing_dto_fields() {
     assert_eq!(
-        RegisterUserCommand::try_from(RegisterUserDto { email: None, display_name: Some("Ada".to_owned()) }),
+        RegisterUserCommand::try_from(RegisterUserDto {
+            email: None,
+            display_name: Some("Ada".to_owned())
+        }),
         Err(RegisterUserValidationError::MissingEmail)
     );
 }

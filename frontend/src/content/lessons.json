@@ -3809,11 +3809,11 @@
     "hints": [
       {
         "level": 1,
-        "body": "Keep the Converting DTOs into domain commands code active and define RegisterUserDto with public email: Option<String> and display_name: Option<String> fields."
+        "body": "Model raw adapter input as a plain DTO. Use Option<String> because either field may be absent at the boundary."
       },
       {
         "level": 2,
-        "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+        "body": "Keep DTO fields public; this type represents input data, not validated domain state."
       },
       {
         "level": 3,
@@ -3821,7 +3821,7 @@
         "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}"
       }
     ],
-    "completionExplanation": "Define a raw register-user DTO now extends the active Converting DTOs into domain commands code with dto struct raw. The previous lesson's behavior remains in the main solution rather than an archived module.",
+    "completionExplanation": "The raw DTO can represent partial boundary input without pretending it is already valid domain data.",
     "validation": {
       "mode": "all",
       "validations": [
@@ -3872,7 +3872,7 @@
     "difficulty": "easy",
     "estimatedMinutes": 6,
     "scenario": "The application layer should receive a command type, not raw optional DTO fields. Keep command fields private and expose read-only accessors.",
-    "instructions": "Define RegisterUserCommand with private email and display_name fields, a constructor, and borrowed accessors.",
+    "instructions": "Keep RegisterUserDto active. Add RegisterUserCommand with private email and display_name fields, a constructor, and borrowed accessors.",
     "files": [
       {
         "path": "src/lib.rs",
@@ -3888,19 +3888,19 @@
     "hints": [
       {
         "level": 1,
-        "body": "Keep the Converting DTOs into domain commands code active and define RegisterUserCommand with private email and display_name fields, a constructor, and borrowed accessors."
+        "body": "Add the command below RegisterUserDto so the raw boundary shape and validated application shape stay separate."
       },
       {
         "level": 2,
-        "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+        "body": "Store owned Strings privately in RegisterUserCommand, then return &str from email() and display_name()."
       },
       {
         "level": 3,
         "body": "One complete solution for Define a validated register command is shown below.",
-        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}"
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}"
       }
     ],
-    "completionExplanation": "Define a validated register command now extends the active Converting DTOs into domain commands code with register command value. The previous lesson's behavior remains in the main solution rather than an archived module.",
+    "completionExplanation": "The DTO remains the raw boundary shape, while RegisterUserCommand gives the application layer owned, private fields with read-only access.",
     "validation": {
       "mode": "all",
       "validations": [
@@ -3938,11 +3938,9 @@
             {
               "type": "source_includes",
               "requiredSnippets": [
-                "display_name"
-              ],
-              "forbiddenSnippets": [
-                "pub email",
-                "pub display_name"
+                "pub struct RegisterUserCommand",
+                "email: String",
+                "display_name: String"
               ]
             }
           ]
@@ -3968,35 +3966,35 @@
     "difficulty": "medium",
     "estimatedMinutes": 8,
     "scenario": "A raw DTO can be missing required fields. TryFrom gives the adapter a standard fallible conversion into the application command.",
-    "instructions": "Implement TryFrom<RegisterUserDto> for RegisterUserCommand using RegisterUserValidationError for missing fields.",
+    "instructions": "The starter already contains RegisterUserDto and RegisterUserCommand. Add RegisterUserValidationError and implement TryFrom<RegisterUserDto> for RegisterUserCommand using those errors for missing fields.",
     "files": [
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: implement TryFrom<RegisterUserDto> for RegisterUserCommand.\n"
+        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: implement TryFrom<RegisterUserDto> for RegisterUserCommand.\n"
       },
       {
         "path": "tests/public.rs",
         "role": "test",
-        "content": "use rust_daily_lesson::{RegisterUserCommand, RegisterUserDto, RegisterUserValidationError};\n\n#[test]\nfn converts_complete_dto() {\n    let command = RegisterUserCommand::try_from(RegisterUserDto {\n        email: Some(\"ada@example.com\".to_owned()),\n        display_name: Some(\"Ada\".to_owned()),\n    });\n\n    assert_eq!(command.map(|command| command.email().to_owned()), Ok(\"ada@example.com\".to_owned()));\n}\n\n#[test]\nfn reports_missing_dto_fields() {\n    assert_eq!(\n        RegisterUserCommand::try_from(RegisterUserDto { email: None, display_name: Some(\"Ada\".to_owned()) }),\n        Err(RegisterUserValidationError::MissingEmail)\n    );\n}\n"
+        "content": "use rust_daily_lesson::{RegisterUserCommand, RegisterUserDto, RegisterUserValidationError};\n\n#[test]\nfn converts_complete_dto() {\n    let command = RegisterUserCommand::try_from(RegisterUserDto {\n        email: Some(\"ada@example.com\".to_owned()),\n        display_name: Some(\"Ada\".to_owned()),\n    });\n\n    assert_eq!(\n        command.map(|command| command.email().to_owned()),\n        Ok(\"ada@example.com\".to_owned())\n    );\n}\n\n#[test]\nfn reports_missing_dto_fields() {\n    assert_eq!(\n        RegisterUserCommand::try_from(RegisterUserDto {\n            email: None,\n            display_name: Some(\"Ada\".to_owned())\n        }),\n        Err(RegisterUserValidationError::MissingEmail)\n    );\n}\n"
       }
     ],
     "hints": [
       {
         "level": 1,
-        "body": "Keep the Converting DTOs into domain commands code active and implement TryFrom<RegisterUserDto> for RegisterUserCommand using RegisterUserValidationError for missing fields."
+        "body": "Define RegisterUserValidationError with MissingEmail and MissingDisplayName."
       },
       {
         "level": 2,
-        "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+        "body": "Use ok_or on each Option<String>, then build RegisterUserCommand only after both fields are present."
       },
       {
         "level": 3,
         "body": "One complete solution for Convert a DTO into a command with TryFrom is shown below.",
-        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn email(&self) -> &str { &self.email }\n    pub fn display_name(&self) -> &str { &self.display_name }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        let email = value.email.ok_or(RegisterUserValidationError::MissingEmail)?;\n        let display_name = value\n            .display_name\n            .ok_or(RegisterUserValidationError::MissingDisplayName)?;\n\n        Ok(Self { email, display_name })\n    }\n}"
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        let email = value\n            .email\n            .ok_or(RegisterUserValidationError::MissingEmail)?;\n        let display_name = value\n            .display_name\n            .ok_or(RegisterUserValidationError::MissingDisplayName)?;\n\n        Ok(Self {\n            email,\n            display_name,\n        })\n    }\n}"
       }
     ],
-    "completionExplanation": "Convert a DTO into a command with TryFrom now extends the active Converting DTOs into domain commands code with dto tryfrom validation. The previous lesson's behavior remains in the main solution rather than an archived module.",
+    "completionExplanation": "TryFrom keeps fallible boundary conversion explicit. Missing DTO fields become typed validation errors instead of unwraps or panics.",
     "validation": {
       "mode": "all",
       "validations": [
@@ -4044,35 +4042,35 @@
     "difficulty": "medium",
     "estimatedMinutes": 8,
     "scenario": "Boundary strings often contain whitespace. Normalize only after checking the DTO field exists, then reject empty normalized values explicitly.",
-    "instructions": "Update TryFrom<RegisterUserDto> to trim both fields and return EmptyEmail or EmptyDisplayName when a trimmed field is empty.",
+    "instructions": "Update the existing TryFrom<RegisterUserDto> implementation to trim both fields and return EmptyEmail or EmptyDisplayName when a trimmed field is empty.",
     "files": [
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn email(&self) -> &str { &self.email }\n    pub fn display_name(&self) -> &str { &self.display_name }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        let email = value.email.ok_or(RegisterUserValidationError::MissingEmail)?;\n        let display_name = value\n            .display_name\n            .ok_or(RegisterUserValidationError::MissingDisplayName)?;\n\n        Ok(Self { email, display_name })\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: implement TryFrom<RegisterUserDto> with trimming and empty checks.\n"
+        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        let email = value\n            .email\n            .ok_or(RegisterUserValidationError::MissingEmail)?;\n        let display_name = value\n            .display_name\n            .ok_or(RegisterUserValidationError::MissingDisplayName)?;\n\n        Ok(Self {\n            email,\n            display_name,\n        })\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: update TryFrom<RegisterUserDto> to trim fields and reject empty trimmed values.\n"
       },
       {
         "path": "tests/public.rs",
         "role": "test",
-        "content": "use rust_daily_lesson::{RegisterUserCommand, RegisterUserDto, RegisterUserValidationError};\n\n#[test]\nfn trims_boundary_strings() {\n    let command = RegisterUserCommand::try_from(RegisterUserDto {\n        email: Some(\" ada@example.com \".to_owned()),\n        display_name: Some(\" Ada \".to_owned()),\n    });\n\n    assert_eq!(command.map(|command| command.display_name().to_owned()), Ok(\"Ada\".to_owned()));\n}\n\n#[test]\nfn rejects_empty_normalized_fields() {\n    assert_eq!(\n        RegisterUserCommand::try_from(RegisterUserDto { email: Some(\" \".to_owned()), display_name: Some(\"Ada\".to_owned()) }),\n        Err(RegisterUserValidationError::EmptyEmail)\n    );\n}\n"
+        "content": "use rust_daily_lesson::{RegisterUserCommand, RegisterUserDto, RegisterUserValidationError};\n\n#[test]\nfn trims_boundary_strings() {\n    let command = RegisterUserCommand::try_from(RegisterUserDto {\n        email: Some(\" ada@example.com \".to_owned()),\n        display_name: Some(\" Ada \".to_owned()),\n    });\n\n    assert_eq!(\n        command.map(|command| command.display_name().to_owned()),\n        Ok(\"Ada\".to_owned())\n    );\n}\n\n#[test]\nfn rejects_empty_normalized_fields() {\n    assert_eq!(\n        RegisterUserCommand::try_from(RegisterUserDto {\n            email: Some(\" \".to_owned()),\n            display_name: Some(\"Ada\".to_owned())\n        }),\n        Err(RegisterUserValidationError::EmptyEmail)\n    );\n}\n"
       }
     ],
     "hints": [
       {
         "level": 1,
-        "body": "Keep the Converting DTOs into domain commands code active and update TryFrom<RegisterUserDto> to trim both fields and return EmptyEmail or EmptyDisplayName when a trimmed field is empty."
+        "body": "Add EmptyEmail and EmptyDisplayName to RegisterUserValidationError."
       },
       {
         "level": 2,
-        "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+        "body": "Keep MissingEmail and MissingDisplayName for absent fields; only use EmptyEmail and EmptyDisplayName after trim()."
       },
       {
         "level": 3,
         "body": "One complete solution for Trim and reject empty DTO fields is shown below.",
-        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn email(&self) -> &str { &self.email }\n    pub fn display_name(&self) -> &str { &self.display_name }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n    EmptyEmail,\n    EmptyDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        let email = value.email.ok_or(RegisterUserValidationError::MissingEmail)?;\n        let display_name = value\n            .display_name\n            .ok_or(RegisterUserValidationError::MissingDisplayName)?;\n        let email = email.trim();\n        let display_name = display_name.trim();\n\n        if email.is_empty() {\n            return Err(RegisterUserValidationError::EmptyEmail);\n        }\n        if display_name.is_empty() {\n            return Err(RegisterUserValidationError::EmptyDisplayName);\n        }\n\n        Ok(Self {\n            email: email.to_owned(),\n            display_name: display_name.to_owned(),\n        })\n    }\n}"
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n    EmptyEmail,\n    EmptyDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        let email = value\n            .email\n            .ok_or(RegisterUserValidationError::MissingEmail)?;\n        let display_name = value\n            .display_name\n            .ok_or(RegisterUserValidationError::MissingDisplayName)?;\n        let email = email.trim();\n        let display_name = display_name.trim();\n\n        if email.is_empty() {\n            return Err(RegisterUserValidationError::EmptyEmail);\n        }\n\n        if display_name.is_empty() {\n            return Err(RegisterUserValidationError::EmptyDisplayName);\n        }\n\n        Ok(Self {\n            email: email.to_owned(),\n            display_name: display_name.to_owned(),\n        })\n    }\n}"
       }
     ],
-    "completionExplanation": "Trim and reject empty DTO fields now extends the active Converting DTOs into domain commands code with dto trim validation. The previous lesson's behavior remains in the main solution rather than an archived module.",
+    "completionExplanation": "The conversion now distinguishes missing fields from present-but-empty fields, while storing normalized command strings.",
     "validation": {
       "mode": "all",
       "validations": [
@@ -4126,12 +4124,12 @@
     "difficulty": "medium",
     "estimatedMinutes": 10,
     "scenario": "Batch adapter input needs useful error context. Preserve the row index when one nested DTO cannot become a command.",
-    "instructions": "Implement TryFrom<BulkRegisterDto> for BulkRegisterCommand. Reject empty batches and return InvalidUser { index, error } for the first invalid nested DTO.",
+    "instructions": "The starter defines BulkRegisterDto, BulkRegisterCommand, and BulkRegisterError. Implement TryFrom<BulkRegisterDto> for BulkRegisterCommand. Reject empty batches and return InvalidUser { index, error } for the first invalid nested DTO.",
     "files": [
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn email(&self) -> &str { &self.email }\n    pub fn display_name(&self) -> &str { &self.display_name }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n    EmptyEmail,\n    EmptyDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        let email = value.email.ok_or(RegisterUserValidationError::MissingEmail)?;\n        let display_name = value\n            .display_name\n            .ok_or(RegisterUserValidationError::MissingDisplayName)?;\n        let email = email.trim();\n        let display_name = display_name.trim();\n\n        if email.is_empty() {\n            return Err(RegisterUserValidationError::EmptyEmail);\n        }\n        if display_name.is_empty() {\n            return Err(RegisterUserValidationError::EmptyDisplayName);\n        }\n\n        Ok(Self {\n            email: email.to_owned(),\n            display_name: display_name.to_owned(),\n        })\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: implement TryFrom<BulkRegisterDto> for BulkRegisterCommand.\n"
+        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n    EmptyEmail,\n    EmptyDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        let email = value\n            .email\n            .ok_or(RegisterUserValidationError::MissingEmail)?;\n        let display_name = value\n            .display_name\n            .ok_or(RegisterUserValidationError::MissingDisplayName)?;\n        let email = email.trim();\n        let display_name = display_name.trim();\n\n        if email.is_empty() {\n            return Err(RegisterUserValidationError::EmptyEmail);\n        }\n\n        if display_name.is_empty() {\n            return Err(RegisterUserValidationError::EmptyDisplayName);\n        }\n\n        Ok(Self {\n            email: email.to_owned(),\n            display_name: display_name.to_owned(),\n        })\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct BulkRegisterDto {\n    pub users: Vec<RegisterUserDto>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct BulkRegisterCommand {\n    commands: Vec<RegisterUserCommand>,\n}\n\nimpl BulkRegisterCommand {\n    pub fn commands(&self) -> &[RegisterUserCommand] {\n        &self.commands\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BulkRegisterError {\n    EmptyBatch,\n    InvalidUser {\n        index: usize,\n        error: RegisterUserValidationError,\n    },\n}\n\n// Continue from the previous lesson.\n// TODO: implement TryFrom<BulkRegisterDto> for BulkRegisterCommand.\n"
       },
       {
         "path": "tests/public.rs",
@@ -4142,19 +4140,19 @@
     "hints": [
       {
         "level": 1,
-        "body": "Keep the Converting DTOs into domain commands code active and implement TryFrom<BulkRegisterDto> for BulkRegisterCommand. Reject empty batches and return InvalidUser { index, error } for the first invalid nested DTO."
+        "body": "Reject an empty users list before iterating."
       },
       {
         "level": 2,
-        "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+        "body": "Use enumerate() so you can wrap a nested RegisterUserValidationError with its user index."
       },
       {
         "level": 3,
         "body": "One complete solution for Convert a bulk DTO with indexed errors is shown below.",
-        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn email(&self) -> &str { &self.email }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        Ok(Self {\n            email: value.email.ok_or(RegisterUserValidationError::MissingEmail)?,\n            display_name: value.display_name.ok_or(RegisterUserValidationError::MissingDisplayName)?,\n        })\n    }\n}\n\npub struct BulkRegisterDto {\n    pub users: Vec<RegisterUserDto>,\n}\n\npub struct BulkRegisterCommand {\n    commands: Vec<RegisterUserCommand>,\n}\n\nimpl BulkRegisterCommand {\n    pub fn commands(&self) -> &[RegisterUserCommand] { &self.commands }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BulkRegisterError {\n    EmptyBatch,\n    InvalidUser { index: usize, error: RegisterUserValidationError },\n}\n\nimpl TryFrom<BulkRegisterDto> for BulkRegisterCommand {\n    type Error = BulkRegisterError;\n\n    fn try_from(value: BulkRegisterDto) -> Result<Self, Self::Error> {\n        if value.users.is_empty() {\n            return Err(BulkRegisterError::EmptyBatch);\n        }\n\n        let mut commands = Vec::with_capacity(value.users.len());\n        for (index, dto) in value.users.into_iter().enumerate() {\n            let command = RegisterUserCommand::try_from(dto)\n                .map_err(|error| BulkRegisterError::InvalidUser { index, error })?;\n            commands.push(command);\n        }\n\n        Ok(Self { commands })\n    }\n}"
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n    EmptyEmail,\n    EmptyDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        let email = value\n            .email\n            .ok_or(RegisterUserValidationError::MissingEmail)?;\n        let display_name = value\n            .display_name\n            .ok_or(RegisterUserValidationError::MissingDisplayName)?;\n        let email = email.trim();\n        let display_name = display_name.trim();\n\n        if email.is_empty() {\n            return Err(RegisterUserValidationError::EmptyEmail);\n        }\n\n        if display_name.is_empty() {\n            return Err(RegisterUserValidationError::EmptyDisplayName);\n        }\n\n        Ok(Self {\n            email: email.to_owned(),\n            display_name: display_name.to_owned(),\n        })\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct BulkRegisterDto {\n    pub users: Vec<RegisterUserDto>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct BulkRegisterCommand {\n    commands: Vec<RegisterUserCommand>,\n}\n\nimpl BulkRegisterCommand {\n    pub fn commands(&self) -> &[RegisterUserCommand] {\n        &self.commands\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BulkRegisterError {\n    EmptyBatch,\n    InvalidUser {\n        index: usize,\n        error: RegisterUserValidationError,\n    },\n}\n\nimpl TryFrom<BulkRegisterDto> for BulkRegisterCommand {\n    type Error = BulkRegisterError;\n\n    fn try_from(value: BulkRegisterDto) -> Result<Self, Self::Error> {\n        if value.users.is_empty() {\n            return Err(BulkRegisterError::EmptyBatch);\n        }\n\n        let mut commands = Vec::with_capacity(value.users.len());\n        for (index, dto) in value.users.into_iter().enumerate() {\n            let command = RegisterUserCommand::try_from(dto)\n                .map_err(|error| BulkRegisterError::InvalidUser { index, error })?;\n            commands.push(command);\n        }\n\n        Ok(Self { commands })\n    }\n}"
       }
     ],
-    "completionExplanation": "Convert a bulk DTO with indexed errors now extends the active Converting DTOs into domain commands code with dto nested conversions. The previous lesson's behavior remains in the main solution rather than an archived module.",
+    "completionExplanation": "Bulk conversion reuses the single-user DTO conversion and adds batch-level context for empty input and indexed nested failures.",
     "validation": {
       "mode": "all",
       "validations": [
@@ -4202,12 +4200,12 @@
     "difficulty": "easy",
     "estimatedMinutes": 7,
     "scenario": "Outbound adapters also need explicit boundaries. A domain event can become a transport DTO through an infallible From implementation.",
-    "instructions": "Implement From<UserRegistered> for UserRegisteredDto. Convert user_id to String and move the email.",
+    "instructions": "The starter defines UserRegistered and UserRegisteredDto. Implement From<UserRegistered> for UserRegisteredDto. Convert user_id to String and move the email.",
     "files": [
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn email(&self) -> &str { &self.email }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        Ok(Self {\n            email: value.email.ok_or(RegisterUserValidationError::MissingEmail)?,\n            display_name: value.display_name.ok_or(RegisterUserValidationError::MissingDisplayName)?,\n        })\n    }\n}\n\npub struct BulkRegisterDto {\n    pub users: Vec<RegisterUserDto>,\n}\n\npub struct BulkRegisterCommand {\n    commands: Vec<RegisterUserCommand>,\n}\n\nimpl BulkRegisterCommand {\n    pub fn commands(&self) -> &[RegisterUserCommand] { &self.commands }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BulkRegisterError {\n    EmptyBatch,\n    InvalidUser { index: usize, error: RegisterUserValidationError },\n}\n\nimpl TryFrom<BulkRegisterDto> for BulkRegisterCommand {\n    type Error = BulkRegisterError;\n\n    fn try_from(value: BulkRegisterDto) -> Result<Self, Self::Error> {\n        if value.users.is_empty() {\n            return Err(BulkRegisterError::EmptyBatch);\n        }\n\n        let mut commands = Vec::with_capacity(value.users.len());\n        for (index, dto) in value.users.into_iter().enumerate() {\n            let command = RegisterUserCommand::try_from(dto)\n                .map_err(|error| BulkRegisterError::InvalidUser { index, error })?;\n            commands.push(command);\n        }\n\n        Ok(Self { commands })\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: implement From<UserRegistered> for UserRegisteredDto.\n"
+        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n    EmptyEmail,\n    EmptyDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        let email = value\n            .email\n            .ok_or(RegisterUserValidationError::MissingEmail)?;\n        let display_name = value\n            .display_name\n            .ok_or(RegisterUserValidationError::MissingDisplayName)?;\n        let email = email.trim();\n        let display_name = display_name.trim();\n\n        if email.is_empty() {\n            return Err(RegisterUserValidationError::EmptyEmail);\n        }\n\n        if display_name.is_empty() {\n            return Err(RegisterUserValidationError::EmptyDisplayName);\n        }\n\n        Ok(Self {\n            email: email.to_owned(),\n            display_name: display_name.to_owned(),\n        })\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct BulkRegisterDto {\n    pub users: Vec<RegisterUserDto>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct BulkRegisterCommand {\n    commands: Vec<RegisterUserCommand>,\n}\n\nimpl BulkRegisterCommand {\n    pub fn commands(&self) -> &[RegisterUserCommand] {\n        &self.commands\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BulkRegisterError {\n    EmptyBatch,\n    InvalidUser {\n        index: usize,\n        error: RegisterUserValidationError,\n    },\n}\n\nimpl TryFrom<BulkRegisterDto> for BulkRegisterCommand {\n    type Error = BulkRegisterError;\n\n    fn try_from(value: BulkRegisterDto) -> Result<Self, Self::Error> {\n        if value.users.is_empty() {\n            return Err(BulkRegisterError::EmptyBatch);\n        }\n\n        let mut commands = Vec::with_capacity(value.users.len());\n        for (index, dto) in value.users.into_iter().enumerate() {\n            let command = RegisterUserCommand::try_from(dto)\n                .map_err(|error| BulkRegisterError::InvalidUser { index, error })?;\n            commands.push(command);\n        }\n\n        Ok(Self { commands })\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct UserRegistered {\n    pub user_id: u64,\n    pub email: String,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct UserRegisteredDto {\n    pub id: String,\n    pub email: String,\n}\n\n// Continue from the previous lesson.\n// TODO: implement From<UserRegistered> for UserRegisteredDto.\n"
       },
       {
         "path": "tests/public.rs",
@@ -4218,19 +4216,19 @@
     "hints": [
       {
         "level": 1,
-        "body": "Keep the Converting DTOs into domain commands code active and implement From<UserRegistered> for UserRegisteredDto. Convert user_id to String and move the email."
+        "body": "Use From because converting a complete domain event into an outbound DTO cannot fail here."
       },
       {
         "level": 2,
-        "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+        "body": "Build UserRegisteredDto with id: value.user_id.to_string() and email: value.email."
       },
       {
         "level": 3,
         "body": "One complete solution for Convert a domain event into an outbound DTO is shown below.",
-        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self { email: email.into(), display_name: display_name.into() }\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n    EmptyEmail,\n    EmptyDisplayName,\n}\n\npub struct BulkRegisterDto {\n    pub users: Vec<RegisterUserDto>,\n}\n\npub struct BulkRegisterCommand {\n    commands: Vec<RegisterUserCommand>,\n}\n\nimpl BulkRegisterCommand {\n    pub fn commands(&self) -> &[RegisterUserCommand] {\n        &self.commands\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BulkRegisterError {\n    EmptyBatch,\n    InvalidUser { index: usize, error: RegisterUserValidationError },\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct UserRegistered {\n    pub user_id: u64,\n    pub email: String,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct UserRegisteredDto {\n    pub id: String,\n    pub email: String,\n}\n\nimpl From<UserRegistered> for UserRegisteredDto {\n    fn from(value: UserRegistered) -> Self {\n        Self {\n            id: value.user_id.to_string(),\n            email: value.email,\n        }\n    }\n}\n\n\nimpl RegisterUserCommand {\n    pub fn email(&self) -> &str {\n            &self.email\n        }\n}\n\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        let email = value.email.ok_or(RegisterUserValidationError::MissingEmail)?;\n        let display_name = value\n            .display_name\n            .ok_or(RegisterUserValidationError::MissingDisplayName)?;\n\n        Ok(Self { email, display_name })\n    }\n}\n\n\nimpl TryFrom<BulkRegisterDto> for BulkRegisterCommand {\n    type Error = BulkRegisterError;\n\n    fn try_from(value: BulkRegisterDto) -> Result<Self, Self::Error> {\n        if value.users.is_empty() {\n            return Err(BulkRegisterError::EmptyBatch);\n        }\n\n        let mut commands = Vec::with_capacity(value.users.len());\n        for (index, dto) in value.users.into_iter().enumerate() {\n            let command = RegisterUserCommand::try_from(dto)\n                .map_err(|error| BulkRegisterError::InvalidUser { index, error })?;\n            commands.push(command);\n        }\n\n        Ok(Self { commands })\n    }\n}"
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n    EmptyEmail,\n    EmptyDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        let email = value\n            .email\n            .ok_or(RegisterUserValidationError::MissingEmail)?;\n        let display_name = value\n            .display_name\n            .ok_or(RegisterUserValidationError::MissingDisplayName)?;\n        let email = email.trim();\n        let display_name = display_name.trim();\n\n        if email.is_empty() {\n            return Err(RegisterUserValidationError::EmptyEmail);\n        }\n\n        if display_name.is_empty() {\n            return Err(RegisterUserValidationError::EmptyDisplayName);\n        }\n\n        Ok(Self {\n            email: email.to_owned(),\n            display_name: display_name.to_owned(),\n        })\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct BulkRegisterDto {\n    pub users: Vec<RegisterUserDto>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct BulkRegisterCommand {\n    commands: Vec<RegisterUserCommand>,\n}\n\nimpl BulkRegisterCommand {\n    pub fn commands(&self) -> &[RegisterUserCommand] {\n        &self.commands\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BulkRegisterError {\n    EmptyBatch,\n    InvalidUser {\n        index: usize,\n        error: RegisterUserValidationError,\n    },\n}\n\nimpl TryFrom<BulkRegisterDto> for BulkRegisterCommand {\n    type Error = BulkRegisterError;\n\n    fn try_from(value: BulkRegisterDto) -> Result<Self, Self::Error> {\n        if value.users.is_empty() {\n            return Err(BulkRegisterError::EmptyBatch);\n        }\n\n        let mut commands = Vec::with_capacity(value.users.len());\n        for (index, dto) in value.users.into_iter().enumerate() {\n            let command = RegisterUserCommand::try_from(dto)\n                .map_err(|error| BulkRegisterError::InvalidUser { index, error })?;\n            commands.push(command);\n        }\n\n        Ok(Self { commands })\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct UserRegistered {\n    pub user_id: u64,\n    pub email: String,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct UserRegisteredDto {\n    pub id: String,\n    pub email: String,\n}\n\nimpl From<UserRegistered> for UserRegisteredDto {\n    fn from(value: UserRegistered) -> Self {\n        Self {\n            id: value.user_id.to_string(),\n            email: value.email,\n        }\n    }\n}"
       }
     ],
-    "completionExplanation": "Convert a domain event into an outbound DTO now extends the active Converting DTOs into domain commands code with from dto outbound. The previous lesson's behavior remains in the main solution rather than an archived module.",
+    "completionExplanation": "From gives outbound adapters a standard infallible conversion from a complete domain event into transport-ready data.",
     "validation": {
       "mode": "all",
       "validations": [

@@ -11,7 +11,7 @@
   "difficulty": "medium",
   "estimatedMinutes": 8,
   "scenario": "A raw DTO can be missing required fields. TryFrom gives the adapter a standard fallible conversion into the application command.",
-  "instructions": "Implement TryFrom<RegisterUserDto> for RegisterUserCommand using RegisterUserValidationError for missing fields.",
+  "instructions": "The starter already contains RegisterUserDto and RegisterUserCommand. Add RegisterUserValidationError and implement TryFrom<RegisterUserDto> for RegisterUserCommand using those errors for missing fields.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Keep the Converting DTOs into domain commands code active and implement TryFrom<RegisterUserDto> for RegisterUserCommand using RegisterUserValidationError for missing fields."
+      "body": "Define RegisterUserValidationError with MissingEmail and MissingDisplayName."
     },
     {
       "level": 2,
-      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+      "body": "Use ok_or on each Option<String>, then build RegisterUserCommand only after both fields are present."
     },
     {
       "level": 3,
       "body": "One complete solution for Convert a DTO into a command with TryFrom is shown below.",
-      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn email(&self) -> &str { &self.email }\n    pub fn display_name(&self) -> &str { &self.display_name }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        let email = value.email.ok_or(RegisterUserValidationError::MissingEmail)?;\n        let display_name = value\n            .display_name\n            .ok_or(RegisterUserValidationError::MissingDisplayName)?;\n\n        Ok(Self { email, display_name })\n    }\n}"
+      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        let email = value\n            .email\n            .ok_or(RegisterUserValidationError::MissingEmail)?;\n        let display_name = value\n            .display_name\n            .ok_or(RegisterUserValidationError::MissingDisplayName)?;\n\n        Ok(Self {\n            email,\n            display_name,\n        })\n    }\n}"
     }
   ],
-  "completionExplanation": "Convert a DTO into a command with TryFrom now extends the active Converting DTOs into domain commands code with dto tryfrom validation. The previous lesson's behavior remains in the main solution rather than an archived module.",
+  "completionExplanation": "TryFrom keeps fallible boundary conversion explicit. Missing DTO fields become typed validation errors instead of unwraps or panics.",
   "validation": {
     "mode": "all",
     "validations": [

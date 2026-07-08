@@ -27,11 +27,11 @@
   "hints": [
     {
       "level": 1,
-      "body": "Keep the Converting DTOs into domain commands code active and define RegisterUserDto with public email: Option<String> and display_name: Option<String> fields."
+      "body": "Model raw adapter input as a plain DTO. Use Option<String> because either field may be absent at the boundary."
     },
     {
       "level": 2,
-      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+      "body": "Keep DTO fields public; this type represents input data, not validated domain state."
     },
     {
       "level": 3,
@@ -39,7 +39,7 @@
       "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}"
     }
   ],
-  "completionExplanation": "Define a raw register-user DTO now extends the active Converting DTOs into domain commands code with dto struct raw. The previous lesson's behavior remains in the main solution rather than an archived module.",
+  "completionExplanation": "The raw DTO can represent partial boundary input without pretending it is already valid domain data.",
   "validation": {
     "mode": "all",
     "validations": [
