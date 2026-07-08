@@ -1,12 +1,6 @@
-use rust_daily_lesson::{LogEvent, LogLevel};
+use rust_daily_lesson::log_request_received;
 
 #[test]
-fn event_has_name_and_level() {
-    let event = LogEvent {
-        event_name: "request.received".to_owned(),
-        level: LogLevel::Info,
-    };
-
-    assert_eq!(event.event_name, "request.received");
-    assert_eq!(event.level, LogLevel::Info);
+fn structured_event_function_is_callable_without_subscriber() {
+    log_request_received("req-1");
 }

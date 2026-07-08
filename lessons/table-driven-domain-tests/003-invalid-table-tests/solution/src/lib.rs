@@ -7,7 +7,7 @@ pub enum PercentageError {
 }
 
 impl Percentage {
-    pub fn value(&self) -> u8 {
+    pub fn value(self) -> u8 {
         self.0
     }
 }
@@ -34,7 +34,7 @@ mod tests {
 
         for (input, expected) in cases {
             assert_eq!(
-                Percentage::try_from(input).map(|value| value.value()),
+                Percentage::try_from(input).map(Percentage::value),
                 Ok(expected)
             );
         }
@@ -42,13 +42,8 @@ mod tests {
 
     #[test]
     fn rejects_invalid_percentages() {
-        let invalid_values = [101, 150, 1_000];
-
-        for input in invalid_values {
-            assert_eq!(
-                Percentage::try_from(input),
-                Err(PercentageError::OutOfRange)
-            );
+        for input in [101, 150, 1_000] {
+            assert_eq!(Percentage::try_from(input), Err(PercentageError::OutOfRange));
         }
     }
 }

@@ -7,7 +7,7 @@ pub enum PercentageError {
 }
 
 impl Percentage {
-    pub fn value(&self) -> u8 {
+    pub fn value(self) -> u8 {
         self.0
     }
 }
@@ -24,5 +24,4 @@ impl TryFrom<u16> for Percentage {
     }
 }
 
-// Continue from the previous lesson.
-// TODO: add table-driven tests for valid cases.
+// TODO: add a table test for valid boundary and middle values.

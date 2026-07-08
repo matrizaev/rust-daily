@@ -1,5 +1,5 @@
 pub mod domain {
-    #[derive(Debug, Clone, PartialEq, Eq)]
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct EmailAddress(String);
 
     impl EmailAddress {
@@ -36,5 +36,4 @@ pub mod domain {
     }
 }
 
-// Continue from the previous lesson.
-// TODO: define UserRepository port trait.
+// TODO: add async UserRepository operations in the application module.

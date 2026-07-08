@@ -1,15 +1,9 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LogLevel {
-    Info,
-    Warn,
-    Error,
+pub fn log_request_received(request_id: &str) {
+    tracing::info!(
+        event_name = "request.received",
+        request_id = %request_id,
+        "request received"
+    );
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LogEvent {
-    pub event_name: String,
-    pub level: LogLevel,
-}
-
-// Continue from the previous lesson.
-// TODO: define LogFields and LogEvent with structured fields.
+// TODO: add request_id, user_id, and attempt fields.

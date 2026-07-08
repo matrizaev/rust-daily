@@ -1,0 +1,2266 @@
+{
+  "kind": "rust-daily-progress-export",
+  "version": 1,
+  "exportedAt": "2026-07-08T12:00:00.000Z",
+  "progress": {
+    "version": 1,
+    "createdAt": "2026-07-08T09:00:00.000Z",
+    "updatedAt": "2026-07-08T11:59:00.000Z",
+    "attempts": [
+      {
+        "id": "config-struct-fields-001:2026-07-08T09:00:00.000Z",
+        "lessonId": "config-struct-fields-001",
+        "startedAt": "2026-07-08T09:00:00.000Z",
+        "completedAt": "2026-07-08T09:01:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "error-enum-parse-user-001:2026-07-08T09:02:00.000Z",
+        "lessonId": "error-enum-parse-user-001",
+        "startedAt": "2026-07-08T09:02:00.000Z",
+        "completedAt": "2026-07-08T09:03:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "inventory-item-struct-001:2026-07-08T09:04:00.000Z",
+        "lessonId": "inventory-item-struct-001",
+        "startedAt": "2026-07-08T09:04:00.000Z",
+        "completedAt": "2026-07-08T09:05:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "log-entry-borrowed-001:2026-07-08T09:06:00.000Z",
+        "lessonId": "log-entry-borrowed-001",
+        "startedAt": "2026-07-08T09:06:00.000Z",
+        "completedAt": "2026-07-08T09:07:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "request-struct-001:2026-07-08T09:08:00.000Z",
+        "lessonId": "request-struct-001",
+        "startedAt": "2026-07-08T09:08:00.000Z",
+        "completedAt": "2026-07-08T09:09:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "config-default-impl-002:2026-07-08T09:10:00.000Z",
+        "lessonId": "config-default-impl-002",
+        "startedAt": "2026-07-08T09:10:00.000Z",
+        "completedAt": "2026-07-08T09:11:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "display-parse-user-error-002:2026-07-08T09:12:00.000Z",
+        "lessonId": "display-parse-user-error-002",
+        "startedAt": "2026-07-08T09:12:00.000Z",
+        "completedAt": "2026-07-08T09:13:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "inventory-filter-map-002:2026-07-08T09:14:00.000Z",
+        "lessonId": "inventory-filter-map-002",
+        "startedAt": "2026-07-08T09:14:00.000Z",
+        "completedAt": "2026-07-08T09:15:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "log-view-lifetime-002:2026-07-08T09:16:00.000Z",
+        "lessonId": "log-view-lifetime-002",
+        "startedAt": "2026-07-08T09:16:00.000Z",
+        "completedAt": "2026-07-08T09:17:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "request-builder-owned-setters-002:2026-07-08T09:18:00.000Z",
+        "lessonId": "request-builder-owned-setters-002",
+        "startedAt": "2026-07-08T09:18:00.000Z",
+        "completedAt": "2026-07-08T09:19:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "config-methods-003:2026-07-08T09:20:00.000Z",
+        "lessonId": "config-methods-003",
+        "startedAt": "2026-07-08T09:20:00.000Z",
+        "completedAt": "2026-07-08T09:21:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "error-trait-parse-user-error-003:2026-07-08T09:22:00.000Z",
+        "lessonId": "error-trait-parse-user-error-003",
+        "startedAt": "2026-07-08T09:22:00.000Z",
+        "completedAt": "2026-07-08T09:23:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "inventory-fold-total-003:2026-07-08T09:24:00.000Z",
+        "lessonId": "inventory-fold-total-003",
+        "startedAt": "2026-07-08T09:24:00.000Z",
+        "completedAt": "2026-07-08T09:25:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "log-level-match-003:2026-07-08T09:26:00.000Z",
+        "lessonId": "log-level-match-003",
+        "startedAt": "2026-07-08T09:26:00.000Z",
+        "completedAt": "2026-07-08T09:27:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "request-builder-default-003:2026-07-08T09:28:00.000Z",
+        "lessonId": "request-builder-default-003",
+        "startedAt": "2026-07-08T09:28:00.000Z",
+        "completedAt": "2026-07-08T09:29:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "config-option-timeout-004:2026-07-08T09:30:00.000Z",
+        "lessonId": "config-option-timeout-004",
+        "startedAt": "2026-07-08T09:30:00.000Z",
+        "completedAt": "2026-07-08T09:31:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "inventory-clear-loop-004:2026-07-08T09:32:00.000Z",
+        "lessonId": "inventory-clear-loop-004",
+        "startedAt": "2026-07-08T09:32:00.000Z",
+        "completedAt": "2026-07-08T09:33:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "log-message-cow-004:2026-07-08T09:34:00.000Z",
+        "lessonId": "log-message-cow-004",
+        "startedAt": "2026-07-08T09:34:00.000Z",
+        "completedAt": "2026-07-08T09:35:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "request-builder-result-004:2026-07-08T09:36:00.000Z",
+        "lessonId": "request-builder-result-004",
+        "startedAt": "2026-07-08T09:36:00.000Z",
+        "completedAt": "2026-07-08T09:37:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "source-parse-int-error-004:2026-07-08T09:38:00.000Z",
+        "lessonId": "source-parse-int-error-004",
+        "startedAt": "2026-07-08T09:38:00.000Z",
+        "completedAt": "2026-07-08T09:39:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "config-result-validate-005:2026-07-08T09:40:00.000Z",
+        "lessonId": "config-result-validate-005",
+        "startedAt": "2026-07-08T09:40:00.000Z",
+        "completedAt": "2026-07-08T09:41:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "from-parse-int-error-005:2026-07-08T09:42:00.000Z",
+        "lessonId": "from-parse-int-error-005",
+        "startedAt": "2026-07-08T09:42:00.000Z",
+        "completedAt": "2026-07-08T09:43:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "inventory-intoiterator-005:2026-07-08T09:44:00.000Z",
+        "lessonId": "inventory-intoiterator-005",
+        "startedAt": "2026-07-08T09:44:00.000Z",
+        "completedAt": "2026-07-08T09:45:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "log-filter-tests-005:2026-07-08T09:46:00.000Z",
+        "lessonId": "log-filter-tests-005",
+        "startedAt": "2026-07-08T09:46:00.000Z",
+        "completedAt": "2026-07-08T09:47:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "request-builder-tryfrom-005:2026-07-08T09:48:00.000Z",
+        "lessonId": "request-builder-tryfrom-005",
+        "startedAt": "2026-07-08T09:48:00.000Z",
+        "completedAt": "2026-07-08T09:49:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "config-borrowed-key-006:2026-07-08T09:50:00.000Z",
+        "lessonId": "config-borrowed-key-006",
+        "startedAt": "2026-07-08T09:50:00.000Z",
+        "completedAt": "2026-07-08T09:51:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "inventory-sort-by-key-006:2026-07-08T09:52:00.000Z",
+        "lessonId": "inventory-sort-by-key-006",
+        "startedAt": "2026-07-08T09:52:00.000Z",
+        "completedAt": "2026-07-08T09:53:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "request-doc-example-006:2026-07-08T09:54:00.000Z",
+        "lessonId": "request-doc-example-006",
+        "startedAt": "2026-07-08T09:54:00.000Z",
+        "completedAt": "2026-07-08T09:55:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "tryfrom-user-str-006:2026-07-08T09:56:00.000Z",
+        "lessonId": "tryfrom-user-str-006",
+        "startedAt": "2026-07-08T09:56:00.000Z",
+        "completedAt": "2026-07-08T09:57:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "parse-user-public-tests-007:2026-07-08T09:58:00.000Z",
+        "lessonId": "parse-user-public-tests-007",
+        "startedAt": "2026-07-08T09:58:00.000Z",
+        "completedAt": "2026-07-08T09:59:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "email-address-private-field-001:2026-07-08T10:00:00.000Z",
+        "lessonId": "email-address-private-field-001",
+        "startedAt": "2026-07-08T10:00:00.000Z",
+        "completedAt": "2026-07-08T10:01:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "email-address-tryfrom-str-002:2026-07-08T10:02:00.000Z",
+        "lessonId": "email-address-tryfrom-str-002",
+        "startedAt": "2026-07-08T10:02:00.000Z",
+        "completedAt": "2026-07-08T10:03:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "email-address-domain-error-003:2026-07-08T10:04:00.000Z",
+        "lessonId": "email-address-domain-error-003",
+        "startedAt": "2026-07-08T10:04:00.000Z",
+        "completedAt": "2026-07-08T10:05:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "email-address-display-004:2026-07-08T10:06:00.000Z",
+        "lessonId": "email-address-display-004",
+        "startedAt": "2026-07-08T10:06:00.000Z",
+        "completedAt": "2026-07-08T10:07:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "email-validation-error-display-005:2026-07-08T10:08:00.000Z",
+        "lessonId": "email-validation-error-display-005",
+        "startedAt": "2026-07-08T10:08:00.000Z",
+        "completedAt": "2026-07-08T10:09:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "email-address-fromstr-006:2026-07-08T10:10:00.000Z",
+        "lessonId": "email-address-fromstr-006",
+        "startedAt": "2026-07-08T10:10:00.000Z",
+        "completedAt": "2026-07-08T10:11:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "money-struct-001:2026-07-08T10:12:00.000Z",
+        "lessonId": "money-struct-001",
+        "startedAt": "2026-07-08T10:12:00.000Z",
+        "completedAt": "2026-07-08T10:13:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "currency-enum-002:2026-07-08T10:14:00.000Z",
+        "lessonId": "currency-enum-002",
+        "startedAt": "2026-07-08T10:14:00.000Z",
+        "completedAt": "2026-07-08T10:15:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "money-invariants-003:2026-07-08T10:16:00.000Z",
+        "lessonId": "money-invariants-003",
+        "startedAt": "2026-07-08T10:16:00.000Z",
+        "completedAt": "2026-07-08T10:17:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "money-add-004:2026-07-08T10:18:00.000Z",
+        "lessonId": "money-add-004",
+        "startedAt": "2026-07-08T10:18:00.000Z",
+        "completedAt": "2026-07-08T10:19:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "money-tryfrom-decimal-005:2026-07-08T10:20:00.000Z",
+        "lessonId": "money-tryfrom-decimal-005",
+        "startedAt": "2026-07-08T10:20:00.000Z",
+        "completedAt": "2026-07-08T10:21:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "money-display-006:2026-07-08T10:22:00.000Z",
+        "lessonId": "money-display-006",
+        "startedAt": "2026-07-08T10:22:00.000Z",
+        "completedAt": "2026-07-08T10:23:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "port-nonzero-001:2026-07-08T10:24:00.000Z",
+        "lessonId": "port-nonzero-001",
+        "startedAt": "2026-07-08T10:24:00.000Z",
+        "completedAt": "2026-07-08T10:25:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "host-domain-002:2026-07-08T10:26:00.000Z",
+        "lessonId": "host-domain-002",
+        "startedAt": "2026-07-08T10:26:00.000Z",
+        "completedAt": "2026-07-08T10:27:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "host-validation-003:2026-07-08T10:28:00.000Z",
+        "lessonId": "host-validation-003",
+        "startedAt": "2026-07-08T10:28:00.000Z",
+        "completedAt": "2026-07-08T10:29:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "host-port-struct-004:2026-07-08T10:30:00.000Z",
+        "lessonId": "host-port-struct-004",
+        "startedAt": "2026-07-08T10:30:00.000Z",
+        "completedAt": "2026-07-08T10:31:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "endpoint-default-005:2026-07-08T10:32:00.000Z",
+        "lessonId": "endpoint-default-005",
+        "startedAt": "2026-07-08T10:32:00.000Z",
+        "completedAt": "2026-07-08T10:33:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "endpoint-display-006:2026-07-08T10:34:00.000Z",
+        "lessonId": "endpoint-display-006",
+        "startedAt": "2026-07-08T10:34:00.000Z",
+        "completedAt": "2026-07-08T10:35:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "dto-struct-raw-001:2026-07-08T10:36:00.000Z",
+        "lessonId": "dto-struct-raw-001",
+        "startedAt": "2026-07-08T10:36:00.000Z",
+        "completedAt": "2026-07-08T10:37:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "register-command-value-002:2026-07-08T10:38:00.000Z",
+        "lessonId": "register-command-value-002",
+        "startedAt": "2026-07-08T10:38:00.000Z",
+        "completedAt": "2026-07-08T10:39:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "dto-tryfrom-command-003:2026-07-08T10:40:00.000Z",
+        "lessonId": "dto-tryfrom-command-003",
+        "startedAt": "2026-07-08T10:40:00.000Z",
+        "completedAt": "2026-07-08T10:41:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "dto-trim-empty-004:2026-07-08T10:42:00.000Z",
+        "lessonId": "dto-trim-empty-004",
+        "startedAt": "2026-07-08T10:42:00.000Z",
+        "completedAt": "2026-07-08T10:43:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "dto-bulk-conversion-005:2026-07-08T10:44:00.000Z",
+        "lessonId": "dto-bulk-conversion-005",
+        "startedAt": "2026-07-08T10:44:00.000Z",
+        "completedAt": "2026-07-08T10:45:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "dto-outbound-from-006:2026-07-08T10:46:00.000Z",
+        "lessonId": "dto-outbound-from-006",
+        "startedAt": "2026-07-08T10:46:00.000Z",
+        "completedAt": "2026-07-08T10:47:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "wrap-collection-001:2026-07-08T10:48:00.000Z",
+        "lessonId": "wrap-collection-001",
+        "startedAt": "2026-07-08T10:48:00.000Z",
+        "completedAt": "2026-07-08T10:49:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "wrap-borrowed-iter-002:2026-07-08T10:50:00.000Z",
+        "lessonId": "wrap-borrowed-iter-002",
+        "startedAt": "2026-07-08T10:50:00.000Z",
+        "completedAt": "2026-07-08T10:51:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "wrap-owned-intoiterator-003:2026-07-08T10:52:00.000Z",
+        "lessonId": "wrap-owned-intoiterator-003",
+        "startedAt": "2026-07-08T10:52:00.000Z",
+        "completedAt": "2026-07-08T10:53:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "wrap-ref-intoiterator-004:2026-07-08T10:54:00.000Z",
+        "lessonId": "wrap-ref-intoiterator-004",
+        "startedAt": "2026-07-08T10:54:00.000Z",
+        "completedAt": "2026-07-08T10:55:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "wrap-mut-intoiterator-005:2026-07-08T10:56:00.000Z",
+        "lessonId": "wrap-mut-intoiterator-005",
+        "startedAt": "2026-07-08T10:56:00.000Z",
+        "completedAt": "2026-07-08T10:57:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "wrap-nonempty-tryfrom-006:2026-07-08T10:58:00.000Z",
+        "lessonId": "wrap-nonempty-tryfrom-006",
+        "startedAt": "2026-07-08T10:58:00.000Z",
+        "completedAt": "2026-07-08T10:59:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "config-err-enum-001:2026-07-08T11:00:00.000Z",
+        "lessonId": "config-err-enum-001",
+        "startedAt": "2026-07-08T11:00:00.000Z",
+        "completedAt": "2026-07-08T11:01:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "config-err-display-002:2026-07-08T11:02:00.000Z",
+        "lessonId": "config-err-display-002",
+        "startedAt": "2026-07-08T11:02:00.000Z",
+        "completedAt": "2026-07-08T11:03:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "config-err-io-source-003:2026-07-08T11:04:00.000Z",
+        "lessonId": "config-err-io-source-003",
+        "startedAt": "2026-07-08T11:04:00.000Z",
+        "completedAt": "2026-07-08T11:05:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "config-err-from-io-004:2026-07-08T11:06:00.000Z",
+        "lessonId": "config-err-from-io-004",
+        "startedAt": "2026-07-08T11:06:00.000Z",
+        "completedAt": "2026-07-08T11:07:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "config-err-parse-port-005:2026-07-08T11:08:00.000Z",
+        "lessonId": "config-err-parse-port-005",
+        "startedAt": "2026-07-08T11:08:00.000Z",
+        "completedAt": "2026-07-08T11:09:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "config-load-port-006:2026-07-08T11:10:00.000Z",
+        "lessonId": "config-load-port-006",
+        "startedAt": "2026-07-08T11:10:00.000Z",
+        "completedAt": "2026-07-08T11:11:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "boundary-domain-error-001:2026-07-08T11:12:00.000Z",
+        "lessonId": "boundary-domain-error-001",
+        "startedAt": "2026-07-08T11:12:00.000Z",
+        "completedAt": "2026-07-08T11:13:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "boundary-repo-error-002:2026-07-08T11:14:00.000Z",
+        "lessonId": "boundary-repo-error-002",
+        "startedAt": "2026-07-08T11:14:00.000Z",
+        "completedAt": "2026-07-08T11:15:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "boundary-usecase-error-003:2026-07-08T11:16:00.000Z",
+        "lessonId": "boundary-usecase-error-003",
+        "startedAt": "2026-07-08T11:16:00.000Z",
+        "completedAt": "2026-07-08T11:17:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "boundary-from-domain-004:2026-07-08T11:18:00.000Z",
+        "lessonId": "boundary-from-domain-004",
+        "startedAt": "2026-07-08T11:18:00.000Z",
+        "completedAt": "2026-07-08T11:19:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "boundary-retryable-005:2026-07-08T11:20:00.000Z",
+        "lessonId": "boundary-retryable-005",
+        "startedAt": "2026-07-08T11:20:00.000Z",
+        "completedAt": "2026-07-08T11:21:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "boundary-status-code-006:2026-07-08T11:22:00.000Z",
+        "lessonId": "boundary-status-code-006",
+        "startedAt": "2026-07-08T11:22:00.000Z",
+        "completedAt": "2026-07-08T11:23:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "register-domain-command-001:2026-07-08T11:24:00.000Z",
+        "lessonId": "register-domain-command-001",
+        "startedAt": "2026-07-08T11:24:00.000Z",
+        "completedAt": "2026-07-08T11:25:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "register-repository-port-002:2026-07-08T11:26:00.000Z",
+        "lessonId": "register-repository-port-002",
+        "startedAt": "2026-07-08T11:26:00.000Z",
+        "completedAt": "2026-07-08T11:27:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "register-usecase-003:2026-07-08T11:28:00.000Z",
+        "lessonId": "register-usecase-003",
+        "startedAt": "2026-07-08T11:28:00.000Z",
+        "completedAt": "2026-07-08T11:29:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "register-adapter-dto-004:2026-07-08T11:30:00.000Z",
+        "lessonId": "register-adapter-dto-004",
+        "startedAt": "2026-07-08T11:30:00.000Z",
+        "completedAt": "2026-07-08T11:31:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "register-inmemory-repo-005:2026-07-08T11:32:00.000Z",
+        "lessonId": "register-inmemory-repo-005",
+        "startedAt": "2026-07-08T11:32:00.000Z",
+        "completedAt": "2026-07-08T11:33:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "register-handler-boundary-006:2026-07-08T11:34:00.000Z",
+        "lessonId": "register-handler-boundary-006",
+        "startedAt": "2026-07-08T11:34:00.000Z",
+        "completedAt": "2026-07-08T11:35:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "log-event-001:2026-07-08T11:36:00.000Z",
+        "lessonId": "log-event-001",
+        "startedAt": "2026-07-08T11:36:00.000Z",
+        "completedAt": "2026-07-08T11:37:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "log-fields-002:2026-07-08T11:38:00.000Z",
+        "lessonId": "log-fields-002",
+        "startedAt": "2026-07-08T11:38:00.000Z",
+        "completedAt": "2026-07-08T11:39:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "log-redacted-secret-003:2026-07-08T11:40:00.000Z",
+        "lessonId": "log-redacted-secret-003",
+        "startedAt": "2026-07-08T11:40:00.000Z",
+        "completedAt": "2026-07-08T11:41:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "log-request-span-004:2026-07-08T11:42:00.000Z",
+        "lessonId": "log-request-span-004",
+        "startedAt": "2026-07-08T11:42:00.000Z",
+        "completedAt": "2026-07-08T11:43:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "log-error-kind-005:2026-07-08T11:44:00.000Z",
+        "lessonId": "log-error-kind-005",
+        "startedAt": "2026-07-08T11:44:00.000Z",
+        "completedAt": "2026-07-08T11:45:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "log-boundary-event-006:2026-07-08T11:46:00.000Z",
+        "lessonId": "log-boundary-event-006",
+        "startedAt": "2026-07-08T11:46:00.000Z",
+        "completedAt": "2026-07-08T11:47:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "percentage-newtype-001:2026-07-08T11:48:00.000Z",
+        "lessonId": "percentage-newtype-001",
+        "startedAt": "2026-07-08T11:48:00.000Z",
+        "completedAt": "2026-07-08T11:49:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "percentage-valid-table-tests-002:2026-07-08T11:50:00.000Z",
+        "lessonId": "percentage-valid-table-tests-002",
+        "startedAt": "2026-07-08T11:50:00.000Z",
+        "completedAt": "2026-07-08T11:51:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "percentage-invalid-table-tests-003:2026-07-08T11:52:00.000Z",
+        "lessonId": "percentage-invalid-table-tests-003",
+        "startedAt": "2026-07-08T11:52:00.000Z",
+        "completedAt": "2026-07-08T11:53:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "percentage-display-tests-004:2026-07-08T11:54:00.000Z",
+        "lessonId": "percentage-display-tests-004",
+        "startedAt": "2026-07-08T11:54:00.000Z",
+        "completedAt": "2026-07-08T11:55:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "percentage-doc-example-005:2026-07-08T11:56:00.000Z",
+        "lessonId": "percentage-doc-example-005",
+        "startedAt": "2026-07-08T11:56:00.000Z",
+        "completedAt": "2026-07-08T11:57:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      },
+      {
+        "id": "percentage-named-cases-006:2026-07-08T11:58:00.000Z",
+        "lessonId": "percentage-named-cases-006",
+        "startedAt": "2026-07-08T11:58:00.000Z",
+        "completedAt": "2026-07-08T11:59:00.000Z",
+        "status": "completed",
+        "validationAttempts": 1,
+        "hintsRevealed": 0,
+        "durationSeconds": 60
+      }
+    ],
+    "completions": [
+      {
+        "lessonId": "config-struct-fields-001",
+        "conceptId": "struct-field-design",
+        "completedAt": "2026-07-08T09:01:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "error-enum-parse-user-001",
+        "conceptId": "error-enum-design",
+        "completedAt": "2026-07-08T09:03:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "inventory-item-struct-001",
+        "conceptId": "domain-structs",
+        "completedAt": "2026-07-08T09:05:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "log-entry-borrowed-001",
+        "conceptId": "borrowed-fields",
+        "completedAt": "2026-07-08T09:07:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "request-struct-001",
+        "conceptId": "api-structs",
+        "completedAt": "2026-07-08T09:09:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "config-default-impl-002",
+        "conceptId": "default-impl",
+        "completedAt": "2026-07-08T09:11:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "display-parse-user-error-002",
+        "conceptId": "display-parse-error",
+        "completedAt": "2026-07-08T09:13:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "inventory-filter-map-002",
+        "conceptId": "filter-map",
+        "completedAt": "2026-07-08T09:15:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "log-view-lifetime-002",
+        "conceptId": "lifetime-view",
+        "completedAt": "2026-07-08T09:17:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "request-builder-owned-setters-002",
+        "conceptId": "builder-setters",
+        "completedAt": "2026-07-08T09:19:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "config-methods-003",
+        "conceptId": "methods-basic",
+        "completedAt": "2026-07-08T09:21:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "error-trait-parse-user-error-003",
+        "conceptId": "error-trait",
+        "completedAt": "2026-07-08T09:23:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "inventory-fold-total-003",
+        "conceptId": "fold-sum",
+        "completedAt": "2026-07-08T09:25:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "log-level-match-003",
+        "conceptId": "pattern-matching",
+        "completedAt": "2026-07-08T09:27:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "request-builder-default-003",
+        "conceptId": "builder-default",
+        "completedAt": "2026-07-08T09:29:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "config-option-timeout-004",
+        "conceptId": "option-modeling",
+        "completedAt": "2026-07-08T09:31:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "inventory-clear-loop-004",
+        "conceptId": "iterator-judgment",
+        "completedAt": "2026-07-08T09:33:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "log-message-cow-004",
+        "conceptId": "cow-strings",
+        "completedAt": "2026-07-08T09:35:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "request-builder-result-004",
+        "conceptId": "builder-result",
+        "completedAt": "2026-07-08T09:37:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "source-parse-int-error-004",
+        "conceptId": "error-source",
+        "completedAt": "2026-07-08T09:39:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "config-result-validate-005",
+        "conceptId": "result-validation",
+        "completedAt": "2026-07-08T09:41:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "from-parse-int-error-005",
+        "conceptId": "from-error-conversion",
+        "completedAt": "2026-07-08T09:43:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "inventory-intoiterator-005",
+        "conceptId": "intoiterator-wrapper",
+        "completedAt": "2026-07-08T09:45:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "log-filter-tests-005",
+        "conceptId": "focused-tests",
+        "completedAt": "2026-07-08T09:47:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "request-builder-tryfrom-005",
+        "conceptId": "tryfrom-request",
+        "completedAt": "2026-07-08T09:49:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "config-borrowed-key-006",
+        "conceptId": "borrowing-api",
+        "completedAt": "2026-07-08T09:51:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "inventory-sort-by-key-006",
+        "conceptId": "sort-by-key",
+        "completedAt": "2026-07-08T09:53:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "request-doc-example-006",
+        "conceptId": "doc-examples",
+        "completedAt": "2026-07-08T09:55:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "tryfrom-user-str-006",
+        "conceptId": "tryfrom-user",
+        "completedAt": "2026-07-08T09:57:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "parse-user-public-tests-007",
+        "conceptId": "basic-tests",
+        "completedAt": "2026-07-08T09:59:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "email-address-private-field-001",
+        "conceptId": "email-address-private-field",
+        "completedAt": "2026-07-08T10:01:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "email-address-tryfrom-str-002",
+        "conceptId": "tryfrom-email-address",
+        "completedAt": "2026-07-08T10:03:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "email-address-domain-error-003",
+        "conceptId": "email-validation-error",
+        "completedAt": "2026-07-08T10:05:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "email-address-display-004",
+        "conceptId": "display-email-address",
+        "completedAt": "2026-07-08T10:07:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "email-validation-error-display-005",
+        "conceptId": "display-email-validation-error",
+        "completedAt": "2026-07-08T10:09:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "email-address-fromstr-006",
+        "conceptId": "fromstr-email-address",
+        "completedAt": "2026-07-08T10:11:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "money-struct-001",
+        "conceptId": "money-struct",
+        "completedAt": "2026-07-08T10:13:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "currency-enum-002",
+        "conceptId": "currency-enum",
+        "completedAt": "2026-07-08T10:15:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "money-invariants-003",
+        "conceptId": "money-invariants",
+        "completedAt": "2026-07-08T10:17:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "money-add-004",
+        "conceptId": "money-add-impl",
+        "completedAt": "2026-07-08T10:19:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "money-tryfrom-decimal-005",
+        "conceptId": "money-try-from-decimal",
+        "completedAt": "2026-07-08T10:21:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "money-display-006",
+        "conceptId": "money-display-format",
+        "completedAt": "2026-07-08T10:23:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "port-nonzero-001",
+        "conceptId": "port-nonzero",
+        "completedAt": "2026-07-08T10:25:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "host-domain-002",
+        "conceptId": "host-domain",
+        "completedAt": "2026-07-08T10:27:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "host-validation-003",
+        "conceptId": "host-validation",
+        "completedAt": "2026-07-08T10:29:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "host-port-struct-004",
+        "conceptId": "host-port-composite",
+        "completedAt": "2026-07-08T10:31:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "endpoint-default-005",
+        "conceptId": "endpoint-default",
+        "completedAt": "2026-07-08T10:33:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "endpoint-display-006",
+        "conceptId": "endpoint-display",
+        "completedAt": "2026-07-08T10:35:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "dto-struct-raw-001",
+        "conceptId": "dto-struct-raw",
+        "completedAt": "2026-07-08T10:37:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "register-command-value-002",
+        "conceptId": "register-command-value",
+        "completedAt": "2026-07-08T10:39:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "dto-tryfrom-command-003",
+        "conceptId": "dto-tryfrom-validation",
+        "completedAt": "2026-07-08T10:41:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "dto-trim-empty-004",
+        "conceptId": "dto-trim-validation",
+        "completedAt": "2026-07-08T10:43:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "dto-bulk-conversion-005",
+        "conceptId": "dto-nested-conversions",
+        "completedAt": "2026-07-08T10:45:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "dto-outbound-from-006",
+        "conceptId": "from-dto-outbound",
+        "completedAt": "2026-07-08T10:47:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "wrap-collection-001",
+        "conceptId": "wrap-collection",
+        "completedAt": "2026-07-08T10:49:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "wrap-borrowed-iter-002",
+        "conceptId": "wrap-borrowed-iter",
+        "completedAt": "2026-07-08T10:51:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "wrap-owned-intoiterator-003",
+        "conceptId": "wrap-into-iterator",
+        "completedAt": "2026-07-08T10:53:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "wrap-ref-intoiterator-004",
+        "conceptId": "wrap-ref-into-iterator",
+        "completedAt": "2026-07-08T10:55:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "wrap-mut-intoiterator-005",
+        "conceptId": "wrap-mut-into-iterator",
+        "completedAt": "2026-07-08T10:57:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "wrap-nonempty-tryfrom-006",
+        "conceptId": "wrap-nonempty-tryfrom",
+        "completedAt": "2026-07-08T10:59:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "config-err-enum-001",
+        "conceptId": "config-err-enum",
+        "completedAt": "2026-07-08T11:01:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "config-err-display-002",
+        "conceptId": "config-err-display",
+        "completedAt": "2026-07-08T11:03:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "config-err-io-source-003",
+        "conceptId": "config-err-io-wrap",
+        "completedAt": "2026-07-08T11:05:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "config-err-from-io-004",
+        "conceptId": "config-err-from-io",
+        "completedAt": "2026-07-08T11:07:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "config-err-parse-port-005",
+        "conceptId": "config-err-parse-wrap",
+        "completedAt": "2026-07-08T11:09:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "config-load-port-006",
+        "conceptId": "config-load-error-propagation",
+        "completedAt": "2026-07-08T11:11:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "boundary-domain-error-001",
+        "conceptId": "boundary-domain-error",
+        "completedAt": "2026-07-08T11:13:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "boundary-repo-error-002",
+        "conceptId": "boundary-repo-error",
+        "completedAt": "2026-07-08T11:15:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "boundary-usecase-error-003",
+        "conceptId": "boundary-usecase-error",
+        "completedAt": "2026-07-08T11:17:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "boundary-from-domain-004",
+        "conceptId": "boundary-domain-from",
+        "completedAt": "2026-07-08T11:19:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "boundary-retryable-005",
+        "conceptId": "boundary-retryable",
+        "completedAt": "2026-07-08T11:21:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "boundary-status-code-006",
+        "conceptId": "boundary-http-status",
+        "completedAt": "2026-07-08T11:23:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "register-domain-command-001",
+        "conceptId": "register-domain-command",
+        "completedAt": "2026-07-08T11:25:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "register-repository-port-002",
+        "conceptId": "register-repository-port",
+        "completedAt": "2026-07-08T11:27:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "register-usecase-003",
+        "conceptId": "register-usecase-function",
+        "completedAt": "2026-07-08T11:29:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "register-adapter-dto-004",
+        "conceptId": "register-adapter-dto",
+        "completedAt": "2026-07-08T11:31:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "register-inmemory-repo-005",
+        "conceptId": "register-inmemory-repo",
+        "completedAt": "2026-07-08T11:33:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "register-handler-boundary-006",
+        "conceptId": "register-handler-boundary",
+        "completedAt": "2026-07-08T11:35:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "log-event-001",
+        "conceptId": "log-event-struct",
+        "completedAt": "2026-07-08T11:37:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "log-fields-002",
+        "conceptId": "log-event-fields",
+        "completedAt": "2026-07-08T11:39:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "log-redacted-secret-003",
+        "conceptId": "log-redacted-secret",
+        "completedAt": "2026-07-08T11:41:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "log-request-span-004",
+        "conceptId": "log-request-span",
+        "completedAt": "2026-07-08T11:43:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "log-error-kind-005",
+        "conceptId": "log-error-kind",
+        "completedAt": "2026-07-08T11:45:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "log-boundary-event-006",
+        "conceptId": "log-boundary-event",
+        "completedAt": "2026-07-08T11:47:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "percentage-newtype-001",
+        "conceptId": "percentage-newtype",
+        "completedAt": "2026-07-08T11:49:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "percentage-valid-table-tests-002",
+        "conceptId": "percentage-valid-table-tests",
+        "completedAt": "2026-07-08T11:51:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "percentage-invalid-table-tests-003",
+        "conceptId": "percentage-invalid-table-tests",
+        "completedAt": "2026-07-08T11:53:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "percentage-display-tests-004",
+        "conceptId": "percentage-display-tests",
+        "completedAt": "2026-07-08T11:55:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "percentage-doc-example-005",
+        "conceptId": "percentage-doc-example",
+        "completedAt": "2026-07-08T11:57:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      },
+      {
+        "lessonId": "percentage-named-cases-006",
+        "conceptId": "percentage-named-test-cases",
+        "completedAt": "2026-07-08T11:59:00.000Z",
+        "localDate": "2026-07-08",
+        "timezoneOffsetMinutes": -180
+      }
+    ],
+    "concepts": {
+      "struct-field-design": {
+        "conceptId": "struct-field-design",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:01:00.000Z",
+        "nextReviewAt": null
+      },
+      "error-enum-design": {
+        "conceptId": "error-enum-design",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:03:00.000Z",
+        "nextReviewAt": null
+      },
+      "domain-structs": {
+        "conceptId": "domain-structs",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:05:00.000Z",
+        "nextReviewAt": null
+      },
+      "borrowed-fields": {
+        "conceptId": "borrowed-fields",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:07:00.000Z",
+        "nextReviewAt": null
+      },
+      "api-structs": {
+        "conceptId": "api-structs",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:09:00.000Z",
+        "nextReviewAt": null
+      },
+      "default-impl": {
+        "conceptId": "default-impl",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:11:00.000Z",
+        "nextReviewAt": null
+      },
+      "display-parse-error": {
+        "conceptId": "display-parse-error",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:13:00.000Z",
+        "nextReviewAt": null
+      },
+      "filter-map": {
+        "conceptId": "filter-map",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:15:00.000Z",
+        "nextReviewAt": null
+      },
+      "lifetime-view": {
+        "conceptId": "lifetime-view",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:17:00.000Z",
+        "nextReviewAt": null
+      },
+      "builder-setters": {
+        "conceptId": "builder-setters",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:19:00.000Z",
+        "nextReviewAt": null
+      },
+      "methods-basic": {
+        "conceptId": "methods-basic",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:21:00.000Z",
+        "nextReviewAt": null
+      },
+      "error-trait": {
+        "conceptId": "error-trait",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:23:00.000Z",
+        "nextReviewAt": null
+      },
+      "fold-sum": {
+        "conceptId": "fold-sum",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:25:00.000Z",
+        "nextReviewAt": null
+      },
+      "pattern-matching": {
+        "conceptId": "pattern-matching",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:27:00.000Z",
+        "nextReviewAt": null
+      },
+      "builder-default": {
+        "conceptId": "builder-default",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:29:00.000Z",
+        "nextReviewAt": null
+      },
+      "option-modeling": {
+        "conceptId": "option-modeling",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:31:00.000Z",
+        "nextReviewAt": null
+      },
+      "iterator-judgment": {
+        "conceptId": "iterator-judgment",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:33:00.000Z",
+        "nextReviewAt": null
+      },
+      "cow-strings": {
+        "conceptId": "cow-strings",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:35:00.000Z",
+        "nextReviewAt": null
+      },
+      "builder-result": {
+        "conceptId": "builder-result",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:37:00.000Z",
+        "nextReviewAt": null
+      },
+      "error-source": {
+        "conceptId": "error-source",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:39:00.000Z",
+        "nextReviewAt": null
+      },
+      "result-validation": {
+        "conceptId": "result-validation",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:41:00.000Z",
+        "nextReviewAt": null
+      },
+      "from-error-conversion": {
+        "conceptId": "from-error-conversion",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:43:00.000Z",
+        "nextReviewAt": null
+      },
+      "intoiterator-wrapper": {
+        "conceptId": "intoiterator-wrapper",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:45:00.000Z",
+        "nextReviewAt": null
+      },
+      "focused-tests": {
+        "conceptId": "focused-tests",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:47:00.000Z",
+        "nextReviewAt": null
+      },
+      "tryfrom-request": {
+        "conceptId": "tryfrom-request",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:49:00.000Z",
+        "nextReviewAt": null
+      },
+      "borrowing-api": {
+        "conceptId": "borrowing-api",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:51:00.000Z",
+        "nextReviewAt": null
+      },
+      "sort-by-key": {
+        "conceptId": "sort-by-key",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:53:00.000Z",
+        "nextReviewAt": null
+      },
+      "doc-examples": {
+        "conceptId": "doc-examples",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:55:00.000Z",
+        "nextReviewAt": null
+      },
+      "tryfrom-user": {
+        "conceptId": "tryfrom-user",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:57:00.000Z",
+        "nextReviewAt": null
+      },
+      "basic-tests": {
+        "conceptId": "basic-tests",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T09:59:00.000Z",
+        "nextReviewAt": null
+      },
+      "email-address-private-field": {
+        "conceptId": "email-address-private-field",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:01:00.000Z",
+        "nextReviewAt": null
+      },
+      "tryfrom-email-address": {
+        "conceptId": "tryfrom-email-address",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:03:00.000Z",
+        "nextReviewAt": null
+      },
+      "email-validation-error": {
+        "conceptId": "email-validation-error",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:05:00.000Z",
+        "nextReviewAt": null
+      },
+      "display-email-address": {
+        "conceptId": "display-email-address",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:07:00.000Z",
+        "nextReviewAt": null
+      },
+      "display-email-validation-error": {
+        "conceptId": "display-email-validation-error",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:09:00.000Z",
+        "nextReviewAt": null
+      },
+      "fromstr-email-address": {
+        "conceptId": "fromstr-email-address",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:11:00.000Z",
+        "nextReviewAt": null
+      },
+      "money-struct": {
+        "conceptId": "money-struct",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:13:00.000Z",
+        "nextReviewAt": null
+      },
+      "currency-enum": {
+        "conceptId": "currency-enum",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:15:00.000Z",
+        "nextReviewAt": null
+      },
+      "money-invariants": {
+        "conceptId": "money-invariants",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:17:00.000Z",
+        "nextReviewAt": null
+      },
+      "money-add-impl": {
+        "conceptId": "money-add-impl",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:19:00.000Z",
+        "nextReviewAt": null
+      },
+      "money-try-from-decimal": {
+        "conceptId": "money-try-from-decimal",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:21:00.000Z",
+        "nextReviewAt": null
+      },
+      "money-display-format": {
+        "conceptId": "money-display-format",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:23:00.000Z",
+        "nextReviewAt": null
+      },
+      "port-nonzero": {
+        "conceptId": "port-nonzero",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:25:00.000Z",
+        "nextReviewAt": null
+      },
+      "host-domain": {
+        "conceptId": "host-domain",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:27:00.000Z",
+        "nextReviewAt": null
+      },
+      "host-validation": {
+        "conceptId": "host-validation",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:29:00.000Z",
+        "nextReviewAt": null
+      },
+      "host-port-composite": {
+        "conceptId": "host-port-composite",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:31:00.000Z",
+        "nextReviewAt": null
+      },
+      "endpoint-default": {
+        "conceptId": "endpoint-default",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:33:00.000Z",
+        "nextReviewAt": null
+      },
+      "endpoint-display": {
+        "conceptId": "endpoint-display",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:35:00.000Z",
+        "nextReviewAt": null
+      },
+      "dto-struct-raw": {
+        "conceptId": "dto-struct-raw",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:37:00.000Z",
+        "nextReviewAt": null
+      },
+      "register-command-value": {
+        "conceptId": "register-command-value",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:39:00.000Z",
+        "nextReviewAt": null
+      },
+      "dto-tryfrom-validation": {
+        "conceptId": "dto-tryfrom-validation",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:41:00.000Z",
+        "nextReviewAt": null
+      },
+      "dto-trim-validation": {
+        "conceptId": "dto-trim-validation",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:43:00.000Z",
+        "nextReviewAt": null
+      },
+      "dto-nested-conversions": {
+        "conceptId": "dto-nested-conversions",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:45:00.000Z",
+        "nextReviewAt": null
+      },
+      "from-dto-outbound": {
+        "conceptId": "from-dto-outbound",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:47:00.000Z",
+        "nextReviewAt": null
+      },
+      "wrap-collection": {
+        "conceptId": "wrap-collection",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:49:00.000Z",
+        "nextReviewAt": null
+      },
+      "wrap-borrowed-iter": {
+        "conceptId": "wrap-borrowed-iter",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:51:00.000Z",
+        "nextReviewAt": null
+      },
+      "wrap-into-iterator": {
+        "conceptId": "wrap-into-iterator",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:53:00.000Z",
+        "nextReviewAt": null
+      },
+      "wrap-ref-into-iterator": {
+        "conceptId": "wrap-ref-into-iterator",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:55:00.000Z",
+        "nextReviewAt": null
+      },
+      "wrap-mut-into-iterator": {
+        "conceptId": "wrap-mut-into-iterator",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:57:00.000Z",
+        "nextReviewAt": null
+      },
+      "wrap-nonempty-tryfrom": {
+        "conceptId": "wrap-nonempty-tryfrom",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T10:59:00.000Z",
+        "nextReviewAt": null
+      },
+      "config-err-enum": {
+        "conceptId": "config-err-enum",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:01:00.000Z",
+        "nextReviewAt": null
+      },
+      "config-err-display": {
+        "conceptId": "config-err-display",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:03:00.000Z",
+        "nextReviewAt": null
+      },
+      "config-err-io-wrap": {
+        "conceptId": "config-err-io-wrap",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:05:00.000Z",
+        "nextReviewAt": null
+      },
+      "config-err-from-io": {
+        "conceptId": "config-err-from-io",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:07:00.000Z",
+        "nextReviewAt": null
+      },
+      "config-err-parse-wrap": {
+        "conceptId": "config-err-parse-wrap",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:09:00.000Z",
+        "nextReviewAt": null
+      },
+      "config-load-error-propagation": {
+        "conceptId": "config-load-error-propagation",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:11:00.000Z",
+        "nextReviewAt": null
+      },
+      "boundary-domain-error": {
+        "conceptId": "boundary-domain-error",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:13:00.000Z",
+        "nextReviewAt": null
+      },
+      "boundary-repo-error": {
+        "conceptId": "boundary-repo-error",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:15:00.000Z",
+        "nextReviewAt": null
+      },
+      "boundary-usecase-error": {
+        "conceptId": "boundary-usecase-error",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:17:00.000Z",
+        "nextReviewAt": null
+      },
+      "boundary-domain-from": {
+        "conceptId": "boundary-domain-from",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:19:00.000Z",
+        "nextReviewAt": null
+      },
+      "boundary-retryable": {
+        "conceptId": "boundary-retryable",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:21:00.000Z",
+        "nextReviewAt": null
+      },
+      "boundary-http-status": {
+        "conceptId": "boundary-http-status",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:23:00.000Z",
+        "nextReviewAt": null
+      },
+      "register-domain-command": {
+        "conceptId": "register-domain-command",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:25:00.000Z",
+        "nextReviewAt": null
+      },
+      "register-repository-port": {
+        "conceptId": "register-repository-port",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:27:00.000Z",
+        "nextReviewAt": null
+      },
+      "register-usecase-function": {
+        "conceptId": "register-usecase-function",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:29:00.000Z",
+        "nextReviewAt": null
+      },
+      "register-adapter-dto": {
+        "conceptId": "register-adapter-dto",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:31:00.000Z",
+        "nextReviewAt": null
+      },
+      "register-inmemory-repo": {
+        "conceptId": "register-inmemory-repo",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:33:00.000Z",
+        "nextReviewAt": null
+      },
+      "register-handler-boundary": {
+        "conceptId": "register-handler-boundary",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:35:00.000Z",
+        "nextReviewAt": null
+      },
+      "log-event-struct": {
+        "conceptId": "log-event-struct",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:37:00.000Z",
+        "nextReviewAt": null
+      },
+      "log-event-fields": {
+        "conceptId": "log-event-fields",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:39:00.000Z",
+        "nextReviewAt": null
+      },
+      "log-redacted-secret": {
+        "conceptId": "log-redacted-secret",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:41:00.000Z",
+        "nextReviewAt": null
+      },
+      "log-request-span": {
+        "conceptId": "log-request-span",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:43:00.000Z",
+        "nextReviewAt": null
+      },
+      "log-error-kind": {
+        "conceptId": "log-error-kind",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:45:00.000Z",
+        "nextReviewAt": null
+      },
+      "log-boundary-event": {
+        "conceptId": "log-boundary-event",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:47:00.000Z",
+        "nextReviewAt": null
+      },
+      "percentage-newtype": {
+        "conceptId": "percentage-newtype",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:49:00.000Z",
+        "nextReviewAt": null
+      },
+      "percentage-valid-table-tests": {
+        "conceptId": "percentage-valid-table-tests",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:51:00.000Z",
+        "nextReviewAt": null
+      },
+      "percentage-invalid-table-tests": {
+        "conceptId": "percentage-invalid-table-tests",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:53:00.000Z",
+        "nextReviewAt": null
+      },
+      "percentage-display-tests": {
+        "conceptId": "percentage-display-tests",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:55:00.000Z",
+        "nextReviewAt": null
+      },
+      "percentage-doc-example": {
+        "conceptId": "percentage-doc-example",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:57:00.000Z",
+        "nextReviewAt": null
+      },
+      "percentage-named-test-cases": {
+        "conceptId": "percentage-named-test-cases",
+        "state": "introduced",
+        "completedLessons": 1,
+        "successfulReviews": 0,
+        "lastPracticedAt": "2026-07-08T11:59:00.000Z",
+        "nextReviewAt": null
+      }
+    }
+  }
+}

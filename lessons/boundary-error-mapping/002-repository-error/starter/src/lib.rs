@@ -1,9 +1,12 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+use thiserror::Error;
+
+#[non_exhaustive]
+#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]
 pub enum CreateOrderError {
+    #[error("order must contain at least one line")]
     EmptyOrder,
+    #[error("order line quantity must be positive")]
     InvalidQuantity,
 }
 
-// Continue from the previous lesson.
-// TODO: add repository failure variants.
-// TODO: implement Display for RepositoryError.
+// TODO: add a non-exhaustive RepositoryError.

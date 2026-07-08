@@ -6,12 +6,12 @@
   "order": 76,
   "day": 4,
   "arcLength": 6,
-  "title": "Translate adapter DTOs at the edge",
+  "title": "Deserialize adapter input at the edge",
   "conceptId": "register-adapter-dto",
   "difficulty": "medium",
   "estimatedMinutes": 8,
   "scenario": "Adapter DTOs should be converted into domain commands before use-case logic runs.",
-  "instructions": "Define an adapters module with RegisterUserRequest and RequestError. Implement TryFrom<RegisterUserRequest> for domain::RegisterUserCommand by trimming input and rejecting empty fields.",
+  "instructions": "Add an adapters module with serde-deserializable RegisterUserRequest and typed RequestError. Implement TryFrom<RegisterUserRequest> for RegisterUserCommand, trimming and validating input before it enters the use case.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "RegisterUserRequest can expose public String fields because it is an adapter DTO, not a domain type."
+      "body": "Serde belongs on the adapter DTO, not on the command."
     },
     {
       "level": 2,
-      "body": "Use RegisterUserCommand::new and EmailAddress::new after trimming, and return RequestError for empty email or display name."
+      "body": "Trim before constructing domain values."
     },
     {
       "level": 3,
-      "body": "One complete solution for Translate adapter DTOs at the edge is shown below.",
-      "solutionCode": "pub mod domain {\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct EmailAddress(String);\n\n    impl EmailAddress {\n        pub fn new(value: impl Into<String>) -> Self {\n            Self(value.into())\n        }\n\n        pub fn as_str(&self) -> &str {\n            &self.0\n        }\n    }\n\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct RegisterUserCommand {\n        email: EmailAddress,\n        display_name: String,\n    }\n\n    impl RegisterUserCommand {\n        pub fn new(email: EmailAddress, display_name: impl Into<String>) -> Self {\n            Self {\n                email,\n                display_name: display_name.into(),\n            }\n        }\n\n        pub fn email(&self) -> &EmailAddress {\n            &self.email\n        }\n\n        pub fn display_name(&self) -> &str {\n            &self.display_name\n        }\n    }\n\n    #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n    pub struct UserId(pub u64);\n\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct NewUser {\n        email: EmailAddress,\n        display_name: String,\n    }\n\n    impl NewUser {\n        pub fn new(email: EmailAddress, display_name: impl Into<String>) -> Self {\n            Self {\n                email,\n                display_name: display_name.into(),\n            }\n        }\n\n        pub fn email(&self) -> &EmailAddress {\n            &self.email\n        }\n\n        pub fn display_name(&self) -> &str {\n            &self.display_name\n        }\n    }\n}\n\npub mod application {\n    use super::domain::{EmailAddress, NewUser, RegisterUserCommand, UserId};\n\n    #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n    pub enum RepositoryError {\n        Unavailable,\n    }\n\n    #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n    pub enum RegisterUserError {\n        DuplicateEmail,\n        Repository(RepositoryError),\n    }\n\n    pub trait UserRepository {\n        fn exists_by_email(&self, email: &EmailAddress) -> Result<bool, RepositoryError>;\n\n        fn save(&mut self, user: NewUser) -> Result<UserId, RepositoryError>;\n    }\n\n    pub fn register_user<R: UserRepository>(\n        repository: &mut R,\n        command: RegisterUserCommand,\n    ) -> Result<UserId, RegisterUserError> {\n        if repository\n            .exists_by_email(command.email())\n            .map_err(RegisterUserError::Repository)?\n        {\n            return Err(RegisterUserError::DuplicateEmail);\n        }\n\n        repository\n            .save(NewUser::new(\n                command.email().clone(),\n                command.display_name().to_owned(),\n            ))\n            .map_err(RegisterUserError::Repository)\n    }\n}\n\npub mod adapters {\n    use super::domain::{EmailAddress, RegisterUserCommand};\n\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct RegisterUserRequest {\n        pub email: String,\n        pub display_name: String,\n    }\n\n    #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n    pub enum RequestError {\n        EmptyEmail,\n        EmptyDisplayName,\n    }\n\n    impl TryFrom<RegisterUserRequest> for RegisterUserCommand {\n        type Error = RequestError;\n\n        fn try_from(value: RegisterUserRequest) -> Result<Self, Self::Error> {\n            let email = value.email.trim();\n            let display_name = value.display_name.trim();\n\n            if email.is_empty() {\n                return Err(RequestError::EmptyEmail);\n            }\n\n            if display_name.is_empty() {\n                return Err(RequestError::EmptyDisplayName);\n            }\n\n            Ok(RegisterUserCommand::new(\n                EmailAddress::new(email.to_owned()),\n                display_name.to_owned(),\n            ))\n        }\n    }\n}"
+      "body": "Return RequestError before calling application code.",
+      "solutionCode": "pub mod domain {\n    #[derive(Debug, Clone, PartialEq, Eq, Hash)]\n    pub struct EmailAddress(String);\n\n    impl EmailAddress {\n        pub fn new(value: impl Into<String>) -> Self {\n            Self(value.into())\n        }\n\n        pub fn as_str(&self) -> &str {\n            &self.0\n        }\n    }\n\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct RegisterUserCommand {\n        email: EmailAddress,\n        display_name: String,\n    }\n\n    impl RegisterUserCommand {\n        pub fn new(email: EmailAddress, display_name: impl Into<String>) -> Self {\n            Self {\n                email,\n                display_name: display_name.into(),\n            }\n        }\n\n        pub fn email(&self) -> &EmailAddress {\n            &self.email\n        }\n\n        pub fn display_name(&self) -> &str {\n            &self.display_name\n        }\n    }\n}\n\npub mod application {\n    use thiserror::Error;\n\n    use crate::domain::RegisterUserCommand;\n\n    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\n    pub struct UserId(u64);\n\n    impl UserId {\n        pub fn new(value: u64) -> Self {\n            Self(value)\n        }\n\n        pub fn value(self) -> u64 {\n            self.0\n        }\n    }\n\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct NewUser {\n        email: String,\n        display_name: String,\n    }\n\n    impl NewUser {\n        pub fn from_command(command: RegisterUserCommand) -> Self {\n            Self {\n                email: command.email().as_str().to_owned(),\n                display_name: command.display_name().to_owned(),\n            }\n        }\n\n        pub fn email(&self) -> &str {\n            &self.email\n        }\n\n        pub fn display_name(&self) -> &str {\n            &self.display_name\n        }\n    }\n\n    #[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\n    pub enum RepositoryError {\n        #[error(\"repository is unavailable\")]\n        Unavailable,\n        #[error(\"email already exists\")]\n        Conflict,\n    }\n\n    pub trait UserRepository: Send + Sync {\n        fn email_exists(\n            &self,\n            email: &str,\n        ) -> impl std::future::Future<Output = Result<bool, RepositoryError>> + Send;\n\n        fn save(\n            &self,\n            user: NewUser,\n        ) -> impl std::future::Future<Output = Result<UserId, RepositoryError>> + Send;\n    }\n\n    #[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\n    pub enum RegisterUserError {\n        #[error(\"email already exists\")]\n        DuplicateEmail,\n        #[error(transparent)]\n        Repository(#[from] RepositoryError),\n    }\n\n    pub async fn register_user<R: UserRepository>(\n        repository: &R,\n        command: RegisterUserCommand,\n    ) -> Result<UserId, RegisterUserError> {\n        if repository.email_exists(command.email().as_str()).await? {\n            return Err(RegisterUserError::DuplicateEmail);\n        }\n\n        match repository.save(NewUser::from_command(command)).await {\n            Ok(user_id) => Ok(user_id),\n            Err(RepositoryError::Conflict) => Err(RegisterUserError::DuplicateEmail),\n            Err(error) => Err(error.into()),\n        }\n    }\n}\n\npub mod adapters {\n    use serde::Deserialize;\n    use thiserror::Error;\n\n    use crate::domain::{EmailAddress, RegisterUserCommand};\n\n    #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]\n    pub struct RegisterUserRequest {\n        pub email: String,\n        pub display_name: String,\n    }\n\n    #[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\n    pub enum RequestError {\n        #[error(\"email is empty\")]\n        EmptyEmail,\n        #[error(\"display name is empty\")]\n        EmptyDisplayName,\n    }\n\n    impl TryFrom<RegisterUserRequest> for RegisterUserCommand {\n        type Error = RequestError;\n\n        fn try_from(request: RegisterUserRequest) -> Result<Self, Self::Error> {\n            let email = request.email.trim();\n            let display_name = request.display_name.trim();\n\n            if email.is_empty() {\n                return Err(RequestError::EmptyEmail);\n            }\n\n            if display_name.is_empty() {\n                return Err(RequestError::EmptyDisplayName);\n            }\n\n            Ok(RegisterUserCommand::new(\n                EmailAddress::new(email),\n                display_name,\n            ))\n        }\n    }\n}"
     }
   ],
-  "completionExplanation": "RegisterUserRequest is now translated at the adapter edge into the domain command, keeping validation and DTO shape out of the use case.",
+  "completionExplanation": "JSON-shaped input is converted into framework-free domain data at the adapter edge.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -48,28 +48,21 @@
         "timeoutMs": 10000,
         "checks": [
           {
+            "type": "derived_trait_for_type",
+            "traitName": "serde::Deserialize",
+            "typeName": "RegisterUserRequest"
+          },
+          {
             "type": "impl_trait_for_type",
             "traitName": "TryFrom<RegisterUserRequest>",
             "typeName": "RegisterUserCommand"
-          },
-          {
-            "type": "source_includes",
-            "requiredSnippets": [
-              "pub mod adapters",
-              "trim()"
-            ],
-            "forbiddenSnippets": [
-              "unwrap",
-              "expect",
-              "panic!"
-            ]
           }
         ]
       },
       {
         "mode": "backend-cargo-test",
         "timeoutMs": 10000,
-        "dependencySet": "std",
+        "dependencySet": "advanced",
         "testFiles": [
           {
             "path": "tests/public.rs",

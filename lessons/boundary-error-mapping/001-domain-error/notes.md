@@ -1,1 +1,1 @@
-Teaches boundary-domain-error with deterministic public tests and an idiomatic no-panic solution.
+Teaches boundary-domain-error through typed, idiomatic error boundaries.

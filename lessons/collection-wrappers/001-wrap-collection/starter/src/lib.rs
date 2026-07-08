@@ -1,7 +1,1 @@
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OrderLine {
-    pub sku: String,
-    pub quantity: u32,
-}
-
-// TODO: define OrderLines as a private Vec wrapper with constructor and basic accessors.
+// TODO: wrap order lines in an API-owned collection type.

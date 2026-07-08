@@ -1,1 +1,1 @@
-Teaches percentage-named-test-cases with deterministic public tests and an idiomatic no-panic solution.
+Teaches percentage-named-test-cases with production-shaped Rust APIs.

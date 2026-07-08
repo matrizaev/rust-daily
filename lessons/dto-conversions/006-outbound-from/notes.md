@@ -1,1 +1,1 @@
-Teaches from-dto-outbound with deterministic public tests and an idiomatic no-panic solution.
+Teaches from-dto-outbound with cumulative, idiomatic Rust code.

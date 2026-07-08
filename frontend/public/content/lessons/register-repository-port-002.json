@@ -6,40 +6,40 @@
   "order": 74,
   "day": 2,
   "arcLength": 6,
-  "title": "Define an application repository port",
+  "title": "Define an async repository port with Send futures",
   "conceptId": "register-repository-port",
   "difficulty": "medium",
   "estimatedMinutes": 8,
   "scenario": "Application code depends on domain types and port traits, not concrete database clients.",
-  "instructions": "Keep the domain command from the starter. Add UserId and NewUser domain types, then define an application module with a UserRepository trait that checks email existence and saves a NewUser.",
+  "instructions": "Add application types UserId, NewUser, and RepositoryError. Define UserRepository: Send + Sync with methods returning impl Future + Send for email_exists and save, keeping repository details out of domain types.",
   "files": [
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "pub mod domain {\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct EmailAddress(String);\n\n    impl EmailAddress {\n        pub fn new(value: impl Into<String>) -> Self {\n            Self(value.into())\n        }\n\n        pub fn as_str(&self) -> &str {\n            &self.0\n        }\n    }\n\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct RegisterUserCommand {\n        email: EmailAddress,\n        display_name: String,\n    }\n\n    impl RegisterUserCommand {\n        pub fn new(email: EmailAddress, display_name: impl Into<String>) -> Self {\n            Self {\n                email,\n                display_name: display_name.into(),\n            }\n        }\n\n        pub fn email(&self) -> &EmailAddress {\n            &self.email\n        }\n\n        pub fn display_name(&self) -> &str {\n            &self.display_name\n        }\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: define UserRepository port trait.\n"
+      "content": "pub mod domain {\n    #[derive(Debug, Clone, PartialEq, Eq, Hash)]\n    pub struct EmailAddress(String);\n\n    impl EmailAddress {\n        pub fn new(value: impl Into<String>) -> Self {\n            Self(value.into())\n        }\n\n        pub fn as_str(&self) -> &str {\n            &self.0\n        }\n    }\n\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct RegisterUserCommand {\n        email: EmailAddress,\n        display_name: String,\n    }\n\n    impl RegisterUserCommand {\n        pub fn new(email: EmailAddress, display_name: impl Into<String>) -> Self {\n            Self {\n                email,\n                display_name: display_name.into(),\n            }\n        }\n\n        pub fn email(&self) -> &EmailAddress {\n            &self.email\n        }\n\n        pub fn display_name(&self) -> &str {\n            &self.display_name\n        }\n    }\n}\n\n// TODO: add async UserRepository operations in the application module.\n"
     },
     {
       "path": "tests/public.rs",
       "role": "test",
-      "content": "use rust_daily_lesson::application::{RepositoryError, UserRepository};\nuse rust_daily_lesson::domain::{EmailAddress, NewUser, UserId};\n\nstruct FakeRepo;\n\nimpl UserRepository for FakeRepo {\n    fn exists_by_email(&self, _email: &EmailAddress) -> Result<bool, RepositoryError> {\n        Ok(false)\n    }\n\n    fn save(&mut self, _user: NewUser) -> Result<UserId, RepositoryError> {\n        Ok(UserId(1))\n    }\n}\n\n#[test]\nfn repository_port_is_implementable_by_adapters() {\n    let mut repo = FakeRepo;\n    let email = EmailAddress::new(\"ada@example.com\");\n    let user = NewUser::new(email.clone(), \"Ada\");\n\n    assert_eq!(repo.exists_by_email(&email), Ok(false));\n    assert_eq!(repo.save(user), Ok(UserId(1)));\n}\n"
+      "content": "use rust_daily_lesson::application::{NewUser, UserId};\nuse rust_daily_lesson::domain::{EmailAddress, RegisterUserCommand};\n\n#[test]\nfn new_user_is_built_from_domain_command() {\n    let command = RegisterUserCommand::new(EmailAddress::new(\"ada@example.com\"), \"Ada\");\n    let user = NewUser::from_command(command);\n\n    assert_eq!(user.email(), \"ada@example.com\");\n    assert_eq!(user.display_name(), \"Ada\");\n    assert_eq!(UserId::new(7).value(), 7);\n}\n"
     }
   ],
   "hints": [
     {
       "level": 1,
-      "body": "Keep EmailAddress and RegisterUserCommand unchanged. Add UserId and NewUser to the domain module."
+      "body": "Persistence operations are asynchronous, but a public trait should state the Send bound of each returned future."
     },
     {
       "level": 2,
-      "body": "In application, define RepositoryError and UserRepository with exists_by_email(&EmailAddress) and save(NewUser)."
+      "body": "Use return-position impl Future<Output = Result<...>> + Send in the trait."
     },
     {
       "level": 3,
-      "body": "One complete solution for Define an application repository port is shown below.",
-      "solutionCode": "pub mod domain {\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct EmailAddress(String);\n\n    impl EmailAddress {\n        pub fn new(value: impl Into<String>) -> Self {\n            Self(value.into())\n        }\n\n        pub fn as_str(&self) -> &str {\n            &self.0\n        }\n    }\n\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct RegisterUserCommand {\n        email: EmailAddress,\n        display_name: String,\n    }\n\n    impl RegisterUserCommand {\n        pub fn new(email: EmailAddress, display_name: impl Into<String>) -> Self {\n            Self {\n                email,\n                display_name: display_name.into(),\n            }\n        }\n\n        pub fn email(&self) -> &EmailAddress {\n            &self.email\n        }\n\n        pub fn display_name(&self) -> &str {\n            &self.display_name\n        }\n    }\n\n    #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n    pub struct UserId(pub u64);\n\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct NewUser {\n        email: EmailAddress,\n        display_name: String,\n    }\n\n    impl NewUser {\n        pub fn new(email: EmailAddress, display_name: impl Into<String>) -> Self {\n            Self {\n                email,\n                display_name: display_name.into(),\n            }\n        }\n\n        pub fn email(&self) -> &EmailAddress {\n            &self.email\n        }\n\n        pub fn display_name(&self) -> &str {\n            &self.display_name\n        }\n    }\n}\n\npub mod application {\n    use super::domain::{EmailAddress, NewUser, UserId};\n\n    #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n    pub enum RepositoryError {\n        Unavailable,\n    }\n\n    pub trait UserRepository {\n        fn exists_by_email(&self, email: &EmailAddress) -> Result<bool, RepositoryError>;\n\n        fn save(&mut self, user: NewUser) -> Result<UserId, RepositoryError>;\n    }\n}"
+      "body": "Concrete implementations can still use async fn.",
+      "solutionCode": "pub mod domain {\n    #[derive(Debug, Clone, PartialEq, Eq, Hash)]\n    pub struct EmailAddress(String);\n\n    impl EmailAddress {\n        pub fn new(value: impl Into<String>) -> Self {\n            Self(value.into())\n        }\n\n        pub fn as_str(&self) -> &str {\n            &self.0\n        }\n    }\n\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct RegisterUserCommand {\n        email: EmailAddress,\n        display_name: String,\n    }\n\n    impl RegisterUserCommand {\n        pub fn new(email: EmailAddress, display_name: impl Into<String>) -> Self {\n            Self {\n                email,\n                display_name: display_name.into(),\n            }\n        }\n\n        pub fn email(&self) -> &EmailAddress {\n            &self.email\n        }\n\n        pub fn display_name(&self) -> &str {\n            &self.display_name\n        }\n    }\n}\n\npub mod application {\n    use thiserror::Error;\n\n    use crate::domain::RegisterUserCommand;\n\n    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\n    pub struct UserId(u64);\n\n    impl UserId {\n        pub fn new(value: u64) -> Self {\n            Self(value)\n        }\n\n        pub fn value(self) -> u64 {\n            self.0\n        }\n    }\n\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct NewUser {\n        email: String,\n        display_name: String,\n    }\n\n    impl NewUser {\n        pub fn from_command(command: RegisterUserCommand) -> Self {\n            Self {\n                email: command.email().as_str().to_owned(),\n                display_name: command.display_name().to_owned(),\n            }\n        }\n\n        pub fn email(&self) -> &str {\n            &self.email\n        }\n\n        pub fn display_name(&self) -> &str {\n            &self.display_name\n        }\n    }\n\n    #[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\n    pub enum RepositoryError {\n        #[error(\"repository is unavailable\")]\n        Unavailable,\n        #[error(\"email already exists\")]\n        Conflict,\n    }\n\n    pub trait UserRepository: Send + Sync {\n        fn email_exists(\n            &self,\n            email: &str,\n        ) -> impl std::future::Future<Output = Result<bool, RepositoryError>> + Send;\n\n        fn save(\n            &self,\n            user: NewUser,\n        ) -> impl std::future::Future<Output = Result<UserId, RepositoryError>> + Send;\n    }\n}"
     }
   ],
-  "completionExplanation": "The application layer now owns the repository port while still depending only on domain types, not database or adapter types.",
+  "completionExplanation": "The application owns an async persistence contract whose returned futures are explicitly safe to move between runtime worker threads.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -50,22 +50,22 @@
           {
             "type": "source_includes",
             "requiredSnippets": [
-              "pub trait UserRepository",
-              "exists_by_email",
-              "fn save"
-            ],
-            "forbiddenSnippets": [
-              "sql",
-              "http",
-              "serde"
+              "pub trait UserRepository: Send + Sync",
+              "impl std::future::Future<Output = Result<bool, RepositoryError>> + Send",
+              "impl std::future::Future<Output = Result<UserId, RepositoryError>> + Send"
             ]
+          },
+          {
+            "type": "derived_trait_for_type",
+            "traitName": "thiserror::Error",
+            "typeName": "RepositoryError"
           }
         ]
       },
       {
         "mode": "backend-cargo-test",
         "timeoutMs": 10000,
-        "dependencySet": "std"
+        "dependencySet": "advanced"
       }
     ]
   }

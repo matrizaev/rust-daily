@@ -1,5 +1,5 @@
 pub mod domain {
-    #[derive(Debug, Clone, PartialEq, Eq)]
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct EmailAddress(String);
 
     impl EmailAddress {

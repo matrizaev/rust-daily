@@ -22,10 +22,15 @@ impl OrderLines {
         self.lines.is_empty()
     }
 
+    pub fn as_slice(&self) -> &[OrderLine] {
+        &self.lines
+    }
+}
+
+impl OrderLines {
     pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {
         self.lines.iter()
     }
 }
 
-// Continue from the previous lesson.
-// TODO: implement IntoIterator for OrderLines.
+// TODO: add owned IntoIterator for OrderLines.

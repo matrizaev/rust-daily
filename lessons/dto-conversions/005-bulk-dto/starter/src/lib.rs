@@ -1,4 +1,6 @@
-#[derive(Debug, Clone, PartialEq, Eq)]
+use serde::Deserialize;
+
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 pub struct RegisterUserDto {
     pub email: Option<String>,
     pub display_name: Option<String>,
@@ -63,30 +65,4 @@ impl TryFrom<RegisterUserDto> for RegisterUserCommand {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct BulkRegisterDto {
-    pub users: Vec<RegisterUserDto>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct BulkRegisterCommand {
-    commands: Vec<RegisterUserCommand>,
-}
-
-impl BulkRegisterCommand {
-    pub fn commands(&self) -> &[RegisterUserCommand] {
-        &self.commands
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BulkRegisterError {
-    EmptyBatch,
-    InvalidUser {
-        index: usize,
-        error: RegisterUserValidationError,
-    },
-}
-
-// Continue from the previous lesson.
-// TODO: implement TryFrom<BulkRegisterDto> for BulkRegisterCommand.
+// TODO: add bulk DTO conversion with indexed errors.

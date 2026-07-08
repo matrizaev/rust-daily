@@ -1,13 +1,18 @@
-use rust_daily_lesson::application::UserRepository;
-use rust_daily_lesson::domain::{EmailAddress, NewUser, UserId};
-use rust_daily_lesson::infrastructure::InMemoryUserRepository;
+use rust_daily_lesson::{
+    application::{register_user, RegisterUserError},
+    domain::{EmailAddress, RegisterUserCommand},
+    infrastructure::InMemoryUserRepository,
+};
 
-#[test]
-fn infrastructure_repo_implements_port() {
-    let mut repo = InMemoryUserRepository::new();
-    let email = EmailAddress::new("ada@example.com");
+#[actix_rt::test]
+async fn repository_rejects_duplicate_registration() {
+    let repository = InMemoryUserRepository::new();
+    let command = || RegisterUserCommand::new(EmailAddress::new("ada@example.com"), "Ada");
 
-    assert_eq!(repo.exists_by_email(&email), Ok(false));
-    assert_eq!(repo.save(NewUser::new(email.clone(), "Ada")), Ok(UserId(1)));
-    assert_eq!(repo.exists_by_email(&email), Ok(true));
+    assert!(register_user(&repository, command()).await.is_ok());
+    assert_eq!(
+        register_user(&repository, command()).await,
+        Err(RegisterUserError::DuplicateEmail)
+    );
+    assert_eq!(repository.len().await, 1);
 }

@@ -1,1 +1,1 @@
-Teaches config-err-io-wrap with deterministic public tests and an idiomatic no-panic solution.
+Teaches config-err-io-wrap through typed, idiomatic error boundaries.

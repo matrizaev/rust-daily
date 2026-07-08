@@ -1,12 +1,7 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LogLevel {
-    Info,
-    Warn,
-    Error,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LogEvent {
-    pub event_name: String,
-    pub level: LogLevel,
+pub fn log_request_received(request_id: &str) {
+    tracing::info!(
+        event_name = "request.received",
+        request_id = %request_id,
+        "request received"
+    );
 }

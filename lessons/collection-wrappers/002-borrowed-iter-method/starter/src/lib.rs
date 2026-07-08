@@ -21,7 +21,10 @@ impl OrderLines {
     pub fn is_empty(&self) -> bool {
         self.lines.is_empty()
     }
+
+    pub fn as_slice(&self) -> &[OrderLine] {
+        &self.lines
+    }
 }
 
-// Continue from the previous lesson.
-// TODO: add iter(&self).
+// TODO: add the borrowed iter method.

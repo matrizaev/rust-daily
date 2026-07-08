@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import {
+  DEPENDENCY_SETS,
   findLessonJsonFiles,
   isNumber,
   isRecord,
@@ -141,6 +142,17 @@ const validateBackendTestFiles = async (
 const isBackendCargoTestValidation = (validation) =>
   validation?.mode === "backend-cargo-test";
 
+const validateDependencySet = (errors, lesson, validation) => {
+  const dependencySet = validation.dependencySet ?? "std";
+
+  if (!DEPENDENCY_SETS.has(dependencySet)) {
+    push(
+      errors,
+      `${lesson.id} backend validation has unknown dependencySet ${String(dependencySet)}.`,
+    );
+  }
+};
+
 const validateBackendValidationStep = async (
   errors,
   lessonJsonPath,
@@ -151,6 +163,7 @@ const validateBackendValidationStep = async (
     return;
   }
 
+  validateDependencySet(errors, lesson, validation);
   await validateBackendTestFiles(errors, lessonJsonPath, lesson, validation);
 };
 
@@ -402,6 +415,24 @@ const hasFunctionWithIncludes = (source, functionName, requiredIncludes) => {
   return Boolean(match) && requiredIncludes.every((part) => comparableSource.includes(part));
 };
 
+const hasFunctionSignatureWithIncludes = (
+  source,
+  functionName,
+  requiredIncludes,
+) => {
+  const functionPattern = new RegExp(
+    `(?:pub(?:\\([^)]*\\))?\\s+)?(?:async\\s+)?fn\\s+${escapeRegExp(functionName)}\\b[^\\{;]*`,
+  );
+  const match = functionPattern.exec(source);
+  const comparableSignature =
+    match?.[0].replace(/&'[A-Za-z_][A-Za-z0-9_]*\s+/g, "&") ?? "";
+
+  return (
+    Boolean(match) &&
+    requiredIncludes.every((part) => comparableSignature.includes(part))
+  );
+};
+
 const solutionSatisfiesCheck = (source, check) => {
   const checks = {
     enum_unit_variants: () =>
@@ -417,7 +448,11 @@ const solutionSatisfiesCheck = (source, check) => {
     impl_method: () =>
       hasFunctionWithIncludes(source, check.methodName, check.requiredSignatureIncludes),
     function_signature: () =>
-      hasFunctionWithIncludes(source, check.functionName, check.requiredSignatureIncludes),
+      hasFunctionSignatureWithIncludes(
+        source,
+        check.functionName,
+        check.requiredSignatureIncludes,
+      ),
     source_includes: () =>
       check.requiredSnippets.every((snippet) => source.includes(snippet)) &&
       (check.forbiddenSnippets ?? []).every((snippet) => !source.includes(snippet)),

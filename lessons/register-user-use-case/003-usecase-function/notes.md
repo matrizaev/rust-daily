@@ -1,1 +1,1 @@
-Teaches register-usecase-function with deterministic public tests and an idiomatic no-panic solution.
+Teaches register-usecase-function with async boundaries and framework isolation.

@@ -6,12 +6,12 @@
   "order": 55,
   "day": 1,
   "arcLength": 6,
-  "title": "Wrap order lines in a collection type",
+  "title": "Wrap order lines behind a slice API",
   "conceptId": "wrap-collection",
   "difficulty": "easy",
   "estimatedMinutes": 6,
   "scenario": "A collection wrapper can own a Vec while keeping later invariants and iteration APIs under one type.",
-  "instructions": "Define OrderLines with a private Vec<OrderLine>, a constructor, len, and is_empty.",
+  "instructions": "Define OrderLines with a private Vec<OrderLine>, a constructor, len, is_empty, and as_slice so callers can inspect lines without taking ownership of the Vec.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Keep OrderLine as the element type and add an OrderLines wrapper around Vec<OrderLine>."
+      "body": "Keep the Vec private so the wrapper can protect future invariants."
     },
     {
       "level": 2,
-      "body": "Keep the lines field private, then expose new, len, and is_empty as the public API."
+      "body": "Return a slice for read-only access instead of cloning or exposing the Vec."
     },
     {
       "level": 3,
-      "body": "One complete solution for Wrap order lines in a collection type is shown below.",
-      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n}"
+      "body": "Add as_slice alongside len and is_empty.",
+      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn as_slice(&self) -> &[OrderLine] {\n        &self.lines\n    }\n}"
     }
   ],
-  "completionExplanation": "OrderLines now owns the Vec while keeping the raw collection private, leaving room for iteration APIs and invariants on one type.",
+  "completionExplanation": "OrderLines now owns its representation while exposing a cheap borrowed view for callers.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -61,14 +61,11 @@
             ]
           },
           {
-            "type": "source_includes",
-            "requiredSnippets": [
-              "pub fn new",
-              "pub fn len",
-              "pub fn is_empty"
-            ],
-            "forbiddenSnippets": [
-              "pub lines"
+            "type": "impl_method",
+            "implFor": "OrderLines",
+            "methodName": "as_slice",
+            "requiredSignatureIncludes": [
+              "fn as_slice(&self) -> &[OrderLine]"
             ]
           }
         ]

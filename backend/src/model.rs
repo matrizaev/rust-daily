@@ -11,11 +11,64 @@ use uuid::Uuid;
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
 pub struct RunRequest {
     files: Vec<SubmittedFile>,
+    #[serde(default, rename = "dependencySet")]
+    dependency_set: DependencySet,
 }
 
 impl RunRequest {
     pub fn new(files: Vec<SubmittedFile>) -> Self {
-        Self { files }
+        Self {
+            files,
+            dependency_set: DependencySet::default(),
+        }
+    }
+
+    pub fn with_dependency_set(files: Vec<SubmittedFile>, dependency_set: DependencySet) -> Self {
+        Self {
+            files,
+            dependency_set,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, Deserialize, Serialize, Eq, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+pub enum DependencySet {
+    #[default]
+    Std,
+    Advanced,
+}
+
+impl DependencySet {
+    pub fn dependencies(self) -> &'static [(&'static str, &'static str)] {
+        match self {
+            Self::Std => &[],
+            Self::Advanced => &[
+                ("serde", r#"{ version = "1", features = ["derive"] }"#),
+                ("serde_json", r#""1""#),
+                ("thiserror", r#""2""#),
+                ("anyhow", r#""1""#),
+                (
+                    "tokio",
+                    r#"{ version = "1", features = ["macros", "rt", "sync", "time"] }"#,
+                ),
+                ("tracing", r#""0.1""#),
+                (
+                    "tracing-subscriber",
+                    r#"{ version = "0.3", features = ["fmt"] }"#,
+                ),
+                (
+                    "actix-web",
+                    r#"{ version = "4", default-features = false }"#,
+                ),
+                ("actix-rt", r#""2""#),
+                ("http", r#""1""#),
+                (
+                    "proptest",
+                    r#"{ version = "1", default-features = false, features = ["std"] }"#,
+                ),
+            ],
+        }
     }
 }
 
@@ -127,6 +180,7 @@ impl TryFrom<SubmittedContentInput> for SubmittedContent {
 pub struct ValidatedRunRequest {
     lib_rs: SubmittedContent,
     lesson_test: SubmittedContent,
+    dependency_set: DependencySet,
 }
 
 impl ValidatedRunRequest {
@@ -135,6 +189,10 @@ impl ValidatedRunRequest {
             (SubmittedPath::LibRs, &self.lib_rs),
             (SubmittedPath::LessonTest, &self.lesson_test),
         ]
+    }
+
+    pub fn dependency_set(&self) -> DependencySet {
+        self.dependency_set
     }
 }
 
@@ -153,7 +211,10 @@ impl TryFrom<RunRequestValidation> for ValidatedRunRequest {
     type Error = ValidationError;
 
     fn try_from(input: RunRequestValidation) -> Result<Self, Self::Error> {
-        let files = input.request.files;
+        let RunRequest {
+            files,
+            dependency_set,
+        } = input.request;
 
         if files.is_empty() {
             return Err(ValidationError::EmptyFiles);
@@ -199,6 +260,7 @@ impl TryFrom<RunRequestValidation> for ValidatedRunRequest {
             lesson_test: lesson_test.ok_or(ValidationError::MissingRequiredFile {
                 path: SubmittedPath::LessonTest,
             })?,
+            dependency_set,
         })
     }
 }
@@ -381,8 +443,8 @@ mod tests {
     use std::num::NonZeroUsize;
 
     use super::{
-        RunRequest, RunRequestValidation, RunStatus, SubmittedFile, ValidatedRunRequest,
-        ValidationError, ValidationLimits,
+        DependencySet, RunRequest, RunRequestValidation, RunStatus, SubmittedFile,
+        ValidatedRunRequest, ValidationError, ValidationLimits,
     };
 
     fn nonzero(value: usize) -> NonZeroUsize {
@@ -411,6 +473,28 @@ mod tests {
             serde_json::to_string(&RunStatus::CompileError).expect("status should serialize");
 
         assert_eq!(value, "\"compile_error\"");
+    }
+
+    #[test]
+    fn dependency_set_defaults_to_std() {
+        let request = serde_json::from_str::<RunRequest>(
+            r#"{"files":[{"path":"src/lib.rs","content":""},{"path":"tests/lesson.rs","content":""}]}"#,
+        )
+        .expect("request should deserialize");
+        let validated = validate(request).expect("request should validate");
+
+        assert_eq!(validated.dependency_set(), DependencySet::Std);
+    }
+
+    #[test]
+    fn dependency_set_deserializes_from_frontend_payload() {
+        let request = serde_json::from_str::<RunRequest>(
+            r#"{"dependencySet":"advanced","files":[{"path":"src/lib.rs","content":""},{"path":"tests/lesson.rs","content":""}]}"#,
+        )
+        .expect("request should deserialize");
+        let validated = validate(request).expect("request should validate");
+
+        assert_eq!(validated.dependency_set(), DependencySet::Advanced);
     }
 
     #[test]

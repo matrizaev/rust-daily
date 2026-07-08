@@ -1,1 +1,1 @@
-Teaches wrap-into-iterator with deterministic public tests and an idiomatic no-panic solution.
+Teaches wrap-into-iterator with cumulative, idiomatic Rust code.

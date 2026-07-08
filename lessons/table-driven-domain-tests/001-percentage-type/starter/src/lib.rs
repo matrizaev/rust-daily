@@ -1,1 +1,1 @@
-// TODO: define Percentage with a TryFrom<u16> boundary.
+// TODO: define Percentage and its range invariant.

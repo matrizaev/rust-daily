@@ -1,37 +1,23 @@
-use rust_daily_lesson::application::{
-    register_user, RegisterUserError, RepositoryError, UserRepository,
+use rust_daily_lesson::{
+    application::{register_user, NewUser, RepositoryError, UserId, UserRepository},
+    domain::{EmailAddress, RegisterUserCommand},
 };
-use rust_daily_lesson::domain::{EmailAddress, NewUser, RegisterUserCommand, UserId};
 
-struct FakeRepo {
-    exists: bool,
-}
+struct AvailableRepository;
 
-impl UserRepository for FakeRepo {
-    fn exists_by_email(&self, _email: &EmailAddress) -> Result<bool, RepositoryError> {
-        Ok(self.exists)
+impl UserRepository for AvailableRepository {
+    async fn email_exists(&self, _email: &str) -> Result<bool, RepositoryError> {
+        Ok(false)
     }
 
-    fn save(&mut self, _user: NewUser) -> Result<UserId, RepositoryError> {
-        Ok(UserId(7))
+    async fn save(&self, _user: NewUser) -> Result<UserId, RepositoryError> {
+        Ok(UserId::new(42))
     }
 }
 
-#[test]
-fn usecase_saves_new_user() {
-    let mut repo = FakeRepo { exists: false };
+#[actix_rt::test]
+async fn registers_user_through_async_port() {
     let command = RegisterUserCommand::new(EmailAddress::new("ada@example.com"), "Ada");
 
-    assert_eq!(register_user(&mut repo, command), Ok(UserId(7)));
-}
-
-#[test]
-fn usecase_rejects_duplicate_email() {
-    let mut repo = FakeRepo { exists: true };
-    let command = RegisterUserCommand::new(EmailAddress::new("ada@example.com"), "Ada");
-
-    assert_eq!(
-        register_user(&mut repo, command),
-        Err(RegisterUserError::DuplicateEmail)
-    );
+    assert_eq!(register_user(&AvailableRepository, command).await, Ok(UserId::new(42)));
 }

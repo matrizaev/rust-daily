@@ -6,40 +6,40 @@
   "order": 82,
   "day": 4,
   "arcLength": 6,
-  "title": "Create events from a request span",
+  "title": "Create a request span for async work",
   "conceptId": "log-request-span",
   "difficulty": "medium",
   "estimatedMinutes": 8,
   "scenario": "A span carries context shared by multiple events. Request-scoped fields should not be rebuilt by every call site.",
-  "instructions": "Extend LogFields with path. Define RequestSpan and an event method that builds a LogEvent with the span's request_id and path.",
+  "instructions": "Implement request_span(request_id, path) -> tracing::Span with tracing::info_span!. Name it \"http.request\" and record request_id and path fields so async work can enter or instrument the span.",
   "files": [
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "use std::fmt;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogFields {\n    pub request_id: String,\n    pub user_id: Option<String>,\n    pub attempt: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogEvent {\n    pub event_name: String,\n    pub level: LogLevel,\n    pub fields: LogFields,\n}\n\npub struct Secret(String);\n\nimpl Secret {\n    pub fn new(value: impl Into<String>) -> Self {\n        Self(value.into())\n    }\n\n    pub fn expose(&self) -> &str {\n        &self.0\n    }\n}\n\nimpl fmt::Display for Secret {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        write!(f, \"[redacted]\")\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: define RequestSpan and build events from it.\n"
+      "content": "pub fn log_request_received(request_id: &str) {\n    tracing::info!(\n        event_name = \"request.received\",\n        request_id = %request_id,\n        \"request received\"\n    );\n}\n\npub fn log_request_started(\n    request_id: &str,\n    user_id: Option<&str>,\n    attempt: u32,\n) {\n    tracing::info!(\n        event_name = \"request.started\",\n        request_id = %request_id,\n        user_id = user_id.unwrap_or(\"anonymous\"),\n        attempt,\n        \"request processing started\"\n    );\n}\n\n#[derive(Debug, Clone, Copy)]\npub struct Secret<'a>(&'a str);\n\nimpl<'a> Secret<'a> {\n    pub fn new(value: &'a str) -> Self {\n        Self(value)\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.0.is_empty()\n    }\n}\n\nimpl std::fmt::Display for Secret<'_> {\n    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        formatter.write_str(\"[redacted]\")\n    }\n}\n\npub fn log_authentication_attempt(request_id: &str, secret: Secret<'_>) {\n    tracing::info!(\n        event_name = \"authentication.attempt\",\n        request_id = %request_id,\n        secret = %secret,\n        \"authentication attempted\"\n    );\n}\n\n// TODO: add request_span with info_span!.\n"
     },
     {
       "path": "tests/public.rs",
       "role": "test",
-      "content": "use rust_daily_lesson::{LogLevel, RequestSpan, Secret};\n\n#[test]\nfn span_attaches_request_context() {\n    let span = RequestSpan::new(\"req-1\", \"/users\");\n    let event = span.event(\"request.completed\");\n\n    assert_eq!(event.event_name, \"request.completed\");\n    assert_eq!(event.level, LogLevel::Info);\n    assert_eq!(event.fields.request_id, \"req-1\");\n    assert_eq!(event.fields.path, \"/users\");\n    assert_eq!(event.fields.attempt, 1);\n    assert_eq!(event.fields.user_id, None);\n}\n\n#[test]\nfn secret_still_formats_as_redacted() {\n    assert_eq!(Secret::new(\"token-123\").to_string(), \"[redacted]\");\n}\n"
+      "content": "use rust_daily_lesson::request_span;\n\n#[test]\nfn creates_request_span() {\n    let _span = request_span(\"req-1\", \"/users\");\n}\n"
     }
   ],
   "hints": [
     {
       "level": 1,
-      "body": "Add path: String to LogFields so request path stays structured instead of being embedded in event_name."
+      "body": "Spans represent work with a beginning and end."
     },
     {
       "level": 2,
-      "body": "RequestSpan::event should return a LogEvent with level LogLevel::Info, user_id None, attempt 1, and fields copied from the span."
+      "body": "Return the Span so callers can enter it or instrument a future."
     },
     {
       "level": 3,
-      "body": "One complete solution for Create events from a request span is shown below.",
-      "solutionCode": "use std::fmt;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogFields {\n    pub request_id: String,\n    pub user_id: Option<String>,\n    pub attempt: u32,\n    pub path: String,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogEvent {\n    pub event_name: String,\n    pub level: LogLevel,\n    pub fields: LogFields,\n}\n\npub struct Secret(String);\n\nimpl Secret {\n    pub fn new(value: impl Into<String>) -> Self {\n        Self(value.into())\n    }\n\n    pub fn expose(&self) -> &str {\n        &self.0\n    }\n}\n\nimpl fmt::Display for Secret {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        write!(f, \"[redacted]\")\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RequestSpan {\n    request_id: String,\n    path: String,\n}\n\nimpl RequestSpan {\n    pub fn new(request_id: impl Into<String>, path: impl Into<String>) -> Self {\n        Self {\n            request_id: request_id.into(),\n            path: path.into(),\n        }\n    }\n\n    pub fn event(&self, event_name: impl Into<String>) -> LogEvent {\n        LogEvent {\n            event_name: event_name.into(),\n            level: LogLevel::Info,\n            fields: LogFields {\n                request_id: self.request_id.clone(),\n                user_id: None,\n                attempt: 1,\n                path: self.path.clone(),\n            },\n        }\n    }\n}"
+      "body": "Keep request context on the span instead of repeating it in every message.",
+      "solutionCode": "pub fn log_request_received(request_id: &str) {\n    tracing::info!(\n        event_name = \"request.received\",\n        request_id = %request_id,\n        \"request received\"\n    );\n}\n\npub fn log_request_started(\n    request_id: &str,\n    user_id: Option<&str>,\n    attempt: u32,\n) {\n    tracing::info!(\n        event_name = \"request.started\",\n        request_id = %request_id,\n        user_id = user_id.unwrap_or(\"anonymous\"),\n        attempt,\n        \"request processing started\"\n    );\n}\n\n#[derive(Debug, Clone, Copy)]\npub struct Secret<'a>(&'a str);\n\nimpl<'a> Secret<'a> {\n    pub fn new(value: &'a str) -> Self {\n        Self(value)\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.0.is_empty()\n    }\n}\n\nimpl std::fmt::Display for Secret<'_> {\n    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        formatter.write_str(\"[redacted]\")\n    }\n}\n\npub fn log_authentication_attempt(request_id: &str, secret: Secret<'_>) {\n    tracing::info!(\n        event_name = \"authentication.attempt\",\n        request_id = %request_id,\n        secret = %secret,\n        \"authentication attempted\"\n    );\n}\n\npub fn request_span(request_id: &str, path: &str) -> tracing::Span {\n    tracing::info_span!(\n        \"http.request\",\n        request_id = %request_id,\n        path = %path\n    )\n}"
     }
   ],
-  "completionExplanation": "RequestSpan now centralizes request_id and path so call sites can create structured LogEvent values without rebuilding shared context.",
+  "completionExplanation": "Request-scoped context can now propagate through synchronous or asynchronous work with a real tracing span.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -48,30 +48,11 @@
         "timeoutMs": 10000,
         "checks": [
           {
-            "type": "struct_fields",
-            "structName": "RequestSpan",
-            "requiredFields": [
-              {
-                "name": "request_id",
-                "typeIncludes": [
-                  "String"
-                ]
-              },
-              {
-                "name": "path",
-                "typeIncludes": [
-                  "String"
-                ]
-              }
-            ]
-          },
-          {
-            "type": "impl_method",
-            "implFor": "RequestSpan",
-            "methodName": "event",
-            "requiredSignatureIncludes": [
-              "&self",
-              "LogEvent"
+            "type": "source_includes",
+            "requiredSnippets": [
+              "tracing::info_span!",
+              "\"http.request\"",
+              "path = %path"
             ]
           }
         ]
@@ -79,7 +60,7 @@
       {
         "mode": "backend-cargo-test",
         "timeoutMs": 10000,
-        "dependencySet": "std"
+        "dependencySet": "advanced"
       }
     ]
   }

@@ -1,5 +1,5 @@
 pub mod domain {
-    #[derive(Debug, Clone, PartialEq, Eq)]
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct EmailAddress(String);
 
     impl EmailAddress {
@@ -34,25 +34,41 @@ pub mod domain {
             &self.display_name
         }
     }
+}
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-    pub struct UserId(pub u64);
+pub mod application {
+    use thiserror::Error;
+
+    use crate::domain::RegisterUserCommand;
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+    pub struct UserId(u64);
+
+    impl UserId {
+        pub fn new(value: u64) -> Self {
+            Self(value)
+        }
+
+        pub fn value(self) -> u64 {
+            self.0
+        }
+    }
 
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct NewUser {
-        email: EmailAddress,
+        email: String,
         display_name: String,
     }
 
     impl NewUser {
-        pub fn new(email: EmailAddress, display_name: impl Into<String>) -> Self {
+        pub fn from_command(command: RegisterUserCommand) -> Self {
             Self {
-                email,
-                display_name: display_name.into(),
+                email: command.email().as_str().to_owned(),
+                display_name: command.display_name().to_owned(),
             }
         }
 
-        pub fn email(&self) -> &EmailAddress {
+        pub fn email(&self) -> &str {
             &self.email
         }
 
@@ -60,69 +76,77 @@ pub mod domain {
             &self.display_name
         }
     }
-}
 
-pub mod application {
-    use super::domain::{EmailAddress, NewUser, RegisterUserCommand, UserId};
-
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    #[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]
     pub enum RepositoryError {
+        #[error("repository is unavailable")]
         Unavailable,
+        #[error("email already exists")]
+        Conflict,
     }
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub trait UserRepository: Send + Sync {
+        fn email_exists(
+            &self,
+            email: &str,
+        ) -> impl std::future::Future<Output = Result<bool, RepositoryError>> + Send;
+
+        fn save(
+            &self,
+            user: NewUser,
+        ) -> impl std::future::Future<Output = Result<UserId, RepositoryError>> + Send;
+    }
+
+    #[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]
     pub enum RegisterUserError {
+        #[error("email already exists")]
         DuplicateEmail,
-        Repository(RepositoryError),
+        #[error(transparent)]
+        Repository(#[from] RepositoryError),
     }
 
-    pub trait UserRepository {
-        fn exists_by_email(&self, email: &EmailAddress) -> Result<bool, RepositoryError>;
-
-        fn save(&mut self, user: NewUser) -> Result<UserId, RepositoryError>;
-    }
-
-    pub fn register_user<R: UserRepository>(
-        repository: &mut R,
+    pub async fn register_user<R: UserRepository>(
+        repository: &R,
         command: RegisterUserCommand,
     ) -> Result<UserId, RegisterUserError> {
-        if repository
-            .exists_by_email(command.email())
-            .map_err(RegisterUserError::Repository)?
-        {
+        if repository.email_exists(command.email().as_str()).await? {
             return Err(RegisterUserError::DuplicateEmail);
         }
 
-        repository
-            .save(NewUser::new(
-                command.email().clone(),
-                command.display_name().to_owned(),
-            ))
-            .map_err(RegisterUserError::Repository)
+        match repository.save(NewUser::from_command(command)).await {
+            Ok(user_id) => Ok(user_id),
+            Err(RepositoryError::Conflict) => Err(RegisterUserError::DuplicateEmail),
+            Err(error) => Err(error.into()),
+        }
     }
 }
 
 pub mod adapters {
-    use super::domain::{EmailAddress, RegisterUserCommand};
+    use serde::Deserialize;
+    use thiserror::Error;
 
-    #[derive(Debug, Clone, PartialEq, Eq)]
+    use crate::domain::{EmailAddress, RegisterUserCommand};
+
+    #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
     pub struct RegisterUserRequest {
         pub email: String,
         pub display_name: String,
     }
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    #[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]
     pub enum RequestError {
+        #[error("email is empty")]
         EmptyEmail,
+        #[error("display name is empty")]
         EmptyDisplayName,
     }
 
     impl TryFrom<RegisterUserRequest> for RegisterUserCommand {
         type Error = RequestError;
 
-        fn try_from(value: RegisterUserRequest) -> Result<Self, Self::Error> {
-            let email = value.email.trim();
-            let display_name = value.display_name.trim();
+        fn try_from(request: RegisterUserRequest) -> Result<Self, Self::Error> {
+            let email = request.email.trim();
+            let display_name = request.display_name.trim();
 
             if email.is_empty() {
                 return Err(RequestError::EmptyEmail);
@@ -133,42 +157,71 @@ pub mod adapters {
             }
 
             Ok(RegisterUserCommand::new(
-                EmailAddress::new(email.to_owned()),
-                display_name.to_owned(),
+                EmailAddress::new(email),
+                display_name,
             ))
         }
     }
 }
 
 pub mod infrastructure {
-    use super::application::{RepositoryError, UserRepository};
-    use super::domain::{EmailAddress, NewUser, UserId};
+    use std::{collections::HashMap, sync::Arc};
+
+    use tokio::sync::RwLock;
+
+    use crate::application::{NewUser, RepositoryError, UserId, UserRepository};
+
+    #[derive(Debug, Clone)]
+    pub struct InMemoryUserRepository {
+        state: Arc<RwLock<State>>,
+    }
 
     #[derive(Debug)]
-    pub struct InMemoryUserRepository {
-        users: Vec<NewUser>,
+    struct State {
         next_id: u64,
+        users_by_email: HashMap<String, UserId>,
     }
 
     impl InMemoryUserRepository {
         pub fn new() -> Self {
             Self {
-                users: Vec::new(),
-                next_id: 1,
+                state: Arc::new(RwLock::new(State {
+                    next_id: 1,
+                    users_by_email: HashMap::new(),
+                })),
             }
+        }
+
+        pub async fn len(&self) -> usize {
+            self.state.read().await.users_by_email.len()
+        }
+    }
+
+    impl Default for InMemoryUserRepository {
+        fn default() -> Self {
+            Self::new()
         }
     }
 
     impl UserRepository for InMemoryUserRepository {
-        fn exists_by_email(&self, email: &EmailAddress) -> Result<bool, RepositoryError> {
-            Ok(self.users.iter().any(|user| user.email() == email))
+        async fn email_exists(&self, email: &str) -> Result<bool, RepositoryError> {
+            Ok(self.state.read().await.users_by_email.contains_key(email))
         }
 
-        fn save(&mut self, user: NewUser) -> Result<UserId, RepositoryError> {
-            let id = UserId(self.next_id);
-            self.next_id += 1;
-            self.users.push(user);
-            Ok(id)
+        async fn save(&self, user: NewUser) -> Result<UserId, RepositoryError> {
+            let mut state = self.state.write().await;
+
+            if state.users_by_email.contains_key(user.email()) {
+                return Err(RepositoryError::Conflict);
+            }
+
+            let user_id = UserId::new(state.next_id);
+            state.next_id += 1;
+            state
+                .users_by_email
+                .insert(user.email().to_owned(), user_id);
+
+            Ok(user_id)
         }
     }
 }

@@ -1,9 +1,13 @@
-#[derive(Debug)]
+use thiserror::Error;
+
+#[derive(Debug, Error)]
 pub enum ConfigLoadError {
+    #[error("missing APP_PORT")]
     MissingEnvironment,
+    #[error("invalid APP_PORT")]
     InvalidPort,
+    #[error("failed to read config file")]
     FileRead,
 }
 
-// Continue from the previous lesson.
-// TODO: implement Display for ConfigLoadError.
+// TODO: add a stable programmatic kind method.

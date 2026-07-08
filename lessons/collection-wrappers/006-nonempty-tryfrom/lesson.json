@@ -6,12 +6,12 @@
   "order": 60,
   "day": 6,
   "arcLength": 6,
-  "title": "Validate collection wrappers with TryFrom",
+  "title": "Validate and drain collection wrappers",
   "conceptId": "wrap-nonempty-tryfrom",
   "difficulty": "medium",
   "estimatedMinutes": 8,
   "scenario": "An order without lines is invalid. TryFrom<Vec<OrderLine>> can enforce that invariant at the wrapper boundary.",
-  "instructions": "The starter already defines OrderLinesError. Implement TryFrom<Vec<OrderLine>> for OrderLines and return OrderLinesError::Empty when the vector has no lines.",
+  "instructions": "Keep the iterator API active. Add drain(&mut self) and implement TryFrom<Vec<OrderLine>> for OrderLines, returning OrderLinesError::Empty for an empty Vec.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Check lines.is_empty() before constructing OrderLines."
+      "body": "TryFrom is the right API when construction can fail."
     },
     {
       "level": 2,
-      "body": "Return Err(OrderLinesError::Empty) for an empty vector and Ok(Self::new(lines)) otherwise."
+      "body": "drain gives callers owned values while leaving the wrapper empty."
     },
     {
       "level": 3,
-      "body": "One complete solution for Validate collection wrappers with TryFrom is shown below.",
-      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}\n\nimpl<'a> IntoIterator for &'a OrderLines {\n    type Item = &'a OrderLine;\n    type IntoIter = std::slice::Iter<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter()\n    }\n}\n\nimpl<'a> IntoIterator for &'a mut OrderLines {\n    type Item = &'a mut OrderLine;\n    type IntoIter = std::slice::IterMut<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.iter_mut()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum OrderLinesError {\n    Empty,\n}\n\nimpl TryFrom<Vec<OrderLine>> for OrderLines {\n    type Error = OrderLinesError;\n\n    fn try_from(lines: Vec<OrderLine>) -> Result<Self, Self::Error> {\n        if lines.is_empty() {\n            return Err(OrderLinesError::Empty);\n        }\n\n        Ok(Self::new(lines))\n    }\n}"
+      "body": "Use the existing constructor after the non-empty check passes.",
+      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn as_slice(&self) -> &[OrderLine] {\n        &self.lines\n    }\n}\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}\n\nimpl<'a> IntoIterator for &'a OrderLines {\n    type Item = &'a OrderLine;\n    type IntoIter = std::slice::Iter<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter()\n    }\n}\n\nimpl OrderLines {\n    pub fn iter_mut(&mut self) -> std::slice::IterMut<'_, OrderLine> {\n        self.lines.iter_mut()\n    }\n}\n\nimpl<'a> IntoIterator for &'a mut OrderLines {\n    type Item = &'a mut OrderLine;\n    type IntoIter = std::slice::IterMut<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter_mut()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum OrderLinesError {\n    Empty,\n}\n\nimpl OrderLines {\n    pub fn drain(&mut self) -> std::vec::Drain<'_, OrderLine> {\n        self.lines.drain(..)\n    }\n}\n\nimpl TryFrom<Vec<OrderLine>> for OrderLines {\n    type Error = OrderLinesError;\n\n    fn try_from(lines: Vec<OrderLine>) -> Result<Self, Self::Error> {\n        if lines.is_empty() {\n            return Err(OrderLinesError::Empty);\n        }\n\n        Ok(Self::new(lines))\n    }\n}"
     }
   ],
-  "completionExplanation": "TryFrom adds a checked construction path for callers that must reject empty line collections, while the earlier iteration APIs remain intact.",
+  "completionExplanation": "OrderLines now has a complete collection-shaped API plus a fallible constructor for the non-empty invariant.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -48,19 +48,23 @@
         "timeoutMs": 10000,
         "checks": [
           {
+            "type": "enum_unit_variants",
+            "enumName": "OrderLinesError",
+            "requiredVariants": [
+              "Empty"
+            ]
+          },
+          {
             "type": "impl_trait_for_type",
             "traitName": "TryFrom<Vec<OrderLine>>",
             "typeName": "OrderLines"
           },
           {
-            "type": "source_includes",
-            "requiredSnippets": [
-              "OrderLinesError::Empty"
-            ],
-            "forbiddenSnippets": [
-              "unwrap",
-              "expect",
-              "panic!"
+            "type": "impl_method",
+            "implFor": "OrderLines",
+            "methodName": "drain",
+            "requiredSignatureIncludes": [
+              "fn drain(&mut self) -> std::vec::Drain"
             ]
           }
         ]

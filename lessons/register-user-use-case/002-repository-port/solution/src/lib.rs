@@ -1,5 +1,5 @@
 pub mod domain {
-    #[derive(Debug, Clone, PartialEq, Eq)]
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct EmailAddress(String);
 
     impl EmailAddress {
@@ -34,25 +34,41 @@ pub mod domain {
             &self.display_name
         }
     }
+}
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-    pub struct UserId(pub u64);
+pub mod application {
+    use thiserror::Error;
+
+    use crate::domain::RegisterUserCommand;
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+    pub struct UserId(u64);
+
+    impl UserId {
+        pub fn new(value: u64) -> Self {
+            Self(value)
+        }
+
+        pub fn value(self) -> u64 {
+            self.0
+        }
+    }
 
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct NewUser {
-        email: EmailAddress,
+        email: String,
         display_name: String,
     }
 
     impl NewUser {
-        pub fn new(email: EmailAddress, display_name: impl Into<String>) -> Self {
+        pub fn from_command(command: RegisterUserCommand) -> Self {
             Self {
-                email,
-                display_name: display_name.into(),
+                email: command.email().as_str().to_owned(),
+                display_name: command.display_name().to_owned(),
             }
         }
 
-        pub fn email(&self) -> &EmailAddress {
+        pub fn email(&self) -> &str {
             &self.email
         }
 
@@ -60,19 +76,24 @@ pub mod domain {
             &self.display_name
         }
     }
-}
 
-pub mod application {
-    use super::domain::{EmailAddress, NewUser, UserId};
-
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    #[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]
     pub enum RepositoryError {
+        #[error("repository is unavailable")]
         Unavailable,
+        #[error("email already exists")]
+        Conflict,
     }
 
-    pub trait UserRepository {
-        fn exists_by_email(&self, email: &EmailAddress) -> Result<bool, RepositoryError>;
+    pub trait UserRepository: Send + Sync {
+        fn email_exists(
+            &self,
+            email: &str,
+        ) -> impl std::future::Future<Output = Result<bool, RepositoryError>> + Send;
 
-        fn save(&mut self, user: NewUser) -> Result<UserId, RepositoryError>;
+        fn save(
+            &self,
+            user: NewUser,
+        ) -> impl std::future::Future<Output = Result<UserId, RepositoryError>> + Send;
     }
 }

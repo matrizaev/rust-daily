@@ -6,40 +6,40 @@
   "order": 89,
   "day": 5,
   "arcLength": 6,
-  "title": "Document Percentage with an executable example",
+  "title": "Add an executable Result-aware example",
   "conceptId": "percentage-doc-example",
   "difficulty": "easy",
   "estimatedMinutes": 7,
   "scenario": "A doc example should show normal usage and handle fallible APIs without unwrap or expect.",
-  "instructions": "Keep the existing Display implementation and tests. Add a doc comment example above Percentage that asserts on the Result returned by TryFrom.",
+  "instructions": "Add a rustdoc example above Percentage. Show a successful TryFrom call using ? and assert the value without using unwrap.",
   "files": [
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(&self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}\n\nimpl std::fmt::Display for Percentage {\n    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        write!(f, \"{}%\", self.0)\n    }\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn accepts_valid_percentages() {\n        let cases = [(0, 0), (50, 50), (100, 100)];\n\n        for (input, expected) in cases {\n            assert_eq!(\n                Percentage::try_from(input).map(|value| value.value()),\n                Ok(expected)\n            );\n        }\n    }\n\n    #[test]\n    fn rejects_invalid_percentages() {\n        let invalid_values = [101, 150, 1_000];\n\n        for input in invalid_values {\n            assert_eq!(\n                Percentage::try_from(input),\n                Err(PercentageError::OutOfRange)\n            );\n        }\n    }\n\n    #[test]\n    fn formats_percentages() {\n        let cases = [(0, \"0%\"), (50, \"50%\"), (100, \"100%\")];\n\n        for (input, expected) in cases {\n            assert_eq!(\n                Percentage::try_from(input).map(|value| value.to_string()),\n                Ok(expected.to_owned())\n            );\n        }\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: add a doc comment example above Percentage in a real implementation.\n"
+      "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}\n\nimpl std::fmt::Display for Percentage {\n    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        write!(formatter, \"{}%\", self.0)\n    }\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn accepts_valid_percentages() {\n        for (input, expected) in [(0, 0), (50, 50), (100, 100)] {\n            assert_eq!(Percentage::try_from(input).map(Percentage::value), Ok(expected));\n        }\n    }\n\n    #[test]\n    fn rejects_invalid_percentages() {\n        for input in [101, 150, 1_000] {\n            assert_eq!(Percentage::try_from(input), Err(PercentageError::OutOfRange));\n        }\n    }\n\n    #[test]\n    fn formats_percentages() {\n        for (input, expected) in [(0, \"0%\"), (50, \"50%\"), (100, \"100%\")] {\n            let percentage = Percentage::try_from(input).expect(\"case is in range\");\n            assert_eq!(percentage.to_string(), expected);\n        }\n    }\n}\n\n// TODO: add a doc example that uses ? with TryFrom.\n"
     },
     {
       "path": "tests/public.rs",
       "role": "test",
-      "content": "use rust_daily_lesson::Percentage;\n\n#[test]\nfn documented_percentage_behavior_works() {\n    assert_eq!(Percentage::try_from(75).map(|value| value.value()), Ok(75));\n    assert!(Percentage::try_from(101).is_err());\n}\n"
+      "content": "use rust_daily_lesson::Percentage;\n\n#[test]\nfn documented_usage_remains_valid() -> Result<(), rust_daily_lesson::PercentageError> {\n    let percentage = Percentage::try_from(75)?;\n    assert_eq!(percentage.value(), 75);\n    Ok(())\n}\n"
     }
   ],
   "hints": [
     {
       "level": 1,
-      "body": "Put the doc comment directly above pub struct Percentage."
+      "body": "A hidden Ok type lets the doctest use ?."
     },
     {
       "level": 2,
-      "body": "In the example, compare Result values or use is_err(); do not use unwrap, expect, or panic."
+      "body": "Use the public API exactly as downstream callers would."
     },
     {
       "level": 3,
-      "body": "One complete solution for Document Percentage with an executable example is shown below.",
-      "solutionCode": "/// A bounded percentage value from 0 through 100.\n///\n/// ```\n/// use rust_daily_lesson::Percentage;\n///\n/// assert_eq!(Percentage::try_from(75).map(|value| value.value()), Ok(75));\n/// assert!(Percentage::try_from(101).is_err());\n/// ```\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(&self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}\n\nimpl std::fmt::Display for Percentage {\n    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        write!(f, \"{}%\", self.0)\n    }\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn accepts_valid_percentages() {\n        let cases = [(0, 0), (50, 50), (100, 100)];\n\n        for (input, expected) in cases {\n            assert_eq!(\n                Percentage::try_from(input).map(|value| value.value()),\n                Ok(expected)\n            );\n        }\n    }\n\n    #[test]\n    fn rejects_invalid_percentages() {\n        let invalid_values = [101, 150, 1_000];\n\n        for input in invalid_values {\n            assert_eq!(\n                Percentage::try_from(input),\n                Err(PercentageError::OutOfRange)\n            );\n        }\n    }\n\n    #[test]\n    fn formats_percentages() {\n        let cases = [(0, \"0%\"), (50, \"50%\"), (100, \"100%\")];\n\n        for (input, expected) in cases {\n            assert_eq!(\n                Percentage::try_from(input).map(|value| value.to_string()),\n                Ok(expected.to_owned())\n            );\n        }\n    }\n}"
+      "body": "Keep the example short and executable.",
+      "solutionCode": "/// A bounded percentage from 0 through 100.\n///\n/// ```\n/// use rust_daily_lesson::Percentage;\n///\n/// let percentage = Percentage::try_from(75)?;\n/// assert_eq!(percentage.value(), 75);\n/// # Ok::<(), rust_daily_lesson::PercentageError>(())\n/// ```\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}\n\nimpl std::fmt::Display for Percentage {\n    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        write!(formatter, \"{}%\", self.0)\n    }\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn accepts_valid_percentages() {\n        for (input, expected) in [(0, 0), (50, 50), (100, 100)] {\n            assert_eq!(Percentage::try_from(input).map(Percentage::value), Ok(expected));\n        }\n    }\n\n    #[test]\n    fn rejects_invalid_percentages() {\n        for input in [101, 150, 1_000] {\n            assert_eq!(Percentage::try_from(input), Err(PercentageError::OutOfRange));\n        }\n    }\n\n    #[test]\n    fn formats_percentages() {\n        for (input, expected) in [(0, \"0%\"), (50, \"50%\"), (100, \"100%\")] {\n            let percentage = Percentage::try_from(input).expect(\"case is in range\");\n            assert_eq!(percentage.to_string(), expected);\n        }\n    }\n}"
     }
   ],
-  "completionExplanation": "Percentage now has executable documentation that shows both successful and failing construction without panicking helpers.",
+  "completionExplanation": "The public documentation now demonstrates fallible construction with an executable, idiomatic Result example.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -50,14 +50,8 @@
           {
             "type": "source_includes",
             "requiredSnippets": [
-              "///",
-              "Percentage::try_from(75)",
-              "is_err()"
-            ],
-            "forbiddenSnippets": [
-              "unwrap",
-              "expect",
-              "panic!"
+              "let percentage = Percentage::try_from(75)?;",
+              "Ok::<(), rust_daily_lesson::PercentageError>(())"
             ]
           }
         ]

@@ -1,72 +1,59 @@
-use std::fmt;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LogLevel {
-    Info,
-    Warn,
-    Error,
+pub fn log_request_received(request_id: &str) {
+    tracing::info!(
+        event_name = "request.received",
+        request_id = %request_id,
+        "request received"
+    );
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LogFields {
-    pub request_id: String,
-    pub user_id: Option<String>,
-    pub attempt: u32,
-    pub path: String,
+pub fn log_request_started(
+    request_id: &str,
+    user_id: Option<&str>,
+    attempt: u32,
+) {
+    tracing::info!(
+        event_name = "request.started",
+        request_id = %request_id,
+        user_id = user_id.unwrap_or("anonymous"),
+        attempt,
+        "request processing started"
+    );
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LogEvent {
-    pub event_name: String,
-    pub level: LogLevel,
-    pub fields: LogFields,
-}
+#[derive(Debug, Clone, Copy)]
+pub struct Secret<'a>(&'a str);
 
-pub struct Secret(String);
-
-impl Secret {
-    pub fn new(value: impl Into<String>) -> Self {
-        Self(value.into())
+impl<'a> Secret<'a> {
+    pub fn new(value: &'a str) -> Self {
+        Self(value)
     }
 
-    pub fn expose(&self) -> &str {
-        &self.0
-    }
-}
-
-impl fmt::Display for Secret {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "[redacted]")
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RequestSpan {
-    request_id: String,
-    path: String,
-}
-
-impl RequestSpan {
-    pub fn new(request_id: impl Into<String>, path: impl Into<String>) -> Self {
-        Self {
-            request_id: request_id.into(),
-            path: path.into(),
-        }
-    }
-
-    pub fn event(&self, event_name: impl Into<String>) -> LogEvent {
-        LogEvent {
-            event_name: event_name.into(),
-            level: LogLevel::Info,
-            fields: LogFields {
-                request_id: self.request_id.clone(),
-                user_id: None,
-                attempt: 1,
-                path: self.path.clone(),
-            },
-        }
+impl std::fmt::Display for Secret<'_> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str("[redacted]")
     }
 }
 
-// Continue from the previous lesson.
-// TODO: implement error_event.
+pub fn log_authentication_attempt(request_id: &str, secret: Secret<'_>) {
+    tracing::info!(
+        event_name = "authentication.attempt",
+        request_id = %request_id,
+        secret = %secret,
+        "authentication attempted"
+    );
+}
+
+pub fn request_span(request_id: &str, path: &str) -> tracing::Span {
+    tracing::info_span!(
+        "http.request",
+        request_id = %request_id,
+        path = %path
+    )
+}
+
+// TODO: add ErrorKind and log_request_error.

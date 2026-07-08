@@ -6,40 +6,40 @@
   "order": 86,
   "day": 2,
   "arcLength": 6,
-  "title": "Write table-driven valid percentage tests",
+  "title": "Write table-driven valid examples",
   "conceptId": "percentage-valid-table-tests",
   "difficulty": "medium",
   "estimatedMinutes": 8,
   "scenario": "Several valid boundary cases should be easy to scan. A table-driven test keeps inputs and expected values together.",
-  "instructions": "Add a #[cfg(test)] module with a test that loops over valid cases for 0, 50, and 100.",
+  "instructions": "Add a #[cfg(test)] module with one test that loops over valid input/expected pairs for 0, 50, and 100.",
   "files": [
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(&self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: add table-driven tests for valid cases.\n"
+      "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}\n\n// TODO: add a table test for valid boundary and middle values.\n"
     },
     {
       "path": "tests/public.rs",
       "role": "test",
-      "content": "use rust_daily_lesson::Percentage;\n\n#[test]\nfn public_behavior_still_accepts_boundaries() {\n    assert_eq!(Percentage::try_from(0).map(|value| value.value()), Ok(0));\n    assert_eq!(Percentage::try_from(100).map(|value| value.value()), Ok(100));\n}\n"
+      "content": "use rust_daily_lesson::Percentage;\n\n#[test]\nfn public_valid_cases_match() {\n    for (input, expected) in [(0, 0), (25, 25), (100, 100)] {\n        assert_eq!(Percentage::try_from(input).map(Percentage::value), Ok(expected));\n    }\n}\n"
     }
   ],
   "hints": [
     {
       "level": 1,
-      "body": "Add a #[cfg(test)] module below the implementation."
+      "body": "Keep cases as data rather than repeating assertions."
     },
     {
       "level": 2,
-      "body": "Inside it, use a cases table like [(0, 0), (50, 50), (100, 100)] and loop with for (input, expected) in cases."
+      "body": "Include both boundaries and a representative middle value."
     },
     {
       "level": 3,
-      "body": "One complete solution for Write table-driven valid percentage tests is shown below.",
-      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(&self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn accepts_valid_percentages() {\n        let cases = [(0, 0), (50, 50), (100, 100)];\n\n        for (input, expected) in cases {\n            assert_eq!(\n                Percentage::try_from(input).map(|value| value.value()),\n                Ok(expected)\n            );\n        }\n    }\n}"
+      "body": "Map Percentage to its primitive value for concise assertions.",
+      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn accepts_valid_percentages() {\n        let cases = [(0, 0), (50, 50), (100, 100)];\n\n        for (input, expected) in cases {\n            assert_eq!(\n                Percentage::try_from(input).map(Percentage::value),\n                Ok(expected)\n            );\n        }\n    }\n}"
     }
   ],
-  "completionExplanation": "Valid Percentage boundaries are now covered by one table-driven test whose input and expected output stay side by side.",
+  "completionExplanation": "One readable test now covers several named points in the valid input partition.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -50,9 +50,8 @@
           {
             "type": "source_includes",
             "requiredSnippets": [
-              "#[test]",
-              "for (input, expected) in cases",
-              "assert_eq!"
+              "let cases = [(0, 0), (50, 50), (100, 100)]",
+              "for (input, expected) in cases"
             ]
           }
         ]

@@ -6,12 +6,12 @@
   "order": 64,
   "day": 4,
   "arcLength": 6,
-  "title": "Convert io::Error with From",
+  "title": "Derive mechanical I/O conversion",
   "conceptId": "config-err-from-io",
   "difficulty": "medium",
   "estimatedMinutes": 7,
   "scenario": "A From implementation centralizes how low-level I/O errors become configuration errors and enables ? at call sites.",
-  "instructions": "Implement From<std::io::Error> for ConfigLoadError by returning ConfigLoadError::FileRead(error).",
+  "instructions": "Change FileRead to the tuple variant FileRead(#[from] std::io::Error). Let thiserror derive both Error::source and From<std::io::Error>.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "The starter already stores io::Error in FileRead. Add a From<io::Error> implementation for ConfigLoadError."
+      "body": "Use #[from] when conversion is mechanical and loses no semantic information."
     },
     {
       "level": 2,
-      "body": "The from method should take the io::Error by value and return ConfigLoadError::FileRead(error)."
+      "body": "A #[from] field is also treated as the source."
     },
     {
       "level": 3,
-      "body": "One complete solution for Convert io::Error with From is shown below.",
-      "solutionCode": "use std::error::Error;\nuse std::fmt;\nuse std::io;\n\n#[derive(Debug)]\npub enum ConfigLoadError {\n    MissingEnvironment,\n    InvalidPort,\n    FileRead(io::Error),\n}\n\nimpl fmt::Display for ConfigLoadError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            ConfigLoadError::MissingEnvironment => write!(f, \"missing environment\"),\n            ConfigLoadError::InvalidPort => write!(f, \"invalid port\"),\n            ConfigLoadError::FileRead(_) => write!(f, \"could not read config file\"),\n        }\n    }\n}\n\nimpl Error for ConfigLoadError {\n    fn source(&self) -> Option<&(dyn Error + 'static)> {\n        match self {\n            ConfigLoadError::FileRead(error) => Some(error),\n            ConfigLoadError::MissingEnvironment | ConfigLoadError::InvalidPort => None,\n        }\n    }\n}\n\nimpl From<io::Error> for ConfigLoadError {\n    fn from(error: io::Error) -> Self {\n        ConfigLoadError::FileRead(error)\n    }\n}"
+      "body": "No handwritten From implementation is needed.",
+      "solutionCode": "use thiserror::Error;\n\n#[derive(Debug, Error)]\npub enum ConfigLoadError {\n    #[error(\"missing APP_PORT\")]\n    MissingEnvironment,\n    #[error(\"invalid APP_PORT\")]\n    InvalidPort,\n    #[error(\"failed to read config file\")]\n    FileRead(#[from] std::io::Error),\n}\n\nimpl ConfigLoadError {\n    pub fn kind(&self) -> &'static str {\n        match self {\n            Self::MissingEnvironment => \"missing_environment\",\n            Self::InvalidPort => \"invalid_port\",\n            Self::FileRead(_) => \"file_read\",\n        }\n    }\n}"
     }
   ],
-  "completionExplanation": "ConfigLoadError can now be constructed from io::Error, which prepares loader code to use ? for file-reading failures.",
+  "completionExplanation": "I/O failures now convert with ? through a derived From implementation while retaining their source chain.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -48,15 +48,9 @@
         "timeoutMs": 10000,
         "checks": [
           {
-            "type": "impl_trait_for_type",
-            "traitName": "From<io::Error>",
-            "typeName": "ConfigLoadError"
-          },
-          {
             "type": "source_includes",
             "requiredSnippets": [
-              "fn from",
-              "ConfigLoadError::FileRead"
+              "FileRead(#[from] std::io::Error)"
             ]
           }
         ]
@@ -64,7 +58,7 @@
       {
         "mode": "backend-cargo-test",
         "timeoutMs": 10000,
-        "dependencySet": "std",
+        "dependencySet": "advanced",
         "testFiles": [
           {
             "path": "tests/public.rs",

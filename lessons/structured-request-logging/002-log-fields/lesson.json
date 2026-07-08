@@ -6,12 +6,12 @@
   "order": 80,
   "day": 2,
   "arcLength": 6,
-  "title": "Attach request fields to log events",
+  "title": "Record consistent request fields",
   "conceptId": "log-event-fields",
   "difficulty": "easy",
   "estimatedMinutes": 7,
   "scenario": "Useful logs carry fields such as request_id and attempt count so operators can filter and correlate events.",
-  "instructions": "Add LogFields with request_id, user_id, and attempt. Update LogEvent so it stores those fields alongside event_name and level.",
+  "instructions": "Add log_request_started with request_id, optional user_id, and attempt parameters. Emit event_name, request_id, user_id, and attempt as separate tracing fields.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Keep LogLevel from the starter. Add a LogFields struct with request_id: String, user_id: Option<String>, and attempt: u32."
+      "body": "Use the same field names across events."
     },
     {
       "level": 2,
-      "body": "Update LogEvent to include fields: LogFields while keeping event_name and level."
+      "body": "Record anonymous when no user id exists."
     },
     {
       "level": 3,
-      "body": "One complete solution for Attach request fields to log events is shown below.",
-      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogFields {\n    pub request_id: String,\n    pub user_id: Option<String>,\n    pub attempt: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogEvent {\n    pub event_name: String,\n    pub level: LogLevel,\n    pub fields: LogFields,\n}"
+      "body": "Keep numeric values as numbers instead of formatting them into text.",
+      "solutionCode": "pub fn log_request_received(request_id: &str) {\n    tracing::info!(\n        event_name = \"request.received\",\n        request_id = %request_id,\n        \"request received\"\n    );\n}\n\npub fn log_request_started(\n    request_id: &str,\n    user_id: Option<&str>,\n    attempt: u32,\n) {\n    tracing::info!(\n        event_name = \"request.started\",\n        request_id = %request_id,\n        user_id = user_id.unwrap_or(\"anonymous\"),\n        attempt,\n        \"request processing started\"\n    );\n}"
     }
   ],
-  "completionExplanation": "LogEvent now carries structured request fields that can be filtered and correlated by logging tools.",
+  "completionExplanation": "Request metadata is now queryable by stable field names across tracing backends.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -48,40 +48,10 @@
         "timeoutMs": 10000,
         "checks": [
           {
-            "type": "struct_fields",
-            "structName": "LogFields",
-            "requiredFields": [
-              {
-                "name": "request_id",
-                "typeIncludes": [
-                  "String"
-                ]
-              },
-              {
-                "name": "user_id",
-                "typeIncludes": [
-                  "Option",
-                  "String"
-                ]
-              },
-              {
-                "name": "attempt",
-                "typeIncludes": [
-                  "u32"
-                ]
-              }
-            ]
-          },
-          {
-            "type": "struct_fields",
-            "structName": "LogEvent",
-            "requiredFields": [
-              {
-                "name": "fields",
-                "typeIncludes": [
-                  "LogFields"
-                ]
-              }
+            "type": "source_includes",
+            "requiredSnippets": [
+              "user_id = user_id.unwrap_or(\"anonymous\")",
+              "attempt,"
             ]
           }
         ]
@@ -89,7 +59,7 @@
       {
         "mode": "backend-cargo-test",
         "timeoutMs": 10000,
-        "dependencySet": "std",
+        "dependencySet": "advanced",
         "testFiles": [
           {
             "path": "tests/public.rs",

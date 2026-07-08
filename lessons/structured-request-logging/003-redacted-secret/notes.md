@@ -1,1 +1,1 @@
-Teaches log-redacted-secret with deterministic public tests and an idiomatic no-panic solution.
+Teaches log-redacted-secret with production-shaped Rust APIs.

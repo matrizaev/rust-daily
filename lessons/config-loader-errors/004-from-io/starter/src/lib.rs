@@ -1,32 +1,26 @@
-use std::error::Error;
-use std::fmt;
-use std::io;
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum ConfigLoadError {
+    #[error("missing APP_PORT")]
     MissingEnvironment,
+    #[error("invalid APP_PORT")]
     InvalidPort,
-    FileRead(io::Error),
+    #[error("failed to read config file")]
+    FileRead {
+        #[source]
+        source: std::io::Error,
+    },
 }
 
-impl fmt::Display for ConfigLoadError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl ConfigLoadError {
+    pub fn kind(&self) -> &'static str {
         match self {
-            ConfigLoadError::MissingEnvironment => write!(f, "missing environment"),
-            ConfigLoadError::InvalidPort => write!(f, "invalid port"),
-            ConfigLoadError::FileRead(_) => write!(f, "could not read config file"),
+            Self::MissingEnvironment => "missing_environment",
+            Self::InvalidPort => "invalid_port",
+            Self::FileRead { .. } => "file_read",
         }
     }
 }
 
-impl Error for ConfigLoadError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            ConfigLoadError::FileRead(error) => Some(error),
-            ConfigLoadError::MissingEnvironment | ConfigLoadError::InvalidPort => None,
-        }
-    }
-}
-
-// Continue from the previous lesson.
-// TODO: implement From<io::Error> for ConfigLoadError.
+// TODO: replace the explicit source field with #[from].

@@ -1,1 +1,1 @@
-Teaches log-event-struct with deterministic public tests and an idiomatic no-panic solution.
+Teaches log-event-struct with production-shaped Rust APIs.

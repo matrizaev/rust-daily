@@ -1,1 +1,1 @@
-// TODO: define ConfigLoadError variants for loading configuration.
+// TODO: define ConfigLoadError with thiserror.

@@ -1,1 +1,1 @@
-Teaches config-err-from-io with deterministic public tests and an idiomatic no-panic solution.
+Teaches config-err-from-io through typed, idiomatic error boundaries.

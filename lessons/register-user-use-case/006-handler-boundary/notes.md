@@ -1,1 +1,1 @@
-Teaches register-handler-boundary with deterministic public tests and an idiomatic no-panic solution.
+Teaches register-handler-boundary with async boundaries and framework isolation.

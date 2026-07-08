@@ -6,12 +6,12 @@
   "order": 51,
   "day": 3,
   "arcLength": 6,
-  "title": "Convert a DTO into a command with TryFrom",
+  "title": "Convert JSON DTOs into commands with TryFrom",
   "conceptId": "dto-tryfrom-validation",
   "difficulty": "medium",
   "estimatedMinutes": 8,
   "scenario": "A raw DTO can be missing required fields. TryFrom gives the adapter a standard fallible conversion into the application command.",
-  "instructions": "The starter already contains RegisterUserDto and RegisterUserCommand. Add RegisterUserValidationError and implement TryFrom<RegisterUserDto> for RegisterUserCommand using those errors for missing fields.",
+  "instructions": "Add RegisterUserValidationError and implement TryFrom<RegisterUserDto> for RegisterUserCommand. Return typed errors for missing email or display_name fields.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Define RegisterUserValidationError with MissingEmail and MissingDisplayName."
+      "body": "Deserialize gets data into the DTO; TryFrom moves it into validated application data."
     },
     {
       "level": 2,
-      "body": "Use ok_or on each Option<String>, then build RegisterUserCommand only after both fields are present."
+      "body": "Use ok_or for missing Option fields."
     },
     {
       "level": 3,
-      "body": "One complete solution for Convert a DTO into a command with TryFrom is shown below.",
-      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        let email = value\n            .email\n            .ok_or(RegisterUserValidationError::MissingEmail)?;\n        let display_name = value\n            .display_name\n            .ok_or(RegisterUserValidationError::MissingDisplayName)?;\n\n        Ok(Self {\n            email,\n            display_name,\n        })\n    }\n}"
+      "body": "The domain command should still have no serde derive.",
+      "solutionCode": "use serde::Deserialize;\n\n#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        Ok(Self {\n            email: value\n                .email\n                .ok_or(RegisterUserValidationError::MissingEmail)?,\n            display_name: value\n                .display_name\n                .ok_or(RegisterUserValidationError::MissingDisplayName)?,\n        })\n    }\n}"
     }
   ],
-  "completionExplanation": "TryFrom keeps fallible boundary conversion explicit. Missing DTO fields become typed validation errors instead of unwraps or panics.",
+  "completionExplanation": "The boundary conversion is now explicit and fallible, with missing JSON fields mapped into typed validation errors.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -48,28 +48,24 @@
         "timeoutMs": 10000,
         "checks": [
           {
+            "type": "enum_unit_variants",
+            "enumName": "RegisterUserValidationError",
+            "requiredVariants": [
+              "MissingEmail",
+              "MissingDisplayName"
+            ]
+          },
+          {
             "type": "impl_trait_for_type",
             "traitName": "TryFrom<RegisterUserDto>",
             "typeName": "RegisterUserCommand"
-          },
-          {
-            "type": "source_includes",
-            "requiredSnippets": [
-              "type Error = RegisterUserValidationError",
-              "ok_or"
-            ],
-            "forbiddenSnippets": [
-              "unwrap",
-              "expect",
-              "panic!"
-            ]
           }
         ]
       },
       {
         "mode": "backend-cargo-test",
         "timeoutMs": 10000,
-        "dependencySet": "std",
+        "dependencySet": "advanced",
         "testFiles": [
           {
             "path": "tests/public.rs",

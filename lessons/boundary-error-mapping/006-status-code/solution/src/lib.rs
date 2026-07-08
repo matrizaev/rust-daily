@@ -1,43 +1,36 @@
-use std::fmt;
+use thiserror::Error;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]
 pub enum CreateOrderError {
+    #[error("order must contain at least one line")]
     EmptyOrder,
+    #[error("order line quantity must be positive")]
     InvalidQuantity,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]
 pub enum RepositoryError {
+    #[error("repository is unavailable")]
     Unavailable,
+    #[error("order conflicts with existing data")]
     Conflict,
 }
 
-impl fmt::Display for RepositoryError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            RepositoryError::Unavailable => write!(f, "repository unavailable"),
-            RepositoryError::Conflict => write!(f, "repository conflict"),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]
 pub enum CreateOrderUseCaseError {
-    Domain(CreateOrderError),
-    Repository(RepositoryError),
+    #[error(transparent)]
+    Domain(#[from] CreateOrderError),
+    #[error(transparent)]
+    Repository(#[from] RepositoryError),
 }
 
-impl From<CreateOrderError> for CreateOrderUseCaseError {
-    fn from(error: CreateOrderError) -> Self {
-        CreateOrderUseCaseError::Domain(error)
+impl CreateOrderUseCaseError {
+    pub fn is_retryable(&self) -> bool {
+        matches!(self, Self::Repository(RepositoryError::Unavailable))
     }
-}
-
-pub fn is_retryable(error: CreateOrderUseCaseError) -> bool {
-    matches!(
-        error,
-        CreateOrderUseCaseError::Repository(RepositoryError::Unavailable),
-    )
 }
 
 pub fn status_code(error: &CreateOrderUseCaseError) -> u16 {

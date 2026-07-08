@@ -1,91 +1,83 @@
-use std::fmt;
+pub fn log_request_received(request_id: &str) {
+    tracing::info!(
+        event_name = "request.received",
+        request_id = %request_id,
+        "request received"
+    );
+}
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LogLevel {
-    Info,
-    Warn,
-    Error,
+pub fn log_request_started(
+    request_id: &str,
+    user_id: Option<&str>,
+    attempt: u32,
+) {
+    tracing::info!(
+        event_name = "request.started",
+        request_id = %request_id,
+        user_id = user_id.unwrap_or("anonymous"),
+        attempt,
+        "request processing started"
+    );
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Secret<'a>(&'a str);
+
+impl<'a> Secret<'a> {
+    pub fn new(value: &'a str) -> Self {
+        Self(value)
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
+
+impl std::fmt::Display for Secret<'_> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str("[redacted]")
+    }
+}
+
+pub fn log_authentication_attempt(request_id: &str, secret: Secret<'_>) {
+    tracing::info!(
+        event_name = "authentication.attempt",
+        request_id = %request_id,
+        secret = %secret,
+        "authentication attempted"
+    );
+}
+
+pub fn request_span(request_id: &str, path: &str) -> tracing::Span {
+    tracing::info_span!(
+        "http.request",
+        request_id = %request_id,
+        path = %path
+    )
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ErrorKind {
     Validation,
-    RepositoryUnavailable,
+    Repository,
+    Timeout,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LogFields {
-    pub request_id: String,
-    pub user_id: Option<String>,
-    pub attempt: u32,
-    pub path: String,
-    pub error_kind: Option<ErrorKind>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LogEvent {
-    pub event_name: String,
-    pub level: LogLevel,
-    pub fields: LogFields,
-}
-
-pub struct Secret(String);
-
-impl Secret {
-    pub fn new(value: impl Into<String>) -> Self {
-        Self(value.into())
-    }
-
-    pub fn expose(&self) -> &str {
-        &self.0
-    }
-}
-
-impl fmt::Display for Secret {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "[redacted]")
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RequestSpan {
-    request_id: String,
-    path: String,
-}
-
-impl RequestSpan {
-    pub fn new(request_id: impl Into<String>, path: impl Into<String>) -> Self {
-        Self {
-            request_id: request_id.into(),
-            path: path.into(),
-        }
-    }
-
-    pub fn event(&self, event_name: impl Into<String>) -> LogEvent {
-        LogEvent {
-            event_name: event_name.into(),
-            level: LogLevel::Info,
-            fields: LogFields {
-                request_id: self.request_id.clone(),
-                user_id: None,
-                attempt: 1,
-                path: self.path.clone(),
-                error_kind: None,
-            },
+impl ErrorKind {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Validation => "validation",
+            Self::Repository => "repository",
+            Self::Timeout => "timeout",
         }
     }
 }
 
-pub fn error_event(request_id: impl Into<String>, error_kind: ErrorKind) -> LogEvent {
-    LogEvent {
-        event_name: "request.failed".to_owned(),
-        level: LogLevel::Error,
-        fields: LogFields {
-            request_id: request_id.into(),
-            user_id: None,
-            attempt: 1,
-            path: String::new(),
-            error_kind: Some(error_kind),
-        },
-    }
+pub fn log_request_error(request_id: &str, error_kind: ErrorKind) {
+    tracing::error!(
+        event_name = "request.failed",
+        request_id = %request_id,
+        error.kind = error_kind.as_str(),
+        "request failed"
+    );
 }

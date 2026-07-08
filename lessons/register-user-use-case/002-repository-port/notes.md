@@ -1,1 +1,1 @@
-Teaches register-repository-port with deterministic public tests and an idiomatic no-panic solution.
+Teaches register-repository-port with async boundaries and framework isolation.

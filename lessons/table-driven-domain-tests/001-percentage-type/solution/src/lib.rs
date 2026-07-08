@@ -7,7 +7,7 @@ pub enum PercentageError {
 }
 
 impl Percentage {
-    pub fn value(&self) -> u8 {
+    pub fn value(self) -> u8 {
         self.0
     }
 }

@@ -6,12 +6,12 @@
   "order": 61,
   "day": 1,
   "arcLength": 6,
-  "title": "Define ConfigLoadError variants",
+  "title": "Derive a typed config error with thiserror",
   "conceptId": "config-err-enum",
   "difficulty": "easy",
   "estimatedMinutes": 6,
   "scenario": "A configuration loader can fail for different reasons. Start with an enum that keeps those reasons programmatic.",
-  "instructions": "Define ConfigLoadError with MissingEnvironment, InvalidPort, and FileRead variants.",
+  "instructions": "Define ConfigLoadError with MissingEnvironment, InvalidPort, and FileRead variants. Derive thiserror::Error and give every variant a concise #[error(...)] message.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Create a public enum named ConfigLoadError with three unit variants: MissingEnvironment, InvalidPort, and FileRead."
+      "body": "Use thiserror::Error instead of handwritten Display and Error implementations."
     },
     {
       "level": 2,
-      "body": "Derive Debug on the enum so the error type works with test output and later error implementations."
+      "body": "Place one #[error(\"...\")] attribute on each variant."
     },
     {
       "level": 3,
-      "body": "One complete solution for Define ConfigLoadError variants is shown below.",
-      "solutionCode": "#[derive(Debug)]\npub enum ConfigLoadError {\n    MissingEnvironment,\n    InvalidPort,\n    FileRead,\n}"
+      "body": "Keep variants semantic; messages are presentation.",
+      "solutionCode": "use thiserror::Error;\n\n#[derive(Debug, Error)]\npub enum ConfigLoadError {\n    #[error(\"missing APP_PORT\")]\n    MissingEnvironment,\n    #[error(\"invalid APP_PORT\")]\n    InvalidPort,\n    #[error(\"failed to read config file\")]\n    FileRead,\n}"
     }
   ],
-  "completionExplanation": "ConfigLoadError now has programmatic variants for the three loader failure cases. Later lessons can attach formatting and source errors to this same enum.",
+  "completionExplanation": "ConfigLoadError is a normal typed Rust error without repetitive formatting boilerplate.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -55,13 +55,18 @@
               "InvalidPort",
               "FileRead"
             ]
+          },
+          {
+            "type": "derived_trait_for_type",
+            "traitName": "thiserror::Error",
+            "typeName": "ConfigLoadError"
           }
         ]
       },
       {
         "mode": "backend-cargo-test",
         "timeoutMs": 10000,
-        "dependencySet": "std",
+        "dependencySet": "advanced",
         "testFiles": [
           {
             "path": "tests/public.rs",

@@ -1,18 +1,21 @@
-use std::fmt;
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum ConfigLoadError {
+    #[error("missing APP_PORT")]
     MissingEnvironment,
+    #[error("invalid APP_PORT")]
     InvalidPort,
+    #[error("failed to read config file")]
     FileRead,
 }
 
-impl fmt::Display for ConfigLoadError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl ConfigLoadError {
+    pub fn kind(&self) -> &'static str {
         match self {
-            ConfigLoadError::MissingEnvironment => write!(f, "missing environment"),
-            ConfigLoadError::InvalidPort => write!(f, "invalid port"),
-            ConfigLoadError::FileRead => write!(f, "could not read config file"),
+            Self::MissingEnvironment => "missing_environment",
+            Self::InvalidPort => "invalid_port",
+            Self::FileRead => "file_read",
         }
     }
 }

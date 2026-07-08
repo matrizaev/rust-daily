@@ -25,6 +25,7 @@ type BackendRunResult = {
 };
 
 type BackendRunRequest = {
+  dependencySet: string;
   files: Array<{
     path: "src/lib.rs" | "tests/lesson.rs";
     content: string;
@@ -108,6 +109,7 @@ const testCodeFromRequest = (
 const buildRunRequest = (
   request: BackendValidationRequest,
 ): BackendRunRequest => ({
+  dependencySet: request.validation.dependencySet ?? "std",
   files: [
     {
       path: "src/lib.rs",
@@ -154,6 +156,9 @@ const parseJsonRecord = (value: string) => {
 const isCargoMessage = (value: Record<string, unknown>) =>
   typeof value.reason === "string";
 
+const looksLikeCargoMessageLine = (value: string) =>
+  value.trimStart().startsWith('{"reason":');
+
 const isCargoCompilerMessage = (
   value: Record<string, unknown>,
 ): value is CargoCompilerMessage =>
@@ -192,7 +197,11 @@ const plainOutputFromStream = (stream: string) =>
     .filter((line) => {
       const parsed = parseJsonRecord(line);
 
-      return parsed === null || !isCargoMessage(parsed);
+      if (parsed === null) {
+        return !looksLikeCargoMessageLine(line);
+      }
+
+      return !isCargoMessage(parsed);
     })
     .join("\n")
     .trim();

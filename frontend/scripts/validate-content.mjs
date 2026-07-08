@@ -1,5 +1,6 @@
 import { readFile, readdir } from "node:fs/promises";
 import {
+  DEPENDENCY_SETS,
   isNumber,
   isRecord,
   isString,
@@ -295,10 +296,23 @@ const hasAnyBackendTest = (lesson, validation) =>
   hasBackendTestFiles(validation) ||
   hasEmbeddedTestFiles(lesson);
 
+const validateBackendDependencySet = (errors, lesson, validation) => {
+  const dependencySet = validation.dependencySet ?? "std";
+
+  if (!DEPENDENCY_SETS.has(dependencySet)) {
+    push(
+      errors,
+      `${lesson.id} backend validation has unknown dependencySet ${String(dependencySet)}.`,
+    );
+  }
+};
+
 const validateBackendValidation = (errors, lesson, validation) => {
   if (!hasPositiveTimeout(validation)) {
     push(errors, `${lesson.id} backend validation must have timeoutMs.`);
   }
+
+  validateBackendDependencySet(errors, lesson, validation);
 
   if (!hasAnyBackendTest(lesson, validation)) {
     push(errors, `${lesson.id} backend validation must have testCode or testFiles.`);

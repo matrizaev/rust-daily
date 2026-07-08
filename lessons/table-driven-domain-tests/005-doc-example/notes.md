@@ -1,1 +1,1 @@
-Teaches percentage-doc-example with deterministic public tests and an idiomatic no-panic solution.
+Teaches percentage-doc-example with production-shaped Rust APIs.

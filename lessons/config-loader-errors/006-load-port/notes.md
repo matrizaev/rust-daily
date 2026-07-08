@@ -1,1 +1,1 @@
-Teaches config-load-error-propagation with deterministic public tests and an idiomatic no-panic solution.
+Teaches config-load-error-propagation through typed, idiomatic error boundaries.

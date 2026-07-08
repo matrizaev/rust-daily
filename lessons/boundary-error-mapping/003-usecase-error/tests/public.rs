@@ -1,17 +1,10 @@
-use rust_daily_lesson::{CreateOrderError, CreateOrderUseCaseError, RepositoryError};
+use std::error::Error;
+use rust_daily_lesson::{CreateOrderError, CreateOrderUseCaseError};
 
 #[test]
-fn usecase_error_keeps_error_family() {
-    assert_eq!(
-        CreateOrderUseCaseError::Domain(CreateOrderError::EmptyOrder),
-        CreateOrderUseCaseError::Domain(CreateOrderError::EmptyOrder)
-    );
-    assert_eq!(
-        CreateOrderUseCaseError::Repository(RepositoryError::Conflict),
-        CreateOrderUseCaseError::Repository(RepositoryError::Conflict)
-    );
-    assert_eq!(
-        RepositoryError::Unavailable.to_string(),
-        "repository unavailable"
-    );
+fn usecase_error_preserves_domain_source() {
+    let error = CreateOrderUseCaseError::Domain(CreateOrderError::EmptyOrder);
+
+    assert_eq!(error.to_string(), "domain error: order must contain at least one line");
+    assert!(error.source().is_some());
 }

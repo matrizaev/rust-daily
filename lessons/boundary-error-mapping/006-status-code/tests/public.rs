@@ -1,28 +1,8 @@
-use rust_daily_lesson::{
-    is_retryable, status_code, CreateOrderError, CreateOrderUseCaseError, RepositoryError,
-};
+use rust_daily_lesson::{status_code, CreateOrderError, CreateOrderUseCaseError, RepositoryError};
 
 #[test]
-fn maps_application_errors_at_http_edge() {
-    assert_eq!(
-        status_code(&CreateOrderUseCaseError::Domain(
-            CreateOrderError::InvalidQuantity
-        )),
-        400
-    );
-    assert_eq!(
-        status_code(&CreateOrderUseCaseError::Repository(
-            RepositoryError::Conflict
-        )),
-        409
-    );
-    assert_eq!(
-        status_code(&CreateOrderUseCaseError::Repository(
-            RepositoryError::Unavailable
-        )),
-        503
-    );
-    assert!(is_retryable(CreateOrderUseCaseError::Repository(
-        RepositoryError::Unavailable
-    )));
+fn maps_errors_to_boundary_statuses() {
+    assert_eq!(status_code(&CreateOrderUseCaseError::from(CreateOrderError::EmptyOrder)), 400);
+    assert_eq!(status_code(&CreateOrderUseCaseError::from(RepositoryError::Conflict)), 409);
+    assert_eq!(status_code(&CreateOrderUseCaseError::from(RepositoryError::Unavailable)), 503);
 }

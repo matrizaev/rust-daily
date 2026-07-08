@@ -1,1 +1,1 @@
-Teaches boundary-repo-error with deterministic public tests and an idiomatic no-panic solution.
+Teaches boundary-repo-error through typed, idiomatic error boundaries.

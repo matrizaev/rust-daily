@@ -1,1 +1,1 @@
-// TODO: define LogLevel and LogEvent.
+// TODO: emit a structured request event with tracing.

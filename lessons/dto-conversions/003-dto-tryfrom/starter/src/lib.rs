@@ -1,4 +1,6 @@
-#[derive(Debug, Clone, PartialEq, Eq)]
+use serde::Deserialize;
+
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 pub struct RegisterUserDto {
     pub email: Option<String>,
     pub display_name: Option<String>,
@@ -27,5 +29,4 @@ impl RegisterUserCommand {
     }
 }
 
-// Continue from the previous lesson.
-// TODO: implement TryFrom<RegisterUserDto> for RegisterUserCommand.
+// TODO: add typed validation errors and TryFrom<RegisterUserDto>.

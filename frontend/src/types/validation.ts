@@ -44,6 +44,8 @@ export type StructuralCheck =
       forbiddenSnippets?: string[];
     };
 
+export type DependencySet = "std" | "advanced";
+
 export type LessonValidationStep =
   | {
       mode: "structural";
@@ -59,7 +61,7 @@ export type LessonValidationStep =
       mode: "backend-cargo-test";
       timeoutMs: number;
       testCode?: string;
-      dependencySet?: string;
+      dependencySet?: DependencySet;
       testFiles?: Array<{
         path: string;
         content: string;

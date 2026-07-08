@@ -1,12 +1,19 @@
 use rust_daily_lesson::{UserRegistered, UserRegisteredDto};
 
 #[test]
-fn converts_domain_event_to_outbound_dto() {
+fn serializes_outbound_dto_shape() {
     let dto = UserRegisteredDto::from(UserRegistered {
         user_id: 42,
         email: "ada@example.com".to_owned(),
     });
 
-    assert_eq!(dto.id, "42");
-    assert_eq!(dto.email, "ada@example.com");
+    let json = serde_json::to_value(&dto).expect("DTO should serialize");
+
+    assert_eq!(
+        json,
+        serde_json::json!({
+            "id": "42",
+            "email": "ada@example.com"
+        })
+    );
 }

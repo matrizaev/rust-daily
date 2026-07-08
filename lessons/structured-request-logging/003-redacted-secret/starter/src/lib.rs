@@ -1,23 +1,23 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LogLevel {
-    Info,
-    Warn,
-    Error,
+pub fn log_request_received(request_id: &str) {
+    tracing::info!(
+        event_name = "request.received",
+        request_id = %request_id,
+        "request received"
+    );
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LogFields {
-    pub request_id: String,
-    pub user_id: Option<String>,
-    pub attempt: u32,
+pub fn log_request_started(
+    request_id: &str,
+    user_id: Option<&str>,
+    attempt: u32,
+) {
+    tracing::info!(
+        event_name = "request.started",
+        request_id = %request_id,
+        user_id = user_id.unwrap_or("anonymous"),
+        attempt,
+        "request processing started"
+    );
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LogEvent {
-    pub event_name: String,
-    pub level: LogLevel,
-    pub fields: LogFields,
-}
-
-// Continue from the previous lesson.
-// TODO: implement Display without revealing the inner value.
+// TODO: add Secret with redacted Display and log_authentication_attempt.

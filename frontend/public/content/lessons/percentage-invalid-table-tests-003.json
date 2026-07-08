@@ -6,40 +6,40 @@
   "order": 87,
   "day": 3,
   "arcLength": 6,
-  "title": "Write table-driven invalid percentage tests",
+  "title": "Write table-driven invalid examples",
   "conceptId": "percentage-invalid-table-tests",
   "difficulty": "medium",
   "estimatedMinutes": 8,
   "scenario": "Invalid cases deserve precise tests too. Table-driven tests make it clear which inputs should fail.",
-  "instructions": "Keep the valid table-driven test from the starter. Add a second test that loops over invalid values and checks PercentageError::OutOfRange.",
+  "instructions": "Keep the valid table test. Add a second test that loops over several values above 100 and checks PercentageError::OutOfRange.",
   "files": [
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(&self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn accepts_valid_percentages() {\n        let cases = [(0, 0), (50, 50), (100, 100)];\n\n        for (input, expected) in cases {\n            assert_eq!(\n                Percentage::try_from(input).map(|value| value.value()),\n                Ok(expected)\n            );\n        }\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: add table-driven tests for invalid cases.\n"
+      "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn accepts_valid_percentages() {\n        let cases = [(0, 0), (50, 50), (100, 100)];\n\n        for (input, expected) in cases {\n            assert_eq!(\n                Percentage::try_from(input).map(Percentage::value),\n                Ok(expected)\n            );\n        }\n    }\n}\n\n// TODO: add invalid values above the upper bound.\n"
     },
     {
       "path": "tests/public.rs",
       "role": "test",
-      "content": "use rust_daily_lesson::{Percentage, PercentageError};\n\n#[test]\nfn public_behavior_rejects_out_of_range_values() {\n    assert_eq!(Percentage::try_from(101), Err(PercentageError::OutOfRange));\n    assert_eq!(Percentage::try_from(1_000), Err(PercentageError::OutOfRange));\n}\n"
+      "content": "use rust_daily_lesson::{Percentage, PercentageError};\n\n#[test]\nfn public_invalid_cases_match() {\n    for input in [101, 500, u16::MAX] {\n        assert_eq!(Percentage::try_from(input), Err(PercentageError::OutOfRange));\n    }\n}\n"
     }
   ],
   "hints": [
     {
       "level": 1,
-      "body": "Do not replace accepts_valid_percentages; add rejects_invalid_percentages in the same tests module."
+      "body": "Invalid cases can share one expected error."
     },
     {
       "level": 2,
-      "body": "Use an invalid_values table such as [101, 150, 1_000] and assert each conversion returns Err(PercentageError::OutOfRange)."
+      "body": "Choose values close to and far from the boundary."
     },
     {
       "level": 3,
-      "body": "One complete solution for Write table-driven invalid percentage tests is shown below.",
-      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(&self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn accepts_valid_percentages() {\n        let cases = [(0, 0), (50, 50), (100, 100)];\n\n        for (input, expected) in cases {\n            assert_eq!(\n                Percentage::try_from(input).map(|value| value.value()),\n                Ok(expected)\n            );\n        }\n    }\n\n    #[test]\n    fn rejects_invalid_percentages() {\n        let invalid_values = [101, 150, 1_000];\n\n        for input in invalid_values {\n            assert_eq!(\n                Percentage::try_from(input),\n                Err(PercentageError::OutOfRange)\n            );\n        }\n    }\n}"
+      "body": "Keep the loop assertion explicit.",
+      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn accepts_valid_percentages() {\n        let cases = [(0, 0), (50, 50), (100, 100)];\n\n        for (input, expected) in cases {\n            assert_eq!(\n                Percentage::try_from(input).map(Percentage::value),\n                Ok(expected)\n            );\n        }\n    }\n\n    #[test]\n    fn rejects_invalid_percentages() {\n        for input in [101, 150, 1_000] {\n            assert_eq!(Percentage::try_from(input), Err(PercentageError::OutOfRange));\n        }\n    }\n}"
     }
   ],
-  "completionExplanation": "Invalid Percentage boundaries are now covered by an additive table-driven test without losing the valid-case table.",
+  "completionExplanation": "The example suite now documents both accepted and rejected input partitions.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -50,9 +50,8 @@
           {
             "type": "source_includes",
             "requiredSnippets": [
-              "invalid_values",
-              "for input in invalid_values",
-              "PercentageError::OutOfRange"
+              "fn rejects_invalid_percentages()",
+              "[101, 150, 1_000]"
             ]
           }
         ]

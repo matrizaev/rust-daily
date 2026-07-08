@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 use crate::{
     config::RunnerSettings,
-    model::{RunResult, RunStatus, ValidatedRunRequest},
+    model::{DependencySet, RunResult, RunStatus, ValidatedRunRequest},
     workspace::{WorkspaceError, prepare_workspace},
 };
 
@@ -79,7 +79,7 @@ async fn run_inner(
     let workspace = prepare_workspace(job_id, request, config.workspace_root.as_path()).await?;
     let workspace_path = workspace.path().to_path_buf();
 
-    let outcome = execute_podman(&workspace, config).await;
+    let outcome = execute_podman(&workspace, request.dependency_set(), config).await;
 
     if let Err(error) = workspace.close() {
         warn!(%job_id, error = %error, path = ?workspace_path, "workspace cleanup failed");
@@ -109,6 +109,7 @@ async fn run_inner(
 
 async fn execute_podman(
     workspace: &TempDir,
+    dependency_set: DependencySet,
     config: &RunnerSettings,
 ) -> Result<PodmanOutcome, io::Error> {
     let workspace_mount = format!("{}:/workspace:Z", workspace.path().display());
@@ -144,11 +145,18 @@ async fn execute_podman(
         .arg("/workspace")
         .arg(config.image.as_str())
         .arg("timeout")
-        .arg(inner_timeout)
-        .arg("cargo")
-        .arg("test")
-        .arg("--offline")
-        .arg("--message-format=json");
+        .arg(inner_timeout);
+
+    match dependency_set {
+        DependencySet::Std => {
+            command.arg("cargo").arg("test");
+        }
+        DependencySet::Advanced => {
+            command.arg("run-advanced-lesson-tests");
+        }
+    }
+
+    command.arg("--offline").arg("--message-format=json");
 
     match time::timeout(outer_timeout, command.output()).await {
         Ok(output) => output.map(PodmanOutcome::Completed),
@@ -158,7 +166,9 @@ async fn execute_podman(
 
 fn result_from_output(output: Output, duration_ms: u64, max_output_bytes: usize) -> RunResult {
     let status = classify_status(&output);
-    let (stdout, stderr) = cap_output(&output.stdout, &output.stderr, max_output_bytes);
+    let stdout = output_stream_for_response(&output.stdout);
+    let stderr = output_stream_for_response(&output.stderr);
+    let (stdout, stderr) = cap_output(stdout.as_bytes(), stderr.as_bytes(), max_output_bytes);
 
     RunResult::new(status, stdout, stderr, duration_ms)
 }
@@ -194,6 +204,26 @@ fn cargo_reported_compiler_error(output: &[u8]) -> bool {
                     })
                 )
         })
+}
+
+fn output_stream_for_response(output: &[u8]) -> String {
+    String::from_utf8_lossy(output)
+        .lines()
+        .filter(|line| should_include_response_line(line))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+fn should_include_response_line(line: &str) -> bool {
+    match serde_json::from_str::<CargoResponseMessage>(line) {
+        Ok(message) => message.reason == CargoMessageReason::CompilerMessage,
+        Err(_) => true,
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct CargoResponseMessage {
+    reason: CargoMessageReason,
 }
 
 fn cap_output(stdout: &[u8], stderr: &[u8], max_output_bytes: usize) -> (String, String) {
@@ -277,7 +307,7 @@ fn elapsed_ms(started_at: Instant) -> u64 {
 mod tests {
     use std::{os::unix::process::ExitStatusExt, process::ExitStatus};
 
-    use super::{cap_output, classify_status};
+    use super::{cap_output, classify_status, result_from_output};
     use crate::model::RunStatus;
 
     fn output(status: i32, stdout: &str, stderr: &str) -> std::process::Output {
@@ -333,5 +363,37 @@ mod tests {
         assert!(stdout.len() + stderr.len() <= 80);
         assert!(stdout.contains("[output truncated]"));
         assert!(stderr.contains("[output truncated]"));
+    }
+
+    #[test]
+    fn filters_cargo_artifact_json_before_capping_response_output() {
+        let cargo_noise = (0..200)
+            .map(|index| format!(r#"{{"reason":"compiler-artifact","package_id":"pkg{index}"}}"#))
+            .collect::<Vec<_>>()
+            .join("\n");
+        let raw_stdout = format!("{cargo_noise}\nreal test output\n");
+
+        let result = result_from_output(output(0, &raw_stdout, ""), 42, 80);
+
+        assert_eq!(result.status, RunStatus::Passed);
+        assert_eq!(result.stdout, "real test output");
+        assert!(!result.stdout.contains("compiler-artifact"));
+        assert!(!result.stdout.contains("[output truncated]"));
+    }
+
+    #[test]
+    fn keeps_compiler_message_json_for_frontend_diagnostics() {
+        let raw_stdout = concat!(
+            r#"{"reason":"compiler-artifact","package_id":"noise"}"#,
+            "\n",
+            r#"{"reason":"compiler-message","message":{"level":"error","rendered":"error: bad type"}}"#,
+        );
+
+        let result = result_from_output(output(101, raw_stdout, ""), 42, 400);
+
+        assert_eq!(result.status, RunStatus::CompileError);
+        assert!(!result.stdout.contains("compiler-artifact"));
+        assert!(result.stdout.contains("compiler-message"));
+        assert!(result.stdout.contains("error: bad type"));
     }
 }

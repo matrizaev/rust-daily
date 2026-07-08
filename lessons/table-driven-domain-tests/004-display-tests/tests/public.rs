@@ -1,6 +1,9 @@
 use rust_daily_lesson::Percentage;
 
 #[test]
-fn display_formats_percent_sign() {
-    assert_eq!(Percentage::try_from(42).map(|value| value.to_string()), Ok("42%".to_owned()));
+fn public_display_cases_match() {
+    for (input, expected) in [(0, "0%"), (75, "75%"), (100, "100%")] {
+        let percentage = Percentage::try_from(input).expect("case is valid");
+        assert_eq!(percentage.to_string(), expected);
+    }
 }

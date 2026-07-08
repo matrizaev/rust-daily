@@ -1,1 +1,1 @@
-Teaches log-request-span with deterministic public tests and an idiomatic no-panic solution.
+Teaches log-request-span with production-shaped Rust APIs.

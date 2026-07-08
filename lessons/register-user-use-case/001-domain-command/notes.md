@@ -1,1 +1,1 @@
-Teaches register-domain-command with deterministic public tests and an idiomatic no-panic solution.
+Teaches register-domain-command with async boundaries and framework isolation.

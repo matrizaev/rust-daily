@@ -1,1 +1,1 @@
-Teaches log-error-kind with deterministic public tests and an idiomatic no-panic solution.
+Teaches log-error-kind with production-shaped Rust APIs.

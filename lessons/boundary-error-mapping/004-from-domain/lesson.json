@@ -6,12 +6,12 @@
   "order": 70,
   "day": 4,
   "arcLength": 6,
-  "title": "Convert domain errors into use-case errors",
+  "title": "Derive mechanical boundary conversions",
   "conceptId": "boundary-domain-from",
   "difficulty": "medium",
   "estimatedMinutes": 7,
   "scenario": "From keeps application orchestration code focused by centralizing conversion from domain errors.",
-  "instructions": "Implement From<CreateOrderError> for CreateOrderUseCaseError.",
+  "instructions": "Change both transparent fields from #[source] to #[from]. Let thiserror derive From<CreateOrderError> and From<RepositoryError> for CreateOrderUseCaseError.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Implement From<CreateOrderError> for the existing CreateOrderUseCaseError enum."
+      "body": "These conversions only wrap the original typed error."
     },
     {
       "level": 2,
-      "body": "The from method should return CreateOrderUseCaseError::Domain(error)."
+      "body": "Use #[from] when there is no additional policy or context."
     },
     {
       "level": 3,
-      "body": "One complete solution for Convert domain errors into use-case errors is shown below.",
-      "solutionCode": "use std::fmt;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderError {\n    EmptyOrder,\n    InvalidQuantity,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RepositoryError {\n    Unavailable,\n    Conflict,\n}\n\nimpl fmt::Display for RepositoryError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            RepositoryError::Unavailable => write!(f, \"repository unavailable\"),\n            RepositoryError::Conflict => write!(f, \"repository conflict\"),\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderUseCaseError {\n    Domain(CreateOrderError),\n    Repository(RepositoryError),\n}\n\nimpl From<CreateOrderError> for CreateOrderUseCaseError {\n    fn from(error: CreateOrderError) -> Self {\n        CreateOrderUseCaseError::Domain(error)\n    }\n}"
+      "body": "The wrapped value remains the standard error source.",
+      "solutionCode": "use thiserror::Error;\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum CreateOrderError {\n    #[error(\"order must contain at least one line\")]\n    EmptyOrder,\n    #[error(\"order line quantity must be positive\")]\n    InvalidQuantity,\n}\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum RepositoryError {\n    #[error(\"repository is unavailable\")]\n    Unavailable,\n    #[error(\"order conflicts with existing data\")]\n    Conflict,\n}\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum CreateOrderUseCaseError {\n    #[error(transparent)]\n    Domain(#[from] CreateOrderError),\n    #[error(transparent)]\n    Repository(#[from] RepositoryError),\n}"
     }
   ],
-  "completionExplanation": "Domain errors can now move into the use-case error type through From, which lets orchestration code use standard conversions.",
+  "completionExplanation": "Use-case code can now use ? for both lower-layer error types without handwritten conversion boilerplate.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -48,14 +48,10 @@
         "timeoutMs": 10000,
         "checks": [
           {
-            "type": "impl_trait_for_type",
-            "traitName": "From<CreateOrderError>",
-            "typeName": "CreateOrderUseCaseError"
-          },
-          {
             "type": "source_includes",
             "requiredSnippets": [
-              "CreateOrderUseCaseError::Domain(error)"
+              "Domain(#[from] CreateOrderError)",
+              "Repository(#[from] RepositoryError)"
             ]
           }
         ]
@@ -63,7 +59,7 @@
       {
         "mode": "backend-cargo-test",
         "timeoutMs": 10000,
-        "dependencySet": "std",
+        "dependencySet": "advanced",
         "testFiles": [
           {
             "path": "tests/public.rs",

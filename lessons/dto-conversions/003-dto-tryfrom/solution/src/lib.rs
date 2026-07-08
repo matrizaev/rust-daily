@@ -1,4 +1,6 @@
-#[derive(Debug, Clone, PartialEq, Eq)]
+use serde::Deserialize;
+
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 pub struct RegisterUserDto {
     pub email: Option<String>,
     pub display_name: Option<String>,
@@ -37,16 +39,13 @@ impl TryFrom<RegisterUserDto> for RegisterUserCommand {
     type Error = RegisterUserValidationError;
 
     fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {
-        let email = value
-            .email
-            .ok_or(RegisterUserValidationError::MissingEmail)?;
-        let display_name = value
-            .display_name
-            .ok_or(RegisterUserValidationError::MissingDisplayName)?;
-
         Ok(Self {
-            email,
-            display_name,
+            email: value
+                .email
+                .ok_or(RegisterUserValidationError::MissingEmail)?,
+            display_name: value
+                .display_name
+                .ok_or(RegisterUserValidationError::MissingDisplayName)?,
         })
     }
 }

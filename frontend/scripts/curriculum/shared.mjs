@@ -36,6 +36,7 @@ export const readJson = async (path) => JSON.parse(await readFile(path, "utf8"))
 export const isRecord = (value) => typeof value === "object" && value !== null;
 export const isString = (value) => typeof value === "string" && value.trim().length > 0;
 export const isNumber = (value) => typeof value === "number" && Number.isFinite(value);
+export const DEPENDENCY_SETS = new Set(["std", "advanced"]);
 export const push = (errors, message) => {
   errors.push(message);
 };

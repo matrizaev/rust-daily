@@ -1,7 +1,7 @@
 use rust_daily_lesson::domain::{EmailAddress, RegisterUserCommand};
 
 #[test]
-fn domain_command_has_no_adapter_dependency() {
+fn domain_command_exposes_borrowed_values() {
     let command = RegisterUserCommand::new(EmailAddress::new("ada@example.com"), "Ada");
 
     assert_eq!(command.email().as_str(), "ada@example.com");

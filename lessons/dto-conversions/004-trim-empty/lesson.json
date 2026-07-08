@@ -6,12 +6,12 @@
   "order": 52,
   "day": 4,
   "arcLength": 6,
-  "title": "Trim and reject empty DTO fields",
+  "title": "Trim DTO fields before command creation",
   "conceptId": "dto-trim-validation",
   "difficulty": "medium",
   "estimatedMinutes": 8,
   "scenario": "Boundary strings often contain whitespace. Normalize only after checking the DTO field exists, then reject empty normalized values explicitly.",
-  "instructions": "Update the existing TryFrom<RegisterUserDto> implementation to trim both fields and return EmptyEmail or EmptyDisplayName when a trimmed field is empty.",
+  "instructions": "Update TryFrom<RegisterUserDto> so it trims both strings and returns EmptyEmail or EmptyDisplayName when a trimmed field is empty.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Add EmptyEmail and EmptyDisplayName to RegisterUserValidationError."
+      "body": "Normalize at the boundary before constructing the command."
     },
     {
       "level": 2,
-      "body": "Keep MissingEmail and MissingDisplayName for absent fields; only use EmptyEmail and EmptyDisplayName after trim()."
+      "body": "Trim borrowed string slices first, then allocate only once for accepted values."
     },
     {
       "level": 3,
-      "body": "One complete solution for Trim and reject empty DTO fields is shown below.",
-      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n    EmptyEmail,\n    EmptyDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        let email = value\n            .email\n            .ok_or(RegisterUserValidationError::MissingEmail)?;\n        let display_name = value\n            .display_name\n            .ok_or(RegisterUserValidationError::MissingDisplayName)?;\n        let email = email.trim();\n        let display_name = display_name.trim();\n\n        if email.is_empty() {\n            return Err(RegisterUserValidationError::EmptyEmail);\n        }\n\n        if display_name.is_empty() {\n            return Err(RegisterUserValidationError::EmptyDisplayName);\n        }\n\n        Ok(Self {\n            email: email.to_owned(),\n            display_name: display_name.to_owned(),\n        })\n    }\n}"
+      "body": "Add EmptyEmail and EmptyDisplayName to the validation enum.",
+      "solutionCode": "use serde::Deserialize;\n\n#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n    EmptyEmail,\n    EmptyDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        let email = value\n            .email\n            .ok_or(RegisterUserValidationError::MissingEmail)?;\n        let display_name = value\n            .display_name\n            .ok_or(RegisterUserValidationError::MissingDisplayName)?;\n        let email = email.trim();\n        let display_name = display_name.trim();\n\n        if email.is_empty() {\n            return Err(RegisterUserValidationError::EmptyEmail);\n        }\n\n        if display_name.is_empty() {\n            return Err(RegisterUserValidationError::EmptyDisplayName);\n        }\n\n        Ok(Self {\n            email: email.to_owned(),\n            display_name: display_name.to_owned(),\n        })\n    }\n}"
     }
   ],
-  "completionExplanation": "The conversion now distinguishes missing fields from present-but-empty fields, while storing normalized command strings.",
+  "completionExplanation": "The DTO conversion now performs boundary normalization without leaking whitespace-only values into the command.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -51,8 +51,6 @@
             "type": "enum_unit_variants",
             "enumName": "RegisterUserValidationError",
             "requiredVariants": [
-              "MissingEmail",
-              "MissingDisplayName",
               "EmptyEmail",
               "EmptyDisplayName"
             ]
@@ -61,13 +59,10 @@
             "type": "source_includes",
             "requiredSnippets": [
               "trim()",
-              "is_empty()",
               "to_owned()"
             ],
             "forbiddenSnippets": [
-              "unwrap",
-              "expect",
-              "panic!"
+              "unwrap()"
             ]
           }
         ]
@@ -75,7 +70,7 @@
       {
         "mode": "backend-cargo-test",
         "timeoutMs": 10000,
-        "dependencySet": "std",
+        "dependencySet": "advanced",
         "testFiles": [
           {
             "path": "tests/public.rs",

@@ -1,1 +1,1 @@
-Teaches boundary-usecase-error with deterministic public tests and an idiomatic no-panic solution.
+Teaches boundary-usecase-error through typed, idiomatic error boundaries.

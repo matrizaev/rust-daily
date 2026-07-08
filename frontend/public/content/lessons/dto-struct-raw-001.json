@@ -6,12 +6,12 @@
   "order": 49,
   "day": 1,
   "arcLength": 6,
-  "title": "Define a raw register-user DTO",
+  "title": "Deserialize a raw register-user DTO",
   "conceptId": "dto-struct-raw",
   "difficulty": "easy",
   "estimatedMinutes": 6,
   "scenario": "An HTTP adapter receives partial, untrusted data. Start by representing that boundary data separately from the domain command.",
-  "instructions": "Define RegisterUserDto with public email: Option<String> and display_name: Option<String> fields.",
+  "instructions": "Define RegisterUserDto with public email and display_name Option<String> fields, and derive serde::Deserialize so JSON boundary input can create it directly.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -21,25 +21,25 @@
     {
       "path": "tests/public.rs",
       "role": "test",
-      "content": "use rust_daily_lesson::RegisterUserDto;\n\n#[test]\nfn dto_can_represent_partial_boundary_input() {\n    let dto = RegisterUserDto {\n        email: Some(\"ada@example.com\".to_owned()),\n        display_name: None,\n    };\n\n    assert_eq!(dto.email.as_deref(), Some(\"ada@example.com\"));\n    assert_eq!(dto.display_name, None);\n}\n"
+      "content": "use rust_daily_lesson::RegisterUserDto;\n\n#[test]\nfn dto_deserializes_partial_boundary_json() {\n    let dto: RegisterUserDto = serde_json::from_str(r#\"{\"email\":\"ada@example.com\"}\"#)\n        .expect(\"DTO JSON should deserialize\");\n\n    assert_eq!(dto.email.as_deref(), Some(\"ada@example.com\"));\n    assert_eq!(dto.display_name, None);\n}\n"
     }
   ],
   "hints": [
     {
       "level": 1,
-      "body": "Model raw adapter input as a plain DTO. Use Option<String> because either field may be absent at the boundary."
+      "body": "DTOs model transport input, so public fields are acceptable at the boundary."
     },
     {
       "level": 2,
-      "body": "Keep DTO fields public; this type represents input data, not validated domain state."
+      "body": "Option<String> lets serde represent missing JSON fields as None."
     },
     {
       "level": 3,
-      "body": "One complete solution for Define a raw register-user DTO is shown below.",
-      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}"
+      "body": "Derive Deserialize on the DTO, not on the domain command.",
+      "solutionCode": "use serde::Deserialize;\n\n#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}"
     }
   ],
-  "completionExplanation": "The raw DTO can represent partial boundary input without pretending it is already valid domain data.",
+  "completionExplanation": "The adapter DTO can now be built from JSON while still keeping untrusted boundary data separate from validated domain data.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -66,13 +66,18 @@
                 ]
               }
             ]
+          },
+          {
+            "type": "derived_trait_for_type",
+            "traitName": "serde::Deserialize",
+            "typeName": "RegisterUserDto"
           }
         ]
       },
       {
         "mode": "backend-cargo-test",
         "timeoutMs": 10000,
-        "dependencySet": "std"
+        "dependencySet": "advanced"
       }
     ]
   }

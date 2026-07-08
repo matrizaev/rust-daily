@@ -1,54 +1,40 @@
-use std::error::Error;
-use std::fmt;
-use std::io;
-use std::num::ParseIntError;
+use anyhow::Context;
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum ConfigLoadError {
+    #[error("missing APP_PORT")]
     MissingEnvironment,
-    InvalidPort(ParseIntError),
-    FileRead(io::Error),
+    #[error("invalid APP_PORT")]
+    InvalidPort(#[from] std::num::ParseIntError),
+    #[error("failed to read config file")]
+    FileRead(#[from] std::io::Error),
 }
 
-impl fmt::Display for ConfigLoadError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl ConfigLoadError {
+    pub fn kind(&self) -> &'static str {
         match self {
-            ConfigLoadError::MissingEnvironment => write!(f, "missing environment"),
-            ConfigLoadError::InvalidPort(_) => write!(f, "invalid port"),
-            ConfigLoadError::FileRead(_) => write!(f, "could not read config file"),
+            Self::MissingEnvironment => "missing_environment",
+            Self::InvalidPort(_) => "invalid_port",
+            Self::FileRead(_) => "file_read",
         }
-    }
-}
-
-impl Error for ConfigLoadError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            ConfigLoadError::InvalidPort(error) => Some(error),
-            ConfigLoadError::FileRead(error) => Some(error),
-            ConfigLoadError::MissingEnvironment => None,
-        }
-    }
-}
-
-impl From<io::Error> for ConfigLoadError {
-    fn from(error: io::Error) -> Self {
-        ConfigLoadError::FileRead(error)
-    }
-}
-
-impl From<ParseIntError> for ConfigLoadError {
-    fn from(error: ParseIntError) -> Self {
-        ConfigLoadError::InvalidPort(error)
     }
 }
 
 pub fn parse_port(value: &str) -> Result<u16, ConfigLoadError> {
-    Ok(value.parse::<u16>()?)
+    Ok(value.parse()?)
 }
 
-pub fn load_port(lookup: impl Fn(&str) -> Option<String>) -> Result<u16, ConfigLoadError> {
-    let raw = lookup("APP_PORT").ok_or(ConfigLoadError::MissingEnvironment)?;
-    let port = parse_port(raw.as_str())?;
+pub fn load_port(
+    lookup: impl Fn(&str) -> Option<String>,
+) -> Result<u16, ConfigLoadError> {
+    let value = lookup("APP_PORT").ok_or(ConfigLoadError::MissingEnvironment)?;
 
-    Ok(port)
+    parse_port(&value)
+}
+
+pub fn load_port_with_context(
+    lookup: impl Fn(&str) -> Option<String>,
+) -> anyhow::Result<u16> {
+    load_port(lookup).context("failed to load APP_PORT")
 }

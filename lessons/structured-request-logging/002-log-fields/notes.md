@@ -1,1 +1,1 @@
-Teaches log-event-fields with deterministic public tests and an idiomatic no-panic solution.
+Teaches log-event-fields with production-shaped Rust APIs.

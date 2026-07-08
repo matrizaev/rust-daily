@@ -1,10 +1,13 @@
 use rust_daily_lesson::{CreateOrderError, CreateOrderUseCaseError, RepositoryError};
 
 #[test]
-fn converts_domain_error_to_usecase_error() {
+fn converts_domain_and_repository_errors() {
     assert_eq!(
-        CreateOrderUseCaseError::from(CreateOrderError::InvalidQuantity),
-        CreateOrderUseCaseError::Domain(CreateOrderError::InvalidQuantity)
+        CreateOrderUseCaseError::from(CreateOrderError::EmptyOrder),
+        CreateOrderUseCaseError::Domain(CreateOrderError::EmptyOrder)
     );
-    assert_eq!(RepositoryError::Conflict.to_string(), "repository conflict");
+    assert_eq!(
+        CreateOrderUseCaseError::from(RepositoryError::Conflict),
+        CreateOrderUseCaseError::Repository(RepositoryError::Conflict)
+    );
 }

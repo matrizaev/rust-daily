@@ -1,1 +1,1 @@
-// TODO: define CreateOrderError for domain rule failures.
+// TODO: define the public domain error surface.

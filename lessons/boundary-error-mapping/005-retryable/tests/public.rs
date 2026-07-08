@@ -1,20 +1,8 @@
-use rust_daily_lesson::{is_retryable, CreateOrderError, CreateOrderUseCaseError, RepositoryError};
+use rust_daily_lesson::{CreateOrderError, CreateOrderUseCaseError, RepositoryError};
 
 #[test]
-fn only_unavailable_repository_errors_are_retryable() {
-    let converted = CreateOrderUseCaseError::from(CreateOrderError::InvalidQuantity);
-
-    assert_eq!(
-        converted,
-        CreateOrderUseCaseError::Domain(CreateOrderError::InvalidQuantity)
-    );
-    assert!(is_retryable(CreateOrderUseCaseError::Repository(
-        RepositoryError::Unavailable
-    )));
-    assert!(!is_retryable(CreateOrderUseCaseError::Repository(
-        RepositoryError::Conflict
-    )));
-    assert!(!is_retryable(CreateOrderUseCaseError::Domain(
-        CreateOrderError::EmptyOrder
-    )));
+fn only_repository_unavailability_is_retryable() {
+    assert!(CreateOrderUseCaseError::from(RepositoryError::Unavailable).is_retryable());
+    assert!(!CreateOrderUseCaseError::from(RepositoryError::Conflict).is_retryable());
+    assert!(!CreateOrderUseCaseError::from(CreateOrderError::EmptyOrder).is_retryable());
 }

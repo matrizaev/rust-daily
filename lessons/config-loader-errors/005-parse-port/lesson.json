@@ -6,12 +6,12 @@
   "order": 65,
   "day": 5,
   "arcLength": 6,
-  "title": "Wrap ParseIntError for port parsing",
+  "title": "Derive ParseIntError conversion",
   "conceptId": "config-err-parse-wrap",
   "difficulty": "medium",
   "estimatedMinutes": 8,
   "scenario": "Parsing configuration values should keep lower-level parse details while returning the loader error type.",
-  "instructions": "Add InvalidPort(ParseIntError), implement From<ParseIntError>, and use ? in parse_port.",
+  "instructions": "Change InvalidPort to InvalidPort(#[from] ParseIntError), update kind, and implement parse_port(&str) -> Result<u16, ConfigLoadError> using ?. ",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Change InvalidPort into InvalidPort(ParseIntError), then add From<ParseIntError> for ConfigLoadError."
+      "body": "ParseIntError is the concrete cause of InvalidPort."
     },
     {
       "level": 2,
-      "body": "Add parse_port(value: &str) -> Result<u16, ConfigLoadError> and let value.parse::<u16>()? use your From implementation."
+      "body": "Derive From with #[from]."
     },
     {
       "level": 3,
-      "body": "One complete solution for Wrap ParseIntError for port parsing is shown below.",
-      "solutionCode": "use std::error::Error;\nuse std::fmt;\nuse std::io;\nuse std::num::ParseIntError;\n\n#[derive(Debug)]\npub enum ConfigLoadError {\n    MissingEnvironment,\n    InvalidPort(ParseIntError),\n    FileRead(io::Error),\n}\n\nimpl fmt::Display for ConfigLoadError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            ConfigLoadError::MissingEnvironment => write!(f, \"missing environment\"),\n            ConfigLoadError::InvalidPort(_) => write!(f, \"invalid port\"),\n            ConfigLoadError::FileRead(_) => write!(f, \"could not read config file\"),\n        }\n    }\n}\n\nimpl Error for ConfigLoadError {\n    fn source(&self) -> Option<&(dyn Error + 'static)> {\n        match self {\n            ConfigLoadError::FileRead(error) => Some(error),\n            ConfigLoadError::InvalidPort(error) => Some(error),\n            ConfigLoadError::MissingEnvironment => None,\n        }\n    }\n}\n\nimpl From<io::Error> for ConfigLoadError {\n    fn from(error: io::Error) -> Self {\n        ConfigLoadError::FileRead(error)\n    }\n}\n\nimpl From<ParseIntError> for ConfigLoadError {\n    fn from(error: ParseIntError) -> Self {\n        ConfigLoadError::InvalidPort(error)\n    }\n}\n\npub fn parse_port(value: &str) -> Result<u16, ConfigLoadError> {\n    Ok(value.parse::<u16>()?)\n}"
+      "body": "Ok(value.parse()?) keeps the success type explicit.",
+      "solutionCode": "use thiserror::Error;\n\n#[derive(Debug, Error)]\npub enum ConfigLoadError {\n    #[error(\"missing APP_PORT\")]\n    MissingEnvironment,\n    #[error(\"invalid APP_PORT\")]\n    InvalidPort(#[from] std::num::ParseIntError),\n    #[error(\"failed to read config file\")]\n    FileRead(#[from] std::io::Error),\n}\n\nimpl ConfigLoadError {\n    pub fn kind(&self) -> &'static str {\n        match self {\n            Self::MissingEnvironment => \"missing_environment\",\n            Self::InvalidPort(_) => \"invalid_port\",\n            Self::FileRead(_) => \"file_read\",\n        }\n    }\n}\n\npub fn parse_port(value: &str) -> Result<u16, ConfigLoadError> {\n    Ok(value.parse()?)\n}"
     }
   ],
-  "completionExplanation": "InvalidPort now preserves the underlying ParseIntError, parse_port returns the loader error type, and ? performs the conversion through From<ParseIntError>.",
+  "completionExplanation": "Port parsing now preserves the parser error and propagates it through an idiomatic derived conversion.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -48,21 +48,17 @@
         "timeoutMs": 10000,
         "checks": [
           {
-            "type": "impl_trait_for_type",
-            "traitName": "From<ParseIntError>",
-            "typeName": "ConfigLoadError"
+            "type": "source_includes",
+            "requiredSnippets": [
+              "InvalidPort(#[from] std::num::ParseIntError)"
+            ]
           },
           {
             "type": "function_signature",
             "functionName": "parse_port",
             "requiredSignatureIncludes": [
+              "fn parse_port(value: &str)",
               "Result<u16, ConfigLoadError>"
-            ]
-          },
-          {
-            "type": "source_includes",
-            "requiredSnippets": [
-              "?"
             ]
           }
         ]
@@ -70,7 +66,7 @@
       {
         "mode": "backend-cargo-test",
         "timeoutMs": 10000,
-        "dependencySet": "std",
+        "dependencySet": "advanced",
         "testFiles": [
           {
             "path": "tests/public.rs",

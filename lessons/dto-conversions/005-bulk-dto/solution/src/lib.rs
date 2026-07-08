@@ -1,4 +1,6 @@
-#[derive(Debug, Clone, PartialEq, Eq)]
+use serde::Deserialize;
+
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 pub struct RegisterUserDto {
     pub email: Option<String>,
     pub display_name: Option<String>,
@@ -63,7 +65,7 @@ impl TryFrom<RegisterUserDto> for RegisterUserCommand {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 pub struct BulkRegisterDto {
     pub users: Vec<RegisterUserDto>,
 }

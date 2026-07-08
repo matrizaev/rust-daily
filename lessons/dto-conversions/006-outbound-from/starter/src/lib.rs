@@ -1,4 +1,6 @@
-#[derive(Debug, Clone, PartialEq, Eq)]
+use serde::Deserialize;
+
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 pub struct RegisterUserDto {
     pub email: Option<String>,
     pub display_name: Option<String>,
@@ -63,7 +65,7 @@ impl TryFrom<RegisterUserDto> for RegisterUserCommand {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 pub struct BulkRegisterDto {
     pub users: Vec<RegisterUserDto>,
 }
@@ -107,17 +109,4 @@ impl TryFrom<BulkRegisterDto> for BulkRegisterCommand {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct UserRegistered {
-    pub user_id: u64,
-    pub email: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct UserRegisteredDto {
-    pub id: String,
-    pub email: String,
-}
-
-// Continue from the previous lesson.
-// TODO: implement From<UserRegistered> for UserRegisteredDto.
+// TODO: add the outbound serializable DTO conversion.

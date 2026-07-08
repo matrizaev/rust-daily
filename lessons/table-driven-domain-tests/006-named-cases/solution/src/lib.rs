@@ -1,10 +1,11 @@
-/// A bounded percentage value from 0 through 100.
+/// A bounded percentage from 0 through 100.
 ///
 /// ```
 /// use rust_daily_lesson::Percentage;
 ///
-/// assert_eq!(Percentage::try_from(75).map(|value| value.value()), Ok(75));
-/// assert!(Percentage::try_from(101).is_err());
+/// let percentage = Percentage::try_from(75)?;
+/// assert_eq!(percentage.value(), 75);
+/// # Ok::<(), rust_daily_lesson::PercentageError>(())
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Percentage(u8);
@@ -15,7 +16,7 @@ pub enum PercentageError {
 }
 
 impl Percentage {
-    pub fn value(&self) -> u8 {
+    pub fn value(self) -> u8 {
         self.0
     }
 }
@@ -33,80 +34,51 @@ impl TryFrom<u16> for Percentage {
 }
 
 impl std::fmt::Display for Percentage {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}%", self.0)
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "{}%", self.0)
     }
 }
+
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use proptest::prelude::*;
 
-    struct PercentageCase {
-        name: &'static str,
-        input: u16,
-        expected: Result<u8, PercentageError>,
+    macro_rules! percentage_cases {
+        ($test_name:ident, { $($name:ident: $input:expr => $expected:expr),+ $(,)? }) => {
+            #[test]
+            fn $test_name() {
+                let cases = [$( (stringify!($name), $input, $expected), )+];
+
+                for (name, input, expected) in cases {
+                    let actual = Percentage::try_from(input).map(Percentage::value);
+                    assert_eq!(actual, expected, "case failed: {name}");
+                }
+            }
+        };
     }
 
-    #[test]
-    fn accepts_valid_percentages() {
-        let cases = [(0, 0), (50, 50), (100, 100)];
+    percentage_cases!(named_examples, {
+        zero: 0 => Ok(0),
+        middle: 50 => Ok(50),
+        maximum: 100 => Ok(100),
+        too_large: 101 => Err(PercentageError::OutOfRange),
+    });
 
-        for (input, expected) in cases {
-            assert_eq!(
-                Percentage::try_from(input).map(|value| value.value()),
-                Ok(expected)
-            );
+    proptest! {
+        #[test]
+        fn accepts_every_value_in_range(input in 0u16..=100) {
+            let percentage = Percentage::try_from(input).expect("generated value is in range");
+            prop_assert_eq!(percentage.value(), input as u8);
         }
-    }
 
-    #[test]
-    fn rejects_invalid_percentages() {
-        let invalid_values = [101, 150, 1_000];
-
-        for input in invalid_values {
-            assert_eq!(
+        #[test]
+        fn rejects_every_value_above_range(input in 101u16..=u16::MAX) {
+            prop_assert_eq!(
                 Percentage::try_from(input),
                 Err(PercentageError::OutOfRange)
             );
-        }
-    }
-
-    #[test]
-    fn formats_percentages() {
-        let cases = [(0, "0%"), (50, "50%"), (100, "100%")];
-
-        for (input, expected) in cases {
-            assert_eq!(
-                Percentage::try_from(input).map(|value| value.to_string()),
-                Ok(expected.to_owned())
-            );
-        }
-    }
-
-    #[test]
-    fn checks_named_percentage_cases() {
-        let cases = [
-            PercentageCase {
-                name: "zero",
-                input: 0,
-                expected: Ok(0),
-            },
-            PercentageCase {
-                name: "hundred",
-                input: 100,
-                expected: Ok(100),
-            },
-            PercentageCase {
-                name: "too large",
-                input: 101,
-                expected: Err(PercentageError::OutOfRange),
-            },
-        ];
-
-        for case in cases {
-            let actual = Percentage::try_from(case.input).map(|value| value.value());
-            assert_eq!(actual, case.expected, "case failed: {}", case.name);
         }
     }
 }

@@ -6,40 +6,40 @@
   "order": 71,
   "day": 5,
   "arcLength": 6,
-  "title": "Classify retryable boundary errors",
+  "title": "Classify retries without parsing messages",
   "conceptId": "boundary-retryable",
   "difficulty": "medium",
   "estimatedMinutes": 7,
   "scenario": "Not every failure should be retried. Classification helpers let application code make decisions without string matching.",
-  "instructions": "Implement is_retryable for CreateOrderUseCaseError. Only Repository(Unavailable) should return true.",
+  "instructions": "Implement CreateOrderUseCaseError::is_retryable. Return true only for RepositoryError::Unavailable and classify by variants, not by Display text.",
   "files": [
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "use std::fmt;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderError {\n    EmptyOrder,\n    InvalidQuantity,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RepositoryError {\n    Unavailable,\n    Conflict,\n}\n\nimpl fmt::Display for RepositoryError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            RepositoryError::Unavailable => write!(f, \"repository unavailable\"),\n            RepositoryError::Conflict => write!(f, \"repository conflict\"),\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderUseCaseError {\n    Domain(CreateOrderError),\n    Repository(RepositoryError),\n}\n\nimpl From<CreateOrderError> for CreateOrderUseCaseError {\n    fn from(error: CreateOrderError) -> Self {\n        CreateOrderUseCaseError::Domain(error)\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: implement is_retryable.\n"
+      "content": "use thiserror::Error;\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum CreateOrderError {\n    #[error(\"order must contain at least one line\")]\n    EmptyOrder,\n    #[error(\"order line quantity must be positive\")]\n    InvalidQuantity,\n}\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum RepositoryError {\n    #[error(\"repository is unavailable\")]\n    Unavailable,\n    #[error(\"order conflicts with existing data\")]\n    Conflict,\n}\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum CreateOrderUseCaseError {\n    #[error(transparent)]\n    Domain(#[from] CreateOrderError),\n    #[error(transparent)]\n    Repository(#[from] RepositoryError),\n}\n\n// TODO: add is_retryable to the use-case error.\n"
     },
     {
       "path": "tests/public.rs",
       "role": "test",
-      "content": "use rust_daily_lesson::{is_retryable, CreateOrderError, CreateOrderUseCaseError, RepositoryError};\n\n#[test]\nfn only_unavailable_repository_errors_are_retryable() {\n    let converted = CreateOrderUseCaseError::from(CreateOrderError::InvalidQuantity);\n\n    assert_eq!(\n        converted,\n        CreateOrderUseCaseError::Domain(CreateOrderError::InvalidQuantity)\n    );\n    assert!(is_retryable(CreateOrderUseCaseError::Repository(\n        RepositoryError::Unavailable\n    )));\n    assert!(!is_retryable(CreateOrderUseCaseError::Repository(\n        RepositoryError::Conflict\n    )));\n    assert!(!is_retryable(CreateOrderUseCaseError::Domain(\n        CreateOrderError::EmptyOrder\n    )));\n}\n"
+      "content": "use rust_daily_lesson::{CreateOrderError, CreateOrderUseCaseError, RepositoryError};\n\n#[test]\nfn only_repository_unavailability_is_retryable() {\n    assert!(CreateOrderUseCaseError::from(RepositoryError::Unavailable).is_retryable());\n    assert!(!CreateOrderUseCaseError::from(RepositoryError::Conflict).is_retryable());\n    assert!(!CreateOrderUseCaseError::from(CreateOrderError::EmptyOrder).is_retryable());\n}\n"
     }
   ],
   "hints": [
     {
       "level": 1,
-      "body": "Add pub fn is_retryable(error: CreateOrderUseCaseError) -> bool."
+      "body": "Retry policy belongs at the application boundary."
     },
     {
       "level": 2,
-      "body": "Use matches! so only CreateOrderUseCaseError::Repository(RepositoryError::Unavailable) returns true."
+      "body": "Use matches! for the one retryable shape."
     },
     {
       "level": 3,
-      "body": "One complete solution for Classify retryable boundary errors is shown below.",
-      "solutionCode": "use std::fmt;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderError {\n    EmptyOrder,\n    InvalidQuantity,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RepositoryError {\n    Unavailable,\n    Conflict,\n}\n\nimpl fmt::Display for RepositoryError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            RepositoryError::Unavailable => write!(f, \"repository unavailable\"),\n            RepositoryError::Conflict => write!(f, \"repository conflict\"),\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderUseCaseError {\n    Domain(CreateOrderError),\n    Repository(RepositoryError),\n}\n\nimpl From<CreateOrderError> for CreateOrderUseCaseError {\n    fn from(error: CreateOrderError) -> Self {\n        CreateOrderUseCaseError::Domain(error)\n    }\n}\n\npub fn is_retryable(error: CreateOrderUseCaseError) -> bool {\n    matches!(\n        error,\n        CreateOrderUseCaseError::Repository(RepositoryError::Unavailable)\n    )\n}"
+      "body": "Conflicts and domain errors should not be retried automatically.",
+      "solutionCode": "use thiserror::Error;\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum CreateOrderError {\n    #[error(\"order must contain at least one line\")]\n    EmptyOrder,\n    #[error(\"order line quantity must be positive\")]\n    InvalidQuantity,\n}\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum RepositoryError {\n    #[error(\"repository is unavailable\")]\n    Unavailable,\n    #[error(\"order conflicts with existing data\")]\n    Conflict,\n}\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum CreateOrderUseCaseError {\n    #[error(transparent)]\n    Domain(#[from] CreateOrderError),\n    #[error(transparent)]\n    Repository(#[from] RepositoryError),\n}\n\nimpl CreateOrderUseCaseError {\n    pub fn is_retryable(&self) -> bool {\n        matches!(self, Self::Repository(RepositoryError::Unavailable))\n    }\n}"
     }
   ],
-  "completionExplanation": "is_retryable now classifies retry decisions from typed errors instead of relying on strings or status codes.",
+  "completionExplanation": "Retry behavior is now explicit, typed, and independent from user-facing error wording.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -48,17 +48,11 @@
         "timeoutMs": 10000,
         "checks": [
           {
-            "type": "function_signature",
-            "functionName": "is_retryable",
+            "type": "impl_method",
+            "implFor": "CreateOrderUseCaseError",
+            "methodName": "is_retryable",
             "requiredSignatureIncludes": [
-              "bool"
-            ]
-          },
-          {
-            "type": "source_includes",
-            "requiredSnippets": [
-              "matches!",
-              "RepositoryError::Unavailable"
+              "fn is_retryable(&self) -> bool"
             ]
           }
         ]
@@ -66,7 +60,7 @@
       {
         "mode": "backend-cargo-test",
         "timeoutMs": 10000,
-        "dependencySet": "std"
+        "dependencySet": "advanced"
       }
     ]
   }

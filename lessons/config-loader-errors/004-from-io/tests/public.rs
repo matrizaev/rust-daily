@@ -1,17 +1,13 @@
-use std::io;
-
+use std::error::Error;
 use rust_daily_lesson::ConfigLoadError;
 
 #[test]
-fn converts_io_error_into_config_error() {
-    let converted = ConfigLoadError::from(io::Error::new(io::ErrorKind::NotFound, "missing"));
+fn converts_io_error_and_keeps_source() {
+    let error = ConfigLoadError::from(std::io::Error::new(
+        std::io::ErrorKind::PermissionDenied,
+        "denied",
+    ));
 
-    assert!(matches!(converted, ConfigLoadError::FileRead(_)));
-}
-
-#[test]
-fn converted_io_error_keeps_display_message() {
-    let converted = ConfigLoadError::from(io::Error::new(io::ErrorKind::NotFound, "missing"));
-
-    assert_eq!(converted.to_string(), "could not read config file");
+    assert_eq!(error.kind(), "file_read");
+    assert!(error.source().is_some());
 }

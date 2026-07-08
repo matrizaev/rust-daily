@@ -1,1 +1,1 @@
-Teaches log-boundary-event with deterministic public tests and an idiomatic no-panic solution.
+Teaches log-boundary-event with production-shaped Rust APIs.

@@ -7,7 +7,7 @@ pub enum PercentageError {
 }
 
 impl Percentage {
-    pub fn value(&self) -> u8 {
+    pub fn value(self) -> u8 {
         self.0
     }
 }
@@ -25,8 +25,8 @@ impl TryFrom<u16> for Percentage {
 }
 
 impl std::fmt::Display for Percentage {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}%", self.0)
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "{}%", self.0)
     }
 }
 
@@ -36,40 +36,25 @@ mod tests {
 
     #[test]
     fn accepts_valid_percentages() {
-        let cases = [(0, 0), (50, 50), (100, 100)];
-
-        for (input, expected) in cases {
-            assert_eq!(
-                Percentage::try_from(input).map(|value| value.value()),
-                Ok(expected)
-            );
+        for (input, expected) in [(0, 0), (50, 50), (100, 100)] {
+            assert_eq!(Percentage::try_from(input).map(Percentage::value), Ok(expected));
         }
     }
 
     #[test]
     fn rejects_invalid_percentages() {
-        let invalid_values = [101, 150, 1_000];
-
-        for input in invalid_values {
-            assert_eq!(
-                Percentage::try_from(input),
-                Err(PercentageError::OutOfRange)
-            );
+        for input in [101, 150, 1_000] {
+            assert_eq!(Percentage::try_from(input), Err(PercentageError::OutOfRange));
         }
     }
 
     #[test]
     fn formats_percentages() {
-        let cases = [(0, "0%"), (50, "50%"), (100, "100%")];
-
-        for (input, expected) in cases {
-            assert_eq!(
-                Percentage::try_from(input).map(|value| value.to_string()),
-                Ok(expected.to_owned())
-            );
+        for (input, expected) in [(0, "0%"), (50, "50%"), (100, "100%")] {
+            let percentage = Percentage::try_from(input).expect("case is in range");
+            assert_eq!(percentage.to_string(), expected);
         }
     }
 }
 
-// Continue from the previous lesson.
-// TODO: add a doc comment example above Percentage in a real implementation.
+// TODO: add a doc example that uses ? with TryFrom.

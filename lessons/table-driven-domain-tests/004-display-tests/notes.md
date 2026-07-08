@@ -1,1 +1,1 @@
-Teaches percentage-display-tests with deterministic public tests and an idiomatic no-panic solution.
+Teaches percentage-display-tests with production-shaped Rust APIs.

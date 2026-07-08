@@ -1,1 +1,1 @@
-Teaches boundary-domain-from with deterministic public tests and an idiomatic no-panic solution.
+Teaches boundary-domain-from through typed, idiomatic error boundaries.

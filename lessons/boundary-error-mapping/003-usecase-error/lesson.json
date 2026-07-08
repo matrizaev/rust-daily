@@ -6,12 +6,12 @@
   "order": 69,
   "day": 3,
   "arcLength": 6,
-  "title": "Define use-case error variants",
+  "title": "Compose boundary errors without flattening them",
   "conceptId": "boundary-usecase-error",
   "difficulty": "medium",
   "estimatedMinutes": 7,
   "scenario": "The application layer can compose domain and repository errors without leaking adapter response details.",
-  "instructions": "Keep the domain and repository errors from the starter. Define CreateOrderUseCaseError with Domain(CreateOrderError) and Repository(RepositoryError).",
+  "instructions": "Define #[non_exhaustive] CreateOrderUseCaseError with Domain(CreateOrderError) and Repository(RepositoryError). Derive thiserror::Error and make each wrapped error a transparent source.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Add a public CreateOrderUseCaseError enum; do not replace CreateOrderError or RepositoryError."
+      "body": "The use case should preserve which layer failed."
     },
     {
       "level": 2,
-      "body": "The Domain variant should carry CreateOrderError, and the Repository variant should carry RepositoryError."
+      "body": "Transparent variants reuse the wrapped error message."
     },
     {
       "level": 3,
-      "body": "One complete solution for Define use-case error variants is shown below.",
-      "solutionCode": "use std::fmt;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderError {\n    EmptyOrder,\n    InvalidQuantity,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RepositoryError {\n    Unavailable,\n    Conflict,\n}\n\nimpl fmt::Display for RepositoryError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            RepositoryError::Unavailable => write!(f, \"repository unavailable\"),\n            RepositoryError::Conflict => write!(f, \"repository conflict\"),\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderUseCaseError {\n    Domain(CreateOrderError),\n    Repository(RepositoryError),\n}"
+      "body": "Use #[source] before adding automatic conversions.",
+      "solutionCode": "use thiserror::Error;\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum CreateOrderError {\n    #[error(\"order must contain at least one line\")]\n    EmptyOrder,\n    #[error(\"order line quantity must be positive\")]\n    InvalidQuantity,\n}\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum RepositoryError {\n    #[error(\"repository is unavailable\")]\n    Unavailable,\n    #[error(\"order conflicts with existing data\")]\n    Conflict,\n}\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum CreateOrderUseCaseError {\n    #[error(\"domain error: {0}\")]\n    Domain(#[source] CreateOrderError),\n    #[error(\"repository error: {0}\")]\n    Repository(#[source] RepositoryError),\n}"
     }
   ],
-  "completionExplanation": "CreateOrderUseCaseError now composes domain and repository failures without introducing adapter details.",
+  "completionExplanation": "The application error composes lower-layer failures without converting them into strings or losing their sources.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -56,18 +56,16 @@
             ]
           },
           {
-            "type": "source_includes",
-            "requiredSnippets": [
-              "Domain(CreateOrderError)",
-              "Repository(RepositoryError)"
-            ]
+            "type": "derived_trait_for_type",
+            "traitName": "thiserror::Error",
+            "typeName": "CreateOrderUseCaseError"
           }
         ]
       },
       {
         "mode": "backend-cargo-test",
         "timeoutMs": 10000,
-        "dependencySet": "std",
+        "dependencySet": "advanced",
         "testFiles": [
           {
             "path": "tests/public.rs",

@@ -1,24 +1,12 @@
-use rust_daily_lesson::application::{RepositoryError, UserRepository};
-use rust_daily_lesson::domain::{EmailAddress, NewUser, UserId};
-
-struct FakeRepo;
-
-impl UserRepository for FakeRepo {
-    fn exists_by_email(&self, _email: &EmailAddress) -> Result<bool, RepositoryError> {
-        Ok(false)
-    }
-
-    fn save(&mut self, _user: NewUser) -> Result<UserId, RepositoryError> {
-        Ok(UserId(1))
-    }
-}
+use rust_daily_lesson::application::{NewUser, UserId};
+use rust_daily_lesson::domain::{EmailAddress, RegisterUserCommand};
 
 #[test]
-fn repository_port_is_implementable_by_adapters() {
-    let mut repo = FakeRepo;
-    let email = EmailAddress::new("ada@example.com");
-    let user = NewUser::new(email.clone(), "Ada");
+fn new_user_is_built_from_domain_command() {
+    let command = RegisterUserCommand::new(EmailAddress::new("ada@example.com"), "Ada");
+    let user = NewUser::from_command(command);
 
-    assert_eq!(repo.exists_by_email(&email), Ok(false));
-    assert_eq!(repo.save(user), Ok(UserId(1)));
+    assert_eq!(user.email(), "ada@example.com");
+    assert_eq!(user.display_name(), "Ada");
+    assert_eq!(UserId::new(7).value(), 7);
 }

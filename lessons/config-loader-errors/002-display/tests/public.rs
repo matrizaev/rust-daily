@@ -1,14 +1,8 @@
 use rust_daily_lesson::ConfigLoadError;
 
 #[test]
-fn formats_config_load_errors() {
-    assert_eq!(
-        ConfigLoadError::MissingEnvironment.to_string(),
-        "missing environment"
-    );
-    assert_eq!(ConfigLoadError::InvalidPort.to_string(), "invalid port");
-    assert_eq!(
-        ConfigLoadError::FileRead.to_string(),
-        "could not read config file"
-    );
+fn exposes_stable_error_kinds() {
+    assert_eq!(ConfigLoadError::MissingEnvironment.kind(), "missing_environment");
+    assert_eq!(ConfigLoadError::InvalidPort.kind(), "invalid_port");
+    assert_eq!(ConfigLoadError::FileRead.kind(), "file_read");
 }

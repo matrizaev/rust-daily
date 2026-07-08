@@ -79,6 +79,7 @@ const defaultBackendStep = (
   mode: "backend-cargo-test",
   timeoutMs: backendTimeoutMs(validations),
   testCode: DEFAULT_BACKEND_TEST_CODE,
+  dependencySet: "std",
 });
 
 const validationSteps = (request: ValidationRequest) => {

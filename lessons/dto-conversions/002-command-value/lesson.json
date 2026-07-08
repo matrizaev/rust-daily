@@ -6,12 +6,12 @@
   "order": 50,
   "day": 2,
   "arcLength": 6,
-  "title": "Define a validated register command",
+  "title": "Keep the validated command serde-free",
   "conceptId": "register-command-value",
   "difficulty": "easy",
   "estimatedMinutes": 6,
   "scenario": "The application layer should receive a command type, not raw optional DTO fields. Keep command fields private and expose read-only accessors.",
-  "instructions": "Keep RegisterUserDto active. Add RegisterUserCommand with private email and display_name fields, a constructor, and borrowed accessors.",
+  "instructions": "Keep RegisterUserDto active. Add RegisterUserCommand with private email and display_name fields, a constructor, and borrowed accessors. Do not derive serde traits on the command.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Add the command below RegisterUserDto so the raw boundary shape and validated application shape stay separate."
+      "body": "DTOs and commands serve different layers."
     },
     {
       "level": 2,
-      "body": "Store owned Strings privately in RegisterUserCommand, then return &str from email() and display_name()."
+      "body": "The command owns validated data but exposes it through borrowed accessors."
     },
     {
       "level": 3,
-      "body": "One complete solution for Define a validated register command is shown below.",
-      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}"
+      "body": "Keep Deserialize on RegisterUserDto only.",
+      "solutionCode": "use serde::Deserialize;\n\n#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}"
     }
   ],
-  "completionExplanation": "The DTO remains the raw boundary shape, while RegisterUserCommand gives the application layer owned, private fields with read-only access.",
+  "completionExplanation": "The DTO stays a boundary shape, while the command is a domain/application shape with private state and a narrow API.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -70,16 +70,7 @@
             "implFor": "RegisterUserCommand",
             "methodName": "email",
             "requiredSignatureIncludes": [
-              "&self",
-              "&str"
-            ]
-          },
-          {
-            "type": "source_includes",
-            "requiredSnippets": [
-              "pub struct RegisterUserCommand",
-              "email: String",
-              "display_name: String"
+              "fn email(&self) -> &str"
             ]
           }
         ]
@@ -87,7 +78,7 @@
       {
         "mode": "backend-cargo-test",
         "timeoutMs": 10000,
-        "dependencySet": "std",
+        "dependencySet": "advanced",
         "testFiles": [
           {
             "path": "tests/public.rs",

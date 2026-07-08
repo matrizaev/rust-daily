@@ -1,1 +1,1 @@
-Teaches register-inmemory-repo with deterministic public tests and an idiomatic no-panic solution.
+Teaches register-inmemory-repo with async boundaries and framework isolation.

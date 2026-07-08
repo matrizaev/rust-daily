@@ -1,3 +1,1 @@
-pub mod domain {
-    // TODO: define EmailAddress and RegisterUserCommand without adapter dependencies.
-}
+// TODO: define framework-free register-user domain types.

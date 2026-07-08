@@ -6,7 +6,7 @@
   "order": 72,
   "day": 6,
   "arcLength": 6,
-  "title": "Translate application errors to status codes",
+  "title": "Map typed application errors at the adapter edge",
   "conceptId": "boundary-http-status",
   "difficulty": "medium",
   "estimatedMinutes": 8,
@@ -16,30 +16,30 @@
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "use std::fmt;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderError {\n    EmptyOrder,\n    InvalidQuantity,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RepositoryError {\n    Unavailable,\n    Conflict,\n}\n\nimpl fmt::Display for RepositoryError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            RepositoryError::Unavailable => write!(f, \"repository unavailable\"),\n            RepositoryError::Conflict => write!(f, \"repository conflict\"),\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderUseCaseError {\n    Domain(CreateOrderError),\n    Repository(RepositoryError),\n}\n\nimpl From<CreateOrderError> for CreateOrderUseCaseError {\n    fn from(error: CreateOrderError) -> Self {\n        CreateOrderUseCaseError::Domain(error)\n    }\n}\n\npub fn is_retryable(error: CreateOrderUseCaseError) -> bool {\n    matches!(\n        error,\n        CreateOrderUseCaseError::Repository(RepositoryError::Unavailable)\n    )\n}\n\n// Continue from the previous lesson.\n// TODO: implement adapter status-code translation.\n"
+      "content": "use thiserror::Error;\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum CreateOrderError {\n    #[error(\"order must contain at least one line\")]\n    EmptyOrder,\n    #[error(\"order line quantity must be positive\")]\n    InvalidQuantity,\n}\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum RepositoryError {\n    #[error(\"repository is unavailable\")]\n    Unavailable,\n    #[error(\"order conflicts with existing data\")]\n    Conflict,\n}\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum CreateOrderUseCaseError {\n    #[error(transparent)]\n    Domain(#[from] CreateOrderError),\n    #[error(transparent)]\n    Repository(#[from] RepositoryError),\n}\n\nimpl CreateOrderUseCaseError {\n    pub fn is_retryable(&self) -> bool {\n        matches!(self, Self::Repository(RepositoryError::Unavailable))\n    }\n}\n\n// TODO: implement explicit HTTP status mapping.\n"
     },
     {
       "path": "tests/public.rs",
       "role": "test",
-      "content": "use rust_daily_lesson::{\n    is_retryable, status_code, CreateOrderError, CreateOrderUseCaseError, RepositoryError,\n};\n\n#[test]\nfn maps_application_errors_at_http_edge() {\n    assert_eq!(\n        status_code(&CreateOrderUseCaseError::Domain(\n            CreateOrderError::InvalidQuantity\n        )),\n        400\n    );\n    assert_eq!(\n        status_code(&CreateOrderUseCaseError::Repository(\n            RepositoryError::Conflict\n        )),\n        409\n    );\n    assert_eq!(\n        status_code(&CreateOrderUseCaseError::Repository(\n            RepositoryError::Unavailable\n        )),\n        503\n    );\n    assert!(is_retryable(CreateOrderUseCaseError::Repository(\n        RepositoryError::Unavailable\n    )));\n}\n"
+      "content": "use rust_daily_lesson::{status_code, CreateOrderError, CreateOrderUseCaseError, RepositoryError};\n\n#[test]\nfn maps_errors_to_boundary_statuses() {\n    assert_eq!(status_code(&CreateOrderUseCaseError::from(CreateOrderError::EmptyOrder)), 400);\n    assert_eq!(status_code(&CreateOrderUseCaseError::from(RepositoryError::Conflict)), 409);\n    assert_eq!(status_code(&CreateOrderUseCaseError::from(RepositoryError::Unavailable)), 503);\n}\n"
     }
   ],
   "hints": [
     {
       "level": 1,
-      "body": "Add pub fn status_code(error: &CreateOrderUseCaseError) -> u16 below is_retryable."
+      "body": "HTTP status is adapter policy, not a property of the domain error."
     },
     {
       "level": 2,
-      "body": "Match the typed error: any Domain(_) maps to 400, Repository(Conflict) maps to 409, and Repository(Unavailable) maps to 503."
+      "body": "Match explicitly on typed variants."
     },
     {
       "level": 3,
-      "body": "One complete solution for Translate application errors to status codes is shown below.",
-      "solutionCode": "use std::fmt;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderError {\n    EmptyOrder,\n    InvalidQuantity,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RepositoryError {\n    Unavailable,\n    Conflict,\n}\n\nimpl fmt::Display for RepositoryError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            RepositoryError::Unavailable => write!(f, \"repository unavailable\"),\n            RepositoryError::Conflict => write!(f, \"repository conflict\"),\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CreateOrderUseCaseError {\n    Domain(CreateOrderError),\n    Repository(RepositoryError),\n}\n\nimpl From<CreateOrderError> for CreateOrderUseCaseError {\n    fn from(error: CreateOrderError) -> Self {\n        CreateOrderUseCaseError::Domain(error)\n    }\n}\n\npub fn is_retryable(error: CreateOrderUseCaseError) -> bool {\n    matches!(\n        error,\n        CreateOrderUseCaseError::Repository(RepositoryError::Unavailable),\n    )\n}\n\npub fn status_code(error: &CreateOrderUseCaseError) -> u16 {\n    match error {\n        CreateOrderUseCaseError::Domain(_) => 400,\n        CreateOrderUseCaseError::Repository(RepositoryError::Conflict) => 409,\n        CreateOrderUseCaseError::Repository(RepositoryError::Unavailable) => 503,\n    }\n}"
+      "body": "Keep the mapping simple and exhaustive inside the crate.",
+      "solutionCode": "use thiserror::Error;\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum CreateOrderError {\n    #[error(\"order must contain at least one line\")]\n    EmptyOrder,\n    #[error(\"order line quantity must be positive\")]\n    InvalidQuantity,\n}\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum RepositoryError {\n    #[error(\"repository is unavailable\")]\n    Unavailable,\n    #[error(\"order conflicts with existing data\")]\n    Conflict,\n}\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum CreateOrderUseCaseError {\n    #[error(transparent)]\n    Domain(#[from] CreateOrderError),\n    #[error(transparent)]\n    Repository(#[from] RepositoryError),\n}\n\nimpl CreateOrderUseCaseError {\n    pub fn is_retryable(&self) -> bool {\n        matches!(self, Self::Repository(RepositoryError::Unavailable))\n    }\n}\n\npub fn status_code(error: &CreateOrderUseCaseError) -> u16 {\n    match error {\n        CreateOrderUseCaseError::Domain(_) => 400,\n        CreateOrderUseCaseError::Repository(RepositoryError::Conflict) => 409,\n        CreateOrderUseCaseError::Repository(RepositoryError::Unavailable) => 503,\n    }\n}"
     }
   ],
-  "completionExplanation": "status_code now performs the HTTP translation at the adapter edge while domain and use-case errors stay free of HTTP-specific variants.",
+  "completionExplanation": "The adapter translates application failures into HTTP policy without leaking status codes into domain or repository types.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -51,16 +51,7 @@
             "type": "function_signature",
             "functionName": "status_code",
             "requiredSignatureIncludes": [
-              "&CreateOrderUseCaseError",
-              "u16"
-            ]
-          },
-          {
-            "type": "source_includes",
-            "requiredSnippets": [
-              "400",
-              "409",
-              "503"
+              "fn status_code(error: &CreateOrderUseCaseError) -> u16"
             ]
           }
         ]
@@ -68,7 +59,7 @@
       {
         "mode": "backend-cargo-test",
         "timeoutMs": 10000,
-        "dependencySet": "std"
+        "dependencySet": "advanced"
       }
     ]
   }

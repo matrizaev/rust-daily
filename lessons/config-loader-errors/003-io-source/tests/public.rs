@@ -1,23 +1,13 @@
 use std::error::Error;
-use std::io;
-
 use rust_daily_lesson::ConfigLoadError;
 
 #[test]
-fn file_read_exposes_source_error() {
-    let error = ConfigLoadError::FileRead(io::Error::new(io::ErrorKind::NotFound, "missing"));
+fn file_read_preserves_io_source() {
+    let error = ConfigLoadError::FileRead {
+        source: std::io::Error::new(std::io::ErrorKind::NotFound, "missing config"),
+    };
 
+    assert_eq!(error.kind(), "file_read");
     assert!(error.source().is_some());
-}
-
-#[test]
-fn keeps_existing_display_messages() {
-    let error = ConfigLoadError::FileRead(io::Error::new(io::ErrorKind::NotFound, "missing"));
-
-    assert_eq!(
-        ConfigLoadError::MissingEnvironment.to_string(),
-        "missing environment"
-    );
-    assert_eq!(ConfigLoadError::InvalidPort.to_string(), "invalid port");
-    assert_eq!(error.to_string(), "could not read config file");
+    assert_eq!(error.to_string(), "failed to read config file");
 }

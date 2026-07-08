@@ -6,40 +6,40 @@
   "order": 79,
   "day": 1,
   "arcLength": 6,
-  "title": "Represent a structured log event",
+  "title": "Emit a structured tracing event",
   "conceptId": "log-event-struct",
   "difficulty": "easy",
   "estimatedMinutes": 6,
   "scenario": "Structured logging starts with events that have names and levels instead of ad-hoc strings.",
-  "instructions": "Define LogLevel and LogEvent with event_name and level fields.",
+  "instructions": "Implement log_request_received(request_id: &str) with tracing::info!. Record event_name = \"request.received\" and request_id as structured fields instead of formatting them into the message.",
   "files": [
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "// TODO: define LogLevel and LogEvent.\n"
+      "content": "// TODO: emit a structured request event with tracing.\n"
     },
     {
       "path": "tests/public.rs",
       "role": "test",
-      "content": "use rust_daily_lesson::{LogEvent, LogLevel};\n\n#[test]\nfn event_has_name_and_level() {\n    let event = LogEvent {\n        event_name: \"request.received\".to_owned(),\n        level: LogLevel::Info,\n    };\n\n    assert_eq!(event.event_name, \"request.received\");\n    assert_eq!(event.level, LogLevel::Info);\n}\n"
+      "content": "use rust_daily_lesson::log_request_received;\n\n#[test]\nfn structured_event_function_is_callable_without_subscriber() {\n    log_request_received(\"req-1\");\n}\n"
     }
   ],
   "hints": [
     {
       "level": 1,
-      "body": "Define LogLevel with Info, Warn, and Error variants, then define LogEvent with event_name and level fields."
+      "body": "Structured fields belong before the message in the tracing macro."
     },
     {
       "level": 2,
-      "body": "Derive Debug, Clone, PartialEq, and Eq; LogLevel can also derive Copy because it has only unit variants."
+      "body": "Use %request_id to record its Display representation."
     },
     {
       "level": 3,
-      "body": "One complete solution for Represent a structured log event is shown below.",
-      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogEvent {\n    pub event_name: String,\n    pub level: LogLevel,\n}"
+      "body": "Keep the message constant so fields remain queryable.",
+      "solutionCode": "pub fn log_request_received(request_id: &str) {\n    tracing::info!(\n        event_name = \"request.received\",\n        request_id = %request_id,\n        \"request received\"\n    );\n}"
     }
   ],
-  "completionExplanation": "LogEvent now models an event name and severity as typed data instead of an ad-hoc log string.",
+  "completionExplanation": "The first event uses real tracing metadata instead of a custom log-record struct or interpolated string.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -48,30 +48,11 @@
         "timeoutMs": 10000,
         "checks": [
           {
-            "type": "enum_unit_variants",
-            "enumName": "LogLevel",
-            "requiredVariants": [
-              "Info",
-              "Warn",
-              "Error"
-            ]
-          },
-          {
-            "type": "struct_fields",
-            "structName": "LogEvent",
-            "requiredFields": [
-              {
-                "name": "event_name",
-                "typeIncludes": [
-                  "String"
-                ]
-              },
-              {
-                "name": "level",
-                "typeIncludes": [
-                  "LogLevel"
-                ]
-              }
+            "type": "source_includes",
+            "requiredSnippets": [
+              "tracing::info!",
+              "event_name = \"request.received\"",
+              "request_id = %request_id"
             ]
           }
         ]
@@ -79,7 +60,7 @@
       {
         "mode": "backend-cargo-test",
         "timeoutMs": 10000,
-        "dependencySet": "std"
+        "dependencySet": "advanced"
       }
     ]
   }

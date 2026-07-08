@@ -241,8 +241,10 @@ Rules:
 - Run Cargo in offline mode, so all dependencies must already be available in
   the runner image.
 
-The MVP can start with standard-library-only lessons. Third-party crates require
-the runner image to pre-cache those dependencies.
+The `std` dependency set remains dependency-free. The `advanced` dependency set
+is compiled into the runner image. Advanced runs copy the compiled Cargo target
+cache into the temporary writable lesson workspace before invoking
+`cargo test --offline`.
 
 Because tests are supplied by the client, backend validation is a practice
 feedback mechanism rather than tamper-resistant grading. This is acceptable for
@@ -353,7 +355,7 @@ FROM rust:1.95-slim
 WORKDIR /workspace
 ```
 
-For real use, the image should pre-cache a template crate and any lesson
+For real use, the image should precompile a template crate and any lesson
 dependencies:
 
 ```text
@@ -369,6 +371,9 @@ Image requirements:
 - The template crate must use Rust 2024 edition with `edition = "2024"` in
   `Cargo.toml`.
 - Dependencies must be pinned and cached at build time.
+- Compiled dependency artifacts must be copied into the writable lesson
+  workspace before Cargo runs because the container root filesystem is
+  read-only.
 - The image should be rebuilt deliberately when lesson dependencies change.
 
 ## 13. Configuration

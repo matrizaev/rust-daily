@@ -21,4 +21,8 @@ impl OrderLines {
     pub fn is_empty(&self) -> bool {
         self.lines.is_empty()
     }
+
+    pub fn as_slice(&self) -> &[OrderLine] {
+        &self.lines
+    }
 }

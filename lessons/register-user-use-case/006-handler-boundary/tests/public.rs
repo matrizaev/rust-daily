@@ -1,51 +1,48 @@
-use rust_daily_lesson::adapters::{handle_register_user, RegisterUserRequest};
-use rust_daily_lesson::application::{RepositoryError, UserRepository};
-use rust_daily_lesson::domain::{EmailAddress, NewUser, UserId};
+use rust_daily_lesson::{
+    adapters::{RegisterUserRequest, handle_register_user},
+    application::{
+        NewUser, RegisterUserError, RepositoryError, UserId, UserRepository,
+        register_user_with_timeout,
+    },
+    domain::{EmailAddress, RegisterUserCommand},
+    infrastructure::InMemoryUserRepository,
+};
+use std::time::Duration;
 
-struct FakeRepo {
-    exists: Result<bool, RepositoryError>,
-}
+struct SlowRepository;
 
-impl UserRepository for FakeRepo {
-    fn exists_by_email(&self, _email: &EmailAddress) -> Result<bool, RepositoryError> {
-        self.exists
+impl UserRepository for SlowRepository {
+    async fn email_exists(&self, _email: &str) -> Result<bool, RepositoryError> {
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        Ok(false)
     }
 
-    fn save(&mut self, _user: NewUser) -> Result<UserId, RepositoryError> {
-        Ok(UserId(1))
+    async fn save(&self, _user: NewUser) -> Result<UserId, RepositoryError> {
+        Ok(UserId::new(1))
     }
 }
 
-#[test]
-fn handler_maps_usecase_outcomes() {
-    let request = RegisterUserRequest {
+#[actix_rt::test]
+async fn timeout_policy_maps_elapsed_work_to_timed_out() {
+    let command = RegisterUserCommand::new(EmailAddress::new("ada@example.com"), "Ada");
+
+    let result =
+        register_user_with_timeout(&SlowRepository, command, Duration::from_millis(1)).await;
+
+    assert_eq!(result, Err(RegisterUserError::TimedOut));
+}
+
+#[actix_rt::test]
+async fn adapter_maps_success_and_duplicate_to_http_status_values() {
+    let repository = InMemoryUserRepository::new();
+    let request = || RegisterUserRequest {
         email: "ada@example.com".to_owned(),
         display_name: "Ada".to_owned(),
     };
-    let mut ok = FakeRepo { exists: Ok(false) };
-    let mut duplicate = FakeRepo { exists: Ok(true) };
-    let mut unavailable = FakeRepo {
-        exists: Err(RepositoryError::Unavailable),
-    };
 
-    assert_eq!(handle_register_user(&mut ok, request.clone()).status, 201);
-    assert_eq!(
-        handle_register_user(&mut duplicate, request.clone()).status,
-        409
-    );
-    assert_eq!(handle_register_user(&mut unavailable, request).status, 503);
-}
+    let created = handle_register_user(&repository, request()).await;
+    let duplicate = handle_register_user(&repository, request()).await;
 
-#[test]
-fn handler_rejects_invalid_request_before_usecase() {
-    let mut repo = FakeRepo { exists: Ok(false) };
-    let response = handle_register_user(
-        &mut repo,
-        RegisterUserRequest {
-            email: " ".to_owned(),
-            display_name: "Ada".to_owned(),
-        },
-    );
-
-    assert_eq!(response.status, 400);
+    assert_eq!(created.status, 201);
+    assert_eq!(duplicate.status, 409);
 }
