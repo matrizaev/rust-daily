@@ -11,7 +11,7 @@
   "difficulty": "medium",
   "estimatedMinutes": 8,
   "scenario": "Raw text from forms and APIs should become an EmailAddress only after validation. This is a fallible conversion.",
-  "instructions": "Implement TryFrom<&str> for EmailAddress. Reject an empty string with Empty and text without @ with MissingAt.",
+  "instructions": "Add EmailAddress::as_str, then implement TryFrom<&str> for EmailAddress. Reject an empty string with Empty and text without @ with MissingAt.",
   "files": [
     {
       "path": "src/lib.rs",

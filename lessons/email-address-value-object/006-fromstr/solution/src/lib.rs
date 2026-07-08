@@ -38,21 +38,11 @@ impl TryFrom<&str> for EmailAddress {
     }
 }
 
-impl std::str::FromStr for EmailAddress {
-    type Err = EmailValidationError;
-
-    fn from_str(value: &str) -> Result<Self, Self::Err> {
-        Self::try_from(value)
-    }
-}
-
-
 impl std::fmt::Display for EmailAddress {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.value)
     }
 }
-
 
 impl std::fmt::Display for EmailValidationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -64,5 +54,12 @@ impl std::fmt::Display for EmailValidationError {
     }
 }
 
-
 impl std::error::Error for EmailValidationError {}
+
+impl std::str::FromStr for EmailAddress {
+    type Err = EmailValidationError;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        Self::try_from(value)
+    }
+}

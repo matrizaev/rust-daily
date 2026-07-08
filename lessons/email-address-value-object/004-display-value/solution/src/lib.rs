@@ -3,6 +3,19 @@ pub struct EmailAddress {
     value: String,
 }
 
+impl EmailAddress {
+    pub fn as_str(&self) -> &str {
+        &self.value
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum EmailValidationError {
+    Empty,
+    MissingAt,
+    MissingDomain,
+}
+
 impl TryFrom<&str> for EmailAddress {
     type Error = EmailValidationError;
 
@@ -11,20 +24,18 @@ impl TryFrom<&str> for EmailAddress {
             return Err(EmailValidationError::Empty);
         }
 
-        if !value.contains('@') {
-            return Err(EmailValidationError::MissingAt);
+        let (_local, domain) = value
+            .split_once('@')
+            .ok_or(EmailValidationError::MissingAt)?;
+
+        if domain.is_empty() {
+            return Err(EmailValidationError::MissingDomain);
         }
 
         Ok(Self {
             value: value.to_owned(),
         })
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum EmailValidationError {
-    Empty,
-    MissingAt,
 }
 
 impl std::fmt::Display for EmailAddress {

@@ -34,4 +34,4 @@ impl TryFrom<&str> for EmailAddress {
 }
 
 // Continue from the previous lesson.
-// TODO: complete this lesson's next change.
+// TODO: add MissingDomain and reject email text that ends with @.

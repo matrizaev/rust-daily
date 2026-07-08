@@ -9,7 +9,10 @@ fn validation_error_is_a_standard_error() {
 
 #[test]
 fn display_messages_are_human_readable() {
-    assert_eq!(EmailValidationError::Empty.to_string(), "email address is empty");
+    assert_eq!(
+        EmailValidationError::Empty.to_string(),
+        "email address is empty"
+    );
     assert_eq!(
         EmailValidationError::MissingAt.to_string(),
         "email address is missing @"
