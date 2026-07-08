@@ -4,12 +4,23 @@ pub struct OrderLine {
     pub quantity: u32,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OrderLines {
     lines: Vec<OrderLine>,
 }
 
 impl OrderLines {
-    pub fn new(lines: Vec<OrderLine>) -> Self { Self { lines } }
+    pub fn new(lines: Vec<OrderLine>) -> Self {
+        Self { lines }
+    }
+
+    pub fn len(&self) -> usize {
+        self.lines.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.lines.is_empty()
+    }
 
     pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {
         self.lines.iter()

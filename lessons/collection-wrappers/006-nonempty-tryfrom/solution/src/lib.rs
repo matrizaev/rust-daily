@@ -10,7 +10,48 @@ pub struct OrderLines {
 }
 
 impl OrderLines {
-    pub fn len(&self) -> usize { self.lines.len() }
+    pub fn new(lines: Vec<OrderLine>) -> Self {
+        Self { lines }
+    }
+
+    pub fn len(&self) -> usize {
+        self.lines.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.lines.is_empty()
+    }
+
+    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {
+        self.lines.iter()
+    }
+}
+
+impl IntoIterator for OrderLines {
+    type Item = OrderLine;
+    type IntoIter = std::vec::IntoIter<OrderLine>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.lines.into_iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a OrderLines {
+    type Item = &'a OrderLine;
+    type IntoIter = std::slice::Iter<'a, OrderLine>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a mut OrderLines {
+    type Item = &'a mut OrderLine;
+    type IntoIter = std::slice::IterMut<'a, OrderLine>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.lines.iter_mut()
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -26,23 +67,6 @@ impl TryFrom<Vec<OrderLine>> for OrderLines {
             return Err(OrderLinesError::Empty);
         }
 
-        Ok(Self { lines })
-    }
-}
-
-
-impl OrderLines {
-    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {
-            self.lines.iter()
-        }
-}
-
-
-impl IntoIterator for OrderLines {
-    type Item = OrderLine;
-    type IntoIter = std::vec::IntoIter<OrderLine>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.lines.into_iter()
+        Ok(Self::new(lines))
     }
 }

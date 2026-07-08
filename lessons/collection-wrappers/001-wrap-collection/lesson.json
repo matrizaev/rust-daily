@@ -27,11 +27,11 @@
   "hints": [
     {
       "level": 1,
-      "body": "Keep the Exposing iteration on collection wrappers code active and define OrderLines with a private Vec<OrderLine>, a constructor, len, and is_empty."
+      "body": "Keep OrderLine as the element type and add an OrderLines wrapper around Vec<OrderLine>."
     },
     {
       "level": 2,
-      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+      "body": "Keep the lines field private, then expose new, len, and is_empty as the public API."
     },
     {
       "level": 3,
@@ -39,7 +39,7 @@
       "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n}"
     }
   ],
-  "completionExplanation": "Wrap order lines in a collection type now extends the active Exposing iteration on collection wrappers code with wrap collection. The previous lesson's behavior remains in the main solution rather than an archived module.",
+  "completionExplanation": "OrderLines now owns the Vec while keeping the raw collection private, leaving room for iteration APIs and invariants on one type.",
   "validation": {
     "mode": "all",
     "validations": [

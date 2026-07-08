@@ -11,7 +11,7 @@
   "difficulty": "medium",
   "estimatedMinutes": 8,
   "scenario": "When callers are done with a wrapper, IntoIterator should let them move owned values out naturally.",
-  "instructions": "Implement IntoIterator for OrderLines, yielding owned OrderLine values.",
+  "instructions": "The starter already has borrowed iteration with iter. Implement IntoIterator for OrderLines, yielding owned OrderLine values.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Keep the Exposing iteration on collection wrappers code active and implement IntoIterator for OrderLines, yielding owned OrderLine values."
+      "body": "Implement IntoIterator for OrderLines, not for &OrderLines yet."
     },
     {
       "level": 2,
-      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+      "body": "Use std::vec::IntoIter<OrderLine> and self.lines.into_iter() because this implementation consumes the wrapper."
     },
     {
       "level": 3,
       "body": "One complete solution for Consume a wrapper with IntoIterator is shown below.",
-      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self { Self { lines } }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}\n\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n            self.lines.iter()\n        }\n}"
+      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}"
     }
   ],
-  "completionExplanation": "Consume a wrapper with IntoIterator now extends the active Exposing iteration on collection wrappers code with wrap into iterator. The previous lesson's behavior remains in the main solution rather than an archived module.",
+  "completionExplanation": "Owned IntoIterator lets callers move OrderLine values out when they are done with the wrapper, while borrowed iter remains available.",
   "validation": {
     "mode": "all",
     "validations": [

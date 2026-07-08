@@ -11,7 +11,7 @@
   "difficulty": "easy",
   "estimatedMinutes": 6,
   "scenario": "Callers often need to inspect a collection wrapper without consuming it. A borrowed iterator exposes a view without leaking fields.",
-  "instructions": "Add OrderLines::iter(&self) -> std::slice::Iter<'_, OrderLine>.",
+  "instructions": "The starter already has OrderLines::new, len, and is_empty. Add OrderLines::iter(&self) -> std::slice::Iter<'_, OrderLine>.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Keep the Exposing iteration on collection wrappers code active and add OrderLines::iter(&self) -> std::slice::Iter<'_, OrderLine>."
+      "body": "Add iter to the existing OrderLines impl block."
     },
     {
       "level": 2,
-      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+      "body": "Return self.lines.iter() so callers can inspect lines without consuming the wrapper."
     },
     {
       "level": 3,
       "body": "One complete solution for Expose borrowed iteration with iter is shown below.",
-      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self { Self { lines } }\n\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}"
+      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}"
     }
   ],
-  "completionExplanation": "Expose borrowed iteration with iter now extends the active Exposing iteration on collection wrappers code with wrap borrowed iter. The previous lesson's behavior remains in the main solution rather than an archived module.",
+  "completionExplanation": "Borrowed iteration exposes read-only access to the wrapped lines without making the Vec field public.",
   "validation": {
     "mode": "all",
     "validations": [

@@ -4280,17 +4280,17 @@
       {
         "path": "tests/public.rs",
         "role": "test",
-        "content": "use rust_daily_lesson::{OrderLine, OrderLines};\n\n#[test]\nfn wrapper_owns_order_lines() {\n    let lines = OrderLines::new(vec![OrderLine { sku: \"A\".to_owned(), quantity: 2 }]);\n\n    assert_eq!(lines.len(), 1);\n    assert!(!lines.is_empty());\n}\n"
+        "content": "use rust_daily_lesson::{OrderLine, OrderLines};\n\n#[test]\nfn wrapper_owns_order_lines() {\n    let lines = OrderLines::new(vec![OrderLine {\n        sku: \"A\".to_owned(),\n        quantity: 2,\n    }]);\n\n    assert_eq!(lines.len(), 1);\n    assert!(!lines.is_empty());\n}\n"
       }
     ],
     "hints": [
       {
         "level": 1,
-        "body": "Keep the Exposing iteration on collection wrappers code active and define OrderLines with a private Vec<OrderLine>, a constructor, len, and is_empty."
+        "body": "Keep OrderLine as the element type and add an OrderLines wrapper around Vec<OrderLine>."
       },
       {
         "level": 2,
-        "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+        "body": "Keep the lines field private, then expose new, len, and is_empty as the public API."
       },
       {
         "level": 3,
@@ -4298,7 +4298,7 @@
         "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n}"
       }
     ],
-    "completionExplanation": "Wrap order lines in a collection type now extends the active Exposing iteration on collection wrappers code with wrap collection. The previous lesson's behavior remains in the main solution rather than an archived module.",
+    "completionExplanation": "OrderLines now owns the Vec while keeping the raw collection private, leaving room for iteration APIs and invariants on one type.",
     "validation": {
       "mode": "all",
       "validations": [
@@ -4353,7 +4353,7 @@
     "difficulty": "easy",
     "estimatedMinutes": 6,
     "scenario": "Callers often need to inspect a collection wrapper without consuming it. A borrowed iterator exposes a view without leaking fields.",
-    "instructions": "Add OrderLines::iter(&self) -> std::slice::Iter<'_, OrderLine>.",
+    "instructions": "The starter already has OrderLines::new, len, and is_empty. Add OrderLines::iter(&self) -> std::slice::Iter<'_, OrderLine>.",
     "files": [
       {
         "path": "src/lib.rs",
@@ -4363,25 +4363,25 @@
       {
         "path": "tests/public.rs",
         "role": "test",
-        "content": "use rust_daily_lesson::{OrderLine, OrderLines};\n\n#[test]\nfn iter_borrows_lines() {\n    let lines = OrderLines::new(vec![OrderLine { sku: \"A\".to_owned(), quantity: 2 }]);\n    let skus: Vec<_> = lines.iter().map(|line| line.sku.as_str()).collect();\n\n    assert_eq!(skus, vec![\"A\"]);\n}\n"
+        "content": "use rust_daily_lesson::{OrderLine, OrderLines};\n\n#[test]\nfn iter_borrows_lines() {\n    let lines = OrderLines::new(vec![OrderLine {\n        sku: \"A\".to_owned(),\n        quantity: 2,\n    }]);\n    let skus: Vec<_> = lines.iter().map(|line| line.sku.as_str()).collect();\n\n    assert_eq!(skus, vec![\"A\"]);\n}\n"
       }
     ],
     "hints": [
       {
         "level": 1,
-        "body": "Keep the Exposing iteration on collection wrappers code active and add OrderLines::iter(&self) -> std::slice::Iter<'_, OrderLine>."
+        "body": "Add iter to the existing OrderLines impl block."
       },
       {
         "level": 2,
-        "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+        "body": "Return self.lines.iter() so callers can inspect lines without consuming the wrapper."
       },
       {
         "level": 3,
         "body": "One complete solution for Expose borrowed iteration with iter is shown below.",
-        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self { Self { lines } }\n\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}"
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}"
       }
     ],
-    "completionExplanation": "Expose borrowed iteration with iter now extends the active Exposing iteration on collection wrappers code with wrap borrowed iter. The previous lesson's behavior remains in the main solution rather than an archived module.",
+    "completionExplanation": "Borrowed iteration exposes read-only access to the wrapped lines without making the Vec field public.",
     "validation": {
       "mode": "all",
       "validations": [
@@ -4428,35 +4428,35 @@
     "difficulty": "medium",
     "estimatedMinutes": 8,
     "scenario": "When callers are done with a wrapper, IntoIterator should let them move owned values out naturally.",
-    "instructions": "Implement IntoIterator for OrderLines, yielding owned OrderLine values.",
+    "instructions": "The starter already has borrowed iteration with iter. Implement IntoIterator for OrderLines, yielding owned OrderLine values.",
     "files": [
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self { Self { lines } }\n\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: implement IntoIterator for OrderLines.\n"
+        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: implement IntoIterator for OrderLines.\n"
       },
       {
         "path": "tests/public.rs",
         "role": "test",
-        "content": "use rust_daily_lesson::{OrderLine, OrderLines};\n\n#[test]\nfn consuming_iteration_moves_lines_out() {\n    let lines = OrderLines::new(vec![OrderLine { sku: \"A\".to_owned(), quantity: 2 }]);\n    let moved: Vec<_> = lines.into_iter().map(|line| line.sku).collect();\n\n    assert_eq!(moved, vec![\"A\".to_owned()]);\n}\n"
+        "content": "use rust_daily_lesson::{OrderLine, OrderLines};\n\n#[test]\nfn consuming_iteration_moves_lines_out() {\n    let lines = OrderLines::new(vec![OrderLine {\n        sku: \"A\".to_owned(),\n        quantity: 2,\n    }]);\n    let moved: Vec<_> = lines.into_iter().map(|line| line.sku).collect();\n\n    assert_eq!(moved, vec![\"A\".to_owned()]);\n}\n"
       }
     ],
     "hints": [
       {
         "level": 1,
-        "body": "Keep the Exposing iteration on collection wrappers code active and implement IntoIterator for OrderLines, yielding owned OrderLine values."
+        "body": "Implement IntoIterator for OrderLines, not for &OrderLines yet."
       },
       {
         "level": 2,
-        "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+        "body": "Use std::vec::IntoIter<OrderLine> and self.lines.into_iter() because this implementation consumes the wrapper."
       },
       {
         "level": 3,
         "body": "One complete solution for Consume a wrapper with IntoIterator is shown below.",
-        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self { Self { lines } }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}\n\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n            self.lines.iter()\n        }\n}"
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}"
       }
     ],
-    "completionExplanation": "Consume a wrapper with IntoIterator now extends the active Exposing iteration on collection wrappers code with wrap into iterator. The previous lesson's behavior remains in the main solution rather than an archived module.",
+    "completionExplanation": "Owned IntoIterator lets callers move OrderLine values out when they are done with the wrapper, while borrowed iter remains available.",
     "validation": {
       "mode": "all",
       "validations": [
@@ -4499,35 +4499,35 @@
     "difficulty": "medium",
     "estimatedMinutes": 8,
     "scenario": "For loops over &OrderLines should borrow each line instead of consuming the wrapper.",
-    "instructions": "Implement IntoIterator for &OrderLines, yielding &OrderLine values.",
+    "instructions": "The starter already supports owned IntoIterator. Implement IntoIterator for &OrderLines, yielding &OrderLine values.",
     "files": [
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self { Self { lines } }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}\n\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n            self.lines.iter()\n        }\n}\n\n// Continue from the previous lesson.\n// TODO: implement IntoIterator for &OrderLines.\n"
+        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: implement IntoIterator for &OrderLines.\n"
       },
       {
         "path": "tests/public.rs",
         "role": "test",
-        "content": "use rust_daily_lesson::{OrderLine, OrderLines};\n\n#[test]\nfn borrowed_iteration_keeps_wrapper_available() {\n    let lines = OrderLines::new(vec![OrderLine { sku: \"A\".to_owned(), quantity: 2 }]);\n    let total: u32 = (&lines).into_iter().map(|line| line.quantity).sum();\n    let skus: Vec<_> = (&lines).into_iter().map(|line| line.sku.as_str()).collect();\n\n    assert_eq!(total, 2);\n    assert_eq!(skus, vec![\"A\"]);\n}\n"
+        "content": "use rust_daily_lesson::{OrderLine, OrderLines};\n\n#[test]\nfn borrowed_iteration_keeps_wrapper_available() {\n    let lines = OrderLines::new(vec![OrderLine {\n        sku: \"A\".to_owned(),\n        quantity: 2,\n    }]);\n    let total: u32 = (&lines).into_iter().map(|line| line.quantity).sum();\n    let skus: Vec<_> = (&lines).into_iter().map(|line| line.sku.as_str()).collect();\n\n    assert_eq!(total, 2);\n    assert_eq!(skus, vec![\"A\"]);\n}\n"
       }
     ],
     "hints": [
       {
         "level": 1,
-        "body": "Keep the Exposing iteration on collection wrappers code active and implement IntoIterator for &OrderLines, yielding &OrderLine values."
+        "body": "Implement the trait for &'a OrderLines with Item = &'a OrderLine."
       },
       {
         "level": 2,
-        "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+        "body": "Return self.iter() from into_iter so the for-loop behavior reuses the borrowed iterator method."
       },
       {
         "level": 3,
         "body": "One complete solution for Iterate over borrowed collection wrappers is shown below.",
-        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self { Self { lines } }\n}\n\nimpl<'a> IntoIterator for &'a OrderLines {\n    type Item = &'a OrderLine;\n    type IntoIter = std::slice::Iter<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.iter()\n    }\n}\n\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n            self.lines.iter()\n        }\n}"
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}\n\nimpl<'a> IntoIterator for &'a OrderLines {\n    type Item = &'a OrderLine;\n    type IntoIter = std::slice::Iter<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter()\n    }\n}"
       }
     ],
-    "completionExplanation": "Iterate over borrowed collection wrappers now extends the active Exposing iteration on collection wrappers code with wrap ref into iterator. The previous lesson's behavior remains in the main solution rather than an archived module.",
+    "completionExplanation": "Borrowed IntoIterator enables `for line in &order_lines` while preserving owned iteration and the explicit iter method.",
     "validation": {
       "mode": "all",
       "validations": [
@@ -4566,35 +4566,35 @@
     "difficulty": "medium",
     "estimatedMinutes": 8,
     "scenario": "Some update operations should borrow the wrapper mutably and edit each line in place without exposing the Vec field.",
-    "instructions": "Implement IntoIterator for &mut OrderLines, yielding &mut OrderLine values.",
+    "instructions": "The starter already supports owned and shared borrowed iteration. Implement IntoIterator for &mut OrderLines, yielding &mut OrderLine values.",
     "files": [
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self { Self { lines } }\n}\n\nimpl<'a> IntoIterator for &'a OrderLines {\n    type Item = &'a OrderLine;\n    type IntoIter = std::slice::Iter<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.iter()\n    }\n}\n\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n            self.lines.iter()\n        }\n}\n\n// Continue from the previous lesson.\n// TODO: implement IntoIterator for &mut OrderLines.\n"
+        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}\n\nimpl<'a> IntoIterator for &'a OrderLines {\n    type Item = &'a OrderLine;\n    type IntoIter = std::slice::Iter<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter()\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: implement IntoIterator for &mut OrderLines.\n"
       },
       {
         "path": "tests/public.rs",
         "role": "test",
-        "content": "use rust_daily_lesson::{OrderLine, OrderLines};\n\n#[test]\nfn mutable_iteration_updates_lines_in_place() {\n    let mut lines = OrderLines::new(vec![OrderLine { sku: \"A\".to_owned(), quantity: 2 }]);\n\n    for line in &mut lines {\n        line.quantity += 1;\n    }\n\n    let quantities: Vec<_> = (&mut lines).into_iter().map(|line| line.quantity).collect();\n    assert_eq!(quantities, vec![3]);\n}\n"
+        "content": "use rust_daily_lesson::{OrderLine, OrderLines};\n\n#[test]\nfn mutable_iteration_updates_lines_in_place() {\n    let mut lines = OrderLines::new(vec![OrderLine {\n        sku: \"A\".to_owned(),\n        quantity: 2,\n    }]);\n\n    for line in &mut lines {\n        line.quantity += 1;\n    }\n\n    let quantities: Vec<_> = (&mut lines).into_iter().map(|line| line.quantity).collect();\n    assert_eq!(quantities, vec![3]);\n}\n"
       }
     ],
     "hints": [
       {
         "level": 1,
-        "body": "Keep the Exposing iteration on collection wrappers code active and implement IntoIterator for &mut OrderLines, yielding &mut OrderLine values."
+        "body": "Implement the trait for &'a mut OrderLines with Item = &'a mut OrderLine."
       },
       {
         "level": 2,
-        "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+        "body": "Return self.lines.iter_mut() so callers can update each line in place without exposing the Vec field."
       },
       {
         "level": 3,
         "body": "One complete solution for Iterate mutably over collection wrappers is shown below.",
-        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self { Self { lines } }\n}\n\nimpl<'a> IntoIterator for &'a mut OrderLines {\n    type Item = &'a mut OrderLine;\n    type IntoIter = std::slice::IterMut<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.iter_mut()\n    }\n}\n\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n            self.lines.iter()\n        }\n}"
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}\n\nimpl<'a> IntoIterator for &'a OrderLines {\n    type Item = &'a OrderLine;\n    type IntoIter = std::slice::Iter<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter()\n    }\n}\n\nimpl<'a> IntoIterator for &'a mut OrderLines {\n    type Item = &'a mut OrderLine;\n    type IntoIter = std::slice::IterMut<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.iter_mut()\n    }\n}"
       }
     ],
-    "completionExplanation": "Iterate mutably over collection wrappers now extends the active Exposing iteration on collection wrappers code with wrap mut into iterator. The previous lesson's behavior remains in the main solution rather than an archived module.",
+    "completionExplanation": "Mutable IntoIterator enables `for line in &mut order_lines` while keeping the collection field private.",
     "validation": {
       "mode": "all",
       "validations": [
@@ -4633,35 +4633,35 @@
     "difficulty": "medium",
     "estimatedMinutes": 8,
     "scenario": "An order without lines is invalid. TryFrom<Vec<OrderLine>> can enforce that invariant at the wrapper boundary.",
-    "instructions": "Implement TryFrom<Vec<OrderLine>> for OrderLines and return OrderLinesError::Empty when the vector has no lines.",
+    "instructions": "The starter already defines OrderLinesError. Implement TryFrom<Vec<OrderLine>> for OrderLines and return OrderLinesError::Empty when the vector has no lines.",
     "files": [
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self { Self { lines } }\n}\n\nimpl<'a> IntoIterator for &'a mut OrderLines {\n    type Item = &'a mut OrderLine;\n    type IntoIter = std::slice::IterMut<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.iter_mut()\n    }\n}\n\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n            self.lines.iter()\n        }\n}\n\n// Continue from the previous lesson.\n// TODO: implement TryFrom<Vec<OrderLine>> for OrderLines.\n"
+        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}\n\nimpl<'a> IntoIterator for &'a OrderLines {\n    type Item = &'a OrderLine;\n    type IntoIter = std::slice::Iter<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter()\n    }\n}\n\nimpl<'a> IntoIterator for &'a mut OrderLines {\n    type Item = &'a mut OrderLine;\n    type IntoIter = std::slice::IterMut<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.iter_mut()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum OrderLinesError {\n    Empty,\n}\n\n// Continue from the previous lesson.\n// TODO: implement TryFrom<Vec<OrderLine>> for OrderLines.\n"
       },
       {
         "path": "tests/public.rs",
         "role": "test",
-        "content": "use rust_daily_lesson::{OrderLine, OrderLines, OrderLinesError};\n\n#[test]\nfn validates_nonempty_lines() {\n    assert_eq!(OrderLines::try_from(Vec::new()), Err(OrderLinesError::Empty));\n    assert_eq!(\n        OrderLines::try_from(vec![OrderLine { sku: \"A\".to_owned(), quantity: 1 }]).map(|lines| lines.len()),\n        Ok(1)\n    );\n}\n"
+        "content": "use rust_daily_lesson::{OrderLine, OrderLines, OrderLinesError};\n\n#[test]\nfn validates_nonempty_lines() {\n    assert_eq!(\n        OrderLines::try_from(Vec::new()),\n        Err(OrderLinesError::Empty)\n    );\n    assert_eq!(\n        OrderLines::try_from(vec![OrderLine {\n            sku: \"A\".to_owned(),\n            quantity: 1\n        }])\n        .map(|lines| lines.len()),\n        Ok(1)\n    );\n}\n"
       }
     ],
     "hints": [
       {
         "level": 1,
-        "body": "Keep the Exposing iteration on collection wrappers code active and implement TryFrom<Vec<OrderLine>> for OrderLines and return OrderLinesError::Empty when the vector has no lines."
+        "body": "Check lines.is_empty() before constructing OrderLines."
       },
       {
         "level": 2,
-        "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+        "body": "Return Err(OrderLinesError::Empty) for an empty vector and Ok(Self::new(lines)) otherwise."
       },
       {
         "level": 3,
         "body": "One complete solution for Validate collection wrappers with TryFrom is shown below.",
-        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn len(&self) -> usize { self.lines.len() }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum OrderLinesError {\n    Empty,\n}\n\nimpl TryFrom<Vec<OrderLine>> for OrderLines {\n    type Error = OrderLinesError;\n\n    fn try_from(lines: Vec<OrderLine>) -> Result<Self, Self::Error> {\n        if lines.is_empty() {\n            return Err(OrderLinesError::Empty);\n        }\n\n        Ok(Self { lines })\n    }\n}\n\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n            self.lines.iter()\n        }\n}\n\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}"
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}\n\nimpl<'a> IntoIterator for &'a OrderLines {\n    type Item = &'a OrderLine;\n    type IntoIter = std::slice::Iter<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter()\n    }\n}\n\nimpl<'a> IntoIterator for &'a mut OrderLines {\n    type Item = &'a mut OrderLine;\n    type IntoIter = std::slice::IterMut<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.iter_mut()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum OrderLinesError {\n    Empty,\n}\n\nimpl TryFrom<Vec<OrderLine>> for OrderLines {\n    type Error = OrderLinesError;\n\n    fn try_from(lines: Vec<OrderLine>) -> Result<Self, Self::Error> {\n        if lines.is_empty() {\n            return Err(OrderLinesError::Empty);\n        }\n\n        Ok(Self::new(lines))\n    }\n}"
       }
     ],
-    "completionExplanation": "Validate collection wrappers with TryFrom now extends the active Exposing iteration on collection wrappers code with wrap nonempty tryfrom. The previous lesson's behavior remains in the main solution rather than an archived module.",
+    "completionExplanation": "TryFrom adds a checked construction path for callers that must reject empty line collections, while the earlier iteration APIs remain intact.",
     "validation": {
       "mode": "all",
       "validations": [
