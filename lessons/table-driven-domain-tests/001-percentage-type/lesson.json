@@ -27,11 +27,11 @@
   "hints": [
     {
       "level": 1,
-      "body": "Keep the Table-driven domain tests code active and define Percentage, PercentageError, value, and TryFrom<u16> that rejects values above 100."
+      "body": "Define Percentage as a private u8 newtype and PercentageError with an OutOfRange variant."
     },
     {
       "level": 2,
-      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+      "body": "Add value(&self) -> u8 and implement TryFrom<u16> so values above 100 return PercentageError::OutOfRange."
     },
     {
       "level": 3,
@@ -39,7 +39,7 @@
       "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(&self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}"
     }
   ],
-  "completionExplanation": "Define a bounded Percentage type now extends the active Table-driven domain tests code with percentage newtype. The previous lesson's behavior remains in the main solution rather than an archived module.",
+  "completionExplanation": "Percentage now enforces the domain boundary at construction time and exposes the stored value through a small accessor.",
   "validation": {
     "mode": "all",
     "validations": [

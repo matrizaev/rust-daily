@@ -24,17 +24,31 @@ impl TryFrom<u16> for Percentage {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn accepts_valid_percentages() {
+        let cases = [(0, 0), (50, 50), (100, 100)];
+
+        for (input, expected) in cases {
+            assert_eq!(
+                Percentage::try_from(input).map(|value| value.value()),
+                Ok(expected)
+            );
+        }
+    }
 
     #[test]
     fn rejects_invalid_percentages() {
         let invalid_values = [101, 150, 1_000];
 
         for input in invalid_values {
-            assert_eq!(Percentage::try_from(input), Err(PercentageError::OutOfRange));
+            assert_eq!(
+                Percentage::try_from(input),
+                Err(PercentageError::OutOfRange)
+            );
         }
     }
 }
