@@ -11,17 +11,17 @@
   "difficulty": "medium",
   "estimatedMinutes": 7,
   "scenario": "The parser has one low-level error that should become a ParseUserError. A From implementation makes that conversion reusable.",
-  "instructions": "Implement From<ParseIntError> for ParseUserError by returning ParseUserError::InvalidId(error).",
+  "instructions": "Implement From<ParseIntError> for ParseUserError by returning ParseUserError::InvalidId(error). Then use ? for the ID parse in parse_user.",
   "files": [
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "use std::fmt;\n\nuse std::num::ParseIntError;\n\n#[derive(Debug)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId(ParseIntError),\n}\n\npub fn parse_id(id_text: &str) -> Result<u64, ParseUserError> {\n    id_text.parse::<u64>().map_err(ParseUserError::InvalidId)\n}\n\n\nimpl std::fmt::Display for ParseUserError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            ParseUserError::MissingId => write!(f, \"missing id\"),\n            ParseUserError::MissingName => write!(f, \"missing name\"),\n            ParseUserError::MissingEmail => write!(f, \"missing email\"),\n            ParseUserError::InvalidId(_) => write!(f, \"invalid id\"),\n        }\n    }\n}\n\n\nimpl std::error::Error for ParseUserError {}\n\n// Continue from the previous lesson.\n// TODO: implement From<ParseIntError> for ParseUserError.\n"
+      "content": "use std::error::Error;\nuse std::fmt;\nuse std::num::ParseIntError;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct User {\n    pub id: u64,\n    pub name: String,\n    pub email: String,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId(ParseIntError),\n}\n\npub fn parse_user(input: &str) -> Result<User, ParseUserError> {\n    let mut parts = input.split(',');\n\n    let id_text = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingId)?;\n    let id = id_text\n        .parse::<u64>()\n        .map_err(ParseUserError::InvalidId)?;\n    let name = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingName)?;\n    let email = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingEmail)?;\n\n    Ok(User {\n        id,\n        name: name.to_owned(),\n        email: email.to_owned(),\n    })\n}\n\nimpl fmt::Display for ParseUserError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            ParseUserError::MissingId => write!(f, \"missing id\"),\n            ParseUserError::MissingName => write!(f, \"missing name\"),\n            ParseUserError::MissingEmail => write!(f, \"missing email\"),\n            ParseUserError::InvalidId(_) => write!(f, \"invalid id\"),\n        }\n    }\n}\n\nimpl Error for ParseUserError {\n    fn source(&self) -> Option<&(dyn Error + 'static)> {\n        match self {\n            ParseUserError::InvalidId(error) => Some(error),\n            ParseUserError::MissingId\n            | ParseUserError::MissingName\n            | ParseUserError::MissingEmail => None,\n        }\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: implement From<ParseIntError> and use ? for ID parsing.\n"
     },
     {
       "path": "tests/public.rs",
       "role": "test",
-      "content": "use rust_daily_lesson::{parse_id, ParseUserError};\n\n#[test]\nfn parses_valid_id() {\n    assert!(matches!(parse_id(\"42\"), Ok(42)));\n}\n\n#[test]\nfn converts_parse_int_error() {\n    assert!(matches!(parse_id(\"nope\"), Err(ParseUserError::InvalidId(_))));\n}\n"
+      "content": "use rust_daily_lesson::{parse_user, ParseUserError, User};\n\n#[test]\nfn parses_valid_user() {\n    assert_eq!(\n        parse_user(\"42,Ada,ada@example.com\"),\n        Ok(User {\n            id: 42,\n            name: \"Ada\".to_owned(),\n            email: \"ada@example.com\".to_owned(),\n        })\n    );\n}\n\n#[test]\nfn converts_parse_int_error() {\n    assert!(matches!(\n        parse_user(\"nope,Ada,ada@example.com\"),\n        Err(ParseUserError::InvalidId(_))\n    ));\n}\n"
     }
   ],
   "hints": [
@@ -35,8 +35,8 @@
     },
     {
       "level": 3,
-      "body": "This is the conversion that lets ? work in later parser code.",
-      "solutionCode": "use std::error::Error;\nuse std::fmt;\n\nuse std::num::ParseIntError;\n\n#[derive(Debug)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId(ParseIntError),\n}\n\nimpl From<ParseIntError> for ParseUserError {\n    fn from(error: ParseIntError) -> Self {\n        ParseUserError::InvalidId(error)\n    }\n}\n\npub fn parse_id(id_text: &str) -> Result<u64, ParseUserError> {\n    id_text.parse::<u64>().map_err(ParseUserError::from)\n}\n\n\nimpl std::fmt::Display for ParseUserError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            ParseUserError::MissingId => write!(f, \"missing id\"),\n            ParseUserError::MissingName => write!(f, \"missing name\"),\n            ParseUserError::MissingEmail => write!(f, \"missing email\"),\n            ParseUserError::InvalidId(_) => write!(f, \"invalid id\"),\n        }\n    }\n}\n\n\nimpl Error for ParseUserError {\n    fn source(&self) -> Option<&(dyn Error + 'static)> {\n        match self {\n            ParseUserError::InvalidId(error) => Some(error),\n            ParseUserError::MissingId | ParseUserError::MissingName | ParseUserError::MissingEmail => None,\n        }\n    }\n}"
+      "body": "This conversion lets parse_user use ? instead of spelling out map_err at the call site.",
+      "solutionCode": "use std::error::Error;\nuse std::fmt;\nuse std::num::ParseIntError;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct User {\n    pub id: u64,\n    pub name: String,\n    pub email: String,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId(ParseIntError),\n}\n\nimpl From<ParseIntError> for ParseUserError {\n    fn from(error: ParseIntError) -> Self {\n        ParseUserError::InvalidId(error)\n    }\n}\n\npub fn parse_user(input: &str) -> Result<User, ParseUserError> {\n    let mut parts = input.split(',');\n\n    let id_text = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingId)?;\n    let id = id_text.parse::<u64>()?;\n    let name = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingName)?;\n    let email = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingEmail)?;\n\n    Ok(User {\n        id,\n        name: name.to_owned(),\n        email: email.to_owned(),\n    })\n}\n\nimpl fmt::Display for ParseUserError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            ParseUserError::MissingId => write!(f, \"missing id\"),\n            ParseUserError::MissingName => write!(f, \"missing name\"),\n            ParseUserError::MissingEmail => write!(f, \"missing email\"),\n            ParseUserError::InvalidId(_) => write!(f, \"invalid id\"),\n        }\n    }\n}\n\nimpl Error for ParseUserError {\n    fn source(&self) -> Option<&(dyn Error + 'static)> {\n        match self {\n            ParseUserError::InvalidId(error) => Some(error),\n            ParseUserError::MissingId\n            | ParseUserError::MissingName\n            | ParseUserError::MissingEmail => None,\n        }\n    }\n}"
     }
   ],
   "completionExplanation": "From centralizes the low-level to high-level error conversion. Call sites can ask for ParseUserError without rewriting the wrapping logic each time.",
@@ -56,7 +56,8 @@
             "type": "source_includes",
             "requiredSnippets": [
               "fn from",
-              "ParseUserError::InvalidId"
+              "ParseUserError::InvalidId",
+              ".parse::<u64>()?"
             ]
           }
         ]

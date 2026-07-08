@@ -1,9 +1,15 @@
 use std::error::Error;
 use std::fmt;
-
 use std::num::ParseIntError;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct User {
+    pub id: u64,
+    pub name: String,
+    pub email: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseUserError {
     MissingId,
     MissingName,
@@ -17,12 +23,31 @@ impl From<ParseIntError> for ParseUserError {
     }
 }
 
-pub fn parse_id(id_text: &str) -> Result<u64, ParseUserError> {
-    id_text.parse::<u64>().map_err(ParseUserError::from)
+pub fn parse_user(input: &str) -> Result<User, ParseUserError> {
+    let mut parts = input.split(',');
+
+    let id_text = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingId)?;
+    let id = id_text.parse::<u64>()?;
+    let name = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingName)?;
+    let email = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingEmail)?;
+
+    Ok(User {
+        id,
+        name: name.to_owned(),
+        email: email.to_owned(),
+    })
 }
 
-
-impl std::fmt::Display for ParseUserError {
+impl fmt::Display for ParseUserError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ParseUserError::MissingId => write!(f, "missing id"),
@@ -33,12 +58,13 @@ impl std::fmt::Display for ParseUserError {
     }
 }
 
-
 impl Error for ParseUserError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             ParseUserError::InvalidId(error) => Some(error),
-            ParseUserError::MissingId | ParseUserError::MissingName | ParseUserError::MissingEmail => None,
+            ParseUserError::MissingId
+            | ParseUserError::MissingName
+            | ParseUserError::MissingEmail => None,
         }
     }
 }

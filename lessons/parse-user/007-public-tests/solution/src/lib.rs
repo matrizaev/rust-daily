@@ -1,3 +1,5 @@
+use std::convert::TryFrom;
+use std::error::Error;
 use std::fmt;
 use std::num::ParseIntError;
 
@@ -13,7 +15,13 @@ pub enum ParseUserError {
     MissingId,
     MissingName,
     MissingEmail,
-    InvalidId,
+    InvalidId(ParseIntError),
+}
+
+impl From<ParseIntError> for ParseUserError {
+    fn from(error: ParseIntError) -> Self {
+        ParseUserError::InvalidId(error)
+    }
 }
 
 pub fn parse_user(input: &str) -> Result<User, ParseUserError> {
@@ -23,9 +31,7 @@ pub fn parse_user(input: &str) -> Result<User, ParseUserError> {
         .next()
         .filter(|value| !value.is_empty())
         .ok_or(ParseUserError::MissingId)?;
-    let id = id_text
-        .parse::<u64>()
-        .map_err(|_| ParseUserError::InvalidId)?;
+    let id = id_text.parse::<u64>()?;
     let name = parts
         .next()
         .filter(|value| !value.is_empty())
@@ -40,6 +46,14 @@ pub fn parse_user(input: &str) -> Result<User, ParseUserError> {
         name: name.to_owned(),
         email: email.to_owned(),
     })
+}
+
+impl TryFrom<&str> for User {
+    type Error = ParseUserError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        parse_user(value)
+    }
 }
 
 #[cfg(test)]
@@ -67,33 +81,24 @@ mod tests {
     }
 }
 
-
-impl std::fmt::Display for ParseUserError {
+impl fmt::Display for ParseUserError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ParseUserError::MissingId => write!(f, "missing id"),
             ParseUserError::MissingName => write!(f, "missing name"),
             ParseUserError::MissingEmail => write!(f, "missing email"),
-            ParseUserError::InvalidId => write!(f, "invalid id"),
+            ParseUserError::InvalidId(_) => write!(f, "invalid id"),
         }
     }
 }
 
-
-impl std::error::Error for ParseUserError {}
-
-
-impl From<ParseIntError> for ParseUserError {
-    fn from(_error: ParseIntError) -> Self {
-        ParseUserError::InvalidId
-    }
-}
-
-
-impl TryFrom<&str> for User {
-    type Error = ParseUserError;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        parse_user(value)
+impl Error for ParseUserError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            ParseUserError::InvalidId(error) => Some(error),
+            ParseUserError::MissingId
+            | ParseUserError::MissingName
+            | ParseUserError::MissingEmail => None,
+        }
     }
 }

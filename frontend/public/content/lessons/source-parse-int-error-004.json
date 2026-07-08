@@ -11,17 +11,17 @@
   "difficulty": "medium",
   "estimatedMinutes": 8,
   "scenario": "Invalid IDs come from ParseIntError. Keeping that source error helps diagnostics without giving up the typed ParseUserError API.",
-  "instructions": "Change InvalidId so it stores ParseIntError, then pass the parse error through map_err instead of discarding it.",
+  "instructions": "Change InvalidId so it stores ParseIntError. Update parse_user to pass the parse error through map_err instead of discarding it, and expose it from Error::source.",
   "files": [
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "use std::fmt;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId,\n}\n\nimpl std::fmt::Display for ParseUserError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            ParseUserError::MissingId => write!(f, \"missing id\"),\n            ParseUserError::MissingName => write!(f, \"missing name\"),\n            ParseUserError::MissingEmail => write!(f, \"missing email\"),\n            ParseUserError::InvalidId => write!(f, \"invalid id\"),\n        }\n    }\n}\n\nimpl std::error::Error for ParseUserError {}\n\n// Continue from the previous lesson.\n// TODO: complete this lesson's next change.\n"
+      "content": "use std::fmt;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct User {\n    pub id: u64,\n    pub name: String,\n    pub email: String,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId,\n}\n\npub fn parse_user(input: &str) -> Result<User, ParseUserError> {\n    let mut parts = input.split(',');\n\n    let id_text = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingId)?;\n    let id = id_text\n        .parse::<u64>()\n        .map_err(|_| ParseUserError::InvalidId)?;\n    let name = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingName)?;\n    let email = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingEmail)?;\n\n    Ok(User {\n        id,\n        name: name.to_owned(),\n        email: email.to_owned(),\n    })\n}\n\nimpl fmt::Display for ParseUserError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            ParseUserError::MissingId => write!(f, \"missing id\"),\n            ParseUserError::MissingName => write!(f, \"missing name\"),\n            ParseUserError::MissingEmail => write!(f, \"missing email\"),\n            ParseUserError::InvalidId => write!(f, \"invalid id\"),\n        }\n    }\n}\n\nimpl std::error::Error for ParseUserError {}\n\n// Continue from the previous lesson.\n// TODO: store ParseIntError in InvalidId and preserve it in parse_user.\n"
     },
     {
       "path": "tests/public.rs",
       "role": "test",
-      "content": "use rust_daily_lesson::{parse_id, ParseUserError};\n\n#[test]\nfn preserves_parse_int_error_source_value() -> Result<(), String> {\n    match parse_id(\"not-a-number\") {\n        Err(ParseUserError::InvalidId(source)) => {\n            assert!(source.to_string().contains(\"invalid digit\"));\n            Ok(())\n        }\n        other => Err(format!(\"unexpected parse result: {other:?}\")),\n    }\n}\n"
+      "content": "use std::error::Error;\n\nuse rust_daily_lesson::{parse_user, ParseUserError};\n\n#[test]\nfn preserves_parse_int_error_source_value() -> Result<(), String> {\n    match parse_user(\"not-a-number,Ada,ada@example.com\") {\n        Err(ParseUserError::InvalidId(source)) => {\n            assert!(source.to_string().contains(\"invalid digit\"));\n            Ok(())\n        }\n        other => Err(format!(\"unexpected parse result: {other:?}\")),\n    }\n}\n\n#[test]\nfn exposes_parse_int_error_as_source() {\n    let error = parse_user(\"not-a-number,Ada,ada@example.com\").unwrap_err();\n\n    assert!(error.source().is_some());\n}\n"
     }
   ],
   "hints": [
@@ -35,11 +35,11 @@
     },
     {
       "level": 3,
-      "body": "After the change, InvalidId should look like InvalidId(ParseIntError).",
-      "solutionCode": "use std::fmt;\n\nuse std::num::ParseIntError;\n\n#[derive(Debug)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId(ParseIntError),\n}\n\npub fn parse_id(id_text: &str) -> Result<u64, ParseUserError> {\n    id_text.parse::<u64>().map_err(ParseUserError::InvalidId)\n}\n\n\nimpl std::fmt::Display for ParseUserError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            ParseUserError::MissingId => write!(f, \"missing id\"),\n            ParseUserError::MissingName => write!(f, \"missing name\"),\n            ParseUserError::MissingEmail => write!(f, \"missing email\"),\n            ParseUserError::InvalidId(_) => write!(f, \"invalid id\"),\n        }\n    }\n}\n\n\nimpl std::error::Error for ParseUserError {}"
+      "body": "After the change, InvalidId should look like InvalidId(ParseIntError), and Error::source should return that inner error.",
+      "solutionCode": "use std::error::Error;\nuse std::fmt;\nuse std::num::ParseIntError;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct User {\n    pub id: u64,\n    pub name: String,\n    pub email: String,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId(ParseIntError),\n}\n\npub fn parse_user(input: &str) -> Result<User, ParseUserError> {\n    let mut parts = input.split(',');\n\n    let id_text = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingId)?;\n    let id = id_text\n        .parse::<u64>()\n        .map_err(ParseUserError::InvalidId)?;\n    let name = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingName)?;\n    let email = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingEmail)?;\n\n    Ok(User {\n        id,\n        name: name.to_owned(),\n        email: email.to_owned(),\n    })\n}\n\nimpl fmt::Display for ParseUserError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            ParseUserError::MissingId => write!(f, \"missing id\"),\n            ParseUserError::MissingName => write!(f, \"missing name\"),\n            ParseUserError::MissingEmail => write!(f, \"missing email\"),\n            ParseUserError::InvalidId(_) => write!(f, \"invalid id\"),\n        }\n    }\n}\n\nimpl Error for ParseUserError {\n    fn source(&self) -> Option<&(dyn Error + 'static)> {\n        match self {\n            ParseUserError::InvalidId(error) => Some(error),\n            ParseUserError::MissingId\n            | ParseUserError::MissingName\n            | ParseUserError::MissingEmail => None,\n        }\n    }\n}"
     }
   ],
-  "completionExplanation": "The parse error now keeps its original source. That makes the high-level error useful while preserving details for logging, debugging, or later Error::source support.",
+  "completionExplanation": "The parse error now keeps its original source and exposes it through Error::source. That keeps the high-level error useful while preserving details for logging and debugging.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -51,7 +51,8 @@
             "type": "source_includes",
             "requiredSnippets": [
               "InvalidId(ParseIntError)",
-              "map_err(ParseUserError::InvalidId)"
+              "map_err(ParseUserError::InvalidId)",
+              "fn source"
             ],
             "forbiddenSnippets": [
               "|_error| ParseUserError::InvalidId"
