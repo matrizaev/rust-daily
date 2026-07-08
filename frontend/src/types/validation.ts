@@ -23,6 +23,11 @@ export type StructuralCheck =
       typeName: string;
     }
   | {
+      type: "derived_trait_for_type";
+      traitName: string;
+      typeName: string;
+    }
+  | {
       type: "impl_method";
       implFor: string;
       methodName: string;

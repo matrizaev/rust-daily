@@ -1,3 +1,4 @@
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Config {
     pub service_url: String,
     pub max_connections: usize,
@@ -24,4 +25,4 @@ impl Config {
 }
 
 // Continue from the previous lesson.
-// TODO: add validation error variants.
+// TODO: add ConfigError and Config::validate.

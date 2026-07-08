@@ -1,3 +1,5 @@
+use std::convert::TryFrom;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Request {
     pub method: String,
@@ -30,21 +32,17 @@ pub enum BuildError {
 ///     })
 /// );
 /// ```
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct RequestBuilder {
     method: Option<String>,
     path: Option<String>,
 }
 
-impl Default for RequestBuilder {
-    fn default() -> Self {
-        Self {
-            method: None,
-            path: None,
-        }
-    }
-}
-
 impl RequestBuilder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     pub fn method(mut self, method: impl Into<String>) -> Self {
         self.method = Some(method.into());
         self
@@ -63,12 +61,10 @@ impl RequestBuilder {
     }
 }
 
-
 pub struct RawRequest {
     pub method: Option<String>,
     pub path: Option<String>,
 }
-
 
 impl TryFrom<RawRequest> for Request {
     type Error = BuildError;

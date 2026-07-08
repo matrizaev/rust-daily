@@ -30,6 +30,7 @@ const STRUCTURAL_TYPES = new Set([
   "struct_fields",
   "tuple_struct_fields",
   "impl_trait_for_type",
+  "derived_trait_for_type",
   "impl_method",
   "function_signature",
   "source_includes",
@@ -233,6 +234,7 @@ const validateStructuralCheck = (errors, check, path) => {
     struct_fields: () => validateFieldCheck(errors, check, path),
     tuple_struct_fields: () => validateTupleFieldCheck(errors, check, path),
     impl_trait_for_type: () => validateStringFields(errors, check, path, ["traitName", "typeName"]),
+    derived_trait_for_type: () => validateStringFields(errors, check, path, ["traitName", "typeName"]),
     impl_method: () => {
       validateStringFields(errors, check, path, ["implFor", "methodName"]);
       if (!isStringArray(check.requiredSignatureIncludes)) {

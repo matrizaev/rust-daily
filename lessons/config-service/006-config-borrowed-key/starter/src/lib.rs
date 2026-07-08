@@ -1,3 +1,4 @@
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Config {
     pub service_url: String,
     pub max_connections: usize,
@@ -41,5 +42,12 @@ impl Config {
     }
 }
 
+pub fn get_setting(settings: &[(String, String)], key: String) -> Option<String> {
+    settings
+        .iter()
+        .find(|(name, _value)| name == &key)
+        .map(|(_name, value)| value.clone())
+}
+
 // Continue from the previous lesson.
-// TODO: complete this lesson's next change.
+// TODO: borrow key and return a borrowed setting value.

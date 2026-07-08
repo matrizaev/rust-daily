@@ -438,8 +438,8 @@
       },
       {
         "level": 3,
-        "body": "Default values should be boring and safe for local development.",
-        "solutionCode": "pub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n        }\n    }\n}"
+        "body": "Derive would use String::new and 0. Implement Default manually because this lesson needs local development values.",
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n        }\n    }\n}"
       }
     ],
     "completionExplanation": "Default gives callers a clear starting point while keeping each field explicit. It is useful when most configuration values are optional overrides.",
@@ -775,12 +775,12 @@
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "pub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n        }\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: add with_service_url here.\n"
+        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n        }\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: add with_service_url here.\n"
       },
       {
         "path": "tests/public.rs",
         "role": "test",
-        "content": "use rust_daily_lesson::Config;\n\n#[test]\nfn with_service_url_updates_only_the_url() {\n    let config = Config {\n        service_url: \"http://localhost:8080\".to_owned(),\n        max_connections: 32,\n        use_tls: false,\n    }\n    .with_service_url(\"https://api.example.com\");\n\n    assert_eq!(config.service_url, \"https://api.example.com\");\n    assert_eq!(config.max_connections, 32);\n    assert!(!config.use_tls);\n}\n"
+        "content": "use rust_daily_lesson::Config;\n\n#[test]\nfn with_service_url_updates_only_the_url() {\n    let config = Config::default().with_service_url(\"https://api.example.com\");\n\n    assert_eq!(config.service_url, \"https://api.example.com\");\n    assert_eq!(config.max_connections, 32);\n    assert!(!config.use_tls);\n}\n"
       }
     ],
     "hints": [
@@ -795,7 +795,7 @@
       {
         "level": 3,
         "body": "Returning Self keeps the method chain-friendly.",
-        "solutionCode": "pub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n        }\n    }\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n}"
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n        }\n    }\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n}"
       }
     ],
     "completionExplanation": "A small method can make configuration ergonomic without hiding the Config fields. Taking self by value is a common builder-style pattern.",
@@ -1049,12 +1049,12 @@
     "difficulty": "easy",
     "estimatedMinutes": 6,
     "scenario": "Callers should be able to create an empty builder using the standard Default trait.",
-    "instructions": "Implement Default for RequestBuilder. Both method and path should start as None.",
+    "instructions": "Derive Default for RequestBuilder. Option fields already default to None, so the empty builder does not need a manual impl.",
     "files": [
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "pub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl RequestBuilder {\n    pub fn new() -> Self {\n        Self { method: None, path: None }\n    }\n\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n        self.method = Some(method.into());\n        self\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: implement Default for RequestBuilder.\n"
+        "content": "pub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl RequestBuilder {\n    pub fn new() -> Self {\n        Self { method: None, path: None }\n    }\n\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n        self.method = Some(method.into());\n        self\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: derive Default for RequestBuilder.\n"
       },
       {
         "path": "tests/public.rs",
@@ -1069,15 +1069,15 @@
       },
       {
         "level": 2,
-        "body": "Option fields usually start as None in an empty builder."
+        "body": "Option<T> implements Default by returning None."
       },
       {
         "level": 3,
-        "body": "You can also call Self { method: None, path: None } directly.",
-        "solutionCode": "pub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl Default for RequestBuilder {\n    fn default() -> Self {\n        Self {\n            method: None,\n            path: None,\n        }\n    }\n}\n\n\nimpl RequestBuilder {\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n            self.method = Some(method.into());\n            self\n        }\n}"
+        "body": "Add Default to the derive list on RequestBuilder.",
+        "solutionCode": "#[derive(Default)]\npub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl RequestBuilder {\n    pub fn new() -> Self {\n        Self::default()\n    }\n\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n        self.method = Some(method.into());\n        self\n    }\n}"
       }
     ],
-    "completionExplanation": "Default makes the builder easy to construct and compose with APIs that expect defaultable values. The empty state is explicit through Option fields.",
+    "completionExplanation": "Deriving Default is idiomatic when every field already has the desired default. Option fields make the empty builder state explicit by starting as None.",
     "validation": {
       "mode": "all",
       "validations": [
@@ -1086,16 +1086,9 @@
           "timeoutMs": 10000,
           "checks": [
             {
-              "type": "impl_trait_for_type",
+              "type": "derived_trait_for_type",
               "traitName": "Default",
               "typeName": "RequestBuilder"
-            },
-            {
-              "type": "source_includes",
-              "requiredSnippets": [
-                "method: None",
-                "path: None"
-              ]
             }
           ]
         },
@@ -1125,7 +1118,7 @@
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "pub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n        }\n    }\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: add an optional timeout in seconds.\n"
+        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n        }\n    }\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: add an optional timeout in seconds.\n"
       },
       {
         "path": "tests/public.rs",
@@ -1145,7 +1138,7 @@
       {
         "level": 3,
         "body": "None is clearer than a magic value such as 0 when no timeout is configured.",
-        "solutionCode": "pub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n    pub timeout_seconds: Option<u64>,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n            timeout_seconds: None,\n        }\n    }\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n}"
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n    pub timeout_seconds: Option<u64>,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n            timeout_seconds: None,\n        }\n    }\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n}"
       }
     ],
     "completionExplanation": "Option makes absence part of the type instead of encoding it with a sentinel value. Callers must handle both configured and not-configured cases.",
@@ -1204,7 +1197,7 @@
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "pub struct Item {\n    pub sku: String,\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    items.iter().fold(0, |total, item| total + item.quantity)\n}\n\n\npub fn available_names(items: &[Item]) -> Vec<&str> {\n    items\n        .iter()\n        .filter_map(|item| {\n            if item.quantity > item.reserved {\n                Some(item.name.as_str())\n            } else {\n                None\n            }\n        })\n        .collect()\n}\n\n// Continue from the previous lesson.\n// TODO: complete this lesson's next change.\n"
+        "content": "pub struct Item {\n    pub sku: String,\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    items.iter().fold(0, |total, item| total + item.quantity)\n}\n\n\npub fn available_names(items: &[Item]) -> Vec<&str> {\n    items\n        .iter()\n        .filter_map(|item| {\n            if item.quantity > item.reserved {\n                Some(item.name.as_str())\n            } else {\n                None\n            }\n        })\n        .collect()\n}\n\npub fn reorder_notes(notes: &[String]) -> Vec<String> {\n    notes\n        .iter()\n        .map(|note| note.trim().to_lowercase())\n        .filter(|note| !note.is_empty())\n        .filter(|note| note.contains(\"urgent\") || note.contains(\"stock\"))\n        .collect()\n}\n\n// Continue from the previous lesson.\n// TODO: refactor reorder_notes so the inventory priority rule is easy to scan.\n"
       },
       {
         "path": "tests/public.rs",
@@ -1360,7 +1353,7 @@
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "pub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl Default for RequestBuilder {\n    fn default() -> Self {\n        Self {\n            method: None,\n            path: None,\n        }\n    }\n}\n\n\nimpl RequestBuilder {\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n            self.method = Some(method.into());\n            self\n        }\n}\n\n// Continue from the previous lesson.\n// TODO: complete this lesson's next change.\n"
+        "content": "#[derive(Default)]\npub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl RequestBuilder {\n    pub fn new() -> Self {\n        Self::default()\n    }\n\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n        self.method = Some(method.into());\n        self\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: add path, build, Request, and specific BuildError variants.\n"
       },
       {
         "path": "tests/public.rs",
@@ -1380,7 +1373,7 @@
       {
         "level": 3,
         "body": "Bind method and path first, then return Ok(Request { method, path }).",
-        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Request {\n    pub method: String,\n    pub path: String,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl RequestBuilder {\n    pub fn new() -> Self {\n        Self {\n            method: None,\n            path: None,\n        }\n    }\n\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n        self.method = Some(method.into());\n        self\n    }\n\n    pub fn path(mut self, path: impl Into<String>) -> Self {\n        self.path = Some(path.into());\n        self\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum BuildError {\n    MissingMethod,\n    MissingPath,\n}\n\nimpl RequestBuilder {\n    pub fn build(self) -> Result<Request, BuildError> {\n        let method = self.method.ok_or(BuildError::MissingMethod)?;\n        let path = self.path.ok_or(BuildError::MissingPath)?;\n\n        Ok(Request { method, path })\n    }\n}\n\n\nimpl Default for RequestBuilder {\n    fn default() -> Self {\n        Self {\n            method: None,\n            path: None,\n        }\n    }\n}"
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Request {\n    pub method: String,\n    pub path: String,\n}\n\n#[derive(Debug, Clone, Default, PartialEq, Eq)]\npub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl RequestBuilder {\n    pub fn new() -> Self {\n        Self::default()\n    }\n\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n        self.method = Some(method.into());\n        self\n    }\n\n    pub fn path(mut self, path: impl Into<String>) -> Self {\n        self.path = Some(path.into());\n        self\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum BuildError {\n    MissingMethod,\n    MissingPath,\n}\n\nimpl RequestBuilder {\n    pub fn build(self) -> Result<Request, BuildError> {\n        let method = self.method.ok_or(BuildError::MissingMethod)?;\n        let path = self.path.ok_or(BuildError::MissingPath)?;\n\n        Ok(Request { method, path })\n    }\n}"
       }
     ],
     "completionExplanation": "Returning Result keeps invalid builder states from silently becoming invalid requests. Specific missing-field variants tell callers exactly what still needs to be set.",
@@ -1512,12 +1505,12 @@
     "difficulty": "medium",
     "estimatedMinutes": 9,
     "scenario": "Configuration validation should explain what is wrong instead of returning a bare boolean.",
-    "instructions": "Keep the Config fields from earlier lessons, including use_tls and timeout_seconds. Add ConfigError variants EmptyServiceUrl and ZeroConnections. Change validate to return Result<(), ConfigError>.",
+    "instructions": "Keep the Config fields from earlier lessons, including use_tls and timeout_seconds. Add ConfigError variants EmptyServiceUrl and ZeroConnections. Add Config::validate(&self) -> Result<(), ConfigError>.",
     "files": [
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "pub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n    pub timeout_seconds: Option<u64>,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n            timeout_seconds: None,\n        }\n    }\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: add validation error variants.\n"
+        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n    pub timeout_seconds: Option<u64>,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n            timeout_seconds: None,\n        }\n    }\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: add ConfigError and Config::validate.\n"
       },
       {
         "path": "tests/public.rs",
@@ -1537,7 +1530,7 @@
       {
         "level": 3,
         "body": "Return Ok(()) only after all validation checks pass.",
-        "solutionCode": "pub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n    pub timeout_seconds: Option<u64>,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n            timeout_seconds: None,\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ConfigError {\n    EmptyServiceUrl,\n    ZeroConnections,\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n\n    pub fn validate(&self) -> Result<(), ConfigError> {\n        if self.service_url.is_empty() {\n            return Err(ConfigError::EmptyServiceUrl);\n        }\n\n        if self.max_connections == 0 {\n            return Err(ConfigError::ZeroConnections);\n        }\n\n        Ok(())\n    }\n}"
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n    pub timeout_seconds: Option<u64>,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n            timeout_seconds: None,\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ConfigError {\n    EmptyServiceUrl,\n    ZeroConnections,\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n\n    pub fn validate(&self) -> Result<(), ConfigError> {\n        if self.service_url.is_empty() {\n            return Err(ConfigError::EmptyServiceUrl);\n        }\n\n        if self.max_connections == 0 {\n            return Err(ConfigError::ZeroConnections);\n        }\n\n        Ok(())\n    }\n}"
       }
     ],
     "completionExplanation": "Result gives callers a success or a specific reason for failure. That is more useful than a boolean once validation can fail in multiple ways.",
@@ -1833,7 +1826,7 @@
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Request {\n    pub method: String,\n    pub path: String,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl RequestBuilder {\n    pub fn new() -> Self {\n        Self {\n            method: None,\n            path: None,\n        }\n    }\n\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n        self.method = Some(method.into());\n        self\n    }\n\n    pub fn path(mut self, path: impl Into<String>) -> Self {\n        self.path = Some(path.into());\n        self\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum BuildError {\n    MissingMethod,\n    MissingPath,\n}\n\nimpl RequestBuilder {\n    pub fn build(self) -> Result<Request, BuildError> {\n        let method = self.method.ok_or(BuildError::MissingMethod)?;\n        let path = self.path.ok_or(BuildError::MissingPath)?;\n\n        Ok(Request { method, path })\n    }\n}\n\n\nimpl Default for RequestBuilder {\n    fn default() -> Self {\n        Self {\n            method: None,\n            path: None,\n        }\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: implement TryFrom<RawRequest> for Request.\n"
+        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Request {\n    pub method: String,\n    pub path: String,\n}\n\n#[derive(Debug, Clone, Default, PartialEq, Eq)]\npub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl RequestBuilder {\n    pub fn new() -> Self {\n        Self::default()\n    }\n\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n        self.method = Some(method.into());\n        self\n    }\n\n    pub fn path(mut self, path: impl Into<String>) -> Self {\n        self.path = Some(path.into());\n        self\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum BuildError {\n    MissingMethod,\n    MissingPath,\n}\n\nimpl RequestBuilder {\n    pub fn build(self) -> Result<Request, BuildError> {\n        let method = self.method.ok_or(BuildError::MissingMethod)?;\n        let path = self.path.ok_or(BuildError::MissingPath)?;\n\n        Ok(Request { method, path })\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: implement TryFrom<RawRequest> for Request.\n"
       },
       {
         "path": "tests/public.rs",
@@ -1853,7 +1846,7 @@
       {
         "level": 3,
         "body": "Use ok_or to extract each Option or return the matching BuildError.",
-        "solutionCode": "use std::convert::TryFrom;\n\npub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\npub struct RawRequest {\n    pub method: Option<String>,\n    pub path: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Request {\n    pub method: String,\n    pub path: String,\n    pub body: Option<String>,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BuildError {\n    MissingMethod,\n    MissingPath,\n}\n\nimpl TryFrom<RawRequest> for Request {\n    type Error = BuildError;\n\n    fn try_from(value: RawRequest) -> Result<Self, Self::Error> {\n        let method = value.method.ok_or(BuildError::MissingMethod)?;\n        let path = value.path.ok_or(BuildError::MissingPath)?;\n\n        Ok(Self { method, path, body: None })\n    }\n}\n\n\nimpl RequestBuilder {\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n            self.method = Some(method.into());\n            self\n        }\n}\n\n\nimpl Default for RequestBuilder {\n    fn default() -> Self {\n        Self {\n            method: None,\n            path: None,\n        }\n    }\n}\n\n\nimpl RequestBuilder {\n    pub fn build(self) -> Result<Request, BuildError> {\n            let method = self.method.ok_or(BuildError::MissingMethod)?;\n            let path = self.path.ok_or(BuildError::MissingPath)?;\n\n            Ok(Request { method, path, body: None })\n        }\n}"
+        "solutionCode": "use std::convert::TryFrom;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Request {\n    pub method: String,\n    pub path: String,\n    pub body: Option<String>,\n}\n\n#[derive(Debug, Clone, Default, PartialEq, Eq)]\npub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl RequestBuilder {\n    pub fn new() -> Self {\n        Self::default()\n    }\n\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n        self.method = Some(method.into());\n        self\n    }\n\n    pub fn path(mut self, path: impl Into<String>) -> Self {\n        self.path = Some(path.into());\n        self\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BuildError {\n    MissingMethod,\n    MissingPath,\n}\n\nimpl RequestBuilder {\n    pub fn build(self) -> Result<Request, BuildError> {\n        let method = self.method.ok_or(BuildError::MissingMethod)?;\n        let path = self.path.ok_or(BuildError::MissingPath)?;\n\n        Ok(Request { method, path, body: None })\n    }\n}\n\npub struct RawRequest {\n    pub method: Option<String>,\n    pub path: Option<String>,\n}\n\nimpl TryFrom<RawRequest> for Request {\n    type Error = BuildError;\n\n    fn try_from(value: RawRequest) -> Result<Self, Self::Error> {\n        let method = value.method.ok_or(BuildError::MissingMethod)?;\n        let path = value.path.ok_or(BuildError::MissingPath)?;\n\n        Ok(Self { method, path, body: None })\n    }\n}"
       }
     ],
     "completionExplanation": "TryFrom turns a possibly incomplete input type into a validated domain type. The conversion API clearly communicates that failure is possible.",
@@ -1904,7 +1897,7 @@
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "pub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n    pub timeout_seconds: Option<u64>,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n            timeout_seconds: None,\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ConfigError {\n    EmptyServiceUrl,\n    ZeroConnections,\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n\n    pub fn validate(&self) -> Result<(), ConfigError> {\n        if self.service_url.is_empty() {\n            return Err(ConfigError::EmptyServiceUrl);\n        }\n\n        if self.max_connections == 0 {\n            return Err(ConfigError::ZeroConnections);\n        }\n\n        Ok(())\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: complete this lesson's next change.\n"
+        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n    pub timeout_seconds: Option<u64>,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n            timeout_seconds: None,\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ConfigError {\n    EmptyServiceUrl,\n    ZeroConnections,\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n\n    pub fn validate(&self) -> Result<(), ConfigError> {\n        if self.service_url.is_empty() {\n            return Err(ConfigError::EmptyServiceUrl);\n        }\n\n        if self.max_connections == 0 {\n            return Err(ConfigError::ZeroConnections);\n        }\n\n        Ok(())\n    }\n}\n\npub fn get_setting(settings: &[(String, String)], key: String) -> Option<String> {\n    settings\n        .iter()\n        .find(|(name, _value)| name == &key)\n        .map(|(_name, value)| value.clone())\n}\n\n// Continue from the previous lesson.\n// TODO: borrow key and return a borrowed setting value.\n"
       },
       {
         "path": "tests/public.rs",
@@ -1924,7 +1917,7 @@
       {
         "level": 3,
         "body": "as_str converts a String reference into a string slice.",
-        "solutionCode": "pub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n    pub timeout_seconds: Option<u64>,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n            timeout_seconds: None,\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ConfigError {\n    EmptyServiceUrl,\n    ZeroConnections,\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n\n    pub fn validate(&self) -> Result<(), ConfigError> {\n        if self.service_url.is_empty() {\n            return Err(ConfigError::EmptyServiceUrl);\n        }\n\n        if self.max_connections == 0 {\n            return Err(ConfigError::ZeroConnections);\n        }\n\n        Ok(())\n    }\n}\n\npub fn get_setting<'a>(settings: &'a [(String, String)], key: &str) -> Option<&'a str> {\n    settings\n        .iter()\n        .find(|(name, _value)| name.as_str() == key)\n        .map(|(_name, value)| value.as_str())\n}"
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n    pub timeout_seconds: Option<u64>,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n            timeout_seconds: None,\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ConfigError {\n    EmptyServiceUrl,\n    ZeroConnections,\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n\n    pub fn validate(&self) -> Result<(), ConfigError> {\n        if self.service_url.is_empty() {\n            return Err(ConfigError::EmptyServiceUrl);\n        }\n\n        if self.max_connections == 0 {\n            return Err(ConfigError::ZeroConnections);\n        }\n\n        Ok(())\n    }\n}\n\npub fn get_setting<'a>(settings: &'a [(String, String)], key: &str) -> Option<&'a str> {\n    settings\n        .iter()\n        .find(|(name, _value)| name.as_str() == key)\n        .map(|(_name, value)| value.as_str())\n}"
       }
     ],
     "completionExplanation": "Borrowing keeps the lookup API lightweight. The caller keeps its key, and the returned value can point into the existing settings data.",
@@ -2107,7 +2100,7 @@
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "use std::convert::TryFrom;\n\npub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\npub struct RawRequest {\n    pub method: Option<String>,\n    pub path: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Request {\n    pub method: String,\n    pub path: String,\n    pub body: Option<String>,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BuildError {\n    MissingMethod,\n    MissingPath,\n}\n\nimpl TryFrom<RawRequest> for Request {\n    type Error = BuildError;\n\n    fn try_from(value: RawRequest) -> Result<Self, Self::Error> {\n        let method = value.method.ok_or(BuildError::MissingMethod)?;\n        let path = value.path.ok_or(BuildError::MissingPath)?;\n\n        Ok(Self { method, path, body: None })\n    }\n}\n\n\nimpl RequestBuilder {\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n            self.method = Some(method.into());\n            self\n        }\n}\n\n\nimpl Default for RequestBuilder {\n    fn default() -> Self {\n        Self {\n            method: None,\n            path: None,\n        }\n    }\n}\n\n\nimpl RequestBuilder {\n    pub fn build(self) -> Result<Request, BuildError> {\n            let method = self.method.ok_or(BuildError::MissingMethod)?;\n            let path = self.path.ok_or(BuildError::MissingPath)?;\n\n            Ok(Request { method, path, body: None })\n        }\n}\n\n// Continue from the previous lesson.\n// TODO: add a doc comment example above RequestBuilder.\n"
+        "content": "use std::convert::TryFrom;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Request {\n    pub method: String,\n    pub path: String,\n    pub body: Option<String>,\n}\n\n#[derive(Debug, Clone, Default, PartialEq, Eq)]\npub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl RequestBuilder {\n    pub fn new() -> Self {\n        Self::default()\n    }\n\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n        self.method = Some(method.into());\n        self\n    }\n\n    pub fn path(mut self, path: impl Into<String>) -> Self {\n        self.path = Some(path.into());\n        self\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BuildError {\n    MissingMethod,\n    MissingPath,\n}\n\nimpl RequestBuilder {\n    pub fn build(self) -> Result<Request, BuildError> {\n        let method = self.method.ok_or(BuildError::MissingMethod)?;\n        let path = self.path.ok_or(BuildError::MissingPath)?;\n\n        Ok(Request { method, path, body: None })\n    }\n}\n\npub struct RawRequest {\n    pub method: Option<String>,\n    pub path: Option<String>,\n}\n\nimpl TryFrom<RawRequest> for Request {\n    type Error = BuildError;\n\n    fn try_from(value: RawRequest) -> Result<Self, Self::Error> {\n        let method = value.method.ok_or(BuildError::MissingMethod)?;\n        let path = value.path.ok_or(BuildError::MissingPath)?;\n\n        Ok(Self { method, path, body: None })\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: add a doc comment example above RequestBuilder.\n"
       },
       {
         "path": "tests/public.rs",
@@ -2127,7 +2120,7 @@
       {
         "level": 3,
         "body": "Keep the example focused on how a caller should read the API.",
-        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Request {\n    pub method: String,\n    pub path: String,\n    pub body: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum BuildError {\n    MissingMethod,\n    MissingPath,\n}\n\n/// Builds a request from chainable setters.\n///\n/// ```\n/// use rust_daily_lesson::{Request, RequestBuilder};\n///\n/// let request = RequestBuilder::default()\n///     .method(\"GET\")\n///     .path(\"/health\")\n///     .build();\n///\n/// assert_eq!(\n///     request,\n///     Ok(Request {\n///         method: \"GET\".to_owned(),\n///         path: \"/health\".to_owned(),\n///         body: None,\n///     })\n/// );\n/// ```\npub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl Default for RequestBuilder {\n    fn default() -> Self {\n        Self {\n            method: None,\n            path: None,\n        }\n    }\n}\n\nimpl RequestBuilder {\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n        self.method = Some(method.into());\n        self\n    }\n\n    pub fn path(mut self, path: impl Into<String>) -> Self {\n        self.path = Some(path.into());\n        self\n    }\n\n    pub fn build(self) -> Result<Request, BuildError> {\n        let method = self.method.ok_or(BuildError::MissingMethod)?;\n        let path = self.path.ok_or(BuildError::MissingPath)?;\n\n        Ok(Request { method, path, body: None })\n    }\n}\n\n\npub struct RawRequest {\n    pub method: Option<String>,\n    pub path: Option<String>,\n}\n\n\nimpl TryFrom<RawRequest> for Request {\n    type Error = BuildError;\n\n    fn try_from(value: RawRequest) -> Result<Self, Self::Error> {\n        let method = value.method.ok_or(BuildError::MissingMethod)?;\n        let path = value.path.ok_or(BuildError::MissingPath)?;\n\n        Ok(Self { method, path, body: None })\n    }\n}"
+        "solutionCode": "use std::convert::TryFrom;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Request {\n    pub method: String,\n    pub path: String,\n    pub body: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum BuildError {\n    MissingMethod,\n    MissingPath,\n}\n\n/// Builds a request from chainable setters.\n///\n/// ```\n/// use rust_daily_lesson::{Request, RequestBuilder};\n///\n/// let request = RequestBuilder::default()\n///     .method(\"GET\")\n///     .path(\"/health\")\n///     .build();\n///\n/// assert_eq!(\n///     request,\n///     Ok(Request {\n///         method: \"GET\".to_owned(),\n///         path: \"/health\".to_owned(),\n///         body: None,\n///     })\n/// );\n/// ```\n#[derive(Debug, Clone, Default, PartialEq, Eq)]\npub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl RequestBuilder {\n    pub fn new() -> Self {\n        Self::default()\n    }\n\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n        self.method = Some(method.into());\n        self\n    }\n\n    pub fn path(mut self, path: impl Into<String>) -> Self {\n        self.path = Some(path.into());\n        self\n    }\n\n    pub fn build(self) -> Result<Request, BuildError> {\n        let method = self.method.ok_or(BuildError::MissingMethod)?;\n        let path = self.path.ok_or(BuildError::MissingPath)?;\n\n        Ok(Request { method, path, body: None })\n    }\n}\n\npub struct RawRequest {\n    pub method: Option<String>,\n    pub path: Option<String>,\n}\n\nimpl TryFrom<RawRequest> for Request {\n    type Error = BuildError;\n\n    fn try_from(value: RawRequest) -> Result<Self, Self::Error> {\n        let method = value.method.ok_or(BuildError::MissingMethod)?;\n        let path = value.path.ok_or(BuildError::MissingPath)?;\n\n        Ok(Self { method, path, body: None })\n    }\n}"
       }
     ],
     "completionExplanation": "A doc example teaches the API at the point of use. Showing Result-aware usage keeps the documentation aligned with fallible, production-style builder APIs.",

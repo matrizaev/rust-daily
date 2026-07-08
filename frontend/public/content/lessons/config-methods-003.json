@@ -16,12 +16,12 @@
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "pub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n        }\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: add with_service_url here.\n"
+      "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n        }\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: add with_service_url here.\n"
     },
     {
       "path": "tests/public.rs",
       "role": "test",
-      "content": "use rust_daily_lesson::Config;\n\n#[test]\nfn with_service_url_updates_only_the_url() {\n    let config = Config {\n        service_url: \"http://localhost:8080\".to_owned(),\n        max_connections: 32,\n        use_tls: false,\n    }\n    .with_service_url(\"https://api.example.com\");\n\n    assert_eq!(config.service_url, \"https://api.example.com\");\n    assert_eq!(config.max_connections, 32);\n    assert!(!config.use_tls);\n}\n"
+      "content": "use rust_daily_lesson::Config;\n\n#[test]\nfn with_service_url_updates_only_the_url() {\n    let config = Config::default().with_service_url(\"https://api.example.com\");\n\n    assert_eq!(config.service_url, \"https://api.example.com\");\n    assert_eq!(config.max_connections, 32);\n    assert!(!config.use_tls);\n}\n"
     }
   ],
   "hints": [
@@ -36,7 +36,7 @@
     {
       "level": 3,
       "body": "Returning Self keeps the method chain-friendly.",
-      "solutionCode": "pub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n        }\n    }\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n}"
+      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n        }\n    }\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n}"
     }
   ],
   "completionExplanation": "A small method can make configuration ergonomic without hiding the Config fields. Taking self by value is a common builder-style pattern.",

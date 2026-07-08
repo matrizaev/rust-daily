@@ -15,4 +15,4 @@ impl RequestBuilder {
 }
 
 // Continue from the previous lesson.
-// TODO: implement Default for RequestBuilder.
+// TODO: derive Default for RequestBuilder.

@@ -23,5 +23,14 @@ pub fn available_names(items: &[Item]) -> Vec<&str> {
         .collect()
 }
 
+pub fn reorder_notes(notes: &[String]) -> Vec<String> {
+    notes
+        .iter()
+        .map(|note| note.trim().to_lowercase())
+        .filter(|note| !note.is_empty())
+        .filter(|note| note.contains("urgent") || note.contains("stock"))
+        .collect()
+}
+
 // Continue from the previous lesson.
-// TODO: complete this lesson's next change.
+// TODO: refactor reorder_notes so the inventory priority rule is easy to scan.

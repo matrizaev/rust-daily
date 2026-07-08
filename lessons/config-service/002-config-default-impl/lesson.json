@@ -35,8 +35,8 @@
     },
     {
       "level": 3,
-      "body": "Default values should be boring and safe for local development.",
-      "solutionCode": "pub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n        }\n    }\n}"
+      "body": "Derive would use String::new and 0. Implement Default manually because this lesson needs local development values.",
+      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n        }\n    }\n}"
     }
   ],
   "completionExplanation": "Default gives callers a clear starting point while keeping each field explicit. It is useful when most configuration values are optional overrides.",

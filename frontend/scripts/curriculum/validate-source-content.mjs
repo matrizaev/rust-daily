@@ -286,6 +286,7 @@ const structuralChecks = (lesson) =>
 
 const CUMULATIVE_STRUCTURAL_TYPES = new Set([
   "impl_trait_for_type",
+  "derived_trait_for_type",
   "impl_method",
   "function_signature",
 ]);
@@ -373,6 +374,26 @@ const hasTraitImpl = (source, traitName, typeName) => {
   return pattern.test(source);
 };
 
+const declarationWithAttributesPattern = (typeName) =>
+  new RegExp(
+    `((?:\\s*#\\[[\\s\\S]*?\\]\\s*)*)\\b(?:pub(?:\\([^)]*\\))?\\s+)?(?:struct|enum)\\s+${escapeRegExp(typeName)}\\b`,
+  );
+
+const traitLeafName = (traitName) => {
+  const parts = traitName.split("::");
+
+  return parts[parts.length - 1] || traitName;
+};
+
+const hasDerivedTrait = (source, traitName, typeName) => {
+  const declaration = declarationWithAttributesPattern(typeName).exec(source);
+  const derivePattern = new RegExp(
+    `#\\[\\s*derive\\s*\\([^)]*\\b${escapeRegExp(traitLeafName(traitName))}\\b[^)]*\\)\\s*\\]`,
+  );
+
+  return Boolean(declaration && derivePattern.test(declaration[1]));
+};
+
 const hasFunctionWithIncludes = (source, functionName, requiredIncludes) => {
   const functionPattern = new RegExp(`fn\\s+${escapeRegExp(functionName)}\\b[^\\{;]*`);
   const match = functionPattern.exec(source);
@@ -391,6 +412,8 @@ const solutionSatisfiesCheck = (source, check) => {
       hasTupleStructTypes(source, check.structName, check.requiredTypes),
     impl_trait_for_type: () =>
       hasTraitImpl(source, check.traitName, check.typeName),
+    derived_trait_for_type: () =>
+      hasDerivedTrait(source, check.traitName, check.typeName),
     impl_method: () =>
       hasFunctionWithIncludes(source, check.methodName, check.requiredSignatureIncludes),
     function_signature: () =>

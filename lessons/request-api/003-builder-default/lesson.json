@@ -11,7 +11,7 @@
   "difficulty": "easy",
   "estimatedMinutes": 6,
   "scenario": "Callers should be able to create an empty builder using the standard Default trait.",
-  "instructions": "Implement Default for RequestBuilder. Both method and path should start as None.",
+  "instructions": "Derive Default for RequestBuilder. Option fields already default to None, so the empty builder does not need a manual impl.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -31,15 +31,15 @@
     },
     {
       "level": 2,
-      "body": "Option fields usually start as None in an empty builder."
+      "body": "Option<T> implements Default by returning None."
     },
     {
       "level": 3,
-      "body": "You can also call Self { method: None, path: None } directly.",
-      "solutionCode": "pub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl Default for RequestBuilder {\n    fn default() -> Self {\n        Self {\n            method: None,\n            path: None,\n        }\n    }\n}\n\n\nimpl RequestBuilder {\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n            self.method = Some(method.into());\n            self\n        }\n}"
+      "body": "Add Default to the derive list on RequestBuilder.",
+      "solutionCode": "#[derive(Default)]\npub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl RequestBuilder {\n    pub fn new() -> Self {\n        Self::default()\n    }\n\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n        self.method = Some(method.into());\n        self\n    }\n}"
     }
   ],
-  "completionExplanation": "Default makes the builder easy to construct and compose with APIs that expect defaultable values. The empty state is explicit through Option fields.",
+  "completionExplanation": "Deriving Default is idiomatic when every field already has the desired default. Option fields make the empty builder state explicit by starting as None.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -48,16 +48,9 @@
         "timeoutMs": 10000,
         "checks": [
           {
-            "type": "impl_trait_for_type",
+            "type": "derived_trait_for_type",
             "traitName": "Default",
             "typeName": "RequestBuilder"
-          },
-          {
-            "type": "source_includes",
-            "requiredSnippets": [
-              "method: None",
-              "path: None"
-            ]
           }
         ]
       },

@@ -4,7 +4,7 @@ pub struct Request {
     pub path: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct RequestBuilder {
     method: Option<String>,
     path: Option<String>,
@@ -12,10 +12,7 @@ pub struct RequestBuilder {
 
 impl RequestBuilder {
     pub fn new() -> Self {
-        Self {
-            method: None,
-            path: None,
-        }
+        Self::default()
     }
 
     pub fn method(mut self, method: impl Into<String>) -> Self {
@@ -41,16 +38,6 @@ impl RequestBuilder {
         let path = self.path.ok_or(BuildError::MissingPath)?;
 
         Ok(Request { method, path })
-    }
-}
-
-
-impl Default for RequestBuilder {
-    fn default() -> Self {
-        Self {
-            method: None,
-            path: None,
-        }
     }
 }
 

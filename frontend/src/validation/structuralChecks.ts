@@ -13,6 +13,10 @@ type ImplTraitForTypeCheck = Extract<
   StructuralCheck,
   { type: "impl_trait_for_type" }
 >;
+type DerivedTraitForTypeCheck = Extract<
+  StructuralCheck,
+  { type: "derived_trait_for_type" }
+>;
 type SourceIncludesCheck = Extract<StructuralCheck, { type: "source_includes" }>;
 type StructFieldsCheck = Extract<StructuralCheck, { type: "struct_fields" }>;
 type TupleStructFieldsCheck = Extract<
@@ -543,12 +547,48 @@ const runImplTraitForTypeCheck = (
       ];
 };
 
+const declarationWithAttributesPattern = (typeName: string) =>
+  new RegExp(
+    `((?:\\s*#\\[[\\s\\S]*?\\]\\s*)*)\\b(?:pub(?:\\([^)]*\\))?\\s+)?(?:struct|enum)\\s+${escapeRegex(typeName)}\\b`,
+  );
+
+const traitLeafName = (traitName: string) => {
+  const parts = traitName.split("::");
+
+  return parts[parts.length - 1] || traitName;
+};
+
+const hasDerivedTrait = (
+  attributes: string,
+  traitName: string,
+) =>
+  new RegExp(
+    `#\\[\\s*derive\\s*\\([^)]*\\b${escapeRegex(traitLeafName(traitName))}\\b[^)]*\\)\\s*\\]`,
+  ).test(attributes);
+
+const runDerivedTraitForTypeCheck = (
+  source: string,
+  check: DerivedTraitForTypeCheck,
+) => {
+  const declaration = declarationWithAttributesPattern(check.typeName).exec(source);
+
+  return declaration && hasDerivedTrait(declaration[1], check.traitName)
+    ? []
+    : [
+        failure(
+          check.traitName,
+          `${check.typeName} should derive ${check.traitName}.`,
+        ),
+      ];
+};
+
 const runSourceIncludesCheck = (source: string, check: SourceIncludesCheck) => [
   ...missingSnippetFailures(source, check.requiredSnippets),
   ...forbiddenSnippetFailures(source, check.forbiddenSnippets ?? []),
 ];
 
 const checkRunners = {
+  derived_trait_for_type: runDerivedTraitForTypeCheck,
   enum_unit_variants: runEnumUnitVariantsCheck,
   function_signature: runFunctionSignatureCheck,
   impl_method: runImplMethodCheck,
