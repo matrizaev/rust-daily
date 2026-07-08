@@ -21,7 +21,7 @@
     {
       "path": "tests/public.rs",
       "role": "test",
-      "content": "use rust_daily_lesson::CreateOrderError;\n\n#[test]\nfn domain_errors_are_programmatic() {\n    assert_eq!(CreateOrderError::EmptyOrder, CreateOrderError::EmptyOrder);\n    assert_ne!(\n        CreateOrderError::EmptyOrder,\n        CreateOrderError::InvalidQuantity\n    );\n}\n"
+      "content": "use rust_daily_lesson::CreateOrderError;\n\n#[test]\nfn domain_errors_are_programmatic() {\n    assert_eq!(CreateOrderError::EmptyOrder, CreateOrderError::EmptyOrder);\n    assert_ne!(CreateOrderError::EmptyOrder, CreateOrderError::InvalidQuantity);\n}\n"
     }
   ],
   "hints": [

@@ -11,7 +11,7 @@
   "difficulty": "medium",
   "estimatedMinutes": 8,
   "scenario": "Application code depends on domain types and port traits, not concrete database clients.",
-  "instructions": "Define an application module with a UserRepository trait that checks for email existence and saves a NewUser.",
+  "instructions": "Keep the domain command from the starter. Add UserId and NewUser domain types, then define an application module with a UserRepository trait that checks email existence and saves a NewUser.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Keep the Register user use case boundaries code active and define an application module with a UserRepository trait that checks for email existence and saves a NewUser."
+      "body": "Keep EmailAddress and RegisterUserCommand unchanged. Add UserId and NewUser to the domain module."
     },
     {
       "level": 2,
-      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+      "body": "In application, define RepositoryError and UserRepository with exists_by_email(&EmailAddress) and save(NewUser)."
     },
     {
       "level": 3,
       "body": "One complete solution for Define an application repository port is shown below.",
-      "solutionCode": "pub mod domain {\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct EmailAddress(pub String);\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct UserId(pub u64);\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct NewUser { pub email: EmailAddress, pub display_name: String }\n}\n\npub mod application {\n    use super::domain::{EmailAddress, NewUser, UserId};\n\n    #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n    pub enum RepositoryError { Unavailable }\n\n    pub trait UserRepository {\n        fn exists_by_email(&self, email: &EmailAddress) -> Result<bool, RepositoryError>;\n        fn save(&mut self, user: NewUser) -> Result<UserId, RepositoryError>;\n    }\n}"
+      "solutionCode": "pub mod domain {\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct EmailAddress(String);\n\n    impl EmailAddress {\n        pub fn new(value: impl Into<String>) -> Self {\n            Self(value.into())\n        }\n\n        pub fn as_str(&self) -> &str {\n            &self.0\n        }\n    }\n\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct RegisterUserCommand {\n        email: EmailAddress,\n        display_name: String,\n    }\n\n    impl RegisterUserCommand {\n        pub fn new(email: EmailAddress, display_name: impl Into<String>) -> Self {\n            Self {\n                email,\n                display_name: display_name.into(),\n            }\n        }\n\n        pub fn email(&self) -> &EmailAddress {\n            &self.email\n        }\n\n        pub fn display_name(&self) -> &str {\n            &self.display_name\n        }\n    }\n\n    #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n    pub struct UserId(pub u64);\n\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct NewUser {\n        email: EmailAddress,\n        display_name: String,\n    }\n\n    impl NewUser {\n        pub fn new(email: EmailAddress, display_name: impl Into<String>) -> Self {\n            Self {\n                email,\n                display_name: display_name.into(),\n            }\n        }\n\n        pub fn email(&self) -> &EmailAddress {\n            &self.email\n        }\n\n        pub fn display_name(&self) -> &str {\n            &self.display_name\n        }\n    }\n}\n\npub mod application {\n    use super::domain::{EmailAddress, NewUser, UserId};\n\n    #[derive(Debug, Clone, Copy, PartialEq, Eq)]\n    pub enum RepositoryError {\n        Unavailable,\n    }\n\n    pub trait UserRepository {\n        fn exists_by_email(&self, email: &EmailAddress) -> Result<bool, RepositoryError>;\n\n        fn save(&mut self, user: NewUser) -> Result<UserId, RepositoryError>;\n    }\n}"
     }
   ],
-  "completionExplanation": "Define an application repository port now extends the active Register user use case boundaries code with register repository port. The previous lesson's behavior remains in the main solution rather than an archived module.",
+  "completionExplanation": "The application layer now owns the repository port while still depending only on domain types, not database or adapter types.",
   "validation": {
     "mode": "all",
     "validations": [

@@ -20,10 +20,18 @@ pub mod domain {
 
     impl RegisterUserCommand {
         pub fn new(email: EmailAddress, display_name: impl Into<String>) -> Self {
-            Self { email, display_name: display_name.into() }
+            Self {
+                email,
+                display_name: display_name.into(),
+            }
         }
 
-        pub fn email(&self) -> &EmailAddress { &self.email }
-        pub fn display_name(&self) -> &str { &self.display_name }
+        pub fn email(&self) -> &EmailAddress {
+            &self.email
+        }
+
+        pub fn display_name(&self) -> &str {
+            &self.display_name
+        }
     }
 }

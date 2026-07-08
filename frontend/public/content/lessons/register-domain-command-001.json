@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Keep the Register user use case boundaries code active and define a domain module with EmailAddress and RegisterUserCommand. Keep fields private and expose borrowed accessors."
+      "body": "Inside the domain module, define EmailAddress and RegisterUserCommand with private fields."
     },
     {
       "level": 2,
-      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+      "body": "Add constructors plus borrowed accessors: EmailAddress::as_str, RegisterUserCommand::email, and RegisterUserCommand::display_name."
     },
     {
       "level": 3,
       "body": "One complete solution for Keep register-user domain types pure is shown below.",
-      "solutionCode": "pub mod domain {\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct EmailAddress(String);\n\n    impl EmailAddress {\n        pub fn new(value: impl Into<String>) -> Self {\n            Self(value.into())\n        }\n\n        pub fn as_str(&self) -> &str {\n            &self.0\n        }\n    }\n\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct RegisterUserCommand {\n        email: EmailAddress,\n        display_name: String,\n    }\n\n    impl RegisterUserCommand {\n        pub fn new(email: EmailAddress, display_name: impl Into<String>) -> Self {\n            Self { email, display_name: display_name.into() }\n        }\n\n        pub fn email(&self) -> &EmailAddress { &self.email }\n        pub fn display_name(&self) -> &str { &self.display_name }\n    }\n}"
+      "solutionCode": "pub mod domain {\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct EmailAddress(String);\n\n    impl EmailAddress {\n        pub fn new(value: impl Into<String>) -> Self {\n            Self(value.into())\n        }\n\n        pub fn as_str(&self) -> &str {\n            &self.0\n        }\n    }\n\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct RegisterUserCommand {\n        email: EmailAddress,\n        display_name: String,\n    }\n\n    impl RegisterUserCommand {\n        pub fn new(email: EmailAddress, display_name: impl Into<String>) -> Self {\n            Self {\n                email,\n                display_name: display_name.into(),\n            }\n        }\n\n        pub fn email(&self) -> &EmailAddress {\n            &self.email\n        }\n\n        pub fn display_name(&self) -> &str {\n            &self.display_name\n        }\n    }\n}"
     }
   ],
-  "completionExplanation": "Keep register-user domain types pure now extends the active Register user use case boundaries code with register domain command. The previous lesson's behavior remains in the main solution rather than an archived module.",
+  "completionExplanation": "The register-user command now lives in the domain layer with private data and borrowed accessors, so adapter and infrastructure concerns stay outside the domain model.",
   "validation": {
     "mode": "all",
     "validations": [
