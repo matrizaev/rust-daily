@@ -1,13 +1,9 @@
-use std::fmt;
 use std::num::NonZeroU16;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Port(NonZeroU16);
 
 impl Port {
-    pub const LOCAL_DEVELOPMENT: Self = Self(NonZeroU16::MIN.saturating_add(8079));
-    pub const HTTP: Self = Self(NonZeroU16::MIN.saturating_add(79));
-
     pub fn new(value: u16) -> Option<Self> {
         NonZeroU16::new(value).map(Self)
     }
@@ -17,8 +13,11 @@ impl Port {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Host(String);
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HostValidationError {
+    Empty,
+    InvalidCharacters,
+}
 
 fn validate_host(value: &str) -> Result<(), HostValidationError> {
     if value.is_empty() {
@@ -32,11 +31,10 @@ fn validate_host(value: &str) -> Result<(), HostValidationError> {
     Ok(())
 }
 
-impl Host {
-    pub fn localhost() -> Self {
-        Self("localhost".to_owned())
-    }
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Host(String);
 
+impl Host {
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -46,22 +44,20 @@ impl TryFrom<&str> for Host {
     type Error = HostValidationError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        if value.is_empty() {
-            return Err(HostValidationError::Empty);
-        }
-
-        if value.contains(char::is_whitespace) {
-            return Err(HostValidationError::InvalidCharacters);
-        }
+        validate_host(value)?;
 
         Ok(Self(value.to_owned()))
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum HostValidationError {
-    Empty,
-    InvalidCharacters,
+impl TryFrom<String> for Host {
+    type Error = HostValidationError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        validate_host(value.as_str())?;
+
+        Ok(Self(value))
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -84,26 +80,24 @@ impl Endpoint {
     }
 }
 
-impl fmt::Display for Endpoint {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}:{}", self.host().as_str(), self.port().value())
-    }
+impl Port {
+    pub const LOCAL_DEVELOPMENT: Self = Self(NonZeroU16::MIN.saturating_add(8079));
 }
 
-
-impl TryFrom<String> for Host {
-    type Error = HostValidationError;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        validate_host(value.as_str())?;
-
-        Ok(Self(value))
+impl Host {
+    pub fn localhost() -> Self {
+        Self("localhost".to_owned())
     }
 }
-
 
 impl Default for Endpoint {
     fn default() -> Self {
         Self::new(Host::localhost(), Port::LOCAL_DEVELOPMENT)
+    }
+}
+
+impl std::fmt::Display for Endpoint {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}:{}", self.host().as_str(), self.port().value())
     }
 }

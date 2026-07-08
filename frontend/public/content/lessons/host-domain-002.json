@@ -11,12 +11,12 @@
   "difficulty": "medium",
   "estimatedMinutes": 8,
   "scenario": "Hosts arrive as borrowed text from configuration and adapters. We want a domain type that rejects empty values and whitespace before storing an owned String.",
-  "instructions": "Define a Host tuple struct with a private String field. Expose Host::as_str(&self) -> &str and implement TryFrom<&str> for Host using HostValidationError.",
+  "instructions": "Define HostValidationError and a validate_host helper, then define a Host tuple struct with a private String field. Expose Host::as_str(&self) -> &str and implement TryFrom<&str> for Host by reusing validate_host.",
   "files": [
     {
       "path": "src/lib.rs",
       "role": "editable",
-      "content": "use std::num::NonZeroU16;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Port(NonZeroU16);\n\nimpl Port {\n    pub fn new(value: u16) -> Option<Self> {\n        NonZeroU16::new(value).map(Self)\n    }\n\n    pub fn value(&self) -> u16 {\n        self.0.get()\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: Define Host as a public tuple struct with a private String field.\n// TODO: Expose as_str(&self) -> &str.\n// TODO: Implement TryFrom<&str> for Host.\n"
+      "content": "use std::num::NonZeroU16;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Port(NonZeroU16);\n\nimpl Port {\n    pub fn new(value: u16) -> Option<Self> {\n        NonZeroU16::new(value).map(Self)\n    }\n\n    pub fn value(&self) -> u16 {\n        self.0.get()\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: Define HostValidationError with Empty and InvalidCharacters.\n// TODO: Add a validate_host(&str) helper for the shared rules.\n// TODO: Define Host as a public tuple struct with a private String field.\n// TODO: Expose as_str(&self) -> &str.\n// TODO: Implement TryFrom<&str> for Host.\n"
     },
     {
       "path": "tests/public.rs",
@@ -27,16 +27,16 @@
   "hints": [
     {
       "level": 1,
-      "body": "Wrap the owned String in Host, but validate from &str so callers do not allocate before validation."
+      "body": "Put the empty and whitespace checks in validate_host so later conversions can reuse the same rules."
     },
     {
       "level": 2,
-      "body": "Return Empty for an empty string and InvalidCharacters if the input contains whitespace; allocate only when returning Ok."
+      "body": "Return Empty for an empty string and InvalidCharacters if the input contains whitespace; allocate only after validation passes."
     },
     {
       "level": 3,
       "body": "A canonical solution validates borrowed text before storing an owned string.",
-      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum HostValidationError {\n    Empty,\n    InvalidCharacters,\n}\n\nuse std::num::NonZeroU16;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Port(NonZeroU16);\n\nimpl Port {\n    pub fn new(value: u16) -> Option<Self> {\n        NonZeroU16::new(value).map(Self)\n    }\n\n    pub fn value(&self) -> u16 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Host(String);\n\nimpl Host {\n    pub fn as_str(&self) -> &str {\n        &self.0\n    }\n}\n\nimpl TryFrom<&str> for Host {\n    type Error = HostValidationError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        if value.is_empty() {\n            return Err(HostValidationError::Empty);\n        }\n\n        if value.contains(char::is_whitespace) {\n            return Err(HostValidationError::InvalidCharacters);\n        }\n\n        Ok(Self(value.to_owned()))\n    }\n}"
+      "solutionCode": "use std::num::NonZeroU16;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Port(NonZeroU16);\n\nimpl Port {\n    pub fn new(value: u16) -> Option<Self> {\n        NonZeroU16::new(value).map(Self)\n    }\n\n    pub fn value(&self) -> u16 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum HostValidationError {\n    Empty,\n    InvalidCharacters,\n}\n\nfn validate_host(value: &str) -> Result<(), HostValidationError> {\n    if value.is_empty() {\n        return Err(HostValidationError::Empty);\n    }\n\n    if value.contains(char::is_whitespace) {\n        return Err(HostValidationError::InvalidCharacters);\n    }\n\n    Ok(())\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Host(String);\n\nimpl Host {\n    pub fn as_str(&self) -> &str {\n        &self.0\n    }\n}\n\nimpl TryFrom<&str> for Host {\n    type Error = HostValidationError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        validate_host(value)?;\n\n        Ok(Self(value.to_owned()))\n    }\n}"
     }
   ],
   "completionExplanation": "A validated value object keeps raw strings at the boundary. Implementing TryFrom<&str> avoids forcing callers to allocate invalid input, while Host owns the accepted value after validation.",

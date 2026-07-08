@@ -14,6 +14,8 @@ impl Port {
 }
 
 // Continue from the previous lesson.
+// TODO: Define HostValidationError with Empty and InvalidCharacters.
+// TODO: Add a validate_host(&str) helper for the shared rules.
 // TODO: Define Host as a public tuple struct with a private String field.
 // TODO: Expose as_str(&self) -> &str.
 // TODO: Implement TryFrom<&str> for Host.
