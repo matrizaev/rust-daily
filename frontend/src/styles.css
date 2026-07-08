@@ -457,6 +457,24 @@ p {
   margin-top: 2px;
 }
 
+.curriculum-path-item-action {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.curriculum-path-item-action:hover {
+  color: var(--green-strong);
+}
+
 .curriculum-path-item div {
   display: grid;
   gap: 3px;

@@ -381,12 +381,16 @@ const useNavigationActions = (
   setRoute: (route: AppRoute) => void,
   dailyLessonId: string,
 ) => {
-  const handleContinue = useCallback(() => {
+  const handleOpenLesson = useCallback((lessonId: string) => {
     void loadLessonScreen();
-    prefetchLessonDetail(dailyLessonId);
-    window.location.hash = lessonHash(dailyLessonId);
-    setRoute({ kind: "lesson", lessonId: dailyLessonId });
-  }, [dailyLessonId, setRoute]);
+    prefetchLessonDetail(lessonId);
+    window.location.hash = lessonHash(lessonId);
+    setRoute({ kind: "lesson", lessonId });
+  }, [setRoute]);
+
+  const handleContinue = useCallback(() => {
+    handleOpenLesson(dailyLessonId);
+  }, [dailyLessonId, handleOpenLesson]);
 
   const handleReturnHome = useCallback(() => {
     window.location.hash = "";
@@ -401,6 +405,7 @@ const useNavigationActions = (
 
   return {
     handleContinue,
+    handleOpenLesson,
     handleOpenSettings,
     handleReturnHome,
   };
@@ -534,6 +539,7 @@ const HomeRoute = ({
       lesson={dailyLesson}
       lessons={lessons}
       onContinue={navigation.handleContinue}
+      onOpenLesson={navigation.handleOpenLesson}
       onOpenSettings={navigation.handleOpenSettings}
       progress={progressState.progress}
       summary={progressState.summary}

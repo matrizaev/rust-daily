@@ -18,6 +18,7 @@ type DailyHomeProps = {
   lessons: LessonIndexEntry[];
   concept: Concept | null;
   onContinue: () => void;
+  onOpenLesson: (lessonId: string) => void;
   onOpenSettings: () => void;
   progress: ProgressStore;
   summary: ProgressSummaryData;
@@ -121,6 +122,7 @@ function DailyHome(props: DailyHomeProps) {
     lessons,
     concept,
     onContinue,
+    onOpenLesson,
     onOpenSettings,
     progress,
     summary,
@@ -142,6 +144,7 @@ function DailyHome(props: DailyHomeProps) {
         <CurriculumPath
           activeLessonId={lesson.id}
           lessons={lessons}
+          onOpenLesson={onOpenLesson}
           progress={progress}
         />
       </section>

@@ -5,6 +5,7 @@ import type { ProgressStore } from "../types/progress";
 type CurriculumPathProps = {
   activeLessonId: string;
   lessons: LessonIndexEntry[];
+  onOpenLesson: (lessonId: string) => void;
   progress: ProgressStore;
 };
 
@@ -50,9 +51,32 @@ const stateLabel = (state: PathItemState) => {
   return labels[state];
 };
 
+const PathItemContent = ({
+  lesson,
+  state,
+  totalLessons,
+}: {
+  lesson: LessonIndexEntry;
+  state: PathItemState;
+  totalLessons: number;
+}) => (
+  <>
+    <StateIcon state={state} />
+    <div>
+      <span>{stateLabel(state)}</span>
+      <strong>{lesson.title}</strong>
+      <small>
+        Lesson {lesson.order} of {totalLessons} · {lesson.arcTitle} · Arc step{" "}
+        {lesson.day} of {lesson.arcLength}
+      </small>
+    </div>
+  </>
+);
+
 function CurriculumPath({
   activeLessonId,
   lessons,
+  onOpenLesson,
   progress,
 }: CurriculumPathProps) {
   const sortedLessons = orderedLessons(lessons);
@@ -77,6 +101,7 @@ function CurriculumPath({
       <ol className="curriculum-path-list">
         {sortedLessons.map((lesson) => {
           const state = itemState(lesson.id, activeLessonId, completedIds);
+          const isCompleted = state === "completed";
 
           return (
             <li
@@ -84,16 +109,26 @@ function CurriculumPath({
               key={lesson.id}
               aria-current={state === "current" ? "step" : undefined}
             >
-              <StateIcon state={state} />
-              <div>
-                <span>{stateLabel(state)}</span>
-                <strong>{lesson.title}</strong>
-                <small>
-                  Lesson {lesson.order} of {sortedLessons.length} ·{" "}
-                  {lesson.arcTitle} · Arc step {lesson.day} of{" "}
-                  {lesson.arcLength}
-                </small>
-              </div>
+              {isCompleted ? (
+                <button
+                  className="curriculum-path-item-action"
+                  type="button"
+                  onClick={() => onOpenLesson(lesson.id)}
+                  aria-label={`Open completed lesson ${lesson.title}`}
+                >
+                  <PathItemContent
+                    lesson={lesson}
+                    state={state}
+                    totalLessons={sortedLessons.length}
+                  />
+                </button>
+              ) : (
+                <PathItemContent
+                  lesson={lesson}
+                  state={state}
+                  totalLessons={sortedLessons.length}
+                />
+              )}
             </li>
           );
         })}
