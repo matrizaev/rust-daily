@@ -27,11 +27,11 @@
   "hints": [
     {
       "level": 1,
-      "body": "Keep the Structured request logging code active and define LogLevel and LogEvent with event_name and level fields."
+      "body": "Define LogLevel with Info, Warn, and Error variants, then define LogEvent with event_name and level fields."
     },
     {
       "level": 2,
-      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+      "body": "Derive Debug, Clone, PartialEq, and Eq; LogLevel can also derive Copy because it has only unit variants."
     },
     {
       "level": 3,
@@ -39,7 +39,7 @@
       "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogEvent {\n    pub event_name: String,\n    pub level: LogLevel,\n}"
     }
   ],
-  "completionExplanation": "Represent a structured log event now extends the active Structured request logging code with log event struct. The previous lesson's behavior remains in the main solution rather than an archived module.",
+  "completionExplanation": "LogEvent now models an event name and severity as typed data instead of an ad-hoc log string.",
   "validation": {
     "mode": "all",
     "validations": [

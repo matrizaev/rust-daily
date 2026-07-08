@@ -11,7 +11,7 @@
   "difficulty": "easy",
   "estimatedMinutes": 7,
   "scenario": "Useful logs carry fields such as request_id and attempt count so operators can filter and correlate events.",
-  "instructions": "Add LogFields and include fields on LogEvent.",
+  "instructions": "Add LogFields with request_id, user_id, and attempt. Update LogEvent so it stores those fields alongside event_name and level.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Keep the Structured request logging code active and add LogFields and include fields on LogEvent."
+      "body": "Keep LogLevel from the starter. Add a LogFields struct with request_id: String, user_id: Option<String>, and attempt: u32."
     },
     {
       "level": 2,
-      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+      "body": "Update LogEvent to include fields: LogFields while keeping event_name and level."
     },
     {
       "level": 3,
       "body": "One complete solution for Attach request fields to log events is shown below.",
-      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel { Info, Warn, Error }\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogFields {\n    pub request_id: String,\n    pub user_id: Option<String>,\n    pub attempt: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogEvent {\n    pub event_name: String,\n    pub level: LogLevel,\n    pub fields: LogFields,\n}"
+      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogFields {\n    pub request_id: String,\n    pub user_id: Option<String>,\n    pub attempt: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogEvent {\n    pub event_name: String,\n    pub level: LogLevel,\n    pub fields: LogFields,\n}"
     }
   ],
-  "completionExplanation": "Attach request fields to log events now extends the active Structured request logging code with log event fields. The previous lesson's behavior remains in the main solution rather than an archived module.",
+  "completionExplanation": "LogEvent now carries structured request fields that can be filtered and correlated by logging tools.",
   "validation": {
     "mode": "all",
     "validations": [

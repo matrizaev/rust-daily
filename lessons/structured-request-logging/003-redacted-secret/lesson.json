@@ -11,7 +11,7 @@
   "difficulty": "medium",
   "estimatedMinutes": 7,
   "scenario": "Logging helpers should make accidental secret exposure difficult. A wrapper can intentionally hide sensitive values when formatted.",
-  "instructions": "Define Secret and implement Display so it always writes [redacted].",
+  "instructions": "Keep the existing log event types. Define Secret and implement Display so formatting always writes [redacted].",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Keep the Structured request logging code active and define Secret and implement Display so it always writes [redacted]."
+      "body": "Add a Secret(String) wrapper with new and expose methods; keep LogLevel, LogFields, and LogEvent in the file."
     },
     {
       "level": 2,
-      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+      "body": "Implement std::fmt::Display for Secret and write the literal [redacted], not the inner string."
     },
     {
       "level": 3,
       "body": "One complete solution for Redact secrets in formatted output is shown below.",
-      "solutionCode": "use std::fmt;\n\npub struct Secret(String);\n\nimpl Secret {\n    pub fn new(value: impl Into<String>) -> Self { Self(value.into()) }\n    pub fn expose(&self) -> &str { &self.0 }\n}\n\nimpl fmt::Display for Secret {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        write!(f, \"[redacted]\")\n    }\n}"
+      "solutionCode": "use std::fmt;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogFields {\n    pub request_id: String,\n    pub user_id: Option<String>,\n    pub attempt: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogEvent {\n    pub event_name: String,\n    pub level: LogLevel,\n    pub fields: LogFields,\n}\n\npub struct Secret(String);\n\nimpl Secret {\n    pub fn new(value: impl Into<String>) -> Self {\n        Self(value.into())\n    }\n\n    pub fn expose(&self) -> &str {\n        &self.0\n    }\n}\n\nimpl fmt::Display for Secret {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        write!(f, \"[redacted]\")\n    }\n}"
     }
   ],
-  "completionExplanation": "Redact secrets in formatted output now extends the active Structured request logging code with log redacted secret. The previous lesson's behavior remains in the main solution rather than an archived module.",
+  "completionExplanation": "Secret now gives callers an explicit wrapper whose formatted output is redacted while the previous structured event types remain available.",
   "validation": {
     "mode": "all",
     "validations": [

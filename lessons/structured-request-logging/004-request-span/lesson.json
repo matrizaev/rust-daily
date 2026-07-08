@@ -11,7 +11,7 @@
   "difficulty": "medium",
   "estimatedMinutes": 8,
   "scenario": "A span carries context shared by multiple events. Request-scoped fields should not be rebuilt by every call site.",
-  "instructions": "Define RequestSpan and an event method that attaches its request_id and path to a LogEvent.",
+  "instructions": "Extend LogFields with path. Define RequestSpan and an event method that builds a LogEvent with the span's request_id and path.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -27,19 +27,19 @@
   "hints": [
     {
       "level": 1,
-      "body": "Keep the Structured request logging code active and define RequestSpan and an event method that attaches its request_id and path to a LogEvent."
+      "body": "Add path: String to LogFields so request path stays structured instead of being embedded in event_name."
     },
     {
       "level": 2,
-      "body": "Use the Rust API named in this lesson instead of adding a side helper; the previous arc code should stay in the main solution."
+      "body": "RequestSpan::event should return a LogEvent with level LogLevel::Info, user_id None, attempt 1, and fields copied from the span."
     },
     {
       "level": 3,
       "body": "One complete solution for Create events from a request span is shown below.",
-      "solutionCode": "use std::fmt;\n\npub struct Secret(String);\n\nimpl Secret {\n    pub fn new(value: impl Into<String>) -> Self {\n        Self(value.into())\n    }\n\n    pub fn expose(&self) -> &str {\n        &self.0\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogEvent {\n    pub event_name: String,\n    pub request_id: String,\n    pub path: String,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RequestSpan {\n    request_id: String,\n    path: String,\n}\n\nimpl RequestSpan {\n    pub fn new(request_id: impl Into<String>, path: impl Into<String>) -> Self {\n        Self { request_id: request_id.into(), path: path.into() }\n    }\n\n    pub fn event(&self, event_name: impl Into<String>) -> LogEvent {\n        LogEvent {\n            event_name: event_name.into(),\n            request_id: self.request_id.clone(),\n            path: self.path.clone(),\n        }\n    }\n}\n\n\nimpl fmt::Display for Secret {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        write!(f, \"[redacted]\")\n    }\n}"
+      "solutionCode": "use std::fmt;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogFields {\n    pub request_id: String,\n    pub user_id: Option<String>,\n    pub attempt: u32,\n    pub path: String,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogEvent {\n    pub event_name: String,\n    pub level: LogLevel,\n    pub fields: LogFields,\n}\n\npub struct Secret(String);\n\nimpl Secret {\n    pub fn new(value: impl Into<String>) -> Self {\n        Self(value.into())\n    }\n\n    pub fn expose(&self) -> &str {\n        &self.0\n    }\n}\n\nimpl fmt::Display for Secret {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        write!(f, \"[redacted]\")\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RequestSpan {\n    request_id: String,\n    path: String,\n}\n\nimpl RequestSpan {\n    pub fn new(request_id: impl Into<String>, path: impl Into<String>) -> Self {\n        Self {\n            request_id: request_id.into(),\n            path: path.into(),\n        }\n    }\n\n    pub fn event(&self, event_name: impl Into<String>) -> LogEvent {\n        LogEvent {\n            event_name: event_name.into(),\n            level: LogLevel::Info,\n            fields: LogFields {\n                request_id: self.request_id.clone(),\n                user_id: None,\n                attempt: 1,\n                path: self.path.clone(),\n            },\n        }\n    }\n}"
     }
   ],
-  "completionExplanation": "Create events from a request span now extends the active Structured request logging code with log request span. The previous lesson's behavior remains in the main solution rather than an archived module.",
+  "completionExplanation": "RequestSpan now centralizes request_id and path so call sites can create structured LogEvent values without rebuilding shared context.",
   "validation": {
     "mode": "all",
     "validations": [
