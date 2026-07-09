@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /run
+Disallow: /content/
+
+Sitemap: https://borrowquest.qzz.io/sitemap.xml

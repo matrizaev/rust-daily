@@ -21,7 +21,8 @@ export default defineConfig({
       manifest: {
         name: "Rust Daily",
         short_name: "Rust Daily",
-        description: "Daily idiomatic Rust practice without autocomplete or AI.",
+        description:
+          "Practice idiomatic Rust with short daily coding exercises covering ownership, traits, error handling, iterators, lifetimes, and API design.",
         theme_color: "#111412",
         background_color: "#111412",
         display: "standalone",

@@ -1,7 +1,13 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
 import conceptsData from "./content/concepts.json";
 import DailyHome from "./components/DailyHome";
+import {
+  getInfoPageTitle,
+  InfoScreen,
+  type InfoPageKind,
+} from "./components/InfoScreen";
 import PwaStatus from "./components/PwaStatus";
+import { SiteFooter } from "./components/SiteFooter";
 import {
   getLessonById,
   getLessonIndex,
@@ -30,6 +36,8 @@ import {
   type UserSettings,
 } from "./storage/settingsStore";
 import type { Concept, Lesson, LessonIndexEntry } from "./types/lesson";
+
+const HOME_PAGE_TITLE = "Rust Daily – 10-Minute Rust Practice Exercises";
 
 const loadLessonScreen = () =>
   import("./components/LessonScreen").then(({ LessonScreen }) => ({
@@ -65,20 +73,38 @@ type AppRoute =
   | {
       kind: "lesson";
       lessonId: string;
+    }
+  | {
+      kind: "info";
+      page: InfoPageKind;
     };
 
-const getRouteFromHash = (): AppRoute => {
-  if (window.location.hash === settingsHash) {
-    return { kind: "settings" };
-  }
+const staticRoutes = new Map<string, AppRoute>([
+  [settingsHash, { kind: "settings" }],
+  ["#about", { kind: "info", page: "about" }],
+  ["#contact", { kind: "info", page: "contact" }],
+  ["#privacy", { kind: "info", page: "privacy" }],
+  ["#terms", { kind: "info", page: "terms" }],
+]);
 
-  const hashLessonId = getLessonIdFromHash();
+const getLessonRouteFromHash = (): AppRoute => {
+  const lessonId = getLessonIdFromHash();
 
-  if (hashLessonId && lessons.some((lesson) => lesson.id === hashLessonId)) {
-    return { kind: "lesson", lessonId: hashLessonId };
+  if (lessonId && lessons.some((lesson) => lesson.id === lessonId)) {
+    return { kind: "lesson", lessonId };
   }
 
   return { kind: "home" };
+};
+
+const getRouteFromHash = (): AppRoute => {
+  const staticRoute = staticRoutes.get(window.location.hash);
+
+  if (staticRoute) {
+    return staticRoute;
+  }
+
+  return getLessonRouteFromHash();
 };
 
 const findConcept = (lesson: Lesson | LessonIndexEntry) =>
@@ -126,6 +152,18 @@ const useAppRoute = () => {
 
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
+
+  useEffect(() => {
+    document.title =
+      route.kind === "info"
+        ? `${getInfoPageTitle(route.page)} | Rust Daily`
+        : route.kind === "settings"
+          ? "Settings | Rust Daily"
+          : route.kind === "lesson"
+            ? "Lesson | Rust Daily"
+            : HOME_PAGE_TITLE;
+    window.scrollTo({ top: 0 });
+  }, [route]);
 
   return [route, setRoute] as const;
 };
@@ -481,6 +519,21 @@ const LessonStatusRoute = ({
   </>
 );
 
+const InfoRoute = ({
+  navigation,
+  page,
+  pwa,
+}: {
+  navigation: NavigationActions;
+  page: InfoPageKind;
+  pwa: PwaState;
+}) => (
+  <>
+    <PwaBanner pwa={pwa} />
+    <InfoScreen page={page} onReturnHome={navigation.handleReturnHome} />
+  </>
+);
+
 const LessonRoute = ({
   activeConcept,
   activeLesson,
@@ -564,6 +617,18 @@ const isLessonStatusRoute = ({
   return route.kind === "lesson" && lessonIsPending;
 };
 
+const getInfoRoute = (
+  route: AppRoute,
+  navigation: NavigationActions,
+  pwa: PwaState,
+) => {
+  if (route.kind !== "info") {
+    return null;
+  }
+
+  return <InfoRoute navigation={navigation} page={route.page} pwa={pwa} />;
+};
+
 const AppRouteView = ({
   activeConcept,
   activeLesson,
@@ -599,7 +664,12 @@ const AppRouteView = ({
       settings={settings}
     />
   ) : null;
+  const infoRoute = getInfoRoute(route, navigation, pwa);
   const routeCandidates = [
+    {
+      matches: infoRoute !== null,
+      element: infoRoute,
+    },
     {
       matches: route.kind === "settings",
       element: (
@@ -661,19 +731,22 @@ function App() {
   const navigation = useNavigationActions(setRoute, dailyLesson.id);
 
   return (
-    <AppRouteView
-      activeConcept={activeConcept}
-      activeLesson={activeLesson}
-      dailyLesson={dailyLesson}
-      handleSettingsChange={handleSettingsChange}
-      isLessonLoading={isLessonLoading}
-      lessonLoadFailed={lessonLoadFailed}
-      navigation={navigation}
-      progressState={progressState}
-      pwa={pwa}
-      route={route}
-      settings={settings}
-    />
+    <>
+      <AppRouteView
+        activeConcept={activeConcept}
+        activeLesson={activeLesson}
+        dailyLesson={dailyLesson}
+        handleSettingsChange={handleSettingsChange}
+        isLessonLoading={isLessonLoading}
+        lessonLoadFailed={lessonLoadFailed}
+        navigation={navigation}
+        progressState={progressState}
+        pwa={pwa}
+        route={route}
+        settings={settings}
+      />
+      <SiteFooter />
+    </>
   );
 }
 
