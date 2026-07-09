@@ -84,6 +84,25 @@ notes, and complete reference solution directories are removed from shipped
 lesson records. An explicitly authored final-hint solution snippet may be
 included.
 
+### Project Snapshot Model
+
+A lesson may describe a multi-file or multi-crate project, but it has exactly
+one editable artifact. Rust modules, manifests, migrations, fixtures, and tests
+that are not the focus of that lesson are read-only context.
+
+Each lesson is an authored project snapshot:
+
+1. The learner edits one focused file.
+2. Validation compiles that file with every supplied project file.
+3. The next lesson starts from the authored reference solution, not the
+   learner's exact submission.
+4. When the focus moves to another file, the previous file becomes read-only
+   canonical project code.
+
+This keeps each session bounded while allowing an arc to build a realistic
+system over several days. It also prevents one valid alternative or earlier
+mistake from destabilizing later lessons.
+
 Relevant commands:
 
 ```bash
@@ -116,8 +135,10 @@ The main lesson flow is:
 5. Run the lesson's validation steps.
 6. Record completion only after a passing or explicit self-check result.
 
-The current editor supports one editable file. Other lesson files are displayed
-read-only and are included when building validation requests.
+The editor intentionally supports one editable file. Other lesson files are
+displayed read-only. The current frontend can include them in its internal
+validation request, but the Cargo adapter and backend still collapse execution
+to `src/lib.rs` plus combined public tests.
 
 ### Validation
 
@@ -193,6 +214,10 @@ tests/lesson.rs
 
 Requests select either the `std` or `advanced` dependency set. The frontend
 combines authored public test files into `tests/lesson.rs` before submission.
+
+Future multi-file project support must generalize this transport and workspace
+assembly to approved safe paths while preserving the one-editable-artifact
+invariant. It does not require multi-file editor state.
 
 Run results use one of these statuses:
 
@@ -277,8 +302,9 @@ Operational details are in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
   service provides practice feedback, not tamper-resistant grading.
 - The backend has no durable store for user code, progress, drafts, or
   accounts. Temporary source workspaces are removed after normal run cleanup.
-- Lesson execution is limited to one editable library file and one combined
-  test file.
+- Lesson execution is currently limited to one editable library file and one
+  combined test file. Future execution may compile larger supplied project
+  snapshots, but each lesson will still expose exactly one editable artifact.
 - Offline mode supports the app shell, cached lessons, editing, and local
   state. It does not provide Cargo compilation.
 - Adding a dependency set requires coordinated backend, image, harness, schema,

@@ -40,7 +40,7 @@ const validateEditableFileCount = (errors, lesson) => {
   const editableFiles = lesson.files.filter((file) => file.role === "editable");
 
   if (editableFiles.length !== 1) {
-    push(errors, `${lesson.id} must have exactly one editable file for this implementation slice.`);
+    push(errors, `${lesson.id} must have exactly one editable file.`);
   }
 };
 

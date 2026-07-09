@@ -38,6 +38,13 @@ Progress and drafts remain in browser storage. No account or cloud sync is
 required. The installed app and cached lessons remain available offline, but
 Cargo validation requires the backend.
 
+The curriculum design allows realistic multi-file projects, but exactly one
+file is editable in each lesson. Other project files and tests are supplied as
+read-only context and compiled together. When an arc moves to another file, the
+next lesson includes the authored solution from the previous day as read-only
+project code. The current runner still accepts only `src/lib.rs` and combined
+tests; generalized project snapshots are future infrastructure.
+
 ## Run Locally
 
 The full stack requires Node.js 24, Rust 1.95, and Podman.

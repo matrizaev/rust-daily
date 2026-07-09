@@ -31,7 +31,8 @@ The complete curriculum should contain:
 - roughly 75-90 cumulative arcs;
 - mostly 5-8 lessons per arc;
 - one primary concept per lesson;
-- increasingly realistic multi-file and multi-crate exercises;
+- increasingly realistic multi-file and multi-crate project snapshots with one
+  editable artifact per lesson;
 - deterministic behavioral validation for every automatable task;
 - periodic capstones where judgment matters more than applying one named
   pattern.
@@ -39,6 +40,26 @@ The complete curriculum should contain:
 Completing the curriculum should prepare a learner to make strong engineering
 decisions in production Rust. It cannot replace experience operating,
 profiling, reviewing, and evolving real systems.
+
+## Single-Artifact Lesson Model
+
+The future curriculum must not become a browser IDE. Every lesson keeps exactly
+one editable artifact even when validation compiles a larger project.
+
+- Supporting Rust modules, manifests, migrations, fixtures, and tests are
+  supplied read-only.
+- Each day's project snapshot incorporates the previous day's authored
+  reference solution.
+- A later day may make another file editable while earlier work remains active
+  as read-only project code.
+- The learner's exact previous submission is not carried forward.
+- Capstones are decomposed into a sequence of focused daily edits rather than
+  open-ended multi-file refactors.
+- The editable artifact may eventually be Rust, `Cargo.toml`, SQL, or another
+  supported text format, but there is still only one.
+
+Runner and content infrastructure must therefore support multi-file projects,
+not multi-file editing.
 
 ## Curriculum Roadmap
 
@@ -76,7 +97,9 @@ Candidate arcs:
 
 Infrastructure needed:
 
-- multiple editable files;
+- multi-file project snapshots with exactly one editable artifact;
+- safe transport and assembly of all supplied project paths;
+- compiler diagnostics mapped back to supplied file paths;
 - compile-time trait assertion helpers;
 - compile-fail cases for invalid borrowing and object-safety examples;
 - validation that can distinguish intended API constraints from textual
@@ -242,8 +265,9 @@ Candidate capstones:
   incomplete information.
 
 Capstones should validate behavior and public contracts while allowing more
-than one defensible implementation. Explanations must discuss tradeoffs rather
-than claim one universally perfect pattern.
+than one defensible implementation of the daily file. No capstone lesson should
+require coordinated edits across several files. Explanations must discuss
+tradeoffs rather than claim one universally perfect pattern.
 
 ## Runner and Dependency Roadmap
 
@@ -254,7 +278,7 @@ Add capabilities only when a planned arc requires them:
 
 | Capability | Required for |
 | --- | --- |
-| Multiple editable files | Advanced ownership, architecture, and capstones |
+| Multi-file project snapshots with one editable artifact | Advanced ownership, architecture, and capstones |
 | Multi-crate workspace generation | External API tests and procedural macros |
 | Compile-fail mode | Lifetimes, trait bounds, and macro diagnostics |
 | `advanced-db` with SQLx and SQLite | Persistence arcs |
@@ -300,6 +324,8 @@ Every future lesson must:
 
 - teach something materially beyond the existing curriculum;
 - have a clear task grounded in the visible starter;
+- expose exactly one editable artifact;
+- compile it with all supplied read-only project files;
 - preserve active arc continuity;
 - compile and pass deterministic authored tests;
 - prefer the idiomatic derive, trait, ownership model, or crate API;
@@ -319,7 +345,8 @@ Every future arc must:
 
 ## Implementation Order
 
-1. Add multi-file editing and compile-fail support.
+1. Add multi-file project transport and compilation while preserving exactly
+   one editable artifact, then add compile-fail support.
 2. Author lessons 91-150 around advanced ownership and API design.
 3. Expand async/concurrency validation and author lessons 151-210.
 4. Add workspace test modes and author lessons 211-270.

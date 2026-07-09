@@ -25,6 +25,8 @@ Backend unit tests are run by `make test`. Frontend unit tests are not configure
 
 For lesson changes, run `cd frontend && npm run content:validate-source`, regenerate content with `npm run content:generate`, run the separate `npm run content:check-refs` and `npm run content:check` commands, and test the affected solutions from the repository root with `scripts/test-lesson-solutions.sh`.
 
+Every lesson must expose exactly one editable artifact. Larger examples should supply all other project files as read-only context and compile them together; do not introduce multi-file learner editing.
+
 ## Commit & Pull Request Guidelines
 Use clear imperative commit subjects, for example `Add lesson draft reset`. Keep subjects under about 72 characters and group related changes. Pull requests should include a short summary, validation steps, linked issue or spec section, and screenshots or short clips for UI changes. Call out content-schema, dependency-set, and runner-image changes explicitly.
 

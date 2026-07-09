@@ -87,7 +87,24 @@ Lesson solutions should look like code a reviewer could accept:
 An idiomatic derive should be used when deriving is the normal solution. A
 manual implementation is appropriate only when its behavior is the lesson.
 
-### 4.3 Active Arc Continuity
+### 4.3 One Editable Artifact
+
+A lesson may compile a realistic multi-file or multi-crate project, but exactly
+one artifact is editable during that lesson.
+
+- All other source, manifest, migration, fixture, and test files are supplied
+  as read-only context.
+- Validation compiles the complete supplied project snapshot.
+- A later lesson may make a different file editable.
+- When focus moves, the previous day's authored reference solution becomes
+  read-only canonical project code.
+- Later lessons use authored solutions, not the learner's exact prior
+  submission, so valid alternatives and mistakes do not cascade.
+- The editable artifact must still fit a 5-10 minute task.
+
+This is a permanent product constraint, not a temporary UI limitation.
+
+### 4.4 Active Arc Continuity
 
 Lessons within an arc evolve one active codebase.
 
@@ -104,7 +121,7 @@ Lessons within an arc evolve one active codebase.
 Arcs may be interleaved in the global authored order, but each arc's internal
 `day` order remains cumulative.
 
-### 4.4 Deterministic Feedback
+### 4.5 Deterministic Feedback
 
 Correctness is assessed by authored structural checks and public Cargo tests.
 AI is not used to write, grade, or explain a learner's submitted code.
@@ -114,13 +131,13 @@ authority for compilation and behavior. Tests must check public outcomes
 instead of requiring one textual implementation unless syntax is itself the
 concept.
 
-### 4.5 Local Ownership
+### 4.6 Local Ownership
 
 Drafts, settings, attempts, and completions belong to the learner's browser.
 No account is required. Progress must remain exportable and importable as
 versioned JSON.
 
-### 4.6 Limited Assistance
+### 4.7 Limited Assistance
 
 The editor provides Rust syntax highlighting and normal text-editing commands.
 It does not provide autocomplete, AI generation, or IDE diagnostics before the
@@ -191,7 +208,7 @@ Every canonical lesson must define:
 - arc ID, arc title, arc step, arc length, and global order;
 - difficulty and 5-10 minute estimate;
 - scenario and unambiguous task instructions;
-- exactly one editable starter file in the current UI;
+- exactly one editable starter artifact;
 - any read-only or public test files needed for context;
 - one to three progressive hints;
 - a completion explanation;
@@ -222,6 +239,7 @@ Lesson code must:
 - format cleanly with `rustfmt`;
 - keep the editable surface small enough for a tablet session;
 - avoid unused archived code;
+- compile with every supplied read-only project file;
 - prefer standard library APIs before adding a crate;
 - use the approved dependency set declared by the lesson;
 - avoid `unwrap` and `expect` in library paths unless panic behavior is the
@@ -347,7 +365,7 @@ The home screen shows:
 The lesson screen provides:
 
 - scenario and focused task;
-- one editable CodeMirror Rust file;
+- one editable file and navigable read-only project context;
 - expandable read-only files;
 - debounced local draft saving and reset;
 - progressive hints;
@@ -417,6 +435,8 @@ A lesson change is complete only when:
 
 - source content validation passes;
 - generated content is refreshed and validates;
+- exactly one artifact is editable;
+- that artifact compiles with the complete supplied project snapshot;
 - the authored solution passes its public tests;
 - starter, task, tests, hints, solution, and explanation agree;
 - continuity with the preceding arc lesson is preserved;
@@ -429,12 +449,14 @@ Repository validation commands are documented in
 
 ## 13. Current Exclusions
 
+Editing more than one artifact in a lesson is a permanent product non-goal.
+
 The current implementation does not include:
 
 - user accounts or cloud synchronization;
 - hidden or server-owned grading tests;
 - browser-based Rust compilation;
-- arbitrary multi-file learner editing;
+- multi-file and multi-crate runner transport;
 - compile-fail lesson workspaces;
 - adaptive review scheduling;
 - notifications or analytics;
