@@ -1,158 +1,333 @@
 # Future Advanced Concepts Implementation Plan
 
-This plan captures advanced Rust concepts that should be left for future lessons after the lessons 49-90 upgrade. These topics need more harness support, larger examples, or more learner context than the current lesson range should carry.
+## Purpose
 
-## Goals
+This document is the maintained direction for growing Rust Daily from 90 to
+500 lessons. It is a roadmap, not a frozen lesson backlog. Exact arc names and
+ordering may change as lessons are authored, but the coverage, infrastructure
+gates, and quality rules should remain stable.
 
-- Avoid overloading lessons 49-90 with concepts that need dedicated setup.
-- Keep future lessons idiomatic and production-shaped instead of toy examples.
-- Add new dependency sets only when the lesson runner can validate them reliably.
-- Prefer capstone-style lessons where judgment matters more than applying one small pattern.
+The next 410 lessons must extend the current curriculum instead of repackaging
+lessons 1-90. Existing lessons already establish:
 
-## Concepts Left For Future Lessons
+- domain value objects and invariants;
+- standard conversions and parsing;
+- collection wrappers and iterator surfaces;
+- concrete errors, source chains, and boundary mapping;
+- DTO separation and Serde basics;
+- introductory async ports, timeout handling, shared state, and Actix handlers;
+- structured `tracing` fields, spans, redaction, and propagation;
+- table tests, documentation tests, property tests, and small declarative
+  macros.
 
-| Concept | Why defer | Future lesson shape |
+Future arcs should assume those skills and use them in larger or deeper
+contexts.
+
+## Target
+
+The complete curriculum should contain:
+
+- 500 ordered lessons;
+- roughly 75-90 cumulative arcs;
+- mostly 5-8 lessons per arc;
+- one primary concept per lesson;
+- increasingly realistic multi-file and multi-crate exercises;
+- deterministic behavioral validation for every automatable task;
+- periodic capstones where judgment matters more than applying one named
+  pattern.
+
+Completing the curriculum should prepare a learner to make strong engineering
+decisions in production Rust. It cannot replace experience operating,
+profiling, reviewing, and evolving real systems.
+
+## Curriculum Roadmap
+
+| Lessons | Phase | Main outcome |
 | --- | --- | --- |
-| `sqlx` and real database integration | Needs database setup, schema management, migrations, async runtime behavior, and fixture strategy. | Build a repository backed by SQLite, map DB errors into domain errors, and test with an isolated in-memory database. |
-| Performance profiling | Needs a benchmark runner and clear baseline measurements, not normal unit-test validation. | Use `criterion` to compare allocation-heavy and allocation-light designs, then refactor from measurement. |
-| `unsafe` boundaries | Needs strict safety contracts and review discipline. It should not appear as a casual implementation trick. | Wrap a tiny unsafe operation behind a safe API, document invariants, and test the safe surface. |
-| Procedural macros | Needs a multi-crate workspace and compile-time diagnostics. | Create a derive macro only after learners know when a normal function or `macro_rules!` is enough. |
-| Larger crate and API design | Needs multiple modules, public/private boundaries, feature flags, and semver judgment. | Refactor a small library crate while preserving public API behavior. |
-| Bigger judgment-heavy refactors | Needs broader code context than one lesson file. | Give learners a messy but working module and ask them to improve cohesion, ownership, errors, and tests without changing behavior. |
-| Real service integration | Needs network boundaries, graceful shutdown, config, observability, and error mapping across layers. | Build a small Actix service that composes config loading, request logging, domain validation, persistence, and response mapping. |
+| 91-150 | Advanced ownership and API design | Design zero-copy and generic APIs without unnecessary lifetime complexity |
+| 151-210 | Async Rust and concurrency | Structure cancellable concurrent work with explicit state and backpressure |
+| 211-270 | Testing and reliability | Test public contracts across crates, compile failures, properties, and failure boundaries |
+| 271-330 | Persistence and service integration | Compose Actix, SQLx, configuration, serialization, and observability cleanly |
+| 331-390 | Crate design and macros | Evolve stable library APIs, workspaces, features, and justified macros |
+| 391-450 | Performance and unsafe boundaries | Optimize from evidence and encapsulate systems-level invariants |
+| 451-500 | Integration capstones | Refactor and complete larger systems while preserving behavior and boundaries |
 
-## Proposed Future Dependency Sets
+## Phase 1: Advanced Ownership and API Design
 
-### `advanced-db`
+Lessons 91-150 should deepen ownership rather than repeat basic borrowing,
+`Cow`, or `IntoIterator`.
 
-Use this for database-backed lessons.
+Candidate arcs:
 
-- `sqlx`
-- `tokio`
-- `thiserror`
-- `anyhow`
-- `serde`
-- `serde_json`
+- zero-copy parsers with borrowed output;
+- structs with lifetime bounds and multiple related lifetimes;
+- API choices among owned values, references, `Cow`, and smart pointers;
+- `Box`, `Rc`, `Arc`, `Cell`, `RefCell`, `Mutex`, and `RwLock` by ownership
+  requirement;
+- interior mutability failure modes and narrow mutation surfaces;
+- generic bounds, associated types, and object-safe trait design;
+- static versus dynamic dispatch at public boundaries;
+- custom iterators with exact ownership and lifetime behavior;
+- `HashMap::entry`, ordered collections, and collection choice;
+- comparison, hashing, formatting, and operator traits;
+- public APIs using `AsRef`, `Borrow`, slices, and iterator parameters;
+- small refactors that remove unnecessary clones without making APIs harder to
+  use.
 
-Runner support needed:
+Infrastructure needed:
 
-- Generate a temporary SQLite database per lesson run.
-- Support migrations or inline schema setup.
-- Keep tests deterministic and isolated.
-- Surface compile errors, migration errors, and runtime DB errors clearly.
+- multiple editable files;
+- compile-time trait assertion helpers;
+- compile-fail cases for invalid borrowing and object-safety examples;
+- validation that can distinguish intended API constraints from textual
+  implementation details.
 
-### `advanced-perf`
+## Phase 2: Async Rust and Concurrency
 
-Use this for profiling and benchmark lessons.
+Lessons 151-210 should build beyond the introductory async use-case arc.
 
-- `criterion`
+Candidate arcs:
 
-Runner support needed:
+- future execution, task ownership, and `'static` boundaries;
+- cancellation safety around staged state changes;
+- `tokio::select!` and losing-branch behavior;
+- timeouts, retries, jitter, and retry classification;
+- bounded `mpsc`, `oneshot`, `watch`, and `broadcast` channels;
+- semaphores, bounded fan-out, and backpressure;
+- shared-state design without holding locks across `.await`;
+- task supervision and error propagation;
+- graceful shutdown and draining in-flight work;
+- async traits, return-position futures, and dynamic dispatch tradeoffs;
+- idempotency and duplicate work at service boundaries;
+- deterministic concurrency tests.
 
-- Add a benchmark mode separate from normal `cargo test`.
-- Capture benchmark output in a stable enough format for lesson feedback.
-- Avoid making exact timing thresholds part of validation.
-- Validate qualitative changes such as fewer allocations or simpler ownership only when measurable in a stable way.
+The runner should keep network access disabled. Service and protocol exercises
+should use Tokio primitives and Actix's in-process test support unless a future
+sandbox design explicitly permits isolated networking.
 
-### `advanced-macro`
+Infrastructure needed:
 
-Use this for procedural macro lessons.
+- deterministic time control where appropriate;
+- reliable timeout and cancellation test patterns;
+- optional concurrency-testing dependencies such as `loom` only after their
+  runtime cost is measured;
+- clear diagnostics for deadlock-like test timeouts.
 
-- `syn`
-- `quote`
-- `proc-macro2`
-- `trybuild`
+## Phase 3: Testing and Reliability
 
-Runner support needed:
+Lessons 211-270 should teach tests as executable API and architecture
+contracts.
 
-- Generate a multi-crate workspace with a proc-macro crate and a consumer crate.
-- Run compile-pass and compile-fail tests.
-- Preserve clear diagnostics in learner feedback.
+Candidate arcs:
 
-## Future Arc Candidates
+- integration tests from an external crate perspective;
+- test data builders that preserve domain invariants;
+- reusable fakes for repository and clock ports;
+- custom proptest strategies and shrinking-friendly domain generators;
+- compile-pass and compile-fail tests with `trybuild`;
+- panic boundaries and `catch_unwind`;
+- doctests as public API commitments;
+- deterministic tests for time, randomness, and retry policies;
+- failure injection at adapter boundaries;
+- compatibility tests for serialization and public errors;
+- regression tests that reproduce a bug before fixing it;
+- review exercises that remove brittle or implementation-coupled tests.
 
-### Database Repository Arc
+Infrastructure needed:
 
-Teach persistence without leaking database concerns into the domain.
+- workspace and external integration-test layouts;
+- compile-fail result support;
+- stable fixture and snapshot policies;
+- a way to run different Cargo targets without exposing arbitrary commands.
 
-Lessons should cover:
+## Phase 4: Persistence and Service Integration
 
-- Defining a repository trait around domain language.
-- Implementing the trait with `sqlx` and SQLite.
-- Mapping database uniqueness failures into domain-level errors.
-- Running isolated tests with temporary schema setup.
-- Keeping SQL row structs separate from domain structs.
+Lessons 271-330 should compose ecosystem crates while keeping the domain clean.
 
-### Performance By Measurement Arc
+Candidate arcs:
 
-Teach optimization as an evidence-driven process.
+- SQLx repositories using isolated SQLite databases;
+- migrations and schema setup;
+- database row types separated from domain types;
+- uniqueness, not-found, and transient error mapping;
+- transaction ownership and rollback behavior;
+- environment configuration and typed overrides;
+- custom Serde formats at adapter boundaries;
+- Actix extractors, application state, middleware, and response mapping;
+- request IDs and tracing context across layers;
+- metrics and latency/error counters;
+- composition roots and dependency wiring;
+- graceful startup and shutdown;
+- an end-to-end use case through HTTP, application, domain, and persistence.
 
-Lessons should cover:
+Infrastructure needed:
 
-- Writing a baseline benchmark with `criterion`.
-- Identifying avoidable clones and allocations.
-- Replacing owned strings with borrowed data where lifetime complexity is worth it.
-- Comparing `Vec`, slices, iterators, and maps under realistic inputs.
-- Documenting why a faster design is still maintainable.
+- an `advanced-db` dependency set;
+- one temporary SQLite database per run;
+- deterministic migration support;
+- generated multi-file crates;
+- in-process Actix service tests;
+- no dependency on external databases or network services.
 
-### Unsafe Boundary Arc
+## Phase 5: Crate Design and Macros
 
-Teach `unsafe` as an encapsulation and contract problem.
+Lessons 331-390 should move from function-level APIs to crate-level evolution.
 
-Lessons should cover:
+Candidate arcs:
 
-- Reading and writing safety comments.
-- Keeping unsafe blocks small.
-- Exposing a safe public API.
-- Testing edge cases through the safe API.
-- Rejecting unsafe code when a safe alternative is clear.
+- module organization and dependency direction;
+- deliberate `pub`, `pub(crate)`, private items, and re-exports;
+- sealed traits and extension points;
+- `#[non_exhaustive]` and forward-compatible enums;
+- semver-compatible versus breaking API changes;
+- Cargo workspaces and package boundaries;
+- feature flags without combinatorial API fragmentation;
+- optional dependencies and minimal default features;
+- declarative macros that remove real repetition;
+- macro hygiene, fragments, repetition, and diagnostics;
+- procedural derives using `syn` and `quote`;
+- compile-pass and compile-fail macro tests;
+- choosing a function, trait, derive, or macro based on the problem.
 
-### Procedural Macro Arc
+Infrastructure needed:
 
-Teach macros only after learners have seen enough repetition to justify them.
+- an `advanced-macro` dependency set;
+- multi-crate workspaces with a `proc-macro` crate and consumer crate;
+- `trybuild` or equivalent diagnostic tests;
+- feature-matrix validation for selected combinations.
 
-Lessons should cover:
+## Phase 6: Performance and Unsafe Boundaries
 
-- Starting with a normal function or trait implementation.
-- Using `macro_rules!` when syntax repetition is local.
-- Creating a derive macro when boilerplate crosses crate boundaries.
-- Testing macro output and compile failures.
-- Producing useful compiler errors.
+Lessons 391-450 should teach measurement and contracts, not folklore.
 
-### Crate Design Capstone
+Candidate arcs:
 
-Teach API design at a larger scale.
+- representative benchmark design with Criterion;
+- reading profiles and identifying the actual hot path;
+- allocation and clone reduction from measurements;
+- data structure and memory layout tradeoffs;
+- iterator, slice, and collection performance under realistic inputs;
+- batching, buffering, and cache-aware access;
+- small unsafe blocks behind safe APIs;
+- required `SAFETY` comments and explicit invariants;
+- raw pointers, aliasing, and initialization in narrow examples;
+- pinning and custom future state where a normal async function is insufficient;
+- FFI ownership, error, and string boundaries;
+- rejecting unsafe code when a safe design is adequate.
 
-Lessons should cover:
+Infrastructure needed:
 
-- Organizing modules around stable boundaries.
-- Choosing what is public, `pub(crate)`, or private.
-- Re-exporting intentionally from `lib.rs`.
-- Using feature flags without fragmenting the API.
-- Preserving semver-compatible behavior while improving internals.
+- an `advanced-perf` dependency set and benchmark runner mode;
+- qualitative benchmark comparison without fragile wall-clock pass thresholds;
+- optional Miri support for authoring and CI, not necessarily per browser run;
+- multi-file FFI fixtures that do not depend on host-specific libraries;
+- dedicated review rules for every unsafe lesson.
 
-### Service Integration Capstone
+## Phase 7: Integration Capstones
 
-Teach how earlier concepts compose in a real service.
+Lessons 451-500 should use larger codebases and less prescriptive tasks. Each
+capstone may span 8-12 lessons while preserving the 5-10 minute daily edit.
 
-Lessons should cover:
+Candidate capstones:
 
-- Loading config.
-- Starting an Actix server.
-- Injecting shared application state.
-- Validating request DTOs.
-- Calling domain use cases.
-- Persisting through a repository.
-- Mapping errors into HTTP responses.
-- Emitting structured `tracing` spans and events.
-- Shutting down gracefully.
+- refactor a coupled module into domain, application, and adapter boundaries;
+- evolve a public library without breaking downstream callers;
+- build an Actix service with typed configuration, validation, SQLx
+  persistence, tracing, metrics, and graceful shutdown;
+- diagnose and fix a cancellation or concurrency correctness problem;
+- profile and optimize a data-processing path while preserving readability;
+- wrap a small unsafe or FFI boundary behind a safe tested API;
+- review a working but unidiomatic crate and improve it incrementally;
+- make tradeoffs among generics, trait objects, ownership, and allocation with
+  incomplete information.
+
+Capstones should validate behavior and public contracts while allowing more
+than one defensible implementation. Explanations must discuss tradeoffs rather
+than claim one universally perfect pattern.
+
+## Runner and Dependency Roadmap
+
+The current runner supports one generated library crate and two dependency
+sets: `std` and `advanced`.
+
+Add capabilities only when a planned arc requires them:
+
+| Capability | Required for |
+| --- | --- |
+| Multiple editable files | Advanced ownership, architecture, and capstones |
+| Multi-crate workspace generation | External API tests and procedural macros |
+| Compile-fail mode | Lifetimes, trait bounds, and macro diagnostics |
+| `advanced-db` with SQLx and SQLite | Persistence arcs |
+| `advanced-perf` with Criterion | Measurement and optimization arcs |
+| `advanced-macro` with `syn`, `quote`, `proc-macro2`, and `trybuild` | Procedural macro arcs |
+| Feature-matrix runs | Crate feature design |
+| Author-only Miri checks | Unsafe lesson review |
+
+Every dependency set must be:
+
+- declared in the lesson schema;
+- generated by the backend workspace builder;
+- cached in the runner image;
+- available offline at runtime;
+- reproduced by the local solution harness;
+- covered by source and generated-content validation.
+
+Avoid a single unbounded dependency set. Separate sets keep image changes,
+lesson capabilities, and supply-chain surface explicit.
+
+## Authoring Process
+
+Implement the remaining curriculum in waves of two or three arcs:
+
+1. Define arc outcomes, prerequisites, and why the arc is not a repeat of the
+   existing 90 lessons.
+2. Add only the runner capability needed by that wave.
+3. Author cumulative starters, tests, solutions, hints, and notes.
+4. Run the full source, generated-content, solution, frontend, and backend
+   checks.
+5. Review every task against its starter and every validation rule against the
+   idiomatic solution.
+6. Manually complete the arc in the deployed UI.
+7. Merge only after the complete arc works; do not ship disconnected lesson
+   placeholders.
+
+One primary concept per lesson still applies. Larger examples should grow
+through arc continuity instead of turning one lesson into a long coding task.
+
+## Quality Gates
+
+Every future lesson must:
+
+- teach something materially beyond the existing curriculum;
+- have a clear task grounded in the visible starter;
+- preserve active arc continuity;
+- compile and pass deterministic authored tests;
+- prefer the idiomatic derive, trait, ownership model, or crate API;
+- avoid validation that forces a less idiomatic implementation;
+- explain tradeoffs and boundary placement;
+- keep the learner edit small even when the surrounding project is larger;
+- avoid secrets, uncontrolled networking, and host-dependent behavior;
+- pass an arc-level manual browser review.
+
+Every future arc must:
+
+- have a coherent final API or application slice;
+- retain earlier behavior through later lessons;
+- include at least one review of ownership, errors, tests, and public API;
+- avoid teaching a framework convention as if it were a Rust language rule;
+- state what remains intentionally outside its scope.
 
 ## Implementation Order
 
-1. Add `advanced-db` support and build the database repository arc.
-2. Add `advanced-perf` support and build the performance by measurement arc.
-3. Add the unsafe boundary arc using mostly `std`.
-4. Add `advanced-macro` support and build the procedural macro arc.
-5. Add crate design and service integration capstones after enough smaller advanced arcs exist.
+1. Add multi-file editing and compile-fail support.
+2. Author lessons 91-150 around advanced ownership and API design.
+3. Expand async/concurrency validation and author lessons 151-210.
+4. Add workspace test modes and author lessons 211-270.
+5. Add `advanced-db` and author lessons 271-330.
+6. Add multi-crate macro support and author lessons 331-390.
+7. Add benchmark and unsafe authoring checks for lessons 391-450.
+8. Build capstone workspace support and complete lessons 451-500.
 
-This order keeps infrastructure risk controlled: database and benchmark support are independent, unsafe needs review discipline but little tooling, macros need the most workspace machinery, and capstones should wait until the prerequisite concepts are already familiar.
+This order makes each infrastructure investment pay for a full curriculum
+phase and delays the most expensive runner modes until their prerequisites are
+already taught.

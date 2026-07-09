@@ -28,6 +28,9 @@ jobs:
       - name: Check lesson content
         working-directory: ./frontend
         run: npm run content:check
+      - name: Check lesson references
+        working-directory: ./frontend
+        run: npm run content:check-refs
       - name: Build frontend assets
         working-directory: ./frontend
         env:

@@ -3,8 +3,10 @@ SHELL := /bin/bash
 RUNNER_IMAGE ?= rust-runner:1.95
 FRONTEND_ORIGIN ?= http://localhost:5173
 FRONTEND_BACKEND_URL ?= http://127.0.0.1:8080
+SMOKE_URL ?= http://127.0.0.1:8080
+SMOKE_CASE ?= pass
 
-.PHONY: format lint test runner-image dev-full
+.PHONY: format lint test runner-image smoke-runner dev-full
 
 format:
 	cargo fmt --manifest-path backend/Cargo.toml --all
@@ -17,6 +19,9 @@ test:
 
 runner-image:
 	podman build -f docker/rust-runner.Dockerfile -t $(RUNNER_IMAGE) .
+
+smoke-runner:
+	python3 scripts/play_run.py --url $(SMOKE_URL) --case $(SMOKE_CASE)
 
 dev-full: runner-image
 	@set -euo pipefail; \

@@ -1,1844 +1,445 @@
-# Rust Daily Specification
+# Rust Daily Product Specification
 
-## 1. Product Summary
+Status: current implementation and product contract as of July 9, 2026.
 
-Rust Daily is a local-first Progressive Web App for practicing idiomatic Rust in daily 5-10 minute sessions on tablets and desktop browsers.
+## 1. Product
 
-The app is for intermediate engineers who already know basic Rust syntax and want to become fluent at writing production-quality Rust without AI code generation, autocomplete, IDE hints, or algorithmic puzzle grinding.
+Rust Daily is a local-first Progressive Web App for intermediate Rust
+developers. It provides focused 5-10 minute exercises that build fluency in
+clear, idiomatic, production-oriented Rust.
 
-The core experience is one byte-sized Rust exercise per day. Each exercise teaches exactly one concept and asks the learner to write or modify a small amount of real Rust code. The frontend can run local browser validation for supported lessons, and the repository now includes an optional Actix backend for Cargo-backed validation in an isolated runner container.
+The product is for learners who already understand Rust syntax and the basic
+ownership model. It is not a beginner tutorial. Lessons use small realistic
+APIs, domain types, errors, tests, and application boundaries instead of
+algorithm puzzles.
 
-The core PWA must remain usable without AI, accounts, or cloud sync. Backend validation is an optional capability for lessons that need normal Cargo behavior; it must not replace the local-first daily practice loop.
+The long-term curriculum target is 500 lessons. The implemented curriculum
+contains:
 
-### 1.1 Current Implementation Snapshot
+- 90 lessons;
+- 15 learning arcs;
+- 90 concepts;
+- schema V2 source content for every lesson;
+- structural browser checks and Cargo-backed tests for every lesson;
+- 59 `std` validation steps and 31 `advanced` validation steps.
 
-Implemented as of July 5, 2026:
+The future curriculum direction is maintained in
+[FUTURE_ADVANCED_CONCEPTS_IMPLEMENTATION_PLAN.md](FUTURE_ADVANCED_CONCEPTS_IMPLEMENTATION_PLAN.md).
 
-- Repository layout:
-  - `frontend/`: Vite, React, TypeScript PWA.
-  - `backend/`: Actix backend for optional remote Rust validation.
-  - `docker/`: runner image assets.
-  - `docs/`: product specs, backend docs, implementation plans.
-  - `lessons/`: source authoring tree for schema V2 lessons.
-- Frontend:
-  - Dark-first tablet-oriented UI with light/system theme setting.
-  - CodeMirror Rust editor with syntax highlighting and no autocomplete extension.
-  - Daily home, lesson screen, hints, completion explanation, and validation panel.
-  - Ordered curriculum path showing completed, current, and upcoming lessons.
-  - 36 local lesson records and concept metadata: the original 30 MVP lessons plus the first schema V2 Email Address Value Object arc.
-  - Local drafts, attempts, completions, streak summary, concept progress, settings, progress export/import, progress reset, and draft deletion.
-  - PWA manifest, service worker, offline app shell, install metadata, and VPS deploy workflow.
-  - Frontend validation worker with `structural` and `self-check` modes.
-  - Frontend integration with optional backend `POST /run` validation.
-- Content:
-  - Schema V2 compatibility path for multi-file lessons, structured hints, public test files, and final-hint solution reveal content.
-  - Source-content validation and frontend-content generation scripts.
-  - Authoring reference solutions for the first V2 Email Address Value Object arc.
-- Backend:
-  - Actix service exposing `POST /run` and serving the built frontend in production.
-  - Typed request validation for exactly `src/lib.rs` and `tests/lesson.rs`.
-  - Config-driven queue capacity, worker count, timeout, output cap, runner image, workspace root, frontend dist path, JSON limit, and optional CORS origin.
-  - Bounded Tokio `mpsc` queue with one-shot responses and fixed worker pool.
-  - Per-job temporary Cargo workspace assembly.
-  - Podman execution of `cargo test --offline --message-format=json` in a restricted container.
-  - Sandbox flags for no network, memory/CPU/PID limits, read-only container filesystem, tmpfs, no-new-privileges, and dropped capabilities.
-  - Output capping, compile-error classification from Cargo JSON messages, timeout classification, and structured HTTP error responses.
-  - `docker/rust-runner.Dockerfile` based on `rust:1.95-slim`.
+## 2. Intended Outcome
 
-Not yet implemented:
+Rust Daily should help an intermediate developer:
 
-- Browser-compiled Rust validation engine for `browser-rust` lessons.
-- First-class backend request support for arbitrary lesson public-test paths beyond the current `src/lib.rs` and `tests/lesson.rs` compatibility bridge.
-- Server-side hidden tests or tamper-resistant grading.
-- User accounts, cloud sync, persistence beyond local browser storage.
-- Long-term review scheduler with review due, prerequisites, recent failures, and grace-day streak rules.
-- Full progress/concept graph screen.
-- Notifications/reminders.
-- Generalized authoring checks for all lessons, including starter compile checks and solution-pass checks.
-- Automated frontend test runner and end-to-end test suite.
+- model domain concepts with meaningful types;
+- choose ownership, borrowing, and allocation deliberately;
+- use standard traits and conversions as normal API vocabulary;
+- design concrete errors and preserve their sources;
+- separate domain, application, adapter, and infrastructure concerns;
+- write tests and documentation that specify public behavior;
+- use async Rust and ecosystem crates without leaking them through every layer;
+- recognize when simple, explicit code is better than clever abstraction.
 
-## 2. Product Positioning
+The product teaches habits and judgment. It does not promise perfect code or
+replace production experience, profiling, code review, or operating real
+systems.
+
+## 3. Positioning
 
 Rust Daily is:
 
-- A daily practice app for idiomatic Rust.
-- A browser-validated micro-lesson system for local/offline-capable lessons.
-- An optional Cargo-backed validation system for lessons that need normal Rust tooling.
-- A tablet-friendly coding environment with intentionally limited assistance.
-- A local-first app that can run without a hosted backend for the core daily loop.
-- A long-term concept mastery tool for real-world Rust.
+- a daily practice environment for idiomatic Rust;
+- an ordered curriculum of cumulative micro-lessons;
+- a local-first editor and progress tracker;
+- a deterministic validation system backed by authored checks;
+- a tablet- and desktop-friendly PWA.
 
 Rust Daily is not:
 
-- A LeetCode-style algorithm platform.
-- A general Rust tutorial.
-- A replacement for Rustlings.
-- An AI tutor or code generation product.
-- A full cloud IDE.
-- A general hosted judge or remote compiler service.
-- A place to build large projects during a session.
+- a general Rust introduction;
+- an algorithm competition platform;
+- a replacement for Rustlings;
+- an AI tutor or AI grading system;
+- a cloud IDE;
+- a tamper-resistant certification platform;
+- a multi-language runner.
 
-## 3. Goals
+## 4. Product Principles
 
-Primary goals:
+### 4.1 One Primary Concept
 
-- Help users practice idiomatic Rust for 5-10 minutes per day.
-- Make every session small enough to complete on a tablet.
-- Teach one Rust concept per lesson.
-- Validate work deterministically through authored browser checks or the optional backend runner, not with AI grading.
-- Reinforce real production Rust patterns over puzzle tricks.
-- Build long-term comfort with ownership, traits, errors, iterators, modules, tests, and API design.
+Each lesson has one primary learning objective. Supporting syntax and APIs may
+appear, but the task, hints, validation, and explanation must point to the same
+concept.
 
-Long-term learning outcome:
+### 4.2 Production-Shaped Rust
 
-- After roughly 300-500 micro-lessons, a consistent learner should be comfortable designing and implementing idiomatic Rust code for real-world applications.
+Lesson solutions should look like code a reviewer could accept:
 
-## 4. Non-Goals
+- clear names and narrow responsibilities;
+- strong types where invariants matter;
+- explicit expected failure;
+- minimal cloning and allocation;
+- borrowed inputs for read-only access where practical;
+- standard traits instead of ad hoc equivalents;
+- no unnecessary abstraction or macro cleverness;
+- no panics in normal library control flow.
 
-The app must not:
+An idiomatic derive should be used when deriving is the normal solution. A
+manual implementation is appropriate only when its behavior is the lesson.
 
-- Generate code for the user.
-- Autocomplete identifiers, syntax, imports, or solutions.
-- Use AI to grade correctness.
-- Reward long daily sessions.
-- Encourage solving many exercises in one sitting as the primary loop.
-- Focus on clever algorithms unless the algorithm is incidental to a Rust concept.
-- Require local Rust installation on the user's tablet.
-- Require a hosted backend for local practice, drafts, progress, or offline lesson viewing.
-- Require user accounts or cloud sync for MVP use.
-- Depend on large third-party crates for lesson solutions unless a specific advanced lesson intentionally teaches crate usage.
+### 4.3 Active Arc Continuity
 
-## 5. Target Users
+Lessons within an arc evolve one active codebase.
 
-### 5.1 Primary Persona
+- A later starter begins from the previous lesson's solution.
+- Earlier public behavior remains active unless the lesson explicitly teaches
+  a migration.
+- Prior code must not be hidden in archived modules,
+  `previous_lesson_solution`, or `#[allow(dead_code)]` wrappers.
+- The task must name APIs that are present in the starter or clearly ask the
+  learner to create them.
+- Starter code, instructions, tests, hints, and solution must describe the same
+  task.
 
-An intermediate software engineer who:
+Arcs may be interleaved in the global authored order, but each arc's internal
+`day` order remains cumulative.
 
-- Knows at least one programming language well.
-- Has learned basic Rust syntax.
-- Understands what ownership and borrowing are at a surface level.
-- Wants to write more idiomatic Rust.
-- Has limited daily time.
-- Often uses a tablet away from a full development workstation.
-- Does not want AI assistance while practicing.
+### 4.4 Deterministic Feedback
 
-### 5.2 Secondary Persona
+Correctness is assessed by authored structural checks and public Cargo tests.
+AI is not used to write, grade, or explain a learner's submitted code.
 
-A professional engineer returning to Rust who:
+Structural checks provide fast source-shape feedback. Cargo tests are the
+authority for compilation and behavior. Tests must check public outcomes
+instead of requiring one textual implementation unless syntax is itself the
+concept.
 
-- Has previously used Rust but lacks fluency.
-- Wants daily repetition on specific language features.
-- Needs small refreshers instead of long tutorials.
+### 4.5 Local Ownership
 
-## 6. Core Principles
+Drafts, settings, attempts, and completions belong to the learner's browser.
+No account is required. Progress must remain exportable and importable as
+versioned JSON.
 
-### 6.1 One Concept Per Lesson
+### 4.6 Limited Assistance
 
-Every lesson must focus on exactly one Rust concept.
+The editor provides Rust syntax highlighting and normal text-editing commands.
+It does not provide autocomplete, AI generation, or IDE diagnostics before the
+learner runs validation.
 
-Examples:
+Hints use progressive disclosure:
 
-- Define a custom error enum.
-- Add one lifetime parameter.
-- Implement `Display`.
-- Convert a loop into an iterator chain.
-- Replace stringly-typed errors with a typed error.
-- Add `TryFrom<&str>` for a domain type.
+1. Point toward the relevant code or idea.
+2. Name the trait, API, or design move.
+3. Optionally reveal the concise authored solution and why it is idiomatic.
 
-### 6.2 Production-Quality Micro-Code
+Solutions are never revealed automatically after failures.
 
-Lessons should produce small but realistic Rust code:
+## 5. Curriculum
 
-- Domain models.
-- Error types.
-- Parser helpers.
-- Trait implementations.
-- API boundaries.
-- Tests.
-- Module organization.
+### 5.1 Current Arcs
 
-Avoid throwaway puzzle framing when a real-world framing is possible.
+The 90 implemented lessons cover:
 
-### 6.3 Deterministic Validation as Judge
+| Arc | Lessons | Primary focus |
+| --- | ---: | --- |
+| `config-service` | 6 | Structs, defaults, validation, and borrowed lookup |
+| `parse-user` | 7 | Typed errors, sources, conversions, and parsing |
+| `inventory-summary` | 6 | Collections, folds, loops, iteration, and sorting |
+| `log-lines` | 5 | Borrowing, lifetimes, matching, `Cow`, and tests |
+| `request-api` | 6 | Consuming builders, `Default`, `Result`, and docs |
+| `email-address-value-object` | 6 | Private domain values and standard parsing traits |
+| `money-value-object` | 6 | Invariants, checked operations, and formatting |
+| `host-port-config` | 6 | Strong configuration types and composition |
+| `dto-conversions` | 6 | Serde DTOs and domain boundary conversions |
+| `collection-wrappers` | 6 | Borrowed, owned, and mutable iterator APIs |
+| `config-loader-errors` | 6 | `thiserror`, source chains, and application context |
+| `boundary-error-mapping` | 6 | Error translation and public API judgment |
+| `register-user-use-case` | 6 | Async ports, shared state, timeout, and Actix boundary |
+| `structured-request-logging` | 6 | `tracing`, spans, fields, redaction, and propagation |
+| `table-driven-domain-tests` | 6 | Tables, docs, property tests, and small macros |
 
-Validation must be deterministic and authored. It may run locally in the browser or through the optional backend runner, depending on the lesson's validation mode and deployment.
+### 5.2 Sequencing
 
-Supported validation paths:
+- Lessons have one global authored `order`.
+- The next lesson is the first incomplete lesson in that order.
+- Completed lessons may be reopened from the curriculum path.
+- After all lessons are complete, daily selection rotates through the
+  curriculum.
+- Adaptive scheduling, focus tracks, and prerequisite-based unlocking are not
+  implemented.
 
-- Browser-side structural checks for lesson metadata and expected API shape.
-- Browser-side self-check lessons when fair automated validation is not available yet.
-- A future browser-shipped Rust validation engine where practical.
-- Optional backend Cargo validation through the Actix runner for lessons that need normal `cargo test`.
-- Authored public tests and examples.
+### 5.3 Concept Model
 
-AI must not determine whether a submitted answer is correct.
+Every lesson references one concept. A concept defines:
 
-The core PWA does not require full Cargo compatibility. Lessons that use backend validation must remain small, standard-library-first, and bounded by the runner limits.
+- stable ID, name, and description;
+- prerequisite concept IDs;
+- supported difficulty levels;
+- lesson IDs;
+- tags;
+- a mastery threshold.
 
-### 6.4 No AI, No Autocomplete
+Current progress records introduced, practicing, and comfortable states.
+Review scheduling and true mastery are reserved in the data model but are not
+implemented as product behavior.
 
-The editor must intentionally omit:
+## 6. Lesson Contract
 
-- AI chat.
-- AI code generation.
-- AI rewrite suggestions.
-- Identifier autocomplete.
-- Import autocomplete.
-- Snippet completion.
-- Inline ghost text.
-- IDE-style quick fixes.
+Every canonical lesson must define:
 
-Allowed assistance:
+- schema version, stable lesson ID, and stable concept ID;
+- arc ID, arc title, arc step, arc length, and global order;
+- difficulty and 5-10 minute estimate;
+- scenario and unambiguous task instructions;
+- exactly one editable starter file in the current UI;
+- any read-only or public test files needed for context;
+- one to three progressive hints;
+- a completion explanation;
+- structural and Cargo validation;
+- an author-only reference solution;
+- author notes explaining the intended idiomatic choice.
 
-- Syntax highlighting.
-- Manual check/test button.
-- Reset.
-- Authored hints.
-- Rust compiler/checker output when supported.
-- Lesson explanation after completion.
-
-### 6.5 Daily Constraint
-
-The product should protect the user from overcommitment:
-
-- The default session is exactly one lesson.
-- A lesson should take 5-10 minutes.
-- The app should not use infinite feeds.
-- Extra practice may exist, but it must be secondary to the daily lesson.
-
-## 7. Learning Scope
-
-The curriculum should cover:
-
-- Idiomatic standard library usage.
-- Strong domain types.
-- Asynchronous programming.
-- Ownership.
-- Borrowing.
-- Lifetimes.
-- Structs.
-- Enums.
-- Pattern matching.
-- Methods.
-- Trait implementations.
-- Generic types.
-- Associated types.
-- Iterators.
-- Closures.
-- `From`.
-- `Into`.
-- `TryFrom`.
-- `Display`.
-- `Error`.
-- `Default`.
-- `Clone`.
-- `Copy`.
-- `Debug`.
-- `PartialEq`.
-- `Ord`.
-- `Iterator`.
-- `IntoIterator`.
-- Parsing.
-- API design.
-- Module organization.
-- Documentation.
-- Tests.
-
-The detailed post-MVP curriculum expansion is specified in
-[`docs/FULL_CURRICULUM_SPEC.md`](FULL_CURRICULUM_SPEC.md). That feature spec
-defines the full lesson taxonomy for strong domain types, standard Rust
-conversions, structured errors, structured logs, and clean architecture.
-
-## 8. Curriculum Model
-
-### 8.1 Concept Graph
-
-Curriculum progression is a directed concept graph rather than a fixed linear course.
-
-Each concept has:
-
-- Prerequisites.
-- One or more lessons.
-- Mastery criteria.
-- Review intervals.
-- Related concepts.
-
-Example:
+Canonical files live under:
 
 ```text
-Structs
-  -> Methods
-  -> Trait implementations
-  -> Parsing
-  -> Error handling
-  -> API design
+lessons/<arc>/<lesson>/
+  lesson.json
+  notes.md
+  starter/src/lib.rs
+  tests/public.rs
+  solution/src/lib.rs
 ```
 
-### 8.2 Concept Node
+The generated frontend content may contain the final hint's approved solution
+snippet. It must not expose author notes or the complete authoring solution
+directory as runtime content.
 
-Each concept node contains:
+### 6.1 Code Standards
 
-- Stable concept ID.
-- Display name.
-- Description.
-- Prerequisite concept IDs.
-- Difficulty range.
-- Lesson IDs.
-- Tags.
-- Mastery threshold.
+Lesson code must:
 
-Example:
+- compile on stable Rust 1.95 using edition 2024;
+- format cleanly with `rustfmt`;
+- keep the editable surface small enough for a tablet session;
+- avoid unused archived code;
+- prefer standard library APIs before adding a crate;
+- use the approved dependency set declared by the lesson;
+- avoid `unwrap` and `expect` in library paths unless panic behavior is the
+  lesson;
+- preserve the earlier active API within its arc.
 
-```json
-{
-  "id": "trait-display",
-  "name": "Display",
-  "description": "Implement human-readable formatting for domain types.",
-  "prerequisites": ["traits-basic", "formatting-basic"],
-  "difficulty": ["easy", "medium"],
-  "lesson_ids": ["display-user-error-001", "display-user-error-002"],
-  "tags": ["traits", "errors", "formatting"],
-  "mastery_threshold": 3
-}
-```
+### 6.2 API Standards
 
-### 8.3 Difficulty Levels
+- Use private fields and validating construction for meaningful invariants.
+- Use `From` for infallible, lossless, unsurprising conversions.
+- Use `TryFrom` or `FromStr` for validation and parsing.
+- Use references, slices, `AsRef`, or iterators for cheap views.
+- Use `Option<T>` for real absence and `Result<T, E>` for expected failure.
+- Avoid boolean flags when an enum expresses the state.
+- Do not introduce a port trait without a genuine boundary.
 
-Every lesson belongs to one difficulty level:
+### 6.3 Error Standards
 
-- Easy: small mechanical implementation, one clear path, minimal API design.
-- Medium: requires choosing between a few idiomatic options.
-- Advanced: requires design judgment, stricter edge cases, or more subtle type reasoning.
+- Domain and library errors are concrete typed enums.
+- Variants represent programmatically distinct failures.
+- `Display` is human-readable and tests do not parse it as state.
+- Wrapped lower-level failures preserve `Error::source`.
+- `thiserror` may remove mechanical boilerplate after manual error traits are
+  understood.
+- `anyhow` is limited to application boundaries and must not replace domain
+  error contracts.
 
-All difficulty levels must still fit within 10 minutes.
+### 6.4 Async and Architecture Standards
 
-### 8.4 Mastery
+- Keep domain logic independent of Actix, Tokio, Serde, SQL, and logging setup.
+- Convert transport DTOs at adapter boundaries.
+- Make cancellation and partial-state behavior explicit.
+- Keep locks out of long awaits.
+- Map timeouts and infrastructure failures into application-level errors.
+- Put structured telemetry at application and adapter boundaries.
+- Never log secrets, credentials, tokens, or unnecessary personal data.
 
-Mastery is tracked per concept.
+### 6.5 Test Standards
 
-Inputs:
+- Public tests specify behavior and useful API shape.
+- Earlier arc behavior remains covered in later lessons.
+- Named examples document business cases.
+- Property tests complement rather than replace readable examples.
+- Narrow structural checks are allowed when the exact trait, signature, or
+  construct is the lesson.
+- Broad lint output is not a grading mechanism.
 
-- Lesson completed.
-- Number of failed validation attempts.
-- Hint usage.
-- Time spent.
-- Review completion.
-- Recency.
+## 7. Validation
 
-Mastery states:
+### 7.1 Browser Checks
 
-- Locked.
-- Introduced.
-- Practicing.
-- Comfortable.
-- Review due.
-- Mastered.
+Structural checks run in a dedicated Web Worker with source and output limits.
+Supported checks cover selected enums, structs, derives, trait implementations,
+methods, functions, and required or forbidden snippets.
 
-Hint usage should not punish the user harshly, but repeated reliance on high-level hints should delay mastery.
+These checks do not parse or compile Rust. They provide immediate guidance and
+must be backed by Cargo tests for compilation and behavior.
 
-### 8.5 Learning Arcs
+The schema reserves `browser-rust`, but no browser Rust compiler is currently
+implemented.
 
-Lessons must build on previous lessons inside their short learning arc. This is
-a hard content-authoring requirement: lesson N in an arc starts from lesson
-N-1's completed active solution, then adds exactly one new concept-sized task.
+### 7.2 Cargo Checks
 
-An arc is a 3-10 lesson sequence around one tiny domain or API slice. Each daily lesson adds one concept to the same small piece of Rust. At the end of the arc, the learner has a finished micro-artifact rather than a partially completed long project.
-
-Arc rules:
-
-- Each arc has a clear domain, start point, and end point.
-- For every lesson after the first lesson in an arc, the editable starter must
-  begin from the previous lesson's active reference solution before adding the
-  new task.
-- For every lesson after the first lesson in an arc, the reference solution must
-  preserve previous active behavior while completing the new task. It may evolve
-  existing code directly; it must not hide earlier work in archived modules.
-- Source files must not contain `previous_lesson_solution` modules, nested
-  historical copies, or `#[allow(dead_code)]` wrappers used to fake cumulative
-  continuity.
-- A lesson must not silently reset, remove, or simplify previously implemented
-  arc functionality unless the lesson explicitly asks the learner to refactor it
-  while preserving behavior.
-- Each lesson in the arc must remain completable in 5-10 minutes.
-- The editable codebase must stay small enough for tablet use.
-- The final arc lesson should leave behind a coherent Rust module, mini-crate, or API slice.
-- After an arc finishes, the next arc should start fresh or reuse only concepts, not a growing codebase.
-
-Example arc outputs:
-
-- A typed parser with a domain type, parse error, conversion impls, and tests.
-- A small configuration loader API.
-- An iterator adapter with examples and tests.
-- A lifetime-backed view type.
-- A builder-style API for a small struct.
-- A focused error hierarchy for one module.
-
-The long-term product result is a local workbook of tiny completed Rust artifacts.
-
-## 9. Lesson Model
-
-### 9.1 Lesson Requirements
-
-Each lesson must:
-
-- Teach exactly one concept.
-- Fit in 5-10 minutes.
-- Use realistic Rust code.
-- Prefer the standard library.
-- Have a clear success condition.
-- Include browser-runnable validation checks or public tests.
-- Include at least one authored explanation.
-- Include up to three authored hints.
-- Avoid requiring autocomplete.
-- Avoid requiring external research during the session.
-- Stay within the frontend validation subset.
-
-### 9.2 Lesson Anatomy
-
-A lesson contains:
-
-- ID.
-- Title.
-- Concept ID.
-- Difficulty.
-- Estimated duration.
-- Scenario.
-- Instructions.
-- Starter files.
-- Editable file list.
-- Read-only file list.
-- Public tests.
-- Browser validation mode.
-- Validation checks.
-- Hints.
-- Completion explanation.
-- Follow-up concept links.
-
-Example:
-
-```yaml
-id: error-enum-parse-user-001
-title: Design a parse error enum
-concept_id: enums-error-design
-difficulty: easy
-estimated_minutes: 7
-scenario: A small user parser needs a typed error instead of string errors.
-instructions: Define the ParseUserError enum with variants for missing fields.
-editable_files:
-  - src/lib.rs
-readonly_files:
-  - tests/public.rs
-validation:
-  mode: browser-rust
-  supports_offline: true
-  checks:
-    - compiles
-    - public_tests_pass
-    - implements_display
-hints:
-  - Look at the cases the parser has to report.
-  - Each distinct failure mode should usually become a distinct enum variant.
-  - Error enums often start simple and gain Display/Error implementations later.
-```
-
-### 9.3 Lesson File Layout
-
-Each lesson should be stored in an author-friendly format that can produce a static browser lesson bundle.
-
-Recommended structure:
+The frontend submits:
 
 ```text
-lessons/
-  arcs.json
-  concepts.json
-  email-address-value-object/
-    001-private-field/
-      lesson.json
-      starter/
-        src/
-          lib.rs
-      tests/
-        public.rs
-      solution/
-        src/
-          lib.rs
-      notes.md
+src/lib.rs
+tests/lesson.rs
+dependencySet
 ```
 
-The `starter/`, `tests/`, and `solution/` directories keep lessons easy to test with normal Rust tooling during content creation. Generation scripts convert supported source lessons into `frontend/src/content/*.json` for the shipped PWA. Full solution directories remain authoring artifacts; only approved final-hint solution reveal content may ship in the frontend bundle.
+The Actix backend validates the payload, places it on a bounded queue, creates a
+temporary Cargo workspace, and runs `cargo test --offline` in a restricted
+Podman container.
 
-### 9.4 Starter Code
+Supported dependency sets:
 
-Starter code should be minimal but realistic. Inside an arc, starter code is
-cumulative: every lesson after day 1 must begin from the previous lesson's
-active reference solution and only leave the new lesson's work incomplete.
-Reference solutions are cumulative in behavior: lesson N's solution preserves
-lesson N-1's active API and behavior while completing the new change.
+- `std`: no external lesson dependencies;
+- `advanced`: Serde, serde_json, thiserror, anyhow, Tokio, tracing,
+  tracing-subscriber, Actix Web, actix-rt, http, and proptest.
 
-Rules:
+The runner reports passed tests, test failures, compiler errors, timeouts, and
+internal failures separately. Cargo metadata is filtered from learner-facing
+output, diagnostics are capped, and a full queue returns HTTP 429.
 
-- Include enough context to make the task clear.
-- Do not include unrelated scaffolding.
-- Use `todo!()` or comments only where the learner must act.
-- Keep the editable area small.
-- Prefer a single editable file for easy and medium lessons.
-- Do not drop types, functions, trait impls, tests, or behavior completed in
-  earlier lessons of the same arc.
-- Do not park previous work in `previous_lesson_solution`, `#[allow(dead_code)]`,
-  or similar archive wrappers.
+### 7.3 Validation Limits
 
-### 9.5 Public Tests
+Default server limits are:
 
-Public tests should:
+| Limit | Value |
+| --- | ---: |
+| JSON request | 300,000 bytes |
+| Individual file | 65,536 bytes |
+| Submitted files total | 262,144 bytes |
+| Queue capacity | 20 |
+| Workers | 2 |
+| Execution timeout | 10 seconds |
+| Combined output | 65,536 bytes |
 
-- Show the expected behavior.
-- Cover the important behavior for the lesson.
-- Teach through examples.
-- Be readable on a tablet.
+The API accepts only the two supported paths despite the general file-count
+limit. Paths must be relative, unique, and traversal-free.
 
-### 9.6 Browser Validation Checks
+### 7.4 Grading Boundary
 
-Browser validation checks should:
+Public tests are shipped to and submitted by the browser. A caller can alter
+them. Rust Daily is therefore a practice tool, not secure certification or
+tamper-resistant grading.
 
-- Prevent hardcoded answers.
-- Check edge cases.
-- Check trait bounds when relevant.
-- Check API shape when relevant.
-- Remain deterministic.
+## 8. User Experience
 
-Browser validation checks must not:
+### 8.1 Home
 
-- Require network access.
-- Depend on wall-clock time.
-- Depend on nondeterministic ordering unless the lesson teaches ordering.
-- Use excessive compile time.
+The home screen shows:
 
-Because all frontend validation assets are shipped to the browser, checks can be hidden from the main UI but must not be treated as secret or tamper-proof.
+- the next incomplete lesson;
+- arc, concept, difficulty, and estimated time;
+- current streak and completion summary;
+- the curriculum grouped by arc;
+- completed, current, and upcoming states.
 
-## 10. Exercise Types
+### 8.2 Lesson
 
-### 10.1 Fill Missing Code
+The lesson screen provides:
 
-The learner fills in a small missing implementation.
+- scenario and focused task;
+- one editable CodeMirror Rust file;
+- expandable read-only files;
+- debounced local draft saving and reset;
+- progressive hints;
+- validation status, failures, and diagnostics;
+- completion explanation after success.
 
-Example:
+Changing code after a run marks the displayed result stale.
 
-```rust
-impl Display for ParseUserError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        // TODO
-    }
-}
-```
+### 8.3 Settings and Portability
 
-### 10.2 Design a Struct
+Settings include theme, editor font size, reduced motion, progress export and
+import, progress reset, and draft deletion.
 
-The learner defines fields and types for a small domain object.
+### 8.4 Accessibility and Responsive Use
 
-Example:
+The app must remain keyboard operable, use semantic controls and visible focus,
+respect reduced motion, expose validation state to assistive technology, and
+avoid horizontal page overflow. The editor and primary workflow must work on
+tablet and desktop layouts.
 
-```text
-A user has an id, name, and email. Design the struct.
-```
+## 9. Persistence and Privacy
 
-### 10.3 Implement a Trait
+The browser stores:
 
-The learner implements a standard trait.
+| Key | Data |
+| --- | --- |
+| `rust-daily:v1:progress` | Attempts, completions, and concept state |
+| `rust-daily:v1:draft:<lesson-id>` | Draft source |
+| `rust-daily:v1:settings` | Display and editor preferences |
 
-Examples:
+The backend has no database and no account model. Submitted source exists in a
+temporary workspace for the duration of a run and is not intentionally retained
+after cleanup.
 
-- `Default`.
-- `Display`.
-- `Error`.
-- `From`.
-- `TryFrom`.
-- `Iterator`.
-- `IntoIterator`.
+No secrets, account data, or tokens belong in browser storage or lesson
+submissions. Analytics and notifications are not implemented.
 
-### 10.4 Refactor to Idiomatic Rust
+## 10. Offline Behavior
 
-The learner transforms beginner Rust into more idiomatic Rust.
+The service worker caches the app shell, static assets, and visited lesson
+detail records. Offline users can open cached content, edit code, and retain
+local drafts and progress.
 
-Examples:
+Cargo validation requires the backend. The current product does not claim
+offline compilation.
 
-- Replace repeated `match` boilerplate with `?`.
-- Replace string errors with a typed error.
-- Replace manual loops with iterator combinators where clearer.
-- Replace unnecessary clones with borrowing.
+## 11. Technical and Operational Boundaries
 
-### 10.5 Find and Fix the Bug
+The implementation is divided into:
 
-The learner receives code with a focused Rust issue.
+- a React, TypeScript, Vite, and CodeMirror PWA;
+- generated runtime lesson content;
+- an Actix and Tokio validation service;
+- a rootless Podman Rust runner;
+- Nginx and Cloudflare in production.
 
-Examples:
+Detailed component and runtime flows are defined in
+[../ARCHITECTURE.md](../ARCHITECTURE.md). Production operation is defined in
+[DEPLOYMENT.md](DEPLOYMENT.md).
 
-- Ownership move error.
-- Borrow checker conflict.
-- Incorrect lifetime placement.
-- Overly restrictive type signature.
+Configuration is layered from `config/default.yaml`, an environment-specific
+YAML file, and `RUST_DAILY_*` environment overrides.
 
-The lesson must isolate one issue and avoid becoming general debugging.
+## 12. Quality Gates
 
-### 10.6 API Design
+A lesson change is complete only when:
 
-The learner chooses a small API surface.
+- source content validation passes;
+- generated content is refreshed and validates;
+- the authored solution passes its public tests;
+- starter, task, tests, hints, solution, and explanation agree;
+- continuity with the preceding arc lesson is preserved;
+- the reference solution is idiomatic for the concept;
+- frontend production build passes;
+- affected backend tests and lint checks pass.
 
-Example:
+Repository validation commands are documented in
+[../README.md](../README.md).
 
-```text
-How should Config::load() return errors?
-```
+## 13. Current Exclusions
 
-Validation may inspect function signatures, trait implementations, and behavior.
+The current implementation does not include:
 
-### 10.7 Lifetime Micro-Exercise
+- user accounts or cloud synchronization;
+- hidden or server-owned grading tests;
+- browser-based Rust compilation;
+- arbitrary multi-file learner editing;
+- compile-fail lesson workspaces;
+- adaptive review scheduling;
+- notifications or analytics;
+- databases, migrations, benchmarks, procedural macro workspaces, FFI, or
+  dedicated unsafe validation;
+- large multi-module capstone workspaces.
 
-The learner adds or adjusts a minimal lifetime.
-
-Example:
-
-```text
-Add exactly one lifetime parameter so the returned value can borrow from the input.
-```
-
-### 10.8 Iterator Exercise
-
-The learner converts between loop and iterator forms.
-
-Examples:
-
-- Convert a manual collection loop to `filter_map`.
-- Replace an unclear iterator chain with a clear loop.
-
-The app should teach judgment, not always prefer iterator chains.
-
-### 10.9 Error Design
-
-The learner designs custom error hierarchies.
-
-Examples:
-
-- Add error variants.
-- Implement `Display`.
-- Implement `Error`.
-- Implement `From<ParseIntError>`.
-- Use `source()`.
-
-### 10.10 Ownership Choice
-
-The learner chooses between ownership strategies.
-
-Examples:
-
-- `String`.
-- `&str`.
-- `Cow<'a, str>`.
-- `Rc<String>`.
-- `Arc<String>`.
-
-The lesson must explain the tradeoff through code.
-
-## 11. Example Multi-Day Arc
-
-The product should support arcs where each day adds one concept to the same small domain.
-
-Example: parse a user from text.
-
-Arc outcome:
-
-```text
-user_parser/
-  User struct
-  ParseUserError enum
-  Display impl
-  Error impl
-  From<ParseIntError> impl
-  TryFrom<&str> for User impl
-  public examples/tests
-  short docs
-```
-
-Day 1:
-
-```rust
-enum ParseUserError {}
-```
-
-Task: define a custom error enum.
-
-Day 2:
-
-Task: add variants for missing ID, missing name, and invalid ID.
-
-Day 3:
-
-Task: implement `Display`.
-
-Day 4:
-
-Task: implement `std::error::Error`.
-
-Day 5:
-
-Task: implement `From<ParseIntError>`.
-
-Day 6:
-
-Task: implement `TryFrom<&str>` for `User`.
-
-Day 7:
-
-Task: write tests for success and failure cases.
-
-Each day should be independently completable in under 10 minutes.
-
-The arc is complete when the artifact is coherent and usable on its own. The next arc should start from a new small domain rather than continuing to expand this parser indefinitely.
-
-## 12. Validation System
-
-### 12.1 Validation Source of Truth
-
-The validation source of truth is the lesson's configured validation mode.
-
-Current frontend modes:
-
-- `structural`: inspect the submitted source for expected declarations, signatures, or traits.
-- `self-check`: ask the learner to compare against public expected behavior and mark completion manually.
-- `browser-rust`: reserved for a browser-shipped Rust compiler/checker/test runner; not implemented yet.
-
-Current backend mode:
-
-- `backend-cargo-test`: send `src/lib.rs` and `tests/lesson.rs` to the Actix backend, enqueue a job, and run `cargo test --offline --message-format=json` inside the Podman runner.
-
-The preferred long-term mode for strong Rust behavior checks is either `browser-rust` for offline-capable lessons or `backend-cargo-test` for lessons that need normal Cargo behavior. `structural` and `self-check` remain fallbacks for concepts where automated validation would be unfair or too brittle.
-
-The frontend dispatches `backend-cargo-test` steps to `POST /run` and still
-uses the browser worker for local validation modes.
-
-### 12.2 Validation Flow
-
-Current frontend flow:
-
-1. User edits code.
-2. User taps Check or Run Tests.
-3. Client loads the lesson validation bundle from local cache.
-4. Client sends the edited files to a Web Worker.
-5. The worker runs the configured frontend validation mode.
-6. The worker returns structured diagnostics.
-7. Client shows compile/check errors, test failures, or success.
-8. Client records completion locally when validation passes or when a self-check lesson is manually completed.
-
-Planned backend-backed flow:
-
-1. User edits code.
-2. User taps Check or Run Tests.
-3. Client combines the user's `src/lib.rs` with the lesson-authored `tests/lesson.rs`.
-4. Client sends a `POST /run` request to the configured backend.
-5. Backend validates paths, file count, file sizes, and total submitted bytes.
-6. Backend enqueues the run in a bounded queue.
-7. A worker creates a temporary Cargo workspace and runs the Podman sandbox.
-8. Backend returns a structured `RunResult`.
-9. Client maps the result to the validation panel and records completion locally when appropriate.
-
-### 12.3 Validation Result Schema
-
-```json
-{
-  "status": "failed",
-  "kind": "test_failure",
-  "duration_ms": 842,
-  "summary": "1 public test failed",
-  "diagnostics": "...",
-  "failed_tests": [
-    {
-      "name": "parses_valid_user",
-      "message": "assertion failed"
-    }
-  ]
-}
-```
-
-Possible statuses:
-
-- `passed`.
-- `failed`.
-- `compile_error`.
-- `timeout`.
-- `timed_out`.
-- `unsupported`.
-- `manual_review_required`.
-- `internal_error`.
-
-Frontend validation currently uses `timeout`; backend `RunStatus` currently serializes timeout as `timed_out`. The frontend/backend integration should normalize this naming before exposing backend results in the shared UI.
-
-### 12.4 Browser Limits
-
-Validation must enforce:
-
-- Worker timeout.
-- Maximum output size.
-- No network access.
-- Maximum source size.
-- Maximum validation bundle size.
-- Main-thread responsiveness.
-
-Initial limits:
-
-- Check/test timeout: 10 seconds.
-- Output: 64 KB.
-- Source upload per lesson: 256 KB.
-- Validation engine cache budget: 50 MB initial target.
-
-These limits can be tuned after measuring real tablet performance.
-
-### 12.5 Backend Runner Limits
-
-Current backend defaults:
-
-- Queue capacity: 20.
-- Workers: 2.
-- Job timeout: 10 seconds.
-- Max returned output: 64 KB.
-- Max files per request: 8.
-- Max single file size: 64 KB.
-- Max total submitted content: 256 KB.
-- Max JSON payload: 300 KB.
-- Allowed submitted paths: `src/lib.rs` and `tests/lesson.rs`.
-- Runner image: `rust-runner:1.95`.
-- Workspace root: `/tmp/rust-daily-runs`.
-
-Backend runner behavior:
-
-- Creates a temporary workspace per job.
-- Writes a generated `Cargo.toml`.
-- Writes submitted `src/lib.rs` and `tests/lesson.rs`.
-- Runs Podman with no network and resource limits.
-- Runs `cargo test --offline --message-format=json`.
-- Parses Cargo JSON compiler messages to distinguish compile errors from test failures.
-- Caps combined stdout/stderr output and appends an output-truncated marker when needed.
-- Cleans up temporary workspaces after each run.
-
-### 12.6 Backend API
-
-Current endpoint:
-
-```text
-POST /run
-```
-
-Request:
-
-```json
-{
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "content": "pub fn answer() -> u64 { 42 }\n"
-    },
-    {
-      "path": "tests/lesson.rs",
-      "content": "#[test]\nfn answer_is_42() { assert_eq!(rust_daily_lesson::answer(), 42); }\n"
-    }
-  ]
-}
-```
-
-Response:
-
-```json
-{
-  "status": "passed",
-  "stdout": "...",
-  "stderr": "",
-  "duration_ms": 842
-}
-```
-
-HTTP behavior:
-
-- `200 OK`: job ran; test failure is represented by `status`.
-- `400 Bad Request`: invalid JSON or non-limit validation error.
-- `413 Payload Too Large`: JSON/file/count/content limit exceeded.
-- `429 Too Many Requests`: queue full.
-- `500 Internal Server Error`: queue unavailable, worker dropped, Podman spawn failure, or workspace failure before a normal result can be produced.
-
-### 12.7 Security Requirements
-
-The app executes user-provided code or code-like input either in the browser worker or in the backend runner and must isolate validation from the UI and host.
-
-Browser requirements:
-
-- Run validation inside a Web Worker.
-- Terminate the worker on timeout.
-- Avoid exposing browser APIs to compiled user code.
-- Use a strict Content Security Policy.
-- Store drafts and validation results locally.
-- Keep validation deterministic.
-
-Backend requirements:
-
-- Run submissions only inside the configured Podman runner.
-- Do not invoke a shell to construct runner commands.
-- Disable container networking.
-- Apply memory, CPU, PID, read-only filesystem, tmpfs, no-new-privileges, and capability-drop restrictions.
-- Use bounded queues and timeouts.
-- Reject unsafe paths and oversized requests before enqueueing.
-- Treat backend validation as practice feedback, not tamper-resistant grading, until server-side test selection or signed bundles exist.
-
-### 12.8 Frontend Validation Constraints
-
-Lessons must avoid validation requirements that need a normal native Rust project.
-
-MVP lessons should avoid:
-
-- External dependency resolution.
-- Build scripts.
-- Proc macros.
-- File system access.
-- Network access.
-- Long-running tests.
-- Platform-specific behavior.
-- Large multi-module projects.
-
-### 12.9 Cargo Compatibility for Authors
-
-Lesson authors may maintain normal `Cargo.toml`, `src/`, and `tests/` files for authoring quality. A build step converts supported lessons into browser validation bundles.
-
-Backend-backed lessons may also send authored public tests to `POST /run`. The first backend-backed content format should keep tests explicit and client-supplied; future scored or credentialed features need a stronger trust boundary.
-
-## 13. Offline Behavior
-
-Rust Daily is a local-first PWA and should work after the app shell, lesson content, and frontend validation assets have been cached.
-
-### 13.1 Offline Must-Haves
-
-When offline, the user can:
-
-- Open the app shell.
-- View cached daily lesson content.
-- Edit cached lesson code.
-- Save drafts locally.
-- Read cached hints.
-- Read cached explanations for completed lessons.
-- View cached progress.
-- Run cached browser validation for supported lessons.
-
-### 13.2 Offline Limitations
-
-The first app load requires network or local file hosting so the browser can fetch the app bundle.
-
-When a validation engine or lesson bundle is not cached:
-
-- The Check or Run Tests button should explain that the validation asset is unavailable.
-- The draft must still be editable and saved.
-- The app should fetch the missing asset next time it is online.
-- Drafts must not be lost.
-
-Backend-backed `cargo test` validation is unavailable offline unless the backend is reachable on the local network or same device. Lessons that require backend validation must show a clear unavailable/offline state and preserve drafts.
-
-### 13.3 Validation Asset Caching
-
-Validation assets should be cached deliberately:
-
-- Cache the current daily lesson.
-- Cache the next few unlocked lessons when reasonable.
-- Cache the browser validation engine separately from lesson content.
-- Avoid large surprise downloads on mobile connections.
-
-## 14. Editor Requirements
-
-### 14.1 Allowed Features
-
-The editor may include:
-
-- Rust syntax highlighting.
-- Monospace font.
-- Line numbers.
-- Basic indentation.
-- Bracket matching.
-- Manual undo/redo.
-- Manual find.
-- Touch-friendly selection behavior.
-
-### 14.2 Disallowed Features
-
-The editor must disable:
-
-- Autocomplete.
-- Inline completions.
-- Code actions.
-- Import suggestions.
-- Snippet suggestions.
-- AI integrations.
-- LSP diagnostics before running tests.
-- Automatic formatting that changes user intent during typing.
-
-### 14.3 Optional Features
-
-Optional features:
-
-- Format button using `rustfmt`.
-- Vim/emacs keybindings on desktop only.
-- Font size control.
-- High contrast mode.
-
-If `rustfmt` is included, it must be a deliberate user action, not automatic.
-
-## 15. Hint System
-
-Each lesson may provide up to three hints.
-
-Hint 1:
-
-- Small nudge.
-- Points at the relevant code area.
-- Does not name the full solution.
-
-Hint 2:
-
-- References a Rust concept or standard library item.
-- May suggest a direction.
-- Does not provide complete code.
-
-Hint 3:
-
-- Explains the concept.
-- May describe the shape of the solution.
-- May reveal the canonical solution for the editable part when the lesson author explicitly includes final-hint solution content.
-
-Solution reveal:
-
-- Lives at the final hint level.
-- Requires explicit user action to reveal.
-- Should explain the idiomatic reasoning, not only provide code to paste.
-- Does not complete the lesson by itself; completion still requires passing the configured validation.
-
-## 16. User Experience
-
-### 16.1 Daily Home
-
-The first screen should show:
-
-- Today's lesson.
-- Estimated time.
-- Current streak.
-- Current concept.
-- Continue button.
-- Compact progress summary.
-
-It should not show:
-
-- A large marketing hero.
-- A long feed.
-- Many competing calls to action.
-
-### 16.2 Lesson Screen
-
-The lesson screen should include:
-
-- Brief scenario.
-- Task instruction.
-- Code editor.
-- Run Tests button.
-- Reset button.
-- Hint button.
-- Test output panel.
-- Progress state.
-
-The editor should be the main visual focus.
-
-### 16.3 Completion Screen
-
-After success, show:
-
-- Clear completion state.
-- Short explanation of why the solution is idiomatic.
-- Concepts practiced.
-- Next lesson availability.
-- Optional review prompt.
-
-The explanation should be concise enough to read in under one minute.
-
-### 16.4 Progress Screen
-
-The progress screen should show:
-
-- Streak.
-- Completed lessons.
-- Concepts introduced.
-- Concepts mastered.
-- Review due.
-- Concept graph or grouped concept list.
-
-Avoid gamification that pressures long sessions.
-
-### 16.5 Touch and Tablet UX
-
-Tablet requirements:
-
-- Large touch targets.
-- Responsive layout for portrait and landscape.
-- Editor usable with software keyboard.
-- No hover-only controls.
-- Buttons reachable without covering code where possible.
-- Output panel readable without tiny text.
-- Dark mode by default.
-
-Minimum target sizes:
-
-- Primary buttons: 44 px height or larger.
-- Icon buttons: 44 x 44 px.
-- Editor font: user-adjustable, default 15-17 px.
-
-### 16.6 Desktop UX
-
-Desktop requirements:
-
-- Keyboard shortcuts for run, reset, and hints.
-- Wider editor layout.
-- Optional split view for instructions and output.
-- Same no-autocomplete policy as tablet.
-
-## 17. Visual Design
-
-Design direction:
-
-- Minimal.
-- Focused.
-- Dark mode first.
-- High contrast.
-- Calm progress indicators.
-- Monospace editor.
-- Avoid decorative clutter.
-
-The UI should feel like a compact practice tool, not a marketing site.
-
-Core surfaces:
-
-- Daily lesson.
-- Editor.
-- Test output.
-- Hints.
-- Progress.
-- Settings.
-
-## 18. Accessibility
-
-Requirements:
-
-- Keyboard navigable on desktop.
-- Screen-reader labels for controls.
-- Sufficient color contrast.
-- Color must not be the only status indicator.
-- Font size setting.
-- Reduced motion support.
-- Clear focus states.
-- Error output must be selectable and readable.
-
-## 19. Progression and Scheduling
-
-### 19.1 Daily Lesson Selection
-
-The current full-curriculum path should present lessons one by one in authored order.
-
-Inputs:
-
-- Authored lesson order.
-- Completion state.
-- Draft state for the current lesson.
-
-Default priority:
-
-1. Continue the first incomplete lesson in authored order.
-2. Show completed and upcoming lessons in the curriculum path for orientation.
-3. After all lessons are complete, cycle by local date only as a fallback.
-
-No user-selected focus tracks or adaptive scheduler are needed for the current full-curriculum expansion. A review queue, prerequisite-aware scheduler, or focus-track mode should be treated as a separate future feature after the ordered curriculum is stable.
-
-### 19.2 Streak Rules
-
-The streak increments when:
-
-- The user completes the daily lesson for their local date.
-
-The streak should be forgiving:
-
-- Include a limited streak freeze or grace day.
-- Avoid punishing travel/timezone edge cases.
-
-The product should record completion by date and timezone offset at completion time.
-
-### 19.3 Extra Practice
-
-Extra practice may exist, but:
-
-- It must be visually secondary.
-- It must not be necessary for streaks.
-- It should not unlock too much content too quickly.
-- It should not undermine the 5-10 minute promise.
-
-## 20. Data Model
-
-### 20.1 User
-
-```json
-{
-  "id": "local_user",
-  "created_at": "2026-07-03T00:00:00Z",
-  "timezone": "Europe/Istanbul",
-  "settings": {
-    "theme": "dark",
-    "editor_font_size": 16,
-    "daily_reminder_enabled": false
-  }
-}
-```
-
-### 20.2 Lesson Attempt
-
-```json
-{
-  "id": "attempt_123",
-  "user_id": "local_user",
-  "lesson_id": "error-enum-parse-user-001",
-  "started_at": "2026-07-03T10:00:00Z",
-  "completed_at": null,
-  "status": "in_progress",
-  "validation_attempts": 2,
-  "hints_revealed": 1,
-  "duration_seconds": 420
-}
-```
-
-### 20.3 Concept Progress
-
-```json
-{
-  "user_id": "local_user",
-  "concept_id": "enums-error-design",
-  "state": "practicing",
-  "completed_lessons": 2,
-  "successful_reviews": 0,
-  "last_practiced_at": "2026-07-03T10:08:00Z",
-  "next_review_at": "2026-07-06T00:00:00Z"
-}
-```
-
-### 20.4 Local Draft
-
-```json
-{
-  "lesson_id": "error-enum-parse-user-001",
-  "files": {
-    "src/lib.rs": "..."
-  },
-  "updated_at": "2026-07-03T10:04:00Z",
-  "storage_state": "local_only"
-}
-```
-
-## 21. Content Authoring Requirements
-
-### 21.1 Authoring Checks
-
-Every lesson must pass:
-
-- Starter project compiles or intentionally fails in the expected way.
-- Reference solution passes authoring tests.
-- For every non-first lesson in an arc, the starter begins from the previous
-  lesson's active reference solution so the arc is cumulative.
-- For every non-first lesson in an arc, the reference solution preserves the
-  previous lesson's active API and behavior while completing the new task.
-- Source validation rejects archived continuity markers such as
-  `previous_lesson_solution` and `#[allow(dead_code)]` wrappers.
-- Configured validation metadata or bundle is generated successfully.
-- Configured validation fails against incomplete starter code when appropriate.
-- Metadata is valid.
-- Estimated duration is present.
-- Concept ID exists.
-- Hints are present and ordered.
-
-### 21.2 Content Review Checklist
-
-Before publishing a lesson, confirm:
-
-- The lesson teaches one concept.
-- The task is realistic.
-- The code is idiomatic.
-- The configured validation checks are fair.
-- The public tests are helpful.
-- The wording fits on a tablet screen.
-- The solution does not require autocomplete.
-- The lesson can be completed in under 10 minutes.
-- The explanation says why the approach is idiomatic.
-
-### 21.3 Lesson Style Guide
-
-Instructions should:
-
-- Use direct language.
-- Avoid long paragraphs.
-- Name the exact task.
-- Avoid trivia.
-- Avoid asking the user to memorize compiler messages.
-- Prefer domain examples over abstract placeholders.
-
-Code should:
-
-- Use meaningful names.
-- Avoid unnecessary crates.
-- Avoid macros unless the lesson teaches a macro-related concept.
-- Keep files short.
-- Prefer stable Rust.
-
-## 22. Technical Architecture
-
-### 22.1 Repository Layout
-
-Current repository layout:
-
-```text
-/
-  .github/                 # repository workflows
-  AGENTS.md                # workspace guidance
-  Makefile                 # backend format/lint/test shortcuts
-  mise.toml                # tool versions
-  frontend/                # Vite React PWA
-  backend/                 # Actix validation service
-  docker/                  # runner images
-  docs/                    # specs and implementation plans
-```
-
-Frontend app layout:
-
-```text
-frontend/
-  index.html
-  package.json
-  public/
-  scripts/validate-content.mjs
-  src/
-    components/
-    content/
-    progress/
-    progression/
-    pwa/
-    storage/
-    types/
-    validation/
-```
-
-Backend app layout:
-
-```text
-backend/
-  Cargo.toml
-  src/
-    api.rs
-    config.rs
-    error.rs
-    lib.rs
-    main.rs
-    model.rs
-    observability.rs
-    queue.rs
-    runner.rs
-    server.rs
-    service.rs
-    workspace.rs
-```
-
-Docker layout:
-
-```text
-docker/
-  rust-runner.Dockerfile
-```
-
-### 22.2 Current Frontend Architecture
-
-Frontend:
-
-- Static PWA.
-- Responsive tablet-first UI.
-- Browser code editor with completion disabled.
-- Local storage or IndexedDB for drafts and cached lessons.
-- Web Worker validation runtime for structural and self-check modes.
-- Local scheduler and progress engine.
-- Settings, theme, editor font size, reduced motion, export/import, and local deletion controls.
-
-Content:
-
-- Versioned lesson files, including V1 lesson records and V2 generated lesson records.
-- Static lesson metadata.
-- Structural validation metadata.
-- Self-check metadata.
-- Backend public-test metadata for V2 lessons.
-- Concept metadata.
-- Authoring-only starter, test, notes, and reference solution files exist for the first V2 Email Address Value Object arc.
-
-Deployment:
-
-- VPS deployment is configured through GitHub Actions.
-- The Actix backend serves the built frontend from the configured dist directory.
-- The frontend must also work when served from a local static server or Vite dev server.
-- No hosted backend is required for local practice, drafts, progress, or frontend validation.
-
-### 22.3 Current Backend Architecture
-
-Backend:
-
-- Actix HTTP API.
-- Thin `POST /run` handler.
-- Thin binary entrypoint that loads settings and delegates to a testable library `run(settings)` function.
-- Typed configuration loaded from `config/default.yaml`, `config/{RUST_DAILY_ENV}.yaml`, and `RUST_DAILY_*` environment overrides through the `config` crate.
-- Server construction isolated behind a library `build_server(settings)` function.
-- Application service boundary between Actix handlers and the run queue.
-- Typed request validation and path/content wrappers.
-- Bounded Tokio `mpsc` queue.
-- Fixed worker pool.
-- Tokio one-shot result channel per job.
-- Temporary Cargo workspace assembly.
-- Podman runner process launched with `tokio::process::Command`.
-- Structured JSON logs through `tracing`.
-- Static frontend serving through `actix-files`, with `/` served from `index.html`.
-- Optional CORS origin.
-
-Runner:
-
-- Uses `rust-runner:1.95` by default.
-- Runs without network.
-- Runs with memory, CPU, PID, read-only filesystem, tmpfs, no-new-privileges, and capability-drop restrictions.
-- Runs `cargo test --offline --message-format=json`.
-
-Backend deployment is configured for a VPS systemd service. The service can
-also be run locally after building the runner image and the frontend bundle.
-
-### 22.4 Frontend Responsibilities
-
-The frontend handles:
-
-- Rendering daily lesson.
-- Editing code.
-- Managing local drafts.
-- Showing hints.
-- Running browser validation.
-- Calling backend validation for backend-backed lessons.
-- Showing test output.
-- Caching app shell and lesson content.
-- Tracking local progress.
-- Exporting and importing progress data.
-
-### 22.5 Backend Responsibilities
-
-The backend handles:
-
-- Validating submitted file paths and sizes.
-- Rejecting unsafe or unsupported submissions before enqueueing.
-- Applying bounded queue backpressure.
-- Preparing the Cargo workspace.
-- Running the restricted Podman command.
-- Returning compact run results.
-- Reporting structured API errors.
-
-The backend does not currently handle:
-
-- Authentication.
-- Accounts.
-- Progress persistence.
-- Lesson lookup by ID.
-- Server-side hidden test selection.
-- Database storage.
-- Async job polling.
-- Multi-language execution.
-
-### 22.6 Local Storage Responsibilities
-
-The app stores locally:
-
-- Settings.
-- Drafts.
-- Attempts.
-- Completion history.
-- Concept progress.
-- Cached lesson metadata.
-
-Preferred storage:
-
-- IndexedDB for larger data such as drafts and lesson bundles.
-- LocalStorage only for small settings or boot flags.
-
-Current implementation uses `localStorage` for drafts, progress, and settings.
-
-### 22.7 Static Asset Layout
-
-Suggested asset layout:
-
-```text
-/index.html
-/manifest.webmanifest
-/service-worker.js
-/assets/app.js
-/assets/app.css
-/assets/validation-engine.wasm
-/content/concepts.json
-/content/lessons/index.json
-/content/lessons/error-enum-parse-user-001/lesson.json
-/content/lessons/error-enum-parse-user-001/files.json
-/content/lessons/error-enum-parse-user-001/validation.json
-```
-
-Current frontend implementation bundles lesson and concept JSON through Vite instead of serving a separate `/content/` tree. Moving to external content bundles remains a future portability improvement.
-
-### 22.8 Frontend Validation Job
-
-```json
-{
-  "lesson_id": "error-enum-parse-user-001",
-  "mode": "browser-rust",
-  "files": {
-    "src/lib.rs": "..."
-  }
-}
-```
-
-### 22.9 Frontend Validation Response
-
-```json
-{
-  "status": "passed",
-  "duration_ms": 914,
-  "summary": "All tests passed",
-  "diagnostics": "",
-  "completed": true
-}
-```
-
-### 22.10 Backend Validation Job
-
-```json
-{
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "content": "..."
-    },
-    {
-      "path": "tests/lesson.rs",
-      "content": "..."
-    }
-  ]
-}
-```
-
-### 22.11 Backend Validation Response
-
-```json
-{
-  "status": "passed",
-  "stdout": "...",
-  "stderr": "",
-  "duration_ms": 914
-}
-```
-
-### 22.12 Progress Portability
-
-Because there is no account system in MVP, progress portability should use files:
-
-- Export progress as JSON.
-- Import progress from JSON.
-- Never require cloud sync to keep a streak.
-
-Current implementation supports progress export/import from the settings screen.
-
-## 23. Privacy
-
-Privacy requirements:
-
-- Store only the minimum local data needed for progress.
-- Do not use submitted code to train AI models.
-- Do not send code to AI services.
-- Do not send code to any remote validation service unless the user/deployment has explicitly enabled backend validation.
-- Make backend-backed lessons visibly different from fully local browser-validated lessons.
-- Make this explicit in product copy.
-- Allow progress export.
-- Allow local data deletion.
-
-## 24. Analytics
-
-MVP analytics are local-only product counters used to tune the experience for the user.
-
-Allowed local analytics:
-
-- Lesson started.
-- Lesson completed.
-- Validation status.
-- Time to complete.
-- Hint level revealed.
-- Concept practiced.
-- Device class.
-
-Do not collect:
-
-- Keystroke-level telemetry.
-- Full source code by default.
-- Clipboard contents.
-- External browsing data.
-- Remote telemetry by default.
-
-Analytics should help improve lesson quality, not optimize addiction loops.
-
-## 25. Notifications
-
-Daily reminders are optional.
-
-Requirements:
-
-- Disabled by default unless the user opts in.
-- Configurable time.
-- Respect quiet hours.
-- Easy to disable.
-
-Notification copy should be low-pressure.
-
-## 26. Settings
-
-Settings should include:
-
-- Theme.
-- Editor font size.
-- Reminder preference.
-- Reminder time.
-- Reduced motion.
-- Data export.
-- Data import.
-- Local data reset.
-- Reset local drafts.
-
-Optional later settings:
-
-- Preferred difficulty.
-- Keyboard bindings.
-
-## 27. Success Metrics
-
-Product quality metrics:
-
-- Median lesson completion time: 5-10 minutes.
-- High percentage of lessons completed on first or second day attempted.
-- Low abandonment during editor session.
-- Streak continuation without excessive daily session length.
-- Validation failures reveal fair gaps, not confusing traps.
-
-Learning metrics:
-
-- Concept mastery growth.
-- Review success rate.
-- Reduced repeated errors in the same concept.
-- Completion of multi-day arcs.
-
-Technical metrics:
-
-- Validation latency.
-- Validation timeout rate.
-- PWA cache reliability.
-- Draft recovery rate.
-- Crash-free sessions.
-
-## 28. MVP Scope
-
-### 28.1 MVP Must Include
-
-- PWA shell.
-- Static frontend deployment.
-- Dark tablet-first UI.
-- Daily lesson screen.
-- Code editor with syntax highlighting and no autocomplete.
-- Browser-side Check or Run Tests flow.
-- Browser validation for supported lessons.
-- Authored hints.
-- Completion explanation.
-- Local draft saving.
-- Basic streak.
-- Basic concept progress.
-- Progress export/import.
-- Initial curriculum of 30 lessons.
-
-### 28.2 MVP Curriculum
-
-The first 30 lessons should cover:
-
-- Structs.
-- Enums.
-- Methods.
-- Basic ownership choices.
-- `Option`.
-- `Result`.
-- Pattern matching.
-- `Display`.
-- `Error`.
-- `From`.
-- `TryFrom`.
-- Basic tests.
-- Simple iterators.
-
-### 28.3 MVP Exclusions
-
-Exclude from MVP:
-
-- AI features.
-- User accounts.
-- Cloud sync.
-- Secret hidden tests.
-- Social features.
-- Leaderboards.
-- Mobile native apps.
-- Large projects.
-- Marketplace/community lessons.
-- Advanced analytics dashboards.
-
-Backend validation now exists and the frontend can use it for backend-backed lessons, but a hosted backend is still not required for the local-first practice loop. Server-side `cargo test` is practice feedback, not tamper-resistant scoring.
-
-### 28.4 Current MVP Implementation Status
-
-Implemented:
-
-- Frontend PWA shell.
-- VPS deployment workflow for the backend and built frontend.
-- Dark-first UI with light/system theme control.
-- Daily lesson screen.
-- CodeMirror Rust editor with no autocomplete extension.
-- Browser-side structural/self-check validation flow.
-- Authored hints and completion explanations.
-- Local draft saving.
-- Basic streak and concept progress.
-- Progress export/import.
-- Local progress deletion and draft deletion.
-- 36-lesson current curriculum: the 30-lesson initial curriculum plus the first 6-lesson V2 Email Address Value Object arc.
-- Optional Actix backend service for Cargo-backed validation.
-- Frontend `POST /run` integration for backend validation.
-- Initial backend-backed lesson content with public tests.
-- Ordered curriculum path for completed, current, and upcoming lessons.
-- Schema V2 lesson normalization, structured hints, path-aware drafts, and source-content generation.
-- Actix static serving for the built frontend.
-- Podman runner image definition.
-
-Partially implemented:
-
-- Validation: `structural`, `self-check`, and `backend-cargo-test` are implemented; `browser-rust` is not implemented.
-- Scheduling: current selector continues the first incomplete lesson in authored order, then cycles by local date after all lessons are complete; review due logic is not part of the current full-curriculum expansion.
-- Progress: summary exists; full progress/concept graph screen is not implemented.
-- Settings: theme, editor font size, reduced motion, export/import, progress reset, and draft reset exist; reminder settings do not exist.
-- Authoring pipeline: source layout, source validation, and frontend-content generation exist for the first V2 arc; generalized starter/solution compile checks are not implemented.
-
-Not yet implemented:
-
-- Broad backend-backed lesson content/test coverage.
-- Browser Rust compiler/test runner.
-- Optional spaced repetition or review scheduler.
-- Full progress screen.
-- Notifications.
-- Generalized authoring CI with starter/solution compile checks.
-- Reference solutions for migrated MVP lessons and future arcs.
-- Automated frontend test runner.
-- End-to-end browser tests.
-
-## 29. Post-MVP Roadmap
-
-Possible later additions:
-
-- Full idiomatic Rust curriculum expansion described in
-  [`docs/FULL_CURRICULUM_SPEC.md`](FULL_CURRICULUM_SPEC.md) and planned in
-  [`docs/FULL_CURRICULUM_IMPLEMENTATION_PLAN.md`](FULL_CURRICULUM_IMPLEMENTATION_PLAN.md).
-- Broader backend-backed lesson content.
-- Optional spaced repetition review queue as a separate feature after the ordered curriculum is stable.
-- Full concept graph visualization.
-- More advanced lifetime lessons.
-- Iterator design arcs.
-- Module organization arcs.
-- Async Rust lessons.
-- Crate-specific tracks.
-- Better browser validation coverage.
-- Browser Rust validation engine.
-- Optional local/native validation export workflow.
-- Authoring tools for lesson creators.
-- Team mode for companies.
-- Server-side hidden tests only if a future scored/account-backed mode needs tamper-resistant validation.
-
-## 30. Acceptance Criteria
-
-The app is successful at MVP when:
-
-- A user can open the PWA on an Android tablet.
-- The user can complete one daily Rust lesson in under 10 minutes.
-- The editor provides syntax highlighting but no autocomplete or AI help.
-- The user can run supported checks and receive validation feedback.
-- Drafts survive refresh and offline periods.
-- Progress and streak update locally after completion.
-- The app clearly explains the idiomatic Rust idea after completion.
-- The initial 30 lessons follow the one-concept rule.
-- The frontend can be deployed as static files without a custom backend.
-- Optional backend validation can be run locally for Cargo-backed experiments without changing the local-first progress model.
-
-## 31. Remaining Product Questions
-
-Questions still open after the MVP and first full-curriculum slice:
-
-- Which browser Rust validation engine should be used if `browser-rust` lessons become a priority?
-- Which MVP lessons should be migrated next into schema V2 with backend public tests?
-- How should backend-backed lessons explain that code is sent to the configured runner?
-- Should `rustfmt` be available as a manual button in MVP?
-- How strict should streak recovery be?
-- Should users be allowed to do tomorrow's lesson early?
-
-## 32. First Implementation Milestones
-
-Milestone 1: Static prototype.
-
-- Render daily lesson from local JSON/YAML.
-- Show editor.
-- Save local draft.
-- Disable autocomplete.
-- Show static hints.
-
-Milestone 2: Validation prototype.
-
-- Load validation engine in a Web Worker.
-- Run one browser-supported validation bundle.
-- Return structured validation output.
-- Show diagnostics and test output in UI.
-
-Milestone 3: Progress prototype.
-
-- Create attempts.
-- Mark lesson complete.
-- Track streak.
-- Track concept progress.
-- Reset local progress for pre-release QA.
-
-Milestone 4: PWA readiness.
-
-- Cache app shell.
-- Cache current lesson.
-- Preserve drafts offline.
-- Add install metadata.
-
-Milestone 5: MVP content.
-
-- Author 30 lessons.
-- Run lesson validation checks.
-- Review all hints and explanations.
-- Test each lesson on tablet viewport.
-
-MVP portability hardening:
-
-- Export and import progress JSON.
-
-Backend validation milestone:
-
-- Connect frontend validation client to optional `POST /run`.
-- Extend lesson content with public test files for backend-backed lessons.
-- Normalize backend `timed_out` and frontend `timeout` status naming.
-- Add unavailable/offline state for backend-backed lessons.
-- Expand backend-backed lesson coverage beyond the first smoke slice.
+These are deliberate future increments, not implied current capabilities.

@@ -38,7 +38,10 @@ def post_run(url: str, payload: dict[str, object], timeout: float) -> tuple[int,
     request = urllib.request.Request(
         url.rstrip("/") + "/run",
         data=data,
-        headers={"Content-Type": "application/json"},
+        headers={
+            "Content-Type": "application/json",
+            "User-Agent": "rust-daily-smoke/1.0",
+        },
         method="POST",
     )
 
