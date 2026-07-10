@@ -11,12 +11,17 @@
   "difficulty": "medium",
   "estimatedMinutes": 8,
   "scenario": "Domain types should not depend on HTTP, JSON, databases, or logging setup. Start with pure command and value-object types.",
-  "instructions": "Define a domain module with EmailAddress and RegisterUserCommand. Keep fields private, expose borrowed accessors, and do not import Tokio, Actix, or serde into the domain module.",
+  "instructions": "In src/domain.rs define EmailAddress and RegisterUserCommand. Keep fields private, expose borrowed accessors, and do not import Tokio, Actix, or serde into the domain module.",
   "files": [
     {
       "path": "src/lib.rs",
+      "role": "readonly",
+      "content": "pub mod domain;\n"
+    },
+    {
+      "path": "src/domain.rs",
       "role": "editable",
-      "content": "// TODO: define framework-free register-user domain types.\n"
+      "content": "// TODO: define framework-free register-user domain types here.\n"
     },
     {
       "path": "tests/public.rs",
@@ -35,8 +40,8 @@
     },
     {
       "level": 3,
-      "body": "Keep all imports out of the domain module.",
-      "solutionCode": "pub mod domain {\n    #[derive(Debug, Clone, PartialEq, Eq, Hash)]\n    pub struct EmailAddress(String);\n\n    impl EmailAddress {\n        pub fn new(value: impl Into<String>) -> Self {\n            Self(value.into())\n        }\n\n        pub fn as_str(&self) -> &str {\n            &self.0\n        }\n    }\n\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct RegisterUserCommand {\n        email: EmailAddress,\n        display_name: String,\n    }\n\n    impl RegisterUserCommand {\n        pub fn new(email: EmailAddress, display_name: impl Into<String>) -> Self {\n            Self {\n                email,\n                display_name: display_name.into(),\n            }\n        }\n\n        pub fn email(&self) -> &EmailAddress {\n            &self.email\n        }\n\n        pub fn display_name(&self) -> &str {\n            &self.display_name\n        }\n    }\n}"
+      "body": "Keep src/domain.rs free of framework imports.",
+      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq, Hash)]\npub struct EmailAddress(String);\n\nimpl EmailAddress {\n    pub fn new(value: impl Into<String>) -> Self {\n        Self(value.into())\n    }\n\n    pub fn as_str(&self) -> &str {\n        &self.0\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: EmailAddress,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: EmailAddress, display_name: impl Into<String>) -> Self {\n        Self {\n            email,\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &EmailAddress {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}"
     }
   ],
   "completionExplanation": "The core register-user types are runtime-independent and can be reused by HTTP, jobs, or tests.",

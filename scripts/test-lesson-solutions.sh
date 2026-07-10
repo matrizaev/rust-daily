@@ -48,6 +48,21 @@ console.log(backendStep?.dependencySet || "std");
 ' "$1"
 }
 
+editable_path_for_lesson() {
+  node -e '
+const fs = require("fs");
+const lesson = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+const editableFiles = Array.isArray(lesson.files)
+  ? lesson.files.filter((file) => file?.role === "editable")
+  : [];
+if (editableFiles.length !== 1 || typeof editableFiles[0].path !== "string") {
+  console.error(`${process.argv[1]} must define exactly one editable file`);
+  process.exit(66);
+}
+console.log(editableFiles[0].path);
+' "$1"
+}
+
 append_dependencies() {
   local crate_dir="$1"
   local dependency_set="$2"
@@ -86,16 +101,16 @@ TOML
 
 lesson_dirs=()
 
-if [[ -f "$target_path/solution/src/lib.rs" && -d "$target_path/tests" ]]; then
+if [[ -f "$target_path/lesson.json" ]]; then
   lesson_dirs+=("$target_path")
 else
-  while IFS= read -r -d '' solution_file; do
-    lesson_dir="${solution_file%/solution/src/lib.rs}"
-    if [[ -f "$lesson_dir/solution/src/lib.rs" && -d "$lesson_dir/tests" ]]; then
+  while IFS= read -r -d '' lesson_json; do
+    lesson_dir="${lesson_json%/lesson.json}"
+    if [[ -d "$lesson_dir/starter" && -d "$lesson_dir/tests" ]]; then
       lesson_dirs+=("$lesson_dir")
     fi
   done < <(
-    find "$target_path" -type f -path '*/solution/src/lib.rs' -print0 |
+    find "$target_path" -type f -name lesson.json -print0 |
       sort -z
   )
 fi
@@ -109,10 +124,19 @@ for lesson_dir in "${lesson_dirs[@]}"; do
   rel_path="${lesson_dir#"$repo_root"/}"
   crate_dir="$tmp_dir/${rel_path//\//__}"
   dependency_set="$(dependency_set_for_lesson "$lesson_dir/lesson.json")"
+  editable_path="$(editable_path_for_lesson "$lesson_dir/lesson.json")"
+  solution_file="$lesson_dir/solution/$editable_path"
+
+  if [[ ! -f "$solution_file" ]]; then
+    echo "Missing solution file for $rel_path editable path: $editable_path" >&2
+    exit 66
+  fi
 
   cargo new --lib "$crate_dir" --name rust_daily_lesson --quiet
   append_dependencies "$crate_dir" "$dependency_set"
-  cp -R "$lesson_dir/solution/." "$crate_dir/"
+  cp -R "$lesson_dir/starter/." "$crate_dir/"
+  mkdir -p "$(dirname "$crate_dir/$editable_path")"
+  cp "$solution_file" "$crate_dir/$editable_path"
   mkdir -p "$crate_dir/tests"
   cp -R "$lesson_dir/tests/." "$crate_dir/tests/"
 

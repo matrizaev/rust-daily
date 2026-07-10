@@ -1,5 +1,5 @@
 use rust_daily_lesson::{
-    application::{register_user, RegisterUserError},
+    application::{RegisterUserError, register_user},
     domain::{EmailAddress, RegisterUserCommand},
     infrastructure::InMemoryUserRepository,
 };

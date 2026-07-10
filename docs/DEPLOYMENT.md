@@ -208,8 +208,8 @@ runner path:
 make smoke-runner SMOKE_URL=https://borrowquest.qzz.io
 ```
 
-Use `SMOKE_CASE=fail`, `compile-error`, or `timeout` to inspect the other runner
-outcomes.
+Use `SMOKE_CASE=multi-file-pass`, `fail`, `compile-error`, or `timeout` to
+inspect the other runner outcomes.
 
 ## Security Boundary
 

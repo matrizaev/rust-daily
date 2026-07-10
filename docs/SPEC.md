@@ -25,6 +25,8 @@ contains:
 
 The future curriculum direction is maintained in
 [FUTURE_ADVANCED_CONCEPTS_IMPLEMENTATION_PLAN.md](FUTURE_ADVANCED_CONCEPTS_IMPLEMENTATION_PLAN.md).
+The next runner milestone is specified in
+[PROJECT_SNAPSHOT_VALIDATION_SPEC.md](PROJECT_SNAPSHOT_VALIDATION_SPEC.md).
 
 ## 2. Intended Outcome
 
@@ -89,8 +91,9 @@ manual implementation is appropriate only when its behavior is the lesson.
 
 ### 4.3 One Editable Artifact
 
-A lesson may compile a realistic multi-file or multi-crate project, but exactly
-one artifact is editable during that lesson.
+A lesson may compile a realistic multi-file project snapshot, but exactly one
+artifact is editable during that lesson. Multi-crate workspaces are a future
+runner mode, not part of the current implementation.
 
 - All other source, manifest, migration, fixture, and test files are supplied
   as read-only context.
@@ -222,9 +225,9 @@ Canonical files live under:
 lessons/<arc>/<lesson>/
   lesson.json
   notes.md
-  starter/src/lib.rs
-  tests/public.rs
-  solution/src/lib.rs
+  starter/<project files>
+  tests/<public test files>
+  solution/<editable path>
 ```
 
 The generated frontend content may contain the final hint's approved solution
@@ -303,17 +306,21 @@ implemented.
 
 ### 7.2 Cargo Checks
 
-The frontend submits:
+The frontend submits a complete backend-controlled snapshot:
 
 ```text
-src/lib.rs
-tests/lesson.rs
+src/**/*.rs
+tests/**/*.rs
+fixtures/**
+testdata/**
 dependencySet
 ```
 
-The Actix backend validates the payload, places it on a bounded queue, creates a
-temporary Cargo workspace, and runs `cargo test --offline` in a restricted
-Podman container.
+The payload must include `src/lib.rs` and at least one `tests/**/*.rs` file.
+The Actix backend validates paths and sizes, places the request on a bounded
+queue, creates a temporary Cargo workspace, generates `Cargo.toml` from the
+selected dependency set, writes all validated files, and runs
+`cargo test --offline` in a restricted Podman container.
 
 Supported dependency sets:
 
@@ -339,8 +346,11 @@ Default server limits are:
 | Execution timeout | 10 seconds |
 | Combined output | 65,536 bytes |
 
-The API accepts only the two supported paths despite the general file-count
-limit. Paths must be relative, unique, and traversal-free.
+Paths must be relative, unique, traversal-free, and inside the supported
+single-crate allowlist: `src/**/*.rs`, `tests/**/*.rs`, `fixtures/**`, and
+`testdata/**`. The API rejects learner-supplied manifests, lockfiles, build
+scripts, target directories, benches, examples, migrations, and arbitrary
+paths.
 
 ### 7.4 Grading Boundary
 
@@ -425,6 +435,9 @@ The implementation is divided into:
 Detailed component and runtime flows are defined in
 [../ARCHITECTURE.md](../ARCHITECTURE.md). Production operation is defined in
 [DEPLOYMENT.md](DEPLOYMENT.md).
+The planned implementation for compiling complete lesson snapshots while
+preserving one editable artifact is defined in
+[PROJECT_SNAPSHOT_VALIDATION_SPEC.md](PROJECT_SNAPSHOT_VALIDATION_SPEC.md).
 
 Configuration is layered from `config/default.yaml`, an environment-specific
 YAML file, and `RUST_DAILY_*` environment overrides.
@@ -456,7 +469,7 @@ The current implementation does not include:
 - user accounts or cloud synchronization;
 - hidden or server-owned grading tests;
 - browser-based Rust compilation;
-- multi-file and multi-crate runner transport;
+- multi-crate runner transport;
 - compile-fail lesson workspaces;
 - adaptive review scheduling;
 - notifications or analytics;

@@ -1085,11 +1085,11 @@
     "order": 78,
     "day": 6,
     "arcLength": 6,
-    "title": "Add timeout policy and an Actix handler",
+    "title": "Add an Actix handler boundary",
     "conceptId": "register-handler-boundary",
     "difficulty": "medium",
     "estimatedMinutes": 10,
-    "scenario": "A handler adapter should translate request DTOs, call the use case, and return response data without pushing HTTP concepts into domain code."
+    "scenario": "A handler adapter should translate request DTOs, call timeout-aware application code, and return response data without pushing HTTP concepts into domain code."
   },
   {
     "schemaVersion": 2,

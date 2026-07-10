@@ -61,11 +61,17 @@ const getStarterDraftState = (lesson: Lesson): DraftState => ({
   lastSavedAt: null,
 });
 
-const draftRecordToState = (lesson: Lesson, draft: DraftRecord): DraftState => ({
-  code: draft.files[getPrimaryEditableFile(lesson).path] ?? draft.code,
-  filePath: getPrimaryEditableFile(lesson).path,
-  lastSavedAt: draft.updatedAt,
-});
+const draftRecordToState = (lesson: Lesson, draft: DraftRecord): DraftState => {
+  const editableFile = getPrimaryEditableFile(lesson);
+  const legacyCode =
+    editableFile.path === DEFAULT_EDITABLE_PATH ? draft.code : editableFile.content;
+
+  return {
+    code: draft.files[editableFile.path] ?? legacyCode,
+    filePath: editableFile.path,
+    lastSavedAt: draft.updatedAt,
+  };
+};
 
 const getDraftState = (lesson: Lesson): DraftState => {
   const draft = loadDraft(lesson.id);
@@ -137,6 +143,7 @@ const buildValidationRequest = (
 ) => ({
   lessonId: lesson.id,
   validation,
+  editablePath: filePath,
   files: Object.fromEntries(
     lesson.files.map((file) => [
       file.path,

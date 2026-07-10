@@ -1,12 +1,19 @@
 use std::{
+    collections::BTreeMap,
     num::NonZeroUsize,
     path::{Component, Path},
 };
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use tokio::sync::oneshot;
-use uuid::Uuid;
+
+use crate::dependency_set::DependencySet;
+
+const REQUIRED_LIB_PATH: &str = "src/lib.rs";
+const SRC_PREFIX: &str = "src/";
+const TESTS_PREFIX: &str = "tests/";
+const FIXTURES_PREFIX: &str = "fixtures/";
+const TESTDATA_PREFIX: &str = "testdata/";
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
 pub struct RunRequest {
@@ -31,47 +38,6 @@ impl RunRequest {
     }
 }
 
-#[derive(Debug, Clone, Copy, Default, Deserialize, Serialize, Eq, PartialEq)]
-#[serde(rename_all = "kebab-case")]
-pub enum DependencySet {
-    #[default]
-    Std,
-    Advanced,
-}
-
-impl DependencySet {
-    pub fn dependencies(self) -> &'static [(&'static str, &'static str)] {
-        match self {
-            Self::Std => &[],
-            Self::Advanced => &[
-                ("serde", r#"{ version = "1", features = ["derive"] }"#),
-                ("serde_json", r#""1""#),
-                ("thiserror", r#""2""#),
-                ("anyhow", r#""1""#),
-                (
-                    "tokio",
-                    r#"{ version = "1", features = ["macros", "rt", "sync", "time"] }"#,
-                ),
-                ("tracing", r#""0.1""#),
-                (
-                    "tracing-subscriber",
-                    r#"{ version = "0.3", features = ["fmt"] }"#,
-                ),
-                (
-                    "actix-web",
-                    r#"{ version = "4", default-features = false }"#,
-                ),
-                ("actix-rt", r#""2""#),
-                ("http", r#""1""#),
-                (
-                    "proptest",
-                    r#"{ version = "1", default-features = false, features = ["std"] }"#,
-                ),
-            ],
-        }
-    }
-}
-
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
 pub struct SubmittedFile {
     path: String,
@@ -91,18 +57,20 @@ impl SubmittedFile {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-pub enum SubmittedPath {
-    LibRs,
-    LessonTest,
-}
+#[derive(Debug, Clone, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct SubmittedPath(String);
 
 impl SubmittedPath {
-    pub fn as_str(self) -> &'static str {
-        match self {
-            Self::LibRs => "src/lib.rs",
-            Self::LessonTest => "tests/lesson.rs",
-        }
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    fn is_required_lib(&self) -> bool {
+        self.0 == REQUIRED_LIB_PATH
+    }
+
+    fn is_test_file(&self) -> bool {
+        self.0.starts_with(TESTS_PREFIX) && self.0.ends_with(".rs")
     }
 }
 
@@ -125,14 +93,9 @@ impl TryFrom<&str> for SubmittedPath {
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         validate_safe_path(value)?;
+        validate_supported_path(value)?;
 
-        match value {
-            "src/lib.rs" => Ok(Self::LibRs),
-            "tests/lesson.rs" => Ok(Self::LessonTest),
-            _ => Err(ValidationError::UnsupportedPath {
-                path: value.to_string(),
-            }),
-        }
+        Ok(Self(value.to_string()))
     }
 }
 
@@ -178,17 +141,13 @@ impl TryFrom<SubmittedContentInput> for SubmittedContent {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ValidatedRunRequest {
-    lib_rs: SubmittedContent,
-    lesson_test: SubmittedContent,
+    files: BTreeMap<SubmittedPath, SubmittedContent>,
     dependency_set: DependencySet,
 }
 
 impl ValidatedRunRequest {
-    pub fn files(&self) -> [(SubmittedPath, &SubmittedContent); 2] {
-        [
-            (SubmittedPath::LibRs, &self.lib_rs),
-            (SubmittedPath::LessonTest, &self.lesson_test),
-        ]
+    pub fn files(&self) -> impl Iterator<Item = (&SubmittedPath, &SubmittedContent)> {
+        self.files.iter()
     }
 
     pub fn dependency_set(&self) -> DependencySet {
@@ -227,8 +186,9 @@ impl TryFrom<RunRequestValidation> for ValidatedRunRequest {
         }
 
         let mut total_bytes = 0usize;
-        let mut lib_rs = None;
-        let mut lesson_test = None;
+        let mut validated_files = BTreeMap::new();
+        let mut has_lib_rs = false;
+        let mut has_test_file = false;
 
         for file in files {
             let (path, content) = file.into_parts();
@@ -241,25 +201,34 @@ impl TryFrom<RunRequestValidation> for ValidatedRunRequest {
                 });
             }
 
+            has_lib_rs |= path.is_required_lib();
+            has_test_file |= path.is_test_file();
+
             let content = SubmittedContent::try_from(SubmittedContentInput::new(
-                path,
+                path.clone(),
                 content,
                 input.limits.max_file_bytes(),
             ))?;
 
-            match path {
-                SubmittedPath::LibRs => insert_file_once(&mut lib_rs, path, content)?,
-                SubmittedPath::LessonTest => insert_file_once(&mut lesson_test, path, content)?,
+            if validated_files.insert(path.clone(), content).is_some() {
+                return Err(ValidationError::DuplicatePath { path });
             }
         }
 
+        if !has_lib_rs {
+            return Err(ValidationError::MissingRequiredFile {
+                path: REQUIRED_LIB_PATH,
+            });
+        }
+
+        if !has_test_file {
+            return Err(ValidationError::MissingRequiredFile {
+                path: "tests/**/*.rs",
+            });
+        }
+
         Ok(Self {
-            lib_rs: lib_rs.ok_or(ValidationError::MissingRequiredFile {
-                path: SubmittedPath::LibRs,
-            })?,
-            lesson_test: lesson_test.ok_or(ValidationError::MissingRequiredFile {
-                path: SubmittedPath::LessonTest,
-            })?,
+            files: validated_files,
             dependency_set,
         })
     }
@@ -336,7 +305,7 @@ pub enum ValidationError {
     #[error("duplicate file path: `{path}`")]
     DuplicatePath { path: SubmittedPath },
     #[error("missing required file: `{path}`")]
-    MissingRequiredFile { path: SubmittedPath },
+    MissingRequiredFile { path: &'static str },
 }
 
 impl ValidationError {
@@ -394,28 +363,15 @@ impl RunResult {
     }
 }
 
-pub struct RunJob {
-    pub id: Uuid,
-    pub request: ValidatedRunRequest,
-    pub response_tx: oneshot::Sender<RunResult>,
-}
-
-fn insert_file_once(
-    slot: &mut Option<SubmittedContent>,
-    path: SubmittedPath,
-    content: SubmittedContent,
-) -> Result<(), ValidationError> {
-    if slot.is_some() {
-        return Err(ValidationError::DuplicatePath { path });
-    }
-
-    *slot = Some(content);
-    Ok(())
-}
-
 fn validate_safe_path(path: &str) -> Result<(), ValidationError> {
     let parsed = Path::new(path);
-    if path.is_empty() || parsed.is_absolute() {
+    if path.is_empty()
+        || path.contains('\\')
+        || path.contains('\0')
+        || path.ends_with('/')
+        || path.split('/').any(str::is_empty)
+        || parsed.is_absolute()
+    {
         return Err(ValidationError::UnsafePath {
             path: path.to_string(),
         });
@@ -438,13 +394,30 @@ fn validate_safe_path(path: &str) -> Result<(), ValidationError> {
     Ok(())
 }
 
+fn validate_supported_path(path: &str) -> Result<(), ValidationError> {
+    let is_source = path.starts_with(SRC_PREFIX) && path.ends_with(".rs");
+    let is_test = path.starts_with(TESTS_PREFIX) && path.ends_with(".rs");
+    let is_fixture = path.starts_with(FIXTURES_PREFIX);
+    let is_testdata = path.starts_with(TESTDATA_PREFIX);
+
+    if is_source || is_test || is_fixture || is_testdata {
+        Ok(())
+    } else {
+        Err(ValidationError::UnsupportedPath {
+            path: path.to_string(),
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::num::NonZeroUsize;
 
+    use crate::dependency_set::DependencySet;
+
     use super::{
-        DependencySet, RunRequest, RunRequestValidation, RunStatus, SubmittedFile,
-        ValidatedRunRequest, ValidationError, ValidationLimits,
+        RunRequest, RunRequestValidation, RunStatus, SubmittedFile, ValidatedRunRequest,
+        ValidationError, ValidationLimits,
     };
 
     fn nonzero(value: usize) -> NonZeroUsize {
@@ -503,6 +476,46 @@ mod tests {
     }
 
     #[test]
+    fn validation_accepts_nested_source_and_test_paths() {
+        let request = RunRequest::new(vec![
+            SubmittedFile::new("src/lib.rs", "pub mod domain;\npub mod application;\n"),
+            SubmittedFile::new("src/domain.rs", "pub fn answer() -> u64 { 42 }\n"),
+            SubmittedFile::new("src/application/mod.rs", "pub fn call() -> u64 { 42 }\n"),
+            SubmittedFile::new(
+                "tests/domain_contract.rs",
+                "#[test]\nfn answer_is_42() {}\n",
+            ),
+        ]);
+        let validated = validate(request).expect("request should validate");
+        let paths = validated
+            .files()
+            .map(|(path, _content)| path.as_str())
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            paths,
+            vec![
+                "src/application/mod.rs",
+                "src/domain.rs",
+                "src/lib.rs",
+                "tests/domain_contract.rs"
+            ]
+        );
+    }
+
+    #[test]
+    fn validation_accepts_fixture_and_testdata_paths() {
+        let request = RunRequest::new(vec![
+            SubmittedFile::new("src/lib.rs", "pub fn answer() -> u64 { 42 }\n"),
+            SubmittedFile::new("tests/lesson.rs", "#[test]\nfn answer_is_42() {}\n"),
+            SubmittedFile::new("fixtures/users.json", "[]\n"),
+            SubmittedFile::new("testdata/request.json", "{}\n"),
+        ]);
+
+        assert!(validate(request).is_ok());
+    }
+
+    #[test]
     fn validation_rejects_parent_directory_paths() {
         let request = RunRequest::new(vec![
             SubmittedFile::new("../src/lib.rs", "pub fn answer() -> u64 { 42 }\n"),
@@ -516,16 +529,154 @@ mod tests {
     }
 
     #[test]
-    fn validation_rejects_unsupported_paths() {
+    fn validation_rejects_current_directory_paths() {
         let request = RunRequest::new(vec![
-            SubmittedFile::new("src/lib.rs", "pub fn answer() -> u64 { 42 }\n"),
+            SubmittedFile::new("./src/lib.rs", "pub fn answer() -> u64 { 42 }\n"),
             SubmittedFile::new("tests/lesson.rs", "#[test]\nfn answer_is_42() {}\n"),
-            SubmittedFile::new("Cargo.toml", ""),
         ]);
 
         assert!(matches!(
             validate(request),
-            Err(ValidationError::UnsupportedPath { .. })
+            Err(ValidationError::UnsafePath { .. })
+        ));
+    }
+
+    #[test]
+    fn validation_rejects_absolute_paths() {
+        let request = RunRequest::new(vec![
+            SubmittedFile::new("/workspace/src/lib.rs", "pub fn answer() -> u64 { 42 }\n"),
+            SubmittedFile::new("tests/lesson.rs", "#[test]\nfn answer_is_42() {}\n"),
+        ]);
+
+        assert!(matches!(
+            validate(request),
+            Err(ValidationError::UnsafePath { .. })
+        ));
+    }
+
+    #[test]
+    fn validation_rejects_backslash_paths() {
+        let request = RunRequest::new(vec![
+            SubmittedFile::new(r"src\lib.rs", "pub fn answer() -> u64 { 42 }\n"),
+            SubmittedFile::new("tests/lesson.rs", "#[test]\nfn answer_is_42() {}\n"),
+        ]);
+
+        assert!(matches!(
+            validate(request),
+            Err(ValidationError::UnsafePath { .. })
+        ));
+    }
+
+    #[test]
+    fn validation_rejects_trailing_slash_paths() {
+        let request = RunRequest::new(vec![
+            SubmittedFile::new("src/lib.rs/", "pub fn answer() -> u64 { 42 }\n"),
+            SubmittedFile::new("tests/lesson.rs", "#[test]\nfn answer_is_42() {}\n"),
+        ]);
+
+        assert!(matches!(
+            validate(request),
+            Err(ValidationError::UnsafePath { .. })
+        ));
+    }
+
+    #[test]
+    fn validation_rejects_double_slash_paths() {
+        let request = RunRequest::new(vec![
+            SubmittedFile::new("src//lib.rs", "pub fn answer() -> u64 { 42 }\n"),
+            SubmittedFile::new("tests/lesson.rs", "#[test]\nfn answer_is_42() {}\n"),
+        ]);
+
+        assert!(matches!(
+            validate(request),
+            Err(ValidationError::UnsafePath { .. })
+        ));
+    }
+
+    #[test]
+    fn validation_rejects_nul_paths() {
+        let request = RunRequest::new(vec![
+            SubmittedFile::new("src/lib.rs\0", "pub fn answer() -> u64 { 42 }\n"),
+            SubmittedFile::new("tests/lesson.rs", "#[test]\nfn answer_is_42() {}\n"),
+        ]);
+
+        assert!(matches!(
+            validate(request),
+            Err(ValidationError::UnsafePath { .. })
+        ));
+    }
+
+    #[test]
+    fn validation_rejects_control_file_paths() {
+        for path in [
+            "Cargo.toml",
+            "Cargo.lock",
+            "build.rs",
+            ".cargo/config.toml",
+            "target/debug/file",
+            "benches/foo.rs",
+            "examples/foo.rs",
+            "migrations/001.sql",
+        ] {
+            let request = RunRequest::new(vec![
+                SubmittedFile::new("src/lib.rs", "pub fn answer() -> u64 { 42 }\n"),
+                SubmittedFile::new("tests/lesson.rs", "#[test]\nfn answer_is_42() {}\n"),
+                SubmittedFile::new(path, ""),
+            ]);
+
+            assert!(
+                matches!(
+                    validate(request),
+                    Err(ValidationError::UnsupportedPath { .. })
+                ),
+                "{path} should be rejected",
+            );
+        }
+    }
+
+    #[test]
+    fn validation_rejects_non_rs_source_and_test_paths() {
+        for path in ["src/domain.txt", "tests/domain_contract.txt"] {
+            let request = RunRequest::new(vec![
+                SubmittedFile::new("src/lib.rs", "pub fn answer() -> u64 { 42 }\n"),
+                SubmittedFile::new("tests/lesson.rs", "#[test]\nfn answer_is_42() {}\n"),
+                SubmittedFile::new(path, ""),
+            ]);
+
+            assert!(
+                matches!(
+                    validate(request),
+                    Err(ValidationError::UnsupportedPath { .. })
+                ),
+                "{path} should be rejected",
+            );
+        }
+    }
+
+    #[test]
+    fn validation_rejects_duplicate_paths() {
+        let request = RunRequest::new(vec![
+            SubmittedFile::new("src/lib.rs", "pub fn answer() -> u64 { 42 }\n"),
+            SubmittedFile::new("src/lib.rs", "pub fn answer() -> u64 { 43 }\n"),
+            SubmittedFile::new("tests/lesson.rs", "#[test]\nfn answer_is_42() {}\n"),
+        ]);
+
+        assert!(matches!(
+            validate(request),
+            Err(ValidationError::DuplicatePath { .. })
+        ));
+    }
+
+    #[test]
+    fn validation_rejects_missing_lib() {
+        let request = RunRequest::new(vec![SubmittedFile::new(
+            "tests/lesson.rs",
+            "#[test]\nfn answer_is_42() {}\n",
+        )]);
+
+        assert!(matches!(
+            validate(request),
+            Err(ValidationError::MissingRequiredFile { path: "src/lib.rs" })
         ));
     }
 
@@ -539,8 +690,58 @@ mod tests {
         assert!(matches!(
             validate(request),
             Err(ValidationError::MissingRequiredFile {
-                path: super::SubmittedPath::LessonTest
+                path: "tests/**/*.rs"
             })
+        ));
+    }
+
+    #[test]
+    fn validation_rejects_too_many_files() {
+        let files = (0..9)
+            .map(|index| {
+                SubmittedFile::new(
+                    if index == 0 {
+                        "src/lib.rs".to_string()
+                    } else if index == 1 {
+                        "tests/lesson.rs".to_string()
+                    } else {
+                        format!("src/module_{index}.rs")
+                    },
+                    "",
+                )
+            })
+            .collect();
+
+        assert!(matches!(
+            validate(RunRequest::new(files)),
+            Err(ValidationError::TooManyFiles { max: 8 })
+        ));
+    }
+
+    #[test]
+    fn validation_rejects_file_over_file_limit() {
+        let request = RunRequest::new(vec![
+            SubmittedFile::new("src/lib.rs", "x".repeat(65)),
+            SubmittedFile::new("tests/lesson.rs", "#[test]\nfn answer_is_42() {}\n"),
+        ]);
+
+        assert!(matches!(
+            validate(request),
+            Err(ValidationError::FileTooLarge { .. })
+        ));
+    }
+
+    #[test]
+    fn validation_rejects_total_over_total_limit() {
+        let request = RunRequest::new(vec![
+            SubmittedFile::new("src/lib.rs", "x".repeat(64)),
+            SubmittedFile::new("tests/lesson.rs", "x".repeat(64)),
+            SubmittedFile::new("src/domain.rs", "x"),
+        ]);
+
+        assert!(matches!(
+            validate(request),
+            Err(ValidationError::TotalTooLarge { max_bytes: 128 })
         ));
     }
 }

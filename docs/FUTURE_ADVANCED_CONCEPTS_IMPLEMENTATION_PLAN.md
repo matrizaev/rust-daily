@@ -23,6 +23,11 @@ lessons 1-90. Existing lessons already establish:
 Future arcs should assume those skills and use them in larger or deeper
 contexts.
 
+The first infrastructure milestone for this roadmap, project snapshot
+validation with one editable artifact, is now part of the product contract. It
+is specified in
+[PROJECT_SNAPSHOT_VALIDATION_SPEC.md](PROJECT_SNAPSHOT_VALIDATION_SPEC.md).
+
 ## Target
 
 The complete curriculum should contain:
@@ -31,8 +36,8 @@ The complete curriculum should contain:
 - roughly 75-90 cumulative arcs;
 - mostly 5-8 lessons per arc;
 - one primary concept per lesson;
-- increasingly realistic multi-file and multi-crate project snapshots with one
-  editable artifact per lesson;
+- increasingly realistic multi-file project snapshots, and later multi-crate
+  runner modes, with one editable artifact per lesson;
 - deterministic behavioral validation for every automatable task;
 - periodic capstones where judgment matters more than applying one named
   pattern.
@@ -58,8 +63,9 @@ one editable artifact even when validation compiles a larger project.
 - The editable artifact may eventually be Rust, `Cargo.toml`, SQL, or another
   supported text format, but there is still only one.
 
-Runner and content infrastructure must therefore support multi-file projects,
-not multi-file editing.
+Runner and content infrastructure therefore support multi-file projects, not
+multi-file editing. Future runner modes should extend the same rule to
+manifests, workspaces, migrations, and other artifact types.
 
 ## Curriculum Roadmap
 
@@ -95,10 +101,8 @@ Candidate arcs:
 - small refactors that remove unnecessary clones without making APIs harder to
   use.
 
-Infrastructure needed:
+Infrastructure needed beyond the current snapshot support:
 
-- multi-file project snapshots with exactly one editable artifact;
-- safe transport and assembly of all supplied project paths;
 - compiler diagnostics mapped back to supplied file paths;
 - compile-time trait assertion helpers;
 - compile-fail cases for invalid borrowing and object-safety examples;
@@ -345,8 +349,8 @@ Every future arc must:
 
 ## Implementation Order
 
-1. Add multi-file project transport and compilation while preserving exactly
-   one editable artifact, then add compile-fail support.
+1. Build on project snapshot validation by adding compile-fail support for
+   invalid borrowing, object-safety, and API-bound examples.
 2. Author lessons 91-150 around advanced ownership and API design.
 3. Expand async/concurrency validation and author lessons 151-210.
 4. Add workspace test modes and author lessons 211-270.

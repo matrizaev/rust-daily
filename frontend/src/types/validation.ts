@@ -90,6 +90,7 @@ export type ValidationStatus =
 export type ValidationRequest = {
   lessonId: string;
   validation: LessonValidation;
+  editablePath?: string;
   files: Record<string, string>;
 };
 

@@ -1,5 +1,7 @@
 pub mod api;
+mod cargo_output;
 pub mod config;
+pub mod dependency_set;
 pub mod error;
 pub mod model;
 pub mod observability;

@@ -1,7 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import {
-  DEPENDENCY_SETS,
   findLessonJsonFiles,
   isNumber,
   isRecord,
@@ -13,6 +12,7 @@ import {
   repoRelativePath,
   SOURCE_CONCEPTS_PATH,
   validateHintObject,
+  validateKnownDependencySet,
 } from "./shared.mjs";
 
 const lessonDir = (lessonJsonPath) => dirname(lessonJsonPath);
@@ -35,6 +35,41 @@ const validateSourcePath = async (errors, lessonJsonPath, sourcePath, label) => 
 };
 
 const VALID_FILE_ROLES = new Set(["editable", "readonly", "test"]);
+const REQUIRED_LIB_PATH = "src/lib.rs";
+const TEST_FILE_PATTERN = "tests/**/*.rs";
+
+const editableFile = (lesson) =>
+  Array.isArray(lesson.files)
+    ? lesson.files.find((file) => file.role === "editable")
+    : null;
+
+const editablePath = (lesson) => editableFile(lesson)?.path ?? null;
+
+const isTestFilePath = (path) => path.startsWith("tests/") && path.endsWith(".rs");
+
+const isSourceFilePath = (path) => path.startsWith("src/") && path.endsWith(".rs");
+const isFixturePath = (path) => path.startsWith("fixtures/");
+const isTestdataPath = (path) => path.startsWith("testdata/");
+const isRunnerPath = (path) =>
+  [isSourceFilePath, isTestFilePath, isFixturePath, isTestdataPath].some((matches) =>
+    matches(path),
+  );
+
+const hasUnsafePathComponent = (path) =>
+  path.split("/").some((component) => component === "" || component === "." || component === "..");
+
+const unsafePathPredicates = [
+  (path) => path.startsWith("/"),
+  (path) => path.includes("\\"),
+  (path) => path.includes("\0"),
+  (path) => path.endsWith("/"),
+  hasUnsafePathComponent,
+];
+
+const hasUnsafePathSyntax = (path) =>
+  unsafePathPredicates.some((isUnsafe) => isUnsafe(path));
+
+const isSafeRelativePath = (path) => isString(path) && !hasUnsafePathSyntax(path);
 
 const validateEditableFileCount = (errors, lesson) => {
   const editableFiles = lesson.files.filter((file) => file.role === "editable");
@@ -60,8 +95,13 @@ const validateFileRole = (errors, lesson, file) => {
 };
 
 const validateFilePath = (errors, lesson, file) => {
-  if (file.path.includes("..") || file.path.startsWith("/")) {
-    push(errors, `${lesson.id} file ${file.path} must be relative and safe.`);
+  if (!isSafeRelativePath(file.path)) {
+    push(errors, `${lesson.id} file ${file.path} must be normalized, relative, and safe.`);
+    return;
+  }
+
+  if (!isRunnerPath(file.path)) {
+    push(errors, `${lesson.id} file ${file.path} is not supported by the runner.`);
   }
 };
 
@@ -88,10 +128,24 @@ const validateFiles = async (errors, lessonJsonPath, lesson) => {
   }
 
   validateEditableFileCount(errors, lesson);
+  const seenPaths = new Set();
 
   for (const file of lesson.files) {
     await validateFile(errors, lessonJsonPath, lesson, file);
+    validateUniqueFilePath(errors, lesson, seenPaths, file);
   }
+};
+
+const validateUniqueFilePath = (errors, lesson, seenPaths, file) => {
+  if (!isRecord(file) || !isString(file.path)) {
+    return;
+  }
+
+  if (seenPaths.has(file.path)) {
+    push(errors, `${lesson.id} has duplicate file path ${file.path}.`);
+  }
+
+  seenPaths.add(file.path);
 };
 
 const validationSteps = (validation) =>
@@ -102,12 +156,19 @@ const validationSteps = (validation) =>
 const validationTestFiles = (validation) =>
   Array.isArray(validation.testFiles) ? validation.testFiles : [];
 
-const hasBackendTestInput = (validation) =>
-  isString(validation.testCode) || validationTestFiles(validation).length > 0;
+const lessonBackendTestFiles = (lesson) =>
+  Array.isArray(lesson.files)
+    ? lesson.files.filter((file) => isRecord(file) && isTestFilePath(file.path))
+    : [];
+
+const hasBackendTestInput = (lesson, validation) =>
+  isString(validation.testCode) ||
+  validationTestFiles(validation).length > 0 ||
+  lessonBackendTestFiles(lesson).length > 0;
 
 const validateBackendTestPresence = (errors, lesson, validation) => {
-  if (!hasBackendTestInput(validation)) {
-    push(errors, `${lesson.id} backend validation must define testCode or testFiles.`);
+  if (!hasBackendTestInput(lesson, validation)) {
+    push(errors, `${lesson.id} backend validation must define or include ${TEST_FILE_PATTERN}.`);
   }
 };
 
@@ -118,14 +179,23 @@ const validateBackendTestFileSources = async (
   validation,
 ) => {
   await Promise.all(
-    validationTestFiles(validation).map((testFile) =>
-      validateSourcePath(
+    validationTestFiles(validation).map(async (testFile) => {
+      if (!isRecord(testFile) || !isString(testFile.path)) {
+        push(errors, `${lesson.id} backend test has invalid file entry.`);
+        return;
+      }
+
+      validateFilePath(errors, lesson, {
+        path: testFile.path,
+        role: "test",
+      });
+      await validateSourcePath(
         errors,
         lessonJsonPath,
         testFile.sourcePath,
         `${lesson.id} backend test ${testFile.path}`,
-      ),
-    ),
+      );
+    }),
   );
 };
 
@@ -137,21 +207,14 @@ const validateBackendTestFiles = async (
 ) => {
   validateBackendTestPresence(errors, lesson, validation);
   await validateBackendTestFileSources(errors, lessonJsonPath, lesson, validation);
+
+  if (!lesson.files.some((file) => file.path === REQUIRED_LIB_PATH)) {
+    push(errors, `${lesson.id} backend validation must include ${REQUIRED_LIB_PATH}.`);
+  }
 };
 
 const isBackendCargoTestValidation = (validation) =>
   validation?.mode === "backend-cargo-test";
-
-const validateDependencySet = (errors, lesson, validation) => {
-  const dependencySet = validation.dependencySet ?? "std";
-
-  if (!DEPENDENCY_SETS.has(dependencySet)) {
-    push(
-      errors,
-      `${lesson.id} backend validation has unknown dependencySet ${String(dependencySet)}.`,
-    );
-  }
-};
 
 const validateBackendValidationStep = async (
   errors,
@@ -163,7 +226,7 @@ const validateBackendValidationStep = async (
     return;
   }
 
-  validateDependencySet(errors, lesson, validation);
+  validateKnownDependencySet(errors, lesson.id, validation);
   await validateBackendTestFiles(errors, lessonJsonPath, lesson, validation);
 };
 
@@ -196,7 +259,11 @@ const validateAuthor = async (errors, lessonJsonPath, lesson) => {
   }
 
   await validateSourcePath(errors, lessonJsonPath, lesson.author.notesPath, `${lesson.id} notes`);
+  await validateAuthorSolutionRoot(errors, lessonJsonPath, lesson);
+  await validateEditableSolution(errors, lessonJsonPath, lesson);
+};
 
+const validateAuthorSolutionRoot = async (errors, lessonJsonPath, lesson) => {
   if (!isString(lesson.author.solutionPath)) {
     push(errors, `${lesson.id} must define author.solutionPath.`);
     return;
@@ -204,6 +271,20 @@ const validateAuthor = async (errors, lessonJsonPath, lesson) => {
 
   if (!(await pathExists(lessonSourcePath(lessonJsonPath, lesson.author.solutionPath)))) {
     push(errors, `${lesson.id} references missing solutionPath.`);
+  }
+};
+
+const validateEditableSolution = async (errors, lessonJsonPath, lesson) => {
+  const path = editablePath(lesson);
+
+  if (!path || !isString(lesson.author.solutionPath)) {
+    return;
+  }
+
+  const solutionPath = join(lesson.author.solutionPath, path);
+
+  if (!(await pathExists(lessonSourcePath(lessonJsonPath, solutionPath)))) {
+    push(errors, `${lesson.id} editable file ${path} must have a matching solution file.`);
   }
 };
 
@@ -246,24 +327,47 @@ const validateLessonConcept = (errors, lesson, conceptIds) => {
   }
 };
 
-const editableSourcePath = (lesson) =>
-  lesson.files.find((file) => file.role === "editable")?.sourcePath ?? null;
-
 const solutionSourcePath = (lesson) =>
-  isRecord(lesson.author) && isString(lesson.author.solutionPath)
-    ? join(lesson.author.solutionPath, "src", "lib.rs")
+  isRecord(lesson.author) && isString(lesson.author.solutionPath) && editablePath(lesson)
+    ? join(lesson.author.solutionPath, editablePath(lesson))
     : null;
-
-const readEditableStarter = async (lessonJsonPath, lesson) => {
-  const sourcePath = editableSourcePath(lesson);
-
-  return sourcePath ? await readLessonSource(lessonJsonPath, sourcePath) : "";
-};
 
 const readSolution = async (lessonJsonPath, lesson) => {
   const sourcePath = solutionSourcePath(lesson);
 
   return sourcePath ? await readLessonSource(lessonJsonPath, sourcePath) : "";
+};
+
+const lessonFileByPath = (lesson, path) =>
+  Array.isArray(lesson.files)
+    ? lesson.files.find((file) => file.path === path)
+    : null;
+
+const readLessonFileSource = async (lessonJsonPath, file) =>
+  file?.sourcePath ? await readLessonSource(lessonJsonPath, file.sourcePath) : "";
+
+const readStarterFileByPath = async (lessonJsonPath, lesson, path) =>
+  readLessonFileSource(lessonJsonPath, lessonFileByPath(lesson, path));
+
+const solutionSnapshotSource = async (lessonJsonPath, lesson) => {
+  if (!Array.isArray(lesson.files)) {
+    return "";
+  }
+
+  const parts = await Promise.all(
+    lesson.files
+      .filter((file) => file.role !== "test")
+      .map(async (file) => {
+        const content =
+          file.role === "editable"
+            ? await readSolution(lessonJsonPath, lesson)
+            : await readLessonFileSource(lessonJsonPath, file);
+
+        return `// ${file.path}\n${content}`;
+      }),
+  );
+
+  return parts.join("\n\n");
 };
 
 const normalizedSource = (source) => source.trim().replace(/\r\n/g, "\n");
@@ -466,7 +570,7 @@ const validateSolutionSatisfiesStructuralChecks = async (
   current,
   requiredLessonRecords,
 ) => {
-  const solution = await readSolution(current.lessonJsonPath, current.lesson);
+  const solution = await solutionSnapshotSource(current.lessonJsonPath, current.lesson);
 
   for (const required of requiredLessonRecords) {
     for (const check of cumulativeStructuralChecks(required.lesson)) {
@@ -501,19 +605,31 @@ const validateCumulativeLesson = async (
   current,
 ) => {
   const previousSolution = await readSolution(previous.lessonJsonPath, previous.lesson);
-  const currentStarter = await readEditableStarter(current.lessonJsonPath, current.lesson);
+  const previousEditablePath = editablePath(previous.lesson);
+  const currentStarter = previousEditablePath
+    ? await readStarterFileByPath(
+        current.lessonJsonPath,
+        current.lesson,
+        previousEditablePath,
+      )
+    : "";
 
   if (!starterBeginsWithPreviousSolution(currentStarter, previousSolution)) {
     push(
       errors,
-      `${current.lesson.id} starter must begin with previous lesson ${previous.lesson.id} solution.`,
+      `${current.lesson.id} starter must include previous lesson ${previous.lesson.id} solution at ${previousEditablePath ?? "the editable path"}.`,
     );
   }
 };
 
 const validateNoHistoricalSourceModules = async (errors, lessonRecord) => {
-  const starter = await readEditableStarter(lessonRecord.lessonJsonPath, lessonRecord.lesson);
-  const solution = await readSolution(lessonRecord.lessonJsonPath, lessonRecord.lesson);
+  const starterParts = await Promise.all(
+    (lessonRecord.lesson.files ?? [])
+      .filter((file) => file.role !== "test")
+      .map((file) => readLessonFileSource(lessonRecord.lessonJsonPath, file)),
+  );
+  const starter = starterParts.join("\n\n");
+  const solution = await solutionSnapshotSource(lessonRecord.lessonJsonPath, lessonRecord.lesson);
 
   validateActiveSource(errors, lessonRecord.lesson, "starter", starter);
   validateActiveSource(errors, lessonRecord.lesson, "solution", solution);

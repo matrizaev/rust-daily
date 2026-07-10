@@ -23,6 +23,21 @@ SOURCES = {
     "timeout": "pub fn answer() -> u64 { loop {} }\n",
 }
 
+MULTI_FILE_PAYLOAD = {
+    "files": [
+        {"path": "src/lib.rs", "content": "pub mod domain;\n"},
+        {"path": "src/domain.rs", "content": "pub fn answer() -> u64 { 42 }\n"},
+        {
+            "path": "tests/domain_contract.rs",
+            "content": """#[test]
+fn answer_is_42() {
+    assert_eq!(rust_daily_lesson::domain::answer(), 42);
+}
+""",
+        },
+    ]
+}
+
 
 def build_payload(source: str) -> dict[str, object]:
     return {
@@ -31,6 +46,13 @@ def build_payload(source: str) -> dict[str, object]:
             {"path": "tests/lesson.rs", "content": LESSON_TEST},
         ]
     }
+
+
+def payload_for_case(case: str) -> dict[str, object]:
+    if case == "multi-file-pass":
+        return MULTI_FILE_PAYLOAD
+
+    return build_payload(SOURCES[case])
 
 
 def post_run(url: str, payload: dict[str, object], timeout: float) -> tuple[int, str]:
@@ -52,11 +74,15 @@ def post_run(url: str, payload: dict[str, object], timeout: float) -> tuple[int,
 def main() -> int:
     parser = argparse.ArgumentParser(description="POST a sample run to the backend")
     parser.add_argument("--url", default="http://127.0.0.1:8080")
-    parser.add_argument("--case", choices=sorted(SOURCES), default="pass")
+    parser.add_argument(
+        "--case",
+        choices=sorted([*SOURCES, "multi-file-pass"]),
+        default="pass",
+    )
     parser.add_argument("--http-timeout", type=float, default=20.0)
     args = parser.parse_args()
 
-    payload = build_payload(SOURCES[args.case])
+    payload = payload_for_case(args.case)
 
     try:
         status, body = post_run(args.url, payload, args.http_timeout)

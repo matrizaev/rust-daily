@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 use crate::{
     config::RunnerSettings,
-    model::{RunJob, RunResult, ValidatedRunRequest},
+    model::{RunResult, ValidatedRunRequest},
     runner,
 };
 
@@ -22,6 +22,12 @@ pub enum EnqueueError {
     Full,
     #[error("run queue is unavailable")]
     Closed,
+}
+
+struct RunJob {
+    id: Uuid,
+    request: ValidatedRunRequest,
+    response_tx: oneshot::Sender<RunResult>,
 }
 
 impl RunQueue {

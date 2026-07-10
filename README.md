@@ -42,8 +42,9 @@ The curriculum design allows realistic multi-file projects, but exactly one
 file is editable in each lesson. Other project files and tests are supplied as
 read-only context and compiled together. When an arc moves to another file, the
 next lesson includes the authored solution from the previous day as read-only
-project code. The current runner still accepts only `src/lib.rs` and combined
-tests; generalized project snapshots are future infrastructure.
+project code. The runner accepts a backend-controlled single-crate project
+snapshot: `src/**/*.rs`, `tests/**/*.rs`, `fixtures/**`, and `testdata/**`.
+The generated `Cargo.toml` remains controlled by the backend dependency set.
 
 ## Run Locally
 
@@ -100,17 +101,20 @@ path:
 ```bash
 make smoke-runner
 make smoke-runner SMOKE_CASE=compile-error
+make smoke-runner SMOKE_CASE=multi-file-pass
 ```
 
 This target wraps `scripts/play_run.py`, which uses only the Python 3 standard
-library. Supported cases are `pass`, `fail`, `compile-error`, and `timeout`.
-Set `SMOKE_URL` to test another deployment.
+library. Supported cases are `pass`, `multi-file-pass`, `fail`,
+`compile-error`, and `timeout`. Set `SMOKE_URL` to test another deployment.
 
 ## Documentation
 
 - [Product specification](docs/SPEC.md)
 - [System architecture](ARCHITECTURE.md)
 - [Production deployment](docs/DEPLOYMENT.md)
+- [Project snapshot validation spec](docs/PROJECT_SNAPSHOT_VALIDATION_SPEC.md)
+- [Project snapshot validation implementation plan](docs/PROJECT_SNAPSHOT_VALIDATION_IMPLEMENTATION_PLAN.md)
 - [Lessons 91-500 roadmap](docs/FUTURE_ADVANCED_CONCEPTS_IMPLEMENTATION_PLAN.md)
 
 ## Deployment

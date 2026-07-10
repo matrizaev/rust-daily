@@ -27,7 +27,7 @@ type BackendRunResult = {
 type BackendRunRequest = {
   dependencySet: string;
   files: Array<{
-    path: "src/lib.rs" | "tests/lesson.rs";
+    path: string;
     content: string;
   }>;
 };
@@ -79,48 +79,80 @@ const result = (
 const buildRunUrl = (backendUrl: string) =>
   `${backendUrl.trim().replace(/\/+$/, "")}/run`;
 
-const joinTestFiles = (files: Array<{ path: string; content: string }>) =>
-  files
-    .map((file) => `// ${file.path}\n${file.content}`)
-    .join("\n\n");
+type BackendRunFile = BackendRunRequest["files"][number];
 
-const requestTestFiles = (request: BackendValidationRequest) =>
+const hasTestFile = (files: BackendRunFile[]) =>
+  files.some((file) => file.path.startsWith("tests/") && file.path.endsWith(".rs"));
+
+const sortedRequestFiles = (request: BackendValidationRequest): BackendRunFile[] =>
   Object.entries(request.files)
-    .filter(([path]) => path.startsWith("tests/"))
-    .sort(([leftPath], [rightPath]) => leftPath.localeCompare(rightPath))
-    .map(([path, content]) => ({ path, content }));
+    .map(([path, content]) => ({ path, content }))
+    .sort((left, right) => left.path.localeCompare(right.path));
 
-const testCodeFromRequest = (
+const addFileIfMissing = (
+  files: BackendRunFile[],
+  seenPaths: Set<string>,
+  file: BackendRunFile,
+) => {
+  if (seenPaths.has(file.path)) {
+    return;
+  }
+
+  seenPaths.add(file.path);
+  files.push(file);
+};
+
+const addLegacyTestInputs = (
+  files: BackendRunFile[],
   request: BackendValidationRequest,
 ) => {
-  const { validation } = request;
+  const seenPaths = new Set(files.map((file) => file.path));
 
-  if (typeof validation.testCode === "string") {
-    return validation.testCode;
+  addLegacyTestFiles(files, seenPaths, request);
+  addLegacyTestCode(files, seenPaths, request);
+
+  return files;
+};
+
+const addLegacyTestFiles = (
+  files: BackendRunFile[],
+  seenPaths: Set<string>,
+  request: BackendValidationRequest,
+) => {
+  if (!request.validation.testFiles?.length) {
+    return;
   }
 
-  if (validation.testFiles?.length) {
-    return joinTestFiles(validation.testFiles);
+  request.validation.testFiles.forEach((file) =>
+    addFileIfMissing(files, seenPaths, file),
+  );
+};
+
+const addLegacyTestCode = (
+  files: BackendRunFile[],
+  seenPaths: Set<string>,
+  request: BackendValidationRequest,
+) => {
+  if (hasTestFile(files) || typeof request.validation.testCode !== "string") {
+    return;
   }
 
-  return joinTestFiles(requestTestFiles(request));
+  addFileIfMissing(files, seenPaths, {
+    path: "tests/lesson.rs",
+    content: request.validation.testCode,
+  });
 };
 
 const buildRunRequest = (
   request: BackendValidationRequest,
-): BackendRunRequest => ({
-  dependencySet: request.validation.dependencySet ?? "std",
-  files: [
-    {
-      path: "src/lib.rs",
-      content: request.files["src/lib.rs"] ?? "",
-    },
-    {
-      path: "tests/lesson.rs",
-      content: testCodeFromRequest(request),
-    },
-  ],
-});
+): BackendRunRequest => {
+  const files = addLegacyTestInputs(sortedRequestFiles(request), request);
+
+  return {
+    dependencySet: request.validation.dependencySet ?? "std",
+    files,
+  };
+};
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;

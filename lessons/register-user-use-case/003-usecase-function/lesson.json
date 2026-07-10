@@ -11,12 +11,22 @@
   "difficulty": "medium",
   "estimatedMinutes": 9,
   "scenario": "A use case coordinates domain rules and ports. It should be generic over the port trait so infrastructure stays replaceable.",
-  "instructions": "Add RegisterUserError and implement async register_user over UserRepository. Check for an existing email, then save NewUser. Map repository conflicts to DuplicateEmail and propagate other typed repository errors.",
+  "instructions": "In src/application.rs add RegisterUserError and implement async register_user over UserRepository. Check for an existing email, then save NewUser. Map repository conflicts to DuplicateEmail and propagate other typed repository errors.",
   "files": [
     {
       "path": "src/lib.rs",
-      "role": "editable",
+      "role": "readonly",
       "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "src/domain.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/domain.rs"
+    },
+    {
+      "path": "src/application.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/application.rs"
     },
     {
       "path": "tests/public.rs",
@@ -36,7 +46,7 @@
     {
       "level": 3,
       "body": "Do not convert repository errors into strings.",
-      "solutionCode": "pub mod domain {\n    #[derive(Debug, Clone, PartialEq, Eq, Hash)]\n    pub struct EmailAddress(String);\n\n    impl EmailAddress {\n        pub fn new(value: impl Into<String>) -> Self {\n            Self(value.into())\n        }\n\n        pub fn as_str(&self) -> &str {\n            &self.0\n        }\n    }\n\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct RegisterUserCommand {\n        email: EmailAddress,\n        display_name: String,\n    }\n\n    impl RegisterUserCommand {\n        pub fn new(email: EmailAddress, display_name: impl Into<String>) -> Self {\n            Self {\n                email,\n                display_name: display_name.into(),\n            }\n        }\n\n        pub fn email(&self) -> &EmailAddress {\n            &self.email\n        }\n\n        pub fn display_name(&self) -> &str {\n            &self.display_name\n        }\n    }\n}\n\npub mod application {\n    use thiserror::Error;\n\n    use crate::domain::RegisterUserCommand;\n\n    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\n    pub struct UserId(u64);\n\n    impl UserId {\n        pub fn new(value: u64) -> Self {\n            Self(value)\n        }\n\n        pub fn value(self) -> u64 {\n            self.0\n        }\n    }\n\n    #[derive(Debug, Clone, PartialEq, Eq)]\n    pub struct NewUser {\n        email: String,\n        display_name: String,\n    }\n\n    impl NewUser {\n        pub fn from_command(command: RegisterUserCommand) -> Self {\n            Self {\n                email: command.email().as_str().to_owned(),\n                display_name: command.display_name().to_owned(),\n            }\n        }\n\n        pub fn email(&self) -> &str {\n            &self.email\n        }\n\n        pub fn display_name(&self) -> &str {\n            &self.display_name\n        }\n    }\n\n    #[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\n    pub enum RepositoryError {\n        #[error(\"repository is unavailable\")]\n        Unavailable,\n        #[error(\"email already exists\")]\n        Conflict,\n    }\n\n    pub trait UserRepository: Send + Sync {\n        fn email_exists(\n            &self,\n            email: &str,\n        ) -> impl std::future::Future<Output = Result<bool, RepositoryError>> + Send;\n\n        fn save(\n            &self,\n            user: NewUser,\n        ) -> impl std::future::Future<Output = Result<UserId, RepositoryError>> + Send;\n    }\n\n    #[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\n    pub enum RegisterUserError {\n        #[error(\"email already exists\")]\n        DuplicateEmail,\n        #[error(transparent)]\n        Repository(#[from] RepositoryError),\n    }\n\n    pub async fn register_user<R: UserRepository>(\n        repository: &R,\n        command: RegisterUserCommand,\n    ) -> Result<UserId, RegisterUserError> {\n        if repository.email_exists(command.email().as_str()).await? {\n            return Err(RegisterUserError::DuplicateEmail);\n        }\n\n        match repository.save(NewUser::from_command(command)).await {\n            Ok(user_id) => Ok(user_id),\n            Err(RepositoryError::Conflict) => Err(RegisterUserError::DuplicateEmail),\n            Err(error) => Err(error.into()),\n        }\n    }\n}"
+      "solutionCode": "use thiserror::Error;\n\nuse crate::domain::RegisterUserCommand;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\npub struct UserId(u64);\n\nimpl UserId {\n    pub fn new(value: u64) -> Self {\n        Self(value)\n    }\n\n    pub fn value(self) -> u64 {\n        self.0\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct NewUser {\n    email: String,\n    display_name: String,\n}\n\nimpl NewUser {\n    pub fn from_command(command: RegisterUserCommand) -> Self {\n        Self {\n            email: command.email().as_str().to_owned(),\n            display_name: command.display_name().to_owned(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum RepositoryError {\n    #[error(\"repository is unavailable\")]\n    Unavailable,\n    #[error(\"email already exists\")]\n    Conflict,\n}\n\npub trait UserRepository: Send + Sync {\n    fn email_exists(\n        &self,\n        email: &str,\n    ) -> impl std::future::Future<Output = Result<bool, RepositoryError>> + Send;\n\n    fn save(\n        &self,\n        user: NewUser,\n    ) -> impl std::future::Future<Output = Result<UserId, RepositoryError>> + Send;\n}\n\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum RegisterUserError {\n    #[error(\"email already exists\")]\n    DuplicateEmail,\n    #[error(transparent)]\n    Repository(#[from] RepositoryError),\n}\n\npub async fn register_user<R: UserRepository>(\n    repository: &R,\n    command: RegisterUserCommand,\n) -> Result<UserId, RegisterUserError> {\n    if repository.email_exists(command.email().as_str()).await? {\n        return Err(RegisterUserError::DuplicateEmail);\n    }\n\n    match repository.save(NewUser::from_command(command)).await {\n        Ok(user_id) => Ok(user_id),\n        Err(RepositoryError::Conflict) => Err(RegisterUserError::DuplicateEmail),\n        Err(error) => Err(error.into()),\n    }\n}"
     }
   ],
   "completionExplanation": "The use case coordinates asynchronous persistence while staying generic over the repository implementation.",

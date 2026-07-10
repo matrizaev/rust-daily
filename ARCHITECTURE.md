@@ -86,9 +86,10 @@ included.
 
 ### Project Snapshot Model
 
-A lesson may describe a multi-file or multi-crate project, but it has exactly
-one editable artifact. Rust modules, manifests, migrations, fixtures, and tests
-that are not the focus of that lesson are read-only context.
+A lesson may describe a multi-file project, but it has exactly one editable
+artifact. Rust modules, fixtures, test data, and tests that are not the focus
+of that lesson are read-only context. Future runner modes may extend the same
+model to manifests, migrations, and multi-crate workspaces.
 
 Each lesson is an authored project snapshot:
 
@@ -136,16 +137,17 @@ The main lesson flow is:
 6. Record completion only after a passing or explicit self-check result.
 
 The editor intentionally supports one editable file. Other lesson files are
-displayed read-only. The current frontend can include them in its internal
-validation request, but the Cargo adapter and backend still collapse execution
-to `src/lib.rs` plus combined public tests.
+displayed read-only and are included in the validation snapshot when they are
+runnable project files. The Cargo adapter submits each supported source, test,
+fixture, and test-data file separately; it does not concatenate tests.
 
 ### Validation
 
 `frontend/src/validation/validationClient.ts` coordinates validation:
 
 - `structural` checks run in a short-lived Web Worker.
-- `backend-cargo-test` sends code and public tests to the Actix API.
+- `backend-cargo-test` sends the complete runnable lesson snapshot to the
+  Actix API.
 - `all` runs configured checks concurrently and aggregates their results.
 - A default Cargo compile test is added when a lesson only configures browser
   checks.
@@ -205,19 +207,23 @@ api -> service -> model validation -> bounded queue
 - `runner.rs` invokes Podman, applies timeouts, classifies Cargo output, caps
   diagnostics, and removes the temporary workspace.
 
-The API currently accepts exactly two files:
+The API accepts a backend-controlled single-crate snapshot with these path
+families:
 
 ```text
-src/lib.rs
-tests/lesson.rs
+src/**/*.rs
+tests/**/*.rs
+fixtures/**
+testdata/**
 ```
 
-Requests select either the `std` or `advanced` dependency set. The frontend
-combines authored public test files into `tests/lesson.rs` before submission.
-
-Future multi-file project support must generalize this transport and workspace
-assembly to approved safe paths while preserving the one-editable-artifact
-invariant. It does not require multi-file editor state.
+Each request must include `src/lib.rs` and at least one `tests/**/*.rs` file.
+Requests select either the `std` or `advanced` dependency set. `Cargo.toml`,
+lockfiles, build scripts, target directories, benches, examples, migrations,
+and arbitrary paths are rejected; the backend always generates the manifest.
+The snapshot transport preserves the one-editable-artifact product invariant
+without adding multi-file editor state. The implementation contract is defined
+in [docs/PROJECT_SNAPSHOT_VALIDATION_SPEC.md](docs/PROJECT_SNAPSHOT_VALIDATION_SPEC.md).
 
 Run results use one of these statuses:
 
@@ -314,3 +320,5 @@ Product behavior and curriculum requirements are defined in
 [docs/SPEC.md](docs/SPEC.md). Future runner and curriculum evolution is defined
 in
 [docs/FUTURE_ADVANCED_CONCEPTS_IMPLEMENTATION_PLAN.md](docs/FUTURE_ADVANCED_CONCEPTS_IMPLEMENTATION_PLAN.md).
+The next runner milestone is specified in
+[docs/PROJECT_SNAPSHOT_VALIDATION_SPEC.md](docs/PROJECT_SNAPSHOT_VALIDATION_SPEC.md).

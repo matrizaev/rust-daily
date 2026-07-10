@@ -8,7 +8,7 @@ use thiserror::Error;
 use tokio::fs;
 use uuid::Uuid;
 
-use crate::model::{DependencySet, ValidatedRunRequest};
+use crate::{dependency_set::DependencySet, model::ValidatedRunRequest};
 
 const CARGO_TOML_PREFIX: &str = r#"[package]
 name = "rust_daily_lesson"
@@ -122,9 +122,11 @@ mod tests {
     use tempfile::tempdir;
 
     use super::{cargo_toml, prepare_workspace};
-    use crate::model::{
-        DependencySet, RunRequest, RunRequestValidation, SubmittedFile, ValidatedRunRequest,
-        ValidationLimits,
+    use crate::{
+        dependency_set::DependencySet,
+        model::{
+            RunRequest, RunRequestValidation, SubmittedFile, ValidatedRunRequest, ValidationLimits,
+        },
     };
 
     fn nonzero(value: usize) -> NonZeroUsize {
@@ -133,6 +135,11 @@ mod tests {
 
     fn limits() -> ValidationLimits {
         ValidationLimits::try_new(nonzero(8), nonzero(64), nonzero(128))
+            .expect("test limits should be valid")
+    }
+
+    fn roomy_limits() -> ValidationLimits {
+        ValidationLimits::try_new(nonzero(16), nonzero(512), nonzero(2048))
             .expect("test limits should be valid")
     }
 
@@ -163,6 +170,29 @@ mod tests {
         .expect("test request should be valid")
     }
 
+    fn multi_file_request() -> ValidatedRunRequest {
+        RunRequestValidation::new(
+            RunRequest::new(vec![
+                SubmittedFile::new("src/lib.rs", "pub mod domain;\npub mod application;\n"),
+                SubmittedFile::new("src/domain.rs", "pub fn answer() -> u64 { 42 }\n"),
+                SubmittedFile::new("src/application/mod.rs", "pub fn call() -> u64 { 42 }\n"),
+                SubmittedFile::new(
+                    "tests/domain_contract.rs",
+                    "#[test]\nfn answer_is_42() {}\n",
+                ),
+                SubmittedFile::new(
+                    "tests/application_contract.rs",
+                    "#[test]\nfn call_is_42() {}\n",
+                ),
+                SubmittedFile::new("fixtures/users.json", "[]\n"),
+                SubmittedFile::new("testdata/request.json", "{}\n"),
+            ]),
+            roomy_limits(),
+        )
+        .try_into()
+        .expect("test request should be valid")
+    }
+
     #[tokio::test]
     async fn prepare_workspace_writes_template_and_submitted_files() {
         let root = tempdir().expect("temp root should be created");
@@ -173,6 +203,27 @@ mod tests {
         assert!(workspace.path().join("Cargo.toml").exists());
         assert!(workspace.path().join("src/lib.rs").exists());
         assert!(workspace.path().join("tests/lesson.rs").exists());
+    }
+
+    #[tokio::test]
+    async fn prepare_workspace_writes_nested_snapshot_files() {
+        let root = tempdir().expect("temp root should be created");
+        let workspace = prepare_workspace(uuid::Uuid::new_v4(), &multi_file_request(), root.path())
+            .await
+            .expect("workspace should be prepared");
+
+        assert!(workspace.path().join("src/lib.rs").exists());
+        assert!(workspace.path().join("src/domain.rs").exists());
+        assert!(workspace.path().join("src/application/mod.rs").exists());
+        assert!(workspace.path().join("tests/domain_contract.rs").exists());
+        assert!(
+            workspace
+                .path()
+                .join("tests/application_contract.rs")
+                .exists()
+        );
+        assert!(workspace.path().join("fixtures/users.json").exists());
+        assert!(workspace.path().join("testdata/request.json").exists());
     }
 
     #[test]

@@ -43,14 +43,14 @@ const result = (
   failures: limitFailures(failures),
 });
 
-const sourceTooLargeResult = (startedAt: number) =>
+const sourceTooLargeResult = (startedAt: number, path: string) =>
   result(
     "failed",
     startedAt,
     "This file is too large to check in the browser.",
     [
       {
-        name: "src/lib.rs",
+        name: path,
         message: "The editable Rust file must stay under 256 KB.",
       },
     ],
@@ -70,21 +70,29 @@ const selfCheckResult = (startedAt: number) =>
     "Self-check recorded. No compiler or hidden tests ran in this browser.",
   );
 
+const editablePathFromRequest = (request: ValidationRequest) =>
+  request.editablePath ?? "src/lib.rs";
+
+const editableSourceFromRequest = (request: ValidationRequest) =>
+  request.files[editablePathFromRequest(request)] ?? "";
+
 const structuralResult = (
   request: ValidationRequest,
   startedAt: number,
 ): ValidationResult => {
-  const source = request.files["src/lib.rs"];
+  const editablePath = editablePathFromRequest(request);
+  const source = editableSourceFromRequest(request);
+  const { validation } = request;
 
   if (byteLength(source) > SOURCE_LIMIT_BYTES) {
-    return sourceTooLargeResult(startedAt);
+    return sourceTooLargeResult(startedAt, editablePath);
   }
 
-  if (request.validation.mode !== "structural") {
+  if (validation.mode !== "structural") {
     return unsupportedResult(startedAt);
   }
 
-  const failures = runStructuralChecks(source, request.validation.checks);
+  const failures = runStructuralChecks(source, validation.checks);
 
   return failures.length === 0
     ? result("passed", startedAt, "All checks passed.")

@@ -119,8 +119,7 @@ fn validation_details(error: &ValidationError) -> Value {
         ValidationError::UnsafePath { path } | ValidationError::UnsupportedPath { path } => {
             json!({ "path": path })
         }
-        ValidationError::DuplicatePath { path } | ValidationError::MissingRequiredFile { path } => {
-            json!({ "path": path.as_str() })
-        }
+        ValidationError::DuplicatePath { path } => json!({ "path": path.as_str() }),
+        ValidationError::MissingRequiredFile { path } => json!({ "path": path }),
     }
 }
