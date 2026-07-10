@@ -447,6 +447,10 @@ export function LessonScreen(props: LessonScreenProps) {
             onRevealHint={draft.handleRevealHint}
           />
 
+          <div className="editor-file-header" aria-label="Editable file">
+            <span>{draft.filePath}</span>
+          </div>
+
           <Suspense fallback={<EditorLoadingFallback />}>
             <CodeEditor
               key={lesson.id}
