@@ -40,8 +40,9 @@ struct CargoResponseMessage {
 
 pub fn result_from_output(output: Output, duration_ms: u64, max_output_bytes: usize) -> RunResult {
     let status = classify_status(&output);
-    let stdout = output_stream_for_response(&output.stdout);
-    let stderr = output_stream_for_response(&output.stderr);
+    let command_succeeded = output.status.success();
+    let stdout = output_stream_for_response(&output.stdout, command_succeeded);
+    let stderr = output_stream_for_response(&output.stderr, command_succeeded);
     let (stdout, stderr) = cap_output(stdout.as_bytes(), stderr.as_bytes(), max_output_bytes);
 
     RunResult::new(status, stdout, stderr, duration_ms)
@@ -80,19 +81,27 @@ fn cargo_reported_compiler_error(output: &[u8]) -> bool {
         })
 }
 
-fn output_stream_for_response(output: &[u8]) -> String {
+fn output_stream_for_response(output: &[u8], command_succeeded: bool) -> String {
     String::from_utf8_lossy(output)
         .lines()
-        .filter(|line| should_include_response_line(line))
+        .filter(|line| should_include_response_line(line, command_succeeded))
         .collect::<Vec<_>>()
         .join("\n")
 }
 
-fn should_include_response_line(line: &str) -> bool {
+fn should_include_response_line(line: &str, command_succeeded: bool) -> bool {
+    if command_succeeded && is_podman_log_line(line) {
+        return false;
+    }
+
     match serde_json::from_str::<CargoResponseMessage>(line) {
         Ok(message) => message.reason == CargoMessageReason::CompilerMessage,
         Err(_) => true,
     }
+}
+
+fn is_podman_log_line(line: &str) -> bool {
+    line.starts_with("time=\"") && line.contains("\" level=") && line.contains(" msg=\"")
 }
 
 fn cap_output(stdout: &[u8], stderr: &[u8], max_output_bytes: usize) -> (String, String) {
@@ -243,6 +252,33 @@ mod tests {
         assert_eq!(result.stdout, "real test output");
         assert!(!result.stdout.contains("compiler-artifact"));
         assert!(!result.stdout.contains("[output truncated]"));
+    }
+
+    #[test]
+    fn filters_podman_logs_from_successful_response_output() {
+        let raw_stderr = concat!(
+            r#"time="2026-07-10T10:36:30Z" level=warning msg="Falling back to --cgroup-manager=cgroupfs""#,
+            "\n",
+            "   Compiling rust_daily_lesson v0.1.0 (/workspace)\n",
+        );
+
+        let result = result_from_output(output(0, "running 1 test", raw_stderr), 42, 400);
+
+        assert_eq!(result.status, RunStatus::Passed);
+        assert_eq!(
+            result.stderr,
+            "   Compiling rust_daily_lesson v0.1.0 (/workspace)"
+        );
+    }
+
+    #[test]
+    fn keeps_podman_logs_from_failed_response_output() {
+        let raw_stderr = r#"time="2026-07-10T10:36:30Z" level=error msg="cannot set up namespace""#;
+
+        let result = result_from_output(output(125, "", raw_stderr), 42, 400);
+
+        assert_eq!(result.status, RunStatus::Failed);
+        assert!(result.stderr.contains("cannot set up namespace"));
     }
 
     #[test]

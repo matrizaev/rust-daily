@@ -101,6 +101,8 @@ async fn execute_podman(
     let mut command = Command::new(config.podman_path.as_path());
     command
         .kill_on_drop(true)
+        .arg("--cgroup-manager")
+        .arg("cgroupfs")
         .arg("run")
         .arg("--rm")
         .arg("--network")

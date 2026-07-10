@@ -93,13 +93,23 @@ state.
 
 Production runner workspaces use `/var/www12/rust-daily-runs`. The systemd unit
 mounts this path as a private tmpfs with `size=2G` and `nr_inodes=200000`, which
-bounds disk and inode abuse from writable `/workspace` container mounts. If the
-advanced dependency cache grows enough to hit this cap, tune
-`TemporaryFileSystem` and `config/prod.yaml` together.
+bounds disk and inode abuse from writable `/workspace` container mounts. The
+tmpfs path is intentionally not listed in `ReadWritePaths`, because a bind mount
+there would cover the tmpfs with the host directory. If the advanced dependency
+cache grows enough to hit this cap, tune `TemporaryFileSystem` and
+`config/prod.yaml` together.
 
 The service also enables `PrivateTmp`, `ProtectSystem=strict`, `ProtectHome`,
-and narrow `ReadWritePaths`. Production sets `runner.podman_path` to
-`/usr/bin/podman`, so runner execution does not depend on service `PATH`.
+and narrow `ReadWritePaths`. It intentionally does not set systemd
+`NoNewPrivileges`, because rootless Podman needs setuid `newuidmap`/`newgidmap`
+to set up subordinate user namespaces. It also avoids a service-level
+`CapabilityBoundingSet`, because clipping capabilities from setuid helpers can
+prevent those helpers from opening and writing uid/gid maps; the runner
+container still gets `--cap-drop all` and `--security-opt no-new-privileges`.
+Production sets `runner.podman_path` to `/usr/bin/podman`, so runner execution
+does not depend on service `PATH`. Runner invocations pass
+`--cgroup-manager cgroupfs` because the service does not have a systemd user
+session.
 
 Useful service commands:
 

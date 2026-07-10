@@ -31,15 +31,15 @@ TimeoutStopSec=15
 # StandardOutput=append:/var/log/rust-daily-backend/rust-daily-backend.log
 # StandardError=inherit
 
-# Security hardening
-NoNewPrivileges=true
+# Security hardening.
+# Rootless Podman needs setuid newuidmap/newgidmap; keep no-new-privileges
+# inside the runner container instead of on the service process.
 PrivateTmp=true
 PrivateDevices=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/run/rust-daily-backend /var/www12/.cache /var/www12/.config /var/www12/.local/share /var/www12/rust-daily-runs
+ReadWritePaths=/run/rust-daily-backend /var/www12/.cache /var/www12/.config /var/www12/.local/share
 AmbientCapabilities=
-CapabilityBoundingSet=
 LimitNOFILE=65535
 
 [Install]
