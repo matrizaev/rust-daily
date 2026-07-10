@@ -1,6 +1,6 @@
 # Rust Daily Product Specification
 
-Status: current implementation and product contract as of July 9, 2026.
+Status: current implementation and product contract as of July 10, 2026.
 
 ## 1. Product
 
@@ -22,6 +22,9 @@ contains:
 - schema V2 source content for every lesson;
 - structural browser checks and Cargo-backed tests for every lesson;
 - 59 `std` validation steps and 31 `advanced` validation steps.
+
+The platform also supports backend compile-fail validation for future
+single-crate lessons that need to prove an invalid API use does not compile.
 
 The future curriculum direction is maintained in
 [FUTURE_ADVANCED_CONCEPTS_IMPLEMENTATION_PLAN.md](FUTURE_ADVANCED_CONCEPTS_IMPLEMENTATION_PLAN.md).
@@ -214,6 +217,8 @@ Every canonical lesson must define:
 - one to three progressive hints;
 - a completion explanation;
 - structural and Cargo validation;
+- optional public compile-fail cases when compile-time API constraints are the
+  concept;
 - an author-only reference solution;
 - author notes explaining the intended idiomatic choice.
 
@@ -330,7 +335,27 @@ The runner reports passed tests, test failures, compiler errors, timeouts, and
 internal failures separately. Cargo metadata is filtered from learner-facing
 output, diagnostics are capped, and a full queue returns HTTP 429.
 
-### 7.3 Validation Limits
+### 7.3 Compile-Fail Checks
+
+Lessons may add `backend-compile-fail` inside an `all` validation block next to
+`backend-cargo-test`. Compile-fail cases are public authored files under
+`compile_fail/**/*.rs`; they are not editable lesson files and are not part of
+the normal project snapshot.
+
+For compile-fail validation, the backend:
+
+1. validates and writes the normal project snapshot;
+2. runs `cargo check --offline --lib`;
+3. writes each case as a generated integration-test target under `tests/`;
+4. runs `cargo check --offline --test <generated-case>`;
+5. passes only when every case fails with the expected diagnostic snippets and
+   without any forbidden diagnostic snippets.
+
+If the learner's library does not compile, the result is `compile_error`. If a
+compile-fail case compiles successfully or fails for the wrong reason, the
+result is `failed`.
+
+### 7.4 Validation Limits
 
 Default server limits are:
 
@@ -350,7 +375,10 @@ single-crate allowlist: `src/**/*.rs`, `tests/**/*.rs`, `fixtures/**`, and
 scripts, target directories, benches, examples, migrations, and arbitrary
 paths.
 
-### 7.4 Grading Boundary
+Compile-fail case paths are validated separately and must be under
+`compile_fail/**/*.rs`; case bytes count toward the total request limit.
+
+### 7.5 Grading Boundary
 
 Public tests are shipped to and submitted by the browser. A caller can alter
 them. Rust Daily is therefore a practice tool, not secure certification or
@@ -465,11 +493,10 @@ The current implementation does not include:
 - hidden or server-owned grading tests;
 - browser-based Rust compilation;
 - multi-crate runner transport;
-- compile-fail lesson workspaces;
 - adaptive review scheduling;
 - notifications or analytics;
-- databases, migrations, benchmarks, procedural macro workspaces, FFI, or
-  dedicated unsafe validation;
+- databases, migrations, benchmarks, procedural macro workspaces,
+  trybuild-style macro diagnostics, FFI, or dedicated unsafe validation;
 - large multi-module capstone workspaces.
 
 These are deliberate future increments, not implied current capabilities.

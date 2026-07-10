@@ -21,7 +21,7 @@ flowchart LR
     Queue --> Runner[Runner workers]
     Runner --> Workspace[Temporary Cargo workspace]
     Workspace --> Podman[Restricted Podman container]
-    Podman --> Cargo[cargo test --offline]
+    Podman --> Cargo[cargo test/check --offline]
 ```
 
 The design follows four principles:
@@ -44,7 +44,7 @@ combines a structural browser check with Cargo-backed validation.
 | --- | --- |
 | `frontend/` | React UI, lesson loading, browser checks, PWA behavior, and local persistence |
 | `backend/` | Actix API, request validation, queueing, workspace creation, and runner orchestration |
-| `docker/` | Rust runner image, dependency cache, and advanced test entrypoint |
+| `docker/` | Rust runner image, dependency cache, and advanced Cargo entrypoints |
 | `lessons/` | Canonical lesson metadata, starter files, public tests, notes, and reference solutions |
 | `config/` | Shared, local, and production backend configuration |
 | `docs/` | Product specifications and implementation plans |
@@ -58,8 +58,12 @@ lesson.json
 notes.md
 starter/src/lib.rs
 tests/public.rs
+compile_fail/<case>.rs
 solution/src/lib.rs
 ```
+
+`compile_fail/` is present only for lessons that validate negative
+compile-time contracts.
 
 `lesson.json` references source files instead of duplicating their contents. It
 also defines ordering, instructions, hints, and one or more validation steps.
@@ -148,6 +152,8 @@ fixture, and test-data file separately; it does not concatenate tests.
 - `structural` checks run in a short-lived Web Worker.
 - `backend-cargo-test` sends the complete runnable lesson snapshot to the
   Actix API.
+- `backend-compile-fail` sends the same snapshot plus public compile-fail
+  cases and expects those cases to fail with authored diagnostics.
 - `all` runs configured checks concurrently and aggregates their results.
 - A default Cargo compile test is added when a lesson only configures browser
   checks.
@@ -157,9 +163,10 @@ the source shape; they are fast feedback, not a Rust parser or compiler.
 `browser-rust` exists in the schema but its compiler engine is not implemented.
 All current lessons use `all` with structural and backend Cargo steps.
 
-Backend responses are normalized into the frontend validation model. Cargo
-compiler messages are rendered as diagnostics, while Cargo bookkeeping records
-such as `compiler-artifact` are discarded.
+Backend responses are normalized into the frontend validation model.
+Compile-fail summaries name the case and any missing or forbidden diagnostic
+snippets. Cargo compiler messages are rendered as diagnostics, while Cargo
+bookkeeping records such as `compiler-artifact` are discarded.
 
 ### Browser Storage
 
@@ -224,6 +231,12 @@ and arbitrary paths are rejected; the backend always generates the manifest.
 The snapshot transport preserves the one-editable-artifact product invariant
 without adding multi-file editor state.
 
+`mode: "cargo-test"` is the default and runs `cargo test`. `mode:
+"compile-fail"` first checks the library, then writes each authored
+`compileFailCases` entry as `tests/compile_fail_<case>.rs` and runs
+`cargo check --test <case>`. Compile-fail case paths are validated separately
+under `compile_fail/**/*.rs`; they are never accepted as normal project files.
+
 Run results use one of these statuses:
 
 ```text
@@ -256,9 +269,9 @@ tracing, thiserror, Actix, and proptest.
 
 Advanced dependencies and compiled artifacts are cached in the runner image.
 At runtime, the cached target directory is copied into the writable lesson
-workspace before tests run. The dependency declarations in
-`backend/src/model.rs`, `docker/rust-runner.Dockerfile`, and the solution test
-harness must remain synchronized.
+workspace before advanced Cargo commands run. The dependency declarations in
+`backend/src/dependency_set.rs`, `docker/rust-runner.Dockerfile`, the runner
+wrapper scripts, and the solution test harness must remain synchronized.
 
 ## Configuration
 

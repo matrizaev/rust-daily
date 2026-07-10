@@ -151,4 +151,23 @@ export const readSourceText = async (lessonJsonPath, sourcePath) => {
   return readFile(absolutePath, "utf8");
 };
 
+export const isCompileFailValidation = (validation) =>
+  validation?.mode === "backend-compile-fail" &&
+  Array.isArray(validation.cases);
+
+export const inlineCompileFailValidation = async (lessonJsonPath, validation) => ({
+  ...validation,
+  cases: await Promise.all(
+    validation.cases.map(async (compileFailCase) => {
+      const { sourcePath, ...runtimeCase } = compileFailCase;
+
+      return {
+        ...runtimeCase,
+        path: sourcePath,
+        content: await readSourceText(lessonJsonPath, sourcePath),
+      };
+    }),
+  ),
+});
+
 export const repoRelativePath = (path) => relative(REPO_ROOT, path);

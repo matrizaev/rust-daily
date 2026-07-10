@@ -8,7 +8,10 @@ use thiserror::Error;
 use tokio::fs;
 use uuid::Uuid;
 
-use crate::{dependency_set::DependencySet, model::ValidatedRunRequest};
+use crate::{
+    dependency_set::DependencySet,
+    model::{ValidatedCompileFailCase, ValidatedRunRequest},
+};
 
 const CARGO_TOML_PREFIX: &str = r#"[package]
 name = "rust_daily_lesson"
@@ -100,6 +103,32 @@ pub async fn prepare_workspace(
     Ok(temp_dir)
 }
 
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct TestTargetName(String);
+
+impl TestTargetName {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+pub async fn write_compile_fail_case(
+    workspace: &Path,
+    case: &ValidatedCompileFailCase,
+) -> Result<TestTargetName, WorkspaceError> {
+    let target_name = TestTargetName(format!(
+        "compile_fail_{}",
+        case.name().as_str().replace('-', "_")
+    ));
+    let path = workspace
+        .join("tests")
+        .join(format!("{}.rs", target_name.as_str()));
+
+    write_file(path, case.content().as_bytes()).await?;
+
+    Ok(target_name)
+}
+
 async fn write_file(path: PathBuf, contents: &[u8]) -> Result<(), WorkspaceError> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
@@ -121,11 +150,12 @@ mod tests {
 
     use tempfile::tempdir;
 
-    use super::{cargo_toml, prepare_workspace};
+    use super::{cargo_toml, prepare_workspace, write_compile_fail_case};
     use crate::{
         dependency_set::DependencySet,
         model::{
-            RunRequest, RunRequestValidation, SubmittedFile, ValidatedRunRequest, ValidationLimits,
+            RunRequest, RunRequestValidation, SubmittedCompileFailCase, SubmittedFile,
+            ValidatedRunRequest, ValidationLimits,
         },
     };
 
@@ -193,6 +223,27 @@ mod tests {
         .expect("test request should be valid")
     }
 
+    fn compile_fail_request() -> ValidatedRunRequest {
+        RunRequestValidation::new(
+            RunRequest::compile_fail(
+                vec![
+                    SubmittedFile::new("src/lib.rs", "pub struct UserId(u64);\n"),
+                    SubmittedFile::new("tests/lesson.rs", "#[test]\nfn code_compiles() {}\n"),
+                ],
+                vec![SubmittedCompileFailCase::new(
+                    "private-field-construction",
+                    "compile_fail/private_field_construction.rs",
+                    "use rust_daily_lesson::UserId;\n",
+                    vec!["private".to_string()],
+                )],
+                DependencySet::Std,
+            ),
+            roomy_limits(),
+        )
+        .try_into()
+        .expect("test request should be valid")
+    }
+
     #[tokio::test]
     async fn prepare_workspace_writes_template_and_submitted_files() {
         let root = tempdir().expect("temp root should be created");
@@ -224,6 +275,30 @@ mod tests {
         );
         assert!(workspace.path().join("fixtures/users.json").exists());
         assert!(workspace.path().join("testdata/request.json").exists());
+    }
+
+    #[tokio::test]
+    async fn write_compile_fail_case_writes_generated_integration_target() {
+        let root = tempdir().expect("temp root should be created");
+        let request = compile_fail_request();
+        let workspace = prepare_workspace(uuid::Uuid::new_v4(), &request, root.path())
+            .await
+            .expect("workspace should be prepared");
+        let case = &request.compile_fail_cases()[0];
+        let target_name = write_compile_fail_case(workspace.path(), case)
+            .await
+            .expect("case should be written");
+
+        assert_eq!(
+            target_name.as_str(),
+            "compile_fail_private_field_construction"
+        );
+        assert!(
+            workspace
+                .path()
+                .join("tests/compile_fail_private_field_construction.rs")
+                .exists()
+        );
     }
 
     #[test]

@@ -57,7 +57,8 @@ Runtime group:   www-data
 The deployment workflow rebuilds the Podman runner image before backend restart
 when the installed `rust-runner:1.95` image lacks the expected source-hash label
 or has a different one. Rebuilds are therefore automatic when Rust, lesson
-dependencies, the Dockerfile, or `run-advanced-lesson-tests.sh` changes.
+dependencies, the Dockerfile, `run-advanced-lesson-cargo.sh`, or
+`run-advanced-lesson-tests.sh` changes.
 
 ## Installed Files
 
@@ -130,6 +131,7 @@ user:
 cd /var/www12/html
 RUNNER_SOURCE_HASH="$(
   sha256sum docker/rust-runner.Dockerfile \
+    docker/run-advanced-lesson-cargo.sh \
     docker/run-advanced-lesson-tests.sh \
     docker/dependency-cache/Cargo.toml \
     docker/dependency-cache/src/lib.rs \
@@ -260,7 +262,9 @@ make smoke-runner SMOKE_URL=https://borrowquest.qzz.io
 ```
 
 Use `SMOKE_CASE=multi-file-pass`, `fail`, `compile-error`, or `timeout` to
-inspect the other runner outcomes.
+inspect the other runner outcomes. Use `SMOKE_CASE=compile-fail-pass`,
+`compile-fail-unexpected-pass`, or `compile-fail-wrong-diagnostic` to exercise
+the compile-fail runner path.
 
 ## Security Boundary
 

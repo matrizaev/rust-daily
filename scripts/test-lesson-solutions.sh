@@ -63,6 +63,108 @@ console.log(editableFiles[0].path);
 ' "$1"
 }
 
+prepare_compile_fail_cases() {
+  local lesson_dir="$1"
+  local crate_dir="$2"
+  local manifest_path="$3"
+
+  node -e '
+const fs = require("fs");
+const path = require("path");
+
+const [lessonJsonPath, lessonDir, crateDir, manifestPath] = process.argv.slice(1);
+const lesson = JSON.parse(fs.readFileSync(lessonJsonPath, "utf8"));
+const validations = lesson.validation?.mode === "all"
+  ? lesson.validation.validations
+  : [lesson.validation];
+const compileFailSteps = validations.filter((step) => step?.mode === "backend-compile-fail");
+const lines = [];
+
+fs.mkdirSync(path.join(crateDir, "tests"), { recursive: true });
+
+for (const step of compileFailSteps) {
+  for (const compileFailCase of step.cases ?? []) {
+    const safeName = compileFailCase.name.replace(/-/g, "_");
+    const targetName = `compile_fail_${safeName}`;
+    const sourcePath = path.join(lessonDir, compileFailCase.sourcePath);
+    const targetPath = path.join(crateDir, "tests", `${targetName}.rs`);
+    const content = fs.readFileSync(sourcePath, "utf8");
+    fs.writeFileSync(targetPath, content);
+    lines.push([
+      targetName,
+      compileFailCase.name,
+      Buffer.from(JSON.stringify(compileFailCase.expectedDiagnostics ?? [])).toString("base64"),
+      Buffer.from(JSON.stringify(compileFailCase.forbiddenDiagnostics ?? [])).toString("base64"),
+    ].join("\t"));
+  }
+}
+
+fs.writeFileSync(manifestPath, `${lines.join("\n")}${lines.length ? "\n" : ""}`);
+' "$lesson_dir/lesson.json" "$lesson_dir" "$crate_dir" "$manifest_path"
+}
+
+check_compile_fail_diagnostics() {
+  local rel_path="$1"
+  local case_name="$2"
+  local expected_b64="$3"
+  local forbidden_b64="$4"
+  local output="$5"
+
+  node -e '
+const [relPath, caseName, expectedRaw, forbiddenRaw] = process.argv.slice(1);
+const expected = JSON.parse(Buffer.from(expectedRaw, "base64").toString("utf8"));
+const forbidden = JSON.parse(Buffer.from(forbiddenRaw, "base64").toString("utf8"));
+let output = "";
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (chunk) => output += chunk);
+process.stdin.on("end", () => {
+  const missing = expected.filter((snippet) => !output.includes(snippet));
+  const forbiddenHits = forbidden.filter((snippet) => output.includes(snippet));
+
+  if (missing.length > 0 || forbiddenHits.length > 0) {
+    if (missing.length > 0) {
+      console.error(`${relPath} compile-fail case ${caseName} missing diagnostics: ${missing.join(", ")}`);
+    }
+    if (forbiddenHits.length > 0) {
+      console.error(`${relPath} compile-fail case ${caseName} included forbidden diagnostics: ${forbiddenHits.join(", ")}`);
+    }
+    process.exit(1);
+  }
+});
+' "$rel_path" "$case_name" "$expected_b64" "$forbidden_b64" <<< "$output"
+}
+
+run_compile_fail_cases() {
+  local lesson_dir="$1"
+  local crate_dir="$2"
+  local rel_path="$3"
+  local manifest_path="$crate_dir/compile-fail-cases.tsv"
+
+  prepare_compile_fail_cases "$lesson_dir" "$crate_dir" "$manifest_path"
+
+  if [[ ! -s "$manifest_path" ]]; then
+    return
+  fi
+
+  while IFS=$'\t' read -r target_name case_name expected_b64 forbidden_b64; do
+    set +e
+    output="$(
+      CARGO_TARGET_DIR="$tmp_dir/target" \
+        cargo check --manifest-path "$crate_dir/Cargo.toml" --offline --test "$target_name" --message-format=json 2>&1
+    )"
+    status=$?
+    set -e
+
+    if [[ "$status" -eq 0 ]]; then
+      echo "$rel_path compile-fail case $case_name compiled successfully; expected failure" >&2
+      exit 1
+    fi
+
+    check_compile_fail_diagnostics "$rel_path" "$case_name" "$expected_b64" "$forbidden_b64" "$output"
+    printf 'passed %s compile-fail %s\n' "$rel_path" "$case_name"
+  done < "$manifest_path"
+}
+
 append_dependencies() {
   local crate_dir="$1"
   local dependency_set="$2"
@@ -142,5 +244,6 @@ for lesson_dir in "${lesson_dirs[@]}"; do
 
   CARGO_TARGET_DIR="$tmp_dir/target" \
     cargo test --manifest-path "$crate_dir/Cargo.toml" --offline --quiet
+  run_compile_fail_cases "$lesson_dir" "$crate_dir" "$rel_path"
   printf 'passed %s\n' "$rel_path"
 done

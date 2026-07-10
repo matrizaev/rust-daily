@@ -25,16 +25,36 @@ type BackendRunResult = {
 };
 
 type BackendRunRequest = {
+  mode: "cargo-test" | "compile-fail";
   dependencySet: string;
   files: Array<{
     path: string;
     content: string;
   }>;
+  compileFailCases?: Array<{
+    name: string;
+    path: string;
+    content: string;
+    expectedDiagnostics: string[];
+    forbiddenDiagnostics?: string[];
+  }>;
 };
 
 type BackendValidationRequest = ValidationRequest & {
+  validation: Extract<
+    LessonValidationStep,
+    { mode: "backend-cargo-test" | "backend-compile-fail" }
+  >;
+};
+
+type BackendCargoTestRequest = ValidationRequest & {
   validation: Extract<LessonValidationStep, { mode: "backend-cargo-test" }>;
 };
+
+const isBackendCargoTestRequest = (
+  request: BackendValidationRequest,
+): request is BackendCargoTestRequest =>
+  request.validation.mode === "backend-cargo-test";
 
 type CargoCompilerMessage = {
   reason: "compiler-message";
@@ -104,7 +124,7 @@ const addFileIfMissing = (
 
 const addLegacyTestInputs = (
   files: BackendRunFile[],
-  request: BackendValidationRequest,
+  request: BackendCargoTestRequest,
 ) => {
   const seenPaths = new Set(files.map((file) => file.path));
 
@@ -117,7 +137,7 @@ const addLegacyTestInputs = (
 const addLegacyTestFiles = (
   files: BackendRunFile[],
   seenPaths: Set<string>,
-  request: BackendValidationRequest,
+  request: BackendCargoTestRequest,
 ) => {
   if (!request.validation.testFiles?.length) {
     return;
@@ -131,7 +151,7 @@ const addLegacyTestFiles = (
 const addLegacyTestCode = (
   files: BackendRunFile[],
   seenPaths: Set<string>,
-  request: BackendValidationRequest,
+  request: BackendCargoTestRequest,
 ) => {
   if (hasTestFile(files) || typeof request.validation.testCode !== "string") {
     return;
@@ -143,15 +163,41 @@ const addLegacyTestCode = (
   });
 };
 
+const requestFilesForValidation = (request: BackendValidationRequest) =>
+  isBackendCargoTestRequest(request)
+    ? addLegacyTestInputs(sortedRequestFiles(request), request)
+    : sortedRequestFiles(request);
+
+const buildCompileFailRunRequest = (
+  request: BackendValidationRequest,
+  files: BackendRunFile[],
+): BackendRunRequest => ({
+  mode: "compile-fail",
+  dependencySet: request.validation.dependencySet ?? "std",
+  files,
+  compileFailCases:
+    request.validation.mode === "backend-compile-fail"
+      ? request.validation.cases
+      : [],
+});
+
+const buildCargoTestRunRequest = (
+  request: BackendValidationRequest,
+  files: BackendRunFile[],
+): BackendRunRequest => ({
+  mode: "cargo-test",
+  dependencySet: request.validation.dependencySet ?? "std",
+  files,
+});
+
 const buildRunRequest = (
   request: BackendValidationRequest,
 ): BackendRunRequest => {
-  const files = addLegacyTestInputs(sortedRequestFiles(request), request);
+  const files = requestFilesForValidation(request);
 
-  return {
-    dependencySet: request.validation.dependencySet ?? "std",
-    files,
-  };
+  return request.validation.mode === "backend-compile-fail"
+    ? buildCompileFailRunRequest(request, files)
+    : buildCargoTestRunRequest(request, files);
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -260,7 +306,22 @@ const diagnosticsFromStreams = (stdout: string, stderr: string) => {
     .join("\n\n");
 };
 
-const statusSummary = (status: BackendRunStatus) => {
+const statusSummary = (
+  status: BackendRunStatus,
+  validationMode: BackendValidationRequest["validation"]["mode"],
+) => {
+  if (validationMode === "backend-compile-fail") {
+    const summaries: Record<BackendRunStatus, string> = {
+      passed: "All compile-fail checks passed.",
+      failed: "Compile-fail checks failed.",
+      compile_error: "The Rust code did not compile.",
+      timed_out: "The Rust runner timed out.",
+      internal_error: "The Rust runner failed internally.",
+    };
+
+    return summaries[status];
+  }
+
   const summaries: Record<BackendRunStatus, string> = {
     passed: "All Rust tests passed.",
     failed: "Rust tests failed.",
@@ -272,21 +333,36 @@ const statusSummary = (status: BackendRunStatus) => {
   return summaries[status];
 };
 
-const failureForStatus = (status: BackendRunStatus): ValidationFailure[] => {
+const failureForStatus = (
+  status: BackendRunStatus,
+  validationMode: BackendValidationRequest["validation"]["mode"],
+): ValidationFailure[] => {
   if (status === "passed") {
     return [];
   }
 
-  const messages: Record<Exclude<BackendRunStatus, "passed">, string> = {
-    failed: "At least one public Rust test failed.",
-    compile_error: "Fix the compile error before running the tests again.",
-    timed_out: "The runner stopped this check after the lesson timeout.",
-    internal_error: "The runner could not complete this check.",
-  };
+  const messages: Record<Exclude<BackendRunStatus, "passed">, string> =
+    validationMode === "backend-compile-fail"
+      ? {
+          failed: "At least one compile-fail case did not fail as expected.",
+          compile_error:
+            "Fix the compile error before running the compile-fail cases.",
+          timed_out: "The runner stopped this check after the lesson timeout.",
+          internal_error: "The runner could not complete this check.",
+        }
+      : {
+          failed: "At least one public Rust test failed.",
+          compile_error: "Fix the compile error before running the tests again.",
+          timed_out: "The runner stopped this check after the lesson timeout.",
+          internal_error: "The runner could not complete this check.",
+        };
 
   return [
     {
-      name: "cargo test",
+      name:
+        validationMode === "backend-compile-fail"
+          ? "compile-fail checks"
+          : "cargo test",
       message: messages[status],
     },
   ];
@@ -297,14 +373,15 @@ const mapBackendStatus = (status: BackendRunStatus): ValidationStatus =>
 
 const resultFromBackend = (
   response: BackendRunResult,
+  validationMode: BackendValidationRequest["validation"]["mode"],
   startedAt: number,
 ): ValidationResult =>
   result(
     mapBackendStatus(response.status),
     startedAt,
-    statusSummary(response.status),
+    statusSummary(response.status, validationMode),
     diagnosticsFromStreams(response.stdout, response.stderr),
-    failureForStatus(response.status),
+    failureForStatus(response.status, validationMode),
     Math.max(0, Math.round(response.duration_ms)),
   );
 
@@ -379,7 +456,8 @@ const unavailableResult = (startedAt: number) =>
 const isBackendValidationRequest = (
   request: ValidationRequest,
 ): request is BackendValidationRequest =>
-  request.validation.mode === "backend-cargo-test";
+  request.validation.mode === "backend-cargo-test" ||
+  request.validation.mode === "backend-compile-fail";
 
 const hasBackendUrl = (backendUrl: string) => backendUrl.trim().length > 0;
 
@@ -395,19 +473,24 @@ const parseBackendPayload = async (
 };
 
 const resultFromOkResponse = async (
+  request: BackendValidationRequest,
   response: Response,
   startedAt: number,
 ) => {
   const payload = await parseBackendPayload(response, startedAt);
 
   return isBackendRunResult(payload)
-    ? resultFromBackend(payload, startedAt)
+    ? resultFromBackend(payload, request.validation.mode, startedAt)
     : invalidBackendResponseResult(startedAt);
 };
 
-const resultFromResponse = (response: Response, startedAt: number) =>
+const resultFromResponse = (
+  request: BackendValidationRequest,
+  response: Response,
+  startedAt: number,
+) =>
   response.ok
-    ? resultFromOkResponse(response, startedAt)
+    ? resultFromOkResponse(request, response, startedAt)
     : resultFromHttpError(response, startedAt);
 
 const fetchBackendRun = (
@@ -471,7 +554,7 @@ export const runBackendValidation = async (
     const response = await fetchBackendRun(request, backendUrl, timeout.signal);
 
     timeout.clear();
-    return await resultFromResponse(response, startedAt);
+    return await resultFromResponse(request, response, startedAt);
   } catch (error) {
     timeout.clear();
     return resultFromFetchError(error, timeout.didTimeout(), startedAt);

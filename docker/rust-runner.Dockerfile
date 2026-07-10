@@ -17,6 +17,8 @@ RUN CARGO_TARGET_DIR=/opt/rust-daily-target \
     && rm -rf /opt/rust-daily-target/debug/incremental \
     && rm -rf /tmp/dependency-cache
 
+COPY docker/run-advanced-lesson-cargo.sh /usr/local/bin/run-advanced-lesson-cargo
 COPY docker/run-advanced-lesson-tests.sh /usr/local/bin/run-advanced-lesson-tests
 
-RUN chmod 0755 /usr/local/bin/run-advanced-lesson-tests
+RUN chmod 0755 /usr/local/bin/run-advanced-lesson-cargo \
+    && chmod 0755 /usr/local/bin/run-advanced-lesson-tests

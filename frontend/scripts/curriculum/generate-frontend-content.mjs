@@ -6,6 +6,8 @@ import {
   FRONTEND_LESSON_DETAILS_DIR,
   FRONTEND_LESSON_INDEX_PATH,
   FRONTEND_LESSONS_PATH,
+  inlineCompileFailValidation,
+  isCompileFailValidation,
   pathExists,
   readJson,
   readSourceText,
@@ -101,7 +103,9 @@ const inlineBackendValidation = async (
   }
 
   if (!shouldInlineTestFiles(validation)) {
-    return validation;
+    return isCompileFailValidation(validation)
+      ? inlineCompileFailValidation(lessonJsonPath, validation)
+      : validation;
   }
 
   return inlineBackendTestValidation(lessonJsonPath, validation, lessonFiles);

@@ -46,6 +46,14 @@ export type StructuralCheck =
 
 export type DependencySet = "std" | "advanced";
 
+export type CompileFailCase = {
+  name: string;
+  path: string;
+  content: string;
+  expectedDiagnostics: string[];
+  forbiddenDiagnostics?: string[];
+};
+
 export type LessonValidationStep =
   | {
       mode: "structural";
@@ -66,6 +74,12 @@ export type LessonValidationStep =
         path: string;
         content: string;
       }>;
+    }
+  | {
+      mode: "backend-compile-fail";
+      timeoutMs: number;
+      dependencySet?: DependencySet;
+      cases: CompileFailCase[];
     }
   | {
       mode: "self-check";

@@ -105,6 +105,14 @@ fn validation_code(error: &ValidationError) -> &'static str {
         ValidationError::UnsupportedPath { .. } => "unsupported_path",
         ValidationError::DuplicatePath { .. } => "duplicate_path",
         ValidationError::MissingRequiredFile { .. } => "missing_required_file",
+        ValidationError::CompileFailCasesNotAllowed => "compile_fail_cases_not_allowed",
+        ValidationError::MissingCompileFailCases => "missing_compile_fail_cases",
+        ValidationError::TooManyCompileFailCases { .. } => "too_many_compile_fail_cases",
+        ValidationError::InvalidCompileFailCaseName { .. } => "invalid_compile_fail_case_name",
+        ValidationError::DuplicateCompileFailCaseName { .. } => "duplicate_compile_fail_case_name",
+        ValidationError::DuplicateCompileFailCasePath { .. } => "duplicate_compile_fail_case_path",
+        ValidationError::MissingExpectedDiagnostics { .. } => "missing_expected_diagnostics",
+        ValidationError::EmptyDiagnosticSnippet { .. } => "empty_diagnostic_snippet",
     }
 }
 
@@ -113,7 +121,7 @@ fn validation_details(error: &ValidationError) -> Value {
         ValidationError::EmptyFiles => json!({}),
         ValidationError::TooManyFiles { max } => json!({ "max": max }),
         ValidationError::FileTooLarge { path, max_bytes } => {
-            json!({ "path": path.as_str(), "max_bytes": max_bytes })
+            json!({ "path": path, "max_bytes": max_bytes })
         }
         ValidationError::TotalTooLarge { max_bytes } => json!({ "max_bytes": max_bytes }),
         ValidationError::UnsafePath { path } | ValidationError::UnsupportedPath { path } => {
@@ -121,5 +129,14 @@ fn validation_details(error: &ValidationError) -> Value {
         }
         ValidationError::DuplicatePath { path } => json!({ "path": path.as_str() }),
         ValidationError::MissingRequiredFile { path } => json!({ "path": path }),
+        ValidationError::CompileFailCasesNotAllowed | ValidationError::MissingCompileFailCases => {
+            json!({})
+        }
+        ValidationError::TooManyCompileFailCases { max } => json!({ "max": max }),
+        ValidationError::InvalidCompileFailCaseName { name }
+        | ValidationError::DuplicateCompileFailCaseName { name }
+        | ValidationError::MissingExpectedDiagnostics { name }
+        | ValidationError::EmptyDiagnosticSnippet { name } => json!({ "name": name }),
+        ValidationError::DuplicateCompileFailCasePath { path } => json!({ "path": path }),
     }
 }

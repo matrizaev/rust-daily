@@ -1,5 +1,5 @@
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     num::NonZeroUsize,
     path::{Component, Path},
 };
@@ -14,28 +14,60 @@ const SRC_PREFIX: &str = "src/";
 const TESTS_PREFIX: &str = "tests/";
 const FIXTURES_PREFIX: &str = "fixtures/";
 const TESTDATA_PREFIX: &str = "testdata/";
+const COMPILE_FAIL_PREFIX: &str = "compile_fail/";
+const MAX_COMPILE_FAIL_CASES: usize = 4;
+const MAX_COMPILE_FAIL_CASE_NAME_BYTES: usize = 80;
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
 pub struct RunRequest {
+    #[serde(default)]
+    mode: RunMode,
     files: Vec<SubmittedFile>,
     #[serde(default, rename = "dependencySet")]
     dependency_set: DependencySet,
+    #[serde(default, rename = "compileFailCases")]
+    compile_fail_cases: Vec<SubmittedCompileFailCase>,
 }
 
 impl RunRequest {
     pub fn new(files: Vec<SubmittedFile>) -> Self {
         Self {
+            mode: RunMode::default(),
             files,
             dependency_set: DependencySet::default(),
+            compile_fail_cases: Vec::new(),
         }
     }
 
     pub fn with_dependency_set(files: Vec<SubmittedFile>, dependency_set: DependencySet) -> Self {
         Self {
+            mode: RunMode::default(),
             files,
             dependency_set,
+            compile_fail_cases: Vec::new(),
         }
     }
+
+    pub fn compile_fail(
+        files: Vec<SubmittedFile>,
+        compile_fail_cases: Vec<SubmittedCompileFailCase>,
+        dependency_set: DependencySet,
+    ) -> Self {
+        Self {
+            mode: RunMode::CompileFail,
+            files,
+            dependency_set,
+            compile_fail_cases,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, Deserialize, Serialize, Eq, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+pub enum RunMode {
+    #[default]
+    CargoTest,
+    CompileFail,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
@@ -54,6 +86,49 @@ impl SubmittedFile {
 
     fn into_parts(self) -> (String, String) {
         (self.path, self.content)
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
+pub struct SubmittedCompileFailCase {
+    name: String,
+    path: String,
+    content: String,
+    #[serde(rename = "expectedDiagnostics")]
+    expected_diagnostics: Vec<String>,
+    #[serde(default, rename = "forbiddenDiagnostics")]
+    forbidden_diagnostics: Vec<String>,
+}
+
+impl SubmittedCompileFailCase {
+    pub fn new(
+        name: impl Into<String>,
+        path: impl Into<String>,
+        content: impl Into<String>,
+        expected_diagnostics: Vec<String>,
+    ) -> Self {
+        Self {
+            name: name.into(),
+            path: path.into(),
+            content: content.into(),
+            expected_diagnostics,
+            forbidden_diagnostics: Vec::new(),
+        }
+    }
+
+    pub fn with_forbidden_diagnostics(mut self, forbidden_diagnostics: Vec<String>) -> Self {
+        self.forbidden_diagnostics = forbidden_diagnostics;
+        self
+    }
+
+    fn into_parts(self) -> (String, String, String, Vec<String>, Vec<String>) {
+        (
+            self.name,
+            self.path,
+            self.content,
+            self.expected_diagnostics,
+            self.forbidden_diagnostics,
+        )
     }
 }
 
@@ -109,15 +184,15 @@ impl SubmittedContent {
 }
 
 struct SubmittedContentInput {
-    path: SubmittedPath,
+    path: String,
     content: String,
     max_file_bytes: usize,
 }
 
 impl SubmittedContentInput {
-    fn new(path: SubmittedPath, content: String, max_file_bytes: usize) -> Self {
+    fn new(path: impl Into<String>, content: String, max_file_bytes: usize) -> Self {
         Self {
-            path,
+            path: path.into(),
             content,
             max_file_bytes,
         }
@@ -140,18 +215,148 @@ impl TryFrom<SubmittedContentInput> for SubmittedContent {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
+pub struct ValidatedCompileFailCase {
+    name: CompileFailCaseName,
+    path: CompileFailPath,
+    content: SubmittedContent,
+    expected_diagnostics: Vec<DiagnosticSnippet>,
+    forbidden_diagnostics: Vec<DiagnosticSnippet>,
+}
+
+impl ValidatedCompileFailCase {
+    pub fn name(&self) -> &CompileFailCaseName {
+        &self.name
+    }
+
+    pub fn path(&self) -> &CompileFailPath {
+        &self.path
+    }
+
+    pub fn content(&self) -> &SubmittedContent {
+        &self.content
+    }
+
+    pub fn expected_diagnostics(&self) -> &[DiagnosticSnippet] {
+        &self.expected_diagnostics
+    }
+
+    pub fn forbidden_diagnostics(&self) -> &[DiagnosticSnippet] {
+        &self.forbidden_diagnostics
+    }
+}
+
+#[derive(Debug, Clone, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct CompileFailCaseName(String);
+
+impl CompileFailCaseName {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl std::fmt::Display for CompileFailCaseName {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(self.as_str())
+    }
+}
+
+impl TryFrom<String> for CompileFailCaseName {
+    type Error = ValidationError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let trimmed = value.trim();
+
+        if trimmed.is_empty()
+            || value != trimmed
+            || trimmed.len() > MAX_COMPILE_FAIL_CASE_NAME_BYTES
+            || !trimmed
+                .bytes()
+                .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-'))
+        {
+            return Err(ValidationError::InvalidCompileFailCaseName { name: value });
+        }
+
+        Ok(Self(trimmed.to_string()))
+    }
+}
+
+#[derive(Debug, Clone, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct CompileFailPath(String);
+
+impl CompileFailPath {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl std::fmt::Display for CompileFailPath {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(self.as_str())
+    }
+}
+
+impl TryFrom<String> for CompileFailPath {
+    type Error = ValidationError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        validate_safe_path(&value).map_err(|error| error.with_owned_path(value.clone()))?;
+
+        if !value.starts_with(COMPILE_FAIL_PREFIX) || !value.ends_with(".rs") {
+            return Err(ValidationError::UnsupportedPath { path: value });
+        }
+
+        Ok(Self(value))
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct DiagnosticSnippet(String);
+
+impl DiagnosticSnippet {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl TryFrom<(String, &str)> for DiagnosticSnippet {
+    type Error = ValidationError;
+
+    fn try_from((value, case_name): (String, &str)) -> Result<Self, Self::Error> {
+        let trimmed = value.trim();
+
+        if trimmed.is_empty() {
+            return Err(ValidationError::EmptyDiagnosticSnippet {
+                name: case_name.to_string(),
+            });
+        }
+
+        Ok(Self(trimmed.to_string()))
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ValidatedRunRequest {
+    mode: RunMode,
     files: BTreeMap<SubmittedPath, SubmittedContent>,
     dependency_set: DependencySet,
+    compile_fail_cases: Vec<ValidatedCompileFailCase>,
 }
 
 impl ValidatedRunRequest {
+    pub fn mode(&self) -> RunMode {
+        self.mode
+    }
+
     pub fn files(&self) -> impl Iterator<Item = (&SubmittedPath, &SubmittedContent)> {
         self.files.iter()
     }
 
     pub fn dependency_set(&self) -> DependencySet {
         self.dependency_set
+    }
+
+    pub fn compile_fail_cases(&self) -> &[ValidatedCompileFailCase] {
+        &self.compile_fail_cases
     }
 }
 
@@ -171,8 +376,10 @@ impl TryFrom<RunRequestValidation> for ValidatedRunRequest {
 
     fn try_from(input: RunRequestValidation) -> Result<Self, Self::Error> {
         let RunRequest {
+            mode,
             files,
             dependency_set,
+            compile_fail_cases,
         } = input.request;
 
         if files.is_empty() {
@@ -205,7 +412,7 @@ impl TryFrom<RunRequestValidation> for ValidatedRunRequest {
             has_test_file |= path.is_test_file();
 
             let content = SubmittedContent::try_from(SubmittedContentInput::new(
-                path.clone(),
+                path.as_str(),
                 content,
                 input.limits.max_file_bytes(),
             ))?;
@@ -227,11 +434,121 @@ impl TryFrom<RunRequestValidation> for ValidatedRunRequest {
             });
         }
 
+        let validated_compile_fail_cases = validate_compile_fail_cases(
+            mode,
+            compile_fail_cases,
+            input.limits.max_file_bytes(),
+            input.limits.max_total_bytes(),
+            &mut total_bytes,
+        )?;
+
         Ok(Self {
+            mode,
             files: validated_files,
             dependency_set,
+            compile_fail_cases: validated_compile_fail_cases,
         })
     }
+}
+
+fn validate_compile_fail_cases(
+    mode: RunMode,
+    cases: Vec<SubmittedCompileFailCase>,
+    max_file_bytes: usize,
+    max_total_bytes: usize,
+    total_bytes: &mut usize,
+) -> Result<Vec<ValidatedCompileFailCase>, ValidationError> {
+    match mode {
+        RunMode::CargoTest if !cases.is_empty() => {
+            return Err(ValidationError::CompileFailCasesNotAllowed);
+        }
+        RunMode::CargoTest => return Ok(Vec::new()),
+        RunMode::CompileFail if cases.is_empty() => {
+            return Err(ValidationError::MissingCompileFailCases);
+        }
+        RunMode::CompileFail => {}
+    }
+
+    if cases.len() > MAX_COMPILE_FAIL_CASES {
+        return Err(ValidationError::TooManyCompileFailCases {
+            max: MAX_COMPILE_FAIL_CASES,
+        });
+    }
+
+    let mut names = BTreeSet::new();
+    let mut paths = BTreeSet::new();
+    let mut target_names = BTreeSet::new();
+    let mut validated = Vec::with_capacity(cases.len());
+
+    for case in cases {
+        let (name, path, content, expected_diagnostics, forbidden_diagnostics) = case.into_parts();
+        let name = CompileFailCaseName::try_from(name)?;
+
+        if !names.insert(name.clone()) {
+            return Err(ValidationError::DuplicateCompileFailCaseName {
+                name: name.as_str().to_string(),
+            });
+        }
+
+        let target_name = name.as_str().replace('-', "_");
+        if !target_names.insert(target_name) {
+            return Err(ValidationError::DuplicateCompileFailCaseName {
+                name: name.as_str().to_string(),
+            });
+        }
+
+        let path = CompileFailPath::try_from(path)?;
+
+        if !paths.insert(path.clone()) {
+            return Err(ValidationError::DuplicateCompileFailCasePath {
+                path: path.as_str().to_string(),
+            });
+        }
+
+        *total_bytes = total_bytes.saturating_add(content.len());
+        if *total_bytes > max_total_bytes {
+            return Err(ValidationError::TotalTooLarge {
+                max_bytes: max_total_bytes,
+            });
+        }
+
+        let content = SubmittedContent::try_from(SubmittedContentInput::new(
+            path.as_str(),
+            content,
+            max_file_bytes,
+        ))?;
+        let expected_diagnostics =
+            validate_diagnostic_snippets(name.as_str(), expected_diagnostics)?;
+
+        if expected_diagnostics.is_empty() {
+            return Err(ValidationError::MissingExpectedDiagnostics {
+                name: name.as_str().to_string(),
+            });
+        }
+
+        let forbidden_diagnostics =
+            validate_diagnostic_snippets(name.as_str(), forbidden_diagnostics)?;
+
+        validated.push(ValidatedCompileFailCase {
+            name,
+            path,
+            content,
+            expected_diagnostics,
+            forbidden_diagnostics,
+        });
+    }
+
+    Ok(validated)
+}
+
+fn validate_diagnostic_snippets(
+    case_name: &str,
+    snippets: Vec<String>,
+) -> Result<Vec<DiagnosticSnippet>, ValidationError> {
+    snippets
+        .into_iter()
+        .map(|snippet| DiagnosticSnippet::try_from((snippet, case_name)))
+        .collect()
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -292,10 +609,7 @@ pub enum ValidationError {
     #[error("too many files: maximum is {max}")]
     TooManyFiles { max: usize },
     #[error("file `{path}` is too large: maximum is {max_bytes} bytes")]
-    FileTooLarge {
-        path: SubmittedPath,
-        max_bytes: usize,
-    },
+    FileTooLarge { path: String, max_bytes: usize },
     #[error("submitted content is too large: maximum is {max_bytes} bytes")]
     TotalTooLarge { max_bytes: usize },
     #[error("file path must be relative and safe: `{path}`")]
@@ -306,13 +620,32 @@ pub enum ValidationError {
     DuplicatePath { path: SubmittedPath },
     #[error("missing required file: `{path}`")]
     MissingRequiredFile { path: &'static str },
+    #[error("compile-fail cases are only allowed for compile-fail requests")]
+    CompileFailCasesNotAllowed,
+    #[error("compile-fail requests must include at least one case")]
+    MissingCompileFailCases,
+    #[error("too many compile-fail cases: maximum is {max}")]
+    TooManyCompileFailCases { max: usize },
+    #[error("invalid compile-fail case name: `{name}`")]
+    InvalidCompileFailCaseName { name: String },
+    #[error("duplicate compile-fail case name: `{name}`")]
+    DuplicateCompileFailCaseName { name: String },
+    #[error("duplicate compile-fail case path: `{path}`")]
+    DuplicateCompileFailCasePath { path: String },
+    #[error("compile-fail case `{name}` must include expected diagnostics")]
+    MissingExpectedDiagnostics { name: String },
+    #[error("compile-fail case `{name}` has an empty diagnostic snippet")]
+    EmptyDiagnosticSnippet { name: String },
 }
 
 impl ValidationError {
     pub fn is_payload_limit(&self) -> bool {
         matches!(
             self,
-            Self::TooManyFiles { .. } | Self::FileTooLarge { .. } | Self::TotalTooLarge { .. }
+            Self::TooManyFiles { .. }
+                | Self::FileTooLarge { .. }
+                | Self::TotalTooLarge { .. }
+                | Self::TooManyCompileFailCases { .. }
         )
     }
 
@@ -416,8 +749,8 @@ mod tests {
     use crate::dependency_set::DependencySet;
 
     use super::{
-        RunRequest, RunRequestValidation, RunStatus, SubmittedFile, ValidatedRunRequest,
-        ValidationError, ValidationLimits,
+        RunMode, RunRequest, RunRequestValidation, RunStatus, SubmittedCompileFailCase,
+        SubmittedFile, ValidatedRunRequest, ValidationError, ValidationLimits,
     };
 
     fn nonzero(value: usize) -> NonZeroUsize {
@@ -434,6 +767,26 @@ mod tests {
             SubmittedFile::new("src/lib.rs", "pub fn answer() -> u64 { 42 }\n"),
             SubmittedFile::new("tests/lesson.rs", "#[test]\nfn answer_is_42() {}\n"),
         ])
+    }
+
+    fn compile_fail_case() -> SubmittedCompileFailCase {
+        SubmittedCompileFailCase::new(
+            "private-field-construction",
+            "compile_fail/private_field_construction.rs",
+            "use rust_daily_lesson::UserId;\n",
+            vec!["private".to_string()],
+        )
+    }
+
+    fn compile_fail_request() -> RunRequest {
+        RunRequest::compile_fail(
+            vec![
+                SubmittedFile::new("src/lib.rs", "pub struct UserId(u64);\n"),
+                SubmittedFile::new("tests/lesson.rs", "#[test]\nfn code_compiles() {}\n"),
+            ],
+            vec![compile_fail_case()],
+            DependencySet::Std,
+        )
     }
 
     fn validate(request: RunRequest) -> Result<ValidatedRunRequest, ValidationError> {
@@ -473,6 +826,128 @@ mod tests {
     #[test]
     fn validation_accepts_required_paths() {
         assert!(validate(valid_request()).is_ok());
+    }
+
+    #[test]
+    fn validation_accepts_compile_fail_request() {
+        let validated = validate(compile_fail_request()).expect("request should validate");
+
+        assert_eq!(validated.mode(), RunMode::CompileFail);
+        assert_eq!(validated.compile_fail_cases().len(), 1);
+        assert_eq!(
+            validated.compile_fail_cases()[0].name().as_str(),
+            "private-field-construction"
+        );
+    }
+
+    #[test]
+    fn validation_rejects_compile_fail_cases_for_cargo_test() {
+        let request = RunRequest {
+            compile_fail_cases: vec![compile_fail_case()],
+            ..valid_request()
+        };
+
+        assert!(matches!(
+            validate(request),
+            Err(ValidationError::CompileFailCasesNotAllowed)
+        ));
+    }
+
+    #[test]
+    fn validation_rejects_compile_fail_without_cases() {
+        let request = RunRequest::compile_fail(
+            vec![
+                SubmittedFile::new("src/lib.rs", "pub fn answer() -> u64 { 42 }\n"),
+                SubmittedFile::new("tests/lesson.rs", "#[test]\nfn code_compiles() {}\n"),
+            ],
+            Vec::new(),
+            DependencySet::Std,
+        );
+
+        assert!(matches!(
+            validate(request),
+            Err(ValidationError::MissingCompileFailCases)
+        ));
+    }
+
+    #[test]
+    fn validation_rejects_invalid_compile_fail_case_name() {
+        let request = RunRequest::compile_fail(
+            vec![
+                SubmittedFile::new("src/lib.rs", "pub fn answer() -> u64 { 42 }\n"),
+                SubmittedFile::new("tests/lesson.rs", "#[test]\nfn code_compiles() {}\n"),
+            ],
+            vec![SubmittedCompileFailCase::new(
+                "bad name",
+                "compile_fail/bad_name.rs",
+                "",
+                vec!["error".to_string()],
+            )],
+            DependencySet::Std,
+        );
+
+        assert!(matches!(
+            validate(request),
+            Err(ValidationError::InvalidCompileFailCaseName { .. })
+        ));
+    }
+
+    #[test]
+    fn validation_rejects_unsupported_compile_fail_case_path() {
+        let request = RunRequest::compile_fail(
+            vec![
+                SubmittedFile::new("src/lib.rs", "pub fn answer() -> u64 { 42 }\n"),
+                SubmittedFile::new("tests/lesson.rs", "#[test]\nfn code_compiles() {}\n"),
+            ],
+            vec![SubmittedCompileFailCase::new(
+                "bad-path",
+                "tests/bad_path.rs",
+                "",
+                vec!["error".to_string()],
+            )],
+            DependencySet::Std,
+        );
+
+        assert!(matches!(
+            validate(request),
+            Err(ValidationError::UnsupportedPath { .. })
+        ));
+    }
+
+    #[test]
+    fn validation_rejects_missing_expected_diagnostics() {
+        let request = RunRequest::compile_fail(
+            vec![
+                SubmittedFile::new("src/lib.rs", "pub fn answer() -> u64 { 42 }\n"),
+                SubmittedFile::new("tests/lesson.rs", "#[test]\nfn code_compiles() {}\n"),
+            ],
+            vec![SubmittedCompileFailCase::new(
+                "missing-diagnostics",
+                "compile_fail/missing_diagnostics.rs",
+                "",
+                Vec::new(),
+            )],
+            DependencySet::Std,
+        );
+
+        assert!(matches!(
+            validate(request),
+            Err(ValidationError::MissingExpectedDiagnostics { .. })
+        ));
+    }
+
+    #[test]
+    fn validation_rejects_normal_compile_fail_file_path() {
+        let request = RunRequest::new(vec![
+            SubmittedFile::new("src/lib.rs", "pub fn answer() -> u64 { 42 }\n"),
+            SubmittedFile::new("tests/lesson.rs", "#[test]\nfn code_compiles() {}\n"),
+            SubmittedFile::new("compile_fail/case.rs", ""),
+        ]);
+
+        assert!(matches!(
+            validate(request),
+            Err(ValidationError::UnsupportedPath { .. })
+        ));
     }
 
     #[test]

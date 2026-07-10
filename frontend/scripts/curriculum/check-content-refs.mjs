@@ -3,6 +3,8 @@ import {
   findLessonJsonFiles,
   FRONTEND_CONCEPTS_PATH,
   FRONTEND_LESSONS_PATH,
+  inlineCompileFailValidation,
+  isCompileFailValidation,
   readJson,
   readSourceText,
   reportErrorsOrLog,
@@ -121,6 +123,10 @@ const inlineValidation = (
       validation,
       lessonFiles,
     );
+  }
+
+  if (isCompileFailValidation(validation)) {
+    return inlineCompileFailValidation(lessonJsonPath, validation);
   }
 
   return Promise.resolve(validation);

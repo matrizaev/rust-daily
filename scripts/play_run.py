@@ -38,6 +38,68 @@ fn answer_is_42() {
     ]
 }
 
+COMPILE_FAIL_TEST = """#[test]
+fn user_id_uses_constructor() {
+    let id = rust_daily_lesson::UserId::new(42);
+    assert_eq!(id.value(), 42);
+}
+"""
+
+COMPILE_FAIL_CASE = """use rust_daily_lesson::UserId;
+
+#[test]
+fn cannot_construct_user_id_directly() {
+    let _ = UserId { value: 42 };
+}
+"""
+
+COMPILE_FAIL_WRONG_DIAGNOSTIC_CASE = """#[test]
+fn missing_symbol_fails_for_wrong_reason() {
+    let _ = MissingType;
+}
+"""
+
+COMPILE_FAIL_PRIVATE_LIB = """pub struct UserId {
+    value: u64,
+}
+
+impl UserId {
+    pub fn new(value: u64) -> Self {
+        Self { value }
+    }
+
+    pub fn value(&self) -> u64 {
+        self.value
+    }
+}
+"""
+
+COMPILE_FAIL_PUBLIC_LIB = """pub struct UserId {
+    pub value: u64,
+}
+
+impl UserId {
+    pub fn new(value: u64) -> Self {
+        Self { value }
+    }
+
+    pub fn value(&self) -> u64 {
+        self.value
+    }
+}
+"""
+
+EXPECTED_STATUSES = {
+    "pass": "passed",
+    "fail": "failed",
+    "compile-error": "compile_error",
+    "timeout": "timed_out",
+    "multi-file-pass": "passed",
+    "compile-fail-pass": "passed",
+    "compile-fail-unexpected-pass": "failed",
+    "compile-fail-wrong-diagnostic": "failed",
+}
+
 
 def build_payload(source: str) -> dict[str, object]:
     return {
@@ -48,9 +110,41 @@ def build_payload(source: str) -> dict[str, object]:
     }
 
 
+def build_compile_fail_payload(
+    source: str,
+    case_content: str,
+    expected_diagnostics: list[str] | None = None,
+) -> dict[str, object]:
+    return {
+        "mode": "compile-fail",
+        "files": [
+            {"path": "src/lib.rs", "content": source},
+            {"path": "tests/public.rs", "content": COMPILE_FAIL_TEST},
+        ],
+        "compileFailCases": [
+            {
+                "name": "private-field-construction",
+                "path": "compile_fail/private_field_construction.rs",
+                "content": case_content,
+                "expectedDiagnostics": expected_diagnostics
+                or ["field `value` of struct `UserId` is private"],
+            }
+        ],
+    }
+
+
 def payload_for_case(case: str) -> dict[str, object]:
     if case == "multi-file-pass":
         return MULTI_FILE_PAYLOAD
+    if case == "compile-fail-pass":
+        return build_compile_fail_payload(COMPILE_FAIL_PRIVATE_LIB, COMPILE_FAIL_CASE)
+    if case == "compile-fail-unexpected-pass":
+        return build_compile_fail_payload(COMPILE_FAIL_PUBLIC_LIB, COMPILE_FAIL_CASE)
+    if case == "compile-fail-wrong-diagnostic":
+        return build_compile_fail_payload(
+            COMPILE_FAIL_PRIVATE_LIB,
+            COMPILE_FAIL_WRONG_DIAGNOSTIC_CASE,
+        )
 
     return build_payload(SOURCES[case])
 
@@ -76,7 +170,7 @@ def main() -> int:
     parser.add_argument("--url", default="http://127.0.0.1:8080")
     parser.add_argument(
         "--case",
-        choices=sorted([*SOURCES, "multi-file-pass"]),
+        choices=sorted(EXPECTED_STATUSES),
         default="pass",
     )
     parser.add_argument("--http-timeout", type=float, default=20.0)
@@ -97,9 +191,21 @@ def main() -> int:
 
     print(f"HTTP {status}")
     try:
-        print(json.dumps(json.loads(body), indent=2))
+        payload = json.loads(body)
+        print(json.dumps(payload, indent=2))
     except json.JSONDecodeError:
         print(body)
+        return 1
+
+    expected_status = EXPECTED_STATUSES[args.case]
+    actual_status = payload.get("status")
+
+    if actual_status != expected_status:
+        print(
+            f"Expected runner status {expected_status}, got {actual_status}",
+            file=sys.stderr,
+        )
+        return 1
 
     return 0
 

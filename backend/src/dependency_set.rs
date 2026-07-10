@@ -49,29 +49,63 @@ impl DependencySet {
         match self {
             Self::Std => CargoTestCommand {
                 program: "cargo",
-                args: &["test"],
+                args: vec!["test".to_string()],
             },
             Self::Advanced => CargoTestCommand {
-                program: "run-advanced-lesson-tests",
-                args: &[],
+                program: "run-advanced-lesson-cargo",
+                args: vec!["test".to_string()],
+            },
+        }
+    }
+
+    pub fn check_lib_command(self) -> CargoTestCommand {
+        match self {
+            Self::Std => CargoTestCommand {
+                program: "cargo",
+                args: vec!["check".to_string(), "--lib".to_string()],
+            },
+            Self::Advanced => CargoTestCommand {
+                program: "run-advanced-lesson-cargo",
+                args: vec!["check".to_string(), "--lib".to_string()],
+            },
+        }
+    }
+
+    pub fn check_test_command(self, test_name: &str) -> CargoTestCommand {
+        match self {
+            Self::Std => CargoTestCommand {
+                program: "cargo",
+                args: vec![
+                    "check".to_string(),
+                    "--test".to_string(),
+                    test_name.to_string(),
+                ],
+            },
+            Self::Advanced => CargoTestCommand {
+                program: "run-advanced-lesson-cargo",
+                args: vec![
+                    "check".to_string(),
+                    "--test".to_string(),
+                    test_name.to_string(),
+                ],
             },
         }
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct CargoTestCommand {
     program: &'static str,
-    args: &'static [&'static str],
+    args: Vec<String>,
 }
 
 impl CargoTestCommand {
-    pub fn program(self) -> &'static str {
+    pub fn program(&self) -> &'static str {
         self.program
     }
 
-    pub fn args(self) -> &'static [&'static str] {
-        self.args
+    pub fn args(&self) -> &[String] {
+        &self.args
     }
 }
 

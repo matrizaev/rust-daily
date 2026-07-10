@@ -16,11 +16,13 @@ use tracing::{info, warn};
 use uuid::Uuid;
 
 use crate::{
-    cargo_output::result_from_output,
+    cargo_output::{
+        CargoOutputStatus, cap_streams, diagnostic_text, output_status, result_from_output,
+    },
     config::RunnerSettings,
     dependency_set::DependencySet,
-    model::{RunResult, RunStatus, ValidatedRunRequest},
-    workspace::{WorkspaceError, prepare_workspace},
+    model::{RunMode, RunResult, RunStatus, ValidatedCompileFailCase, ValidatedRunRequest},
+    workspace::{WorkspaceError, prepare_workspace, write_compile_fail_case},
 };
 
 #[derive(Debug, Error)]
@@ -58,37 +60,230 @@ async fn run_inner(
     let workspace = prepare_workspace(job_id, request, config.workspace_root.as_path()).await?;
     let workspace_path = workspace.path().to_path_buf();
 
-    let outcome = execute_podman(&workspace, request.dependency_set(), config).await;
+    let result = match request.mode() {
+        RunMode::CargoTest => {
+            run_cargo_test(&workspace, request.dependency_set(), config, started_at).await
+        }
+        RunMode::CompileFail => run_compile_fail(&workspace, request, config, started_at).await,
+    };
 
     if let Err(error) = workspace.close() {
         warn!(%job_id, error = %error, path = ?workspace_path, "workspace cleanup failed");
     }
 
+    result
+}
+
+async fn run_cargo_test(
+    workspace: &TempDir,
+    dependency_set: DependencySet,
+    config: &RunnerSettings,
+    started_at: Instant,
+) -> Result<RunResult, RunnerError> {
+    let outcome = execute_podman_command(workspace, dependency_set.test_command(), config).await;
     let duration_ms = elapsed_ms(started_at);
+
     match outcome? {
         PodmanOutcome::Completed(output) => Ok(result_from_output(
             output,
             duration_ms,
             config.max_output_bytes.get(),
         )),
+        PodmanOutcome::OuterTimeout => Ok(timeout_result(started_at, config)),
+    }
+}
+
+async fn run_compile_fail(
+    workspace: &TempDir,
+    request: &ValidatedRunRequest,
+    config: &RunnerSettings,
+    started_at: Instant,
+) -> Result<RunResult, RunnerError> {
+    let dependency_set = request.dependency_set();
+    let lib_outcome =
+        execute_podman_command(workspace, dependency_set.check_lib_command(), config).await?;
+
+    match lib_outcome {
         PodmanOutcome::OuterTimeout => {
-            info!(%job_id, "outer runner timeout elapsed");
-            Ok(RunResult::new(
-                RunStatus::TimedOut,
-                String::new(),
-                format!(
-                    "runner timed out after {} seconds",
-                    config.timeout.as_secs()
-                ),
-                duration_ms,
-            ))
+            return Ok(timeout_result(started_at, config));
+        }
+        PodmanOutcome::Completed(output) => match output_status(&output) {
+            CargoOutputStatus::Success => {}
+            CargoOutputStatus::TimedOut => return Ok(timeout_result(started_at, config)),
+            CargoOutputStatus::CompilerError => {
+                return Ok(result_from_output(
+                    output,
+                    elapsed_ms(started_at),
+                    config.max_output_bytes.get(),
+                ));
+            }
+            CargoOutputStatus::Failure => {
+                return Ok(result_from_output(
+                    output,
+                    elapsed_ms(started_at),
+                    config.max_output_bytes.get(),
+                ));
+            }
+        },
+    }
+
+    let mut summaries = Vec::new();
+    let mut failures = Vec::new();
+    let mut diagnostics = Vec::new();
+
+    for case in request.compile_fail_cases() {
+        let case_result = run_compile_fail_case(workspace, dependency_set, case, config).await?;
+
+        match case_result {
+            CompileFailCaseResult::FailedAsExpected {
+                name,
+                diagnostics: case_diagnostics,
+            } => {
+                summaries.push(format!("Compile-fail case `{name}` failed as expected."));
+                diagnostics.push(format!("case `{name}` diagnostics:\n{case_diagnostics}"));
+            }
+            CompileFailCaseResult::CompiledUnexpectedly { name } => {
+                let message = format!(
+                    "Compile-fail case `{name}` compiled successfully, but it was expected to fail."
+                );
+                summaries.push(message.clone());
+                failures.push(message);
+            }
+            CompileFailCaseResult::WrongDiagnostics {
+                name,
+                missing,
+                forbidden,
+                diagnostics: case_diagnostics,
+            } => {
+                let mut messages = Vec::new();
+                messages.extend(
+                    missing
+                        .into_iter()
+                        .map(|snippet| format!("missing expected diagnostic `{snippet}`")),
+                );
+                messages.extend(
+                    forbidden
+                        .into_iter()
+                        .map(|snippet| format!("included forbidden diagnostic `{snippet}`")),
+                );
+                let message = format!(
+                    "Compile-fail case `{name}` failed for the wrong reason: {}.",
+                    messages.join(", ")
+                );
+                summaries.push(message.clone());
+                failures.push(message);
+                diagnostics.push(format!("case `{name}` diagnostics:\n{case_diagnostics}"));
+            }
+            CompileFailCaseResult::TimedOut => return Ok(timeout_result(started_at, config)),
+        }
+    }
+
+    let status = if failures.is_empty() {
+        RunStatus::Passed
+    } else {
+        RunStatus::Failed
+    };
+    let stdout = summaries.join("\n");
+    let stderr = if failures.is_empty() {
+        String::new()
+    } else {
+        diagnostics.join("\n\n")
+    };
+    let (stdout, stderr) = cap_streams(&stdout, &stderr, config.max_output_bytes.get());
+
+    Ok(RunResult::new(
+        status,
+        stdout,
+        stderr,
+        elapsed_ms(started_at),
+    ))
+}
+
+enum CompileFailCaseResult {
+    FailedAsExpected {
+        name: String,
+        diagnostics: String,
+    },
+    CompiledUnexpectedly {
+        name: String,
+    },
+    WrongDiagnostics {
+        name: String,
+        missing: Vec<String>,
+        forbidden: Vec<String>,
+        diagnostics: String,
+    },
+    TimedOut,
+}
+
+async fn run_compile_fail_case(
+    workspace: &TempDir,
+    dependency_set: DependencySet,
+    case: &ValidatedCompileFailCase,
+    config: &RunnerSettings,
+) -> Result<CompileFailCaseResult, RunnerError> {
+    let target_name = write_compile_fail_case(workspace.path(), case).await?;
+    let outcome = execute_podman_command(
+        workspace,
+        dependency_set.check_test_command(target_name.as_str()),
+        config,
+    )
+    .await?;
+    let name = case.name().as_str().to_string();
+
+    let output = match outcome {
+        PodmanOutcome::OuterTimeout => return Ok(CompileFailCaseResult::TimedOut),
+        PodmanOutcome::Completed(output) => output,
+    };
+
+    match output_status(&output) {
+        CargoOutputStatus::Success => Ok(CompileFailCaseResult::CompiledUnexpectedly { name }),
+        CargoOutputStatus::TimedOut => Ok(CompileFailCaseResult::TimedOut),
+        CargoOutputStatus::CompilerError | CargoOutputStatus::Failure => {
+            let diagnostics = diagnostic_text(&output);
+            let missing = case
+                .expected_diagnostics()
+                .iter()
+                .filter(|snippet| !diagnostics.contains(snippet.as_str()))
+                .map(|snippet| snippet.as_str().to_string())
+                .collect::<Vec<_>>();
+            let forbidden = case
+                .forbidden_diagnostics()
+                .iter()
+                .filter(|snippet| diagnostics.contains(snippet.as_str()))
+                .map(|snippet| snippet.as_str().to_string())
+                .collect::<Vec<_>>();
+
+            if missing.is_empty() && forbidden.is_empty() {
+                Ok(CompileFailCaseResult::FailedAsExpected { name, diagnostics })
+            } else {
+                Ok(CompileFailCaseResult::WrongDiagnostics {
+                    name,
+                    missing,
+                    forbidden,
+                    diagnostics,
+                })
+            }
         }
     }
 }
 
-async fn execute_podman(
+fn timeout_result(started_at: Instant, config: &RunnerSettings) -> RunResult {
+    info!("outer runner timeout elapsed");
+    RunResult::new(
+        RunStatus::TimedOut,
+        String::new(),
+        format!(
+            "runner timed out after {} seconds",
+            config.timeout.as_secs()
+        ),
+        elapsed_ms(started_at),
+    )
+}
+
+async fn execute_podman_command(
     workspace: &TempDir,
-    dependency_set: DependencySet,
+    cargo_command: crate::dependency_set::CargoTestCommand,
     config: &RunnerSettings,
 ) -> Result<PodmanOutcome, io::Error> {
     let workspace_mount = format!("{}:/workspace:Z", workspace.path().display());
@@ -128,7 +323,6 @@ async fn execute_podman(
         .arg("timeout")
         .arg(inner_timeout);
 
-    let cargo_command = dependency_set.test_command();
     command
         .arg(cargo_command.program())
         .args(cargo_command.args());

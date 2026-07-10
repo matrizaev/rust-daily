@@ -2,7 +2,7 @@ SHELL := /bin/bash
 
 RUNNER_IMAGE ?= rust-runner:1.95
 RUNNER_IMAGE_REVISION ?= $(shell git rev-parse HEAD 2>/dev/null || echo unknown)
-RUNNER_SOURCE_HASH ?= $(shell { sha256sum docker/rust-runner.Dockerfile docker/run-advanced-lesson-tests.sh docker/dependency-cache/Cargo.toml docker/dependency-cache/src/lib.rs | sha256sum | cut -d' ' -f1; } 2>/dev/null || echo unknown)
+RUNNER_SOURCE_HASH ?= $(shell { sha256sum docker/rust-runner.Dockerfile docker/run-advanced-lesson-cargo.sh docker/run-advanced-lesson-tests.sh docker/dependency-cache/Cargo.toml docker/dependency-cache/src/lib.rs | sha256sum | cut -d' ' -f1; } 2>/dev/null || echo unknown)
 FRONTEND_ORIGIN ?= http://localhost:5173
 FRONTEND_BACKEND_URL ?= http://127.0.0.1:8080
 SMOKE_URL ?= http://127.0.0.1:8080

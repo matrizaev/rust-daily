@@ -20,11 +20,13 @@ const VALIDATION_MODES = new Set([
   "browser-rust",
   "self-check",
   "backend-cargo-test",
+  "backend-compile-fail",
   "all",
 ]);
 const RUST_RUNTIME_VALIDATION_MODES = new Set([
   "browser-rust",
   "backend-cargo-test",
+  "backend-compile-fail",
 ]);
 const STRUCTURAL_TYPES = new Set([
   "enum_unit_variants",
@@ -101,6 +103,8 @@ const jsonEqual = (left, right) => JSON.stringify(left) === JSON.stringify(right
 const validationHasRuntimeMode = (validation) =>
   RUST_RUNTIME_VALIDATION_MODES.has(validationMode(validation)) ||
   validationSteps(validation).some(validationHasRuntimeMode);
+
+const compileFailCaseTargetName = (name) => name.replaceAll("-", "_");
 
 const getDuplicateValues = (values) => {
   const seen = new Set();
@@ -296,16 +300,126 @@ const hasAnyBackendTest = (lesson, validation) =>
   hasBackendTestFiles(validation) ||
   hasEmbeddedTestFiles(lesson);
 
-const validateBackendValidation = (errors, lesson, validation) => {
+const validateBackendStepBase = (errors, lesson, validation, label) => {
   if (!hasPositiveTimeout(validation)) {
-    push(errors, `${lesson.id} backend validation must have timeoutMs.`);
+    push(errors, `${lesson.id} ${label} must have timeoutMs.`);
   }
 
   validateKnownDependencySet(errors, lesson.id, validation);
+};
+
+const validateBackendValidation = (errors, lesson, validation) => {
+  validateBackendStepBase(errors, lesson, validation, "backend validation");
 
   if (!hasAnyBackendTest(lesson, validation)) {
     push(errors, `${lesson.id} backend validation must have testCode or testFiles.`);
   }
+};
+
+const isCompileFailPath = (path) =>
+  path.startsWith("compile_fail/") && path.endsWith(".rs");
+
+const validateCompileFailCaseName = (errors, label, name) => {
+  if (!/^[A-Za-z0-9_-]{1,80}$/.test(name)) {
+    push(errors, `${label} name must use only ASCII letters, digits, _, and -.`);
+  }
+};
+
+const validateCompileFailCasePath = (errors, label, path) => {
+  if (isString(path) && !isCompileFailPath(path)) {
+    push(errors, `${label} path must be under compile_fail/ and end with .rs.`);
+  }
+};
+
+const validateCompileFailCaseDiagnostics = (errors, label, compileFailCase) => {
+  if (!isStringArray(compileFailCase.expectedDiagnostics)) {
+    push(errors, `${label} expectedDiagnostics must be a non-empty string array.`);
+  }
+
+  if (
+    "forbiddenDiagnostics" in compileFailCase &&
+    !isStringArray(compileFailCase.forbiddenDiagnostics)
+  ) {
+    push(errors, `${label} forbiddenDiagnostics must be a string array.`);
+  }
+};
+
+const validateCompileFailCase = (errors, lesson, compileFailCase, index) => {
+  const label = `${lesson.id} compile-fail case ${index}`;
+
+  if (!isRecord(compileFailCase)) {
+    push(errors, `${label} must be an object.`);
+    return;
+  }
+
+  validateStringFields(errors, compileFailCase, label, ["name", "path", "content"]);
+
+  if (isString(compileFailCase.name)) {
+    validateCompileFailCaseName(errors, label, compileFailCase.name);
+  }
+
+  validateCompileFailCasePath(errors, label, compileFailCase.path);
+  validateCompileFailCaseDiagnostics(errors, label, compileFailCase);
+};
+
+const validateCompileFailValidation = (errors, lesson, validation) => {
+  validateBackendStepBase(errors, lesson, validation, "compile-fail validation");
+
+  if (!Array.isArray(validation.cases) || validation.cases.length === 0) {
+    push(errors, `${lesson.id} compile-fail validation must have cases.`);
+    return;
+  }
+
+  validation.cases.forEach((compileFailCase, index) =>
+    validateCompileFailCase(errors, lesson, compileFailCase, index),
+  );
+};
+
+const validateCompileFailSiblings = (errors, lesson, validation) => {
+  const compileFailValidations = validation.validations.filter(
+    (step) => step?.mode === "backend-compile-fail",
+  );
+
+  if (compileFailValidations.length === 0) {
+    return;
+  }
+
+  const cargoTestValidation = validation.validations.find(
+    (step) => step?.mode === "backend-cargo-test",
+  );
+
+  if (!cargoTestValidation) {
+    push(errors, `${lesson.id} backend-compile-fail requires backend-cargo-test sibling.`);
+    return;
+  }
+
+  compileFailValidations.forEach((step) => {
+    if ((step.dependencySet ?? "std") !== (cargoTestValidation.dependencySet ?? "std")) {
+      push(
+        errors,
+        `${lesson.id} backend-compile-fail dependencySet must match backend-cargo-test dependencySet.`,
+      );
+    }
+  });
+};
+
+const validateUniqueCompileFailCases = (errors, lesson, validation) => {
+  const cases = validation.validations
+    .filter((step) => step?.mode === "backend-compile-fail")
+    .flatMap((step) => step.cases ?? []);
+  const names = cases.map((compileFailCase) => compileFailCase?.name).filter(isString);
+  const paths = cases.map((compileFailCase) => compileFailCase?.path).filter(isString);
+  const targets = names.map(compileFailCaseTargetName);
+
+  getDuplicateValues(names).forEach((name) =>
+    push(errors, `${lesson.id} has duplicate compile-fail case ${name}.`),
+  );
+  getDuplicateValues(paths).forEach((path) =>
+    push(errors, `${lesson.id} has duplicate compile-fail path ${path}.`),
+  );
+  getDuplicateValues(targets).forEach((target) =>
+    push(errors, `${lesson.id} has duplicate compile-fail generated target ${target}.`),
+  );
 };
 
 const validateAllValidation = (errors, lesson, validation) => {
@@ -313,6 +427,9 @@ const validateAllValidation = (errors, lesson, validation) => {
     push(errors, `${lesson.id} all validation must have validations.`);
     return;
   }
+
+  validateCompileFailSiblings(errors, lesson, validation);
+  validateUniqueCompileFailCases(errors, lesson, validation);
 
   validation.validations.forEach((validationStep, index) => {
     const stepLesson = {
@@ -333,6 +450,7 @@ const validateAllValidation = (errors, lesson, validation) => {
 const VALIDATION_VALIDATORS = {
   structural: validateStructuralValidation,
   "backend-cargo-test": validateBackendValidation,
+  "backend-compile-fail": validateCompileFailValidation,
   all: validateAllValidation,
   "browser-rust": () => undefined,
   "self-check": () => undefined,

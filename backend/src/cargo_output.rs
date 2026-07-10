@@ -8,30 +8,84 @@ use crate::model::{RunResult, RunStatus};
 const TRUNCATION_MARKER: &str = "\n[output truncated]\n";
 
 pub fn result_from_output(output: Output, duration_ms: u64, max_output_bytes: usize) -> RunResult {
-    let status = classify_status(&output);
-    let command_succeeded = output.status.success();
-    let stdout = output_stream_for_response(&output.stdout, command_succeeded);
-    let stderr = output_stream_for_response(&output.stderr, command_succeeded);
-    let (stdout, stderr) = cap_output(stdout.as_bytes(), stderr.as_bytes(), max_output_bytes);
+    let status = match output_status(&output) {
+        CargoOutputStatus::Success => RunStatus::Passed,
+        CargoOutputStatus::TimedOut => RunStatus::TimedOut,
+        CargoOutputStatus::CompilerError => RunStatus::CompileError,
+        CargoOutputStatus::Failure => RunStatus::Failed,
+    };
+    let (stdout, stderr) = filtered_output_streams(&output, max_output_bytes);
 
     RunResult::new(status, stdout, stderr, duration_ms)
 }
 
-fn classify_status(output: &Output) -> RunStatus {
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum CargoOutputStatus {
+    Success,
+    TimedOut,
+    CompilerError,
+    Failure,
+}
+
+pub fn output_status(output: &Output) -> CargoOutputStatus {
     if output.status.success() {
-        return RunStatus::Passed;
+        return CargoOutputStatus::Success;
     }
 
     if output.status.code() == Some(124) {
-        return RunStatus::TimedOut;
+        return CargoOutputStatus::TimedOut;
     }
 
     if cargo_reported_compiler_error(&output.stdout)
         || cargo_reported_compiler_error(&output.stderr)
     {
-        RunStatus::CompileError
+        CargoOutputStatus::CompilerError
     } else {
-        RunStatus::Failed
+        CargoOutputStatus::Failure
+    }
+}
+
+pub fn filtered_output_streams(output: &Output, max_output_bytes: usize) -> (String, String) {
+    let command_succeeded = output.status.success();
+    let stdout = output_stream_for_response(&output.stdout, command_succeeded);
+    let stderr = output_stream_for_response(&output.stderr, command_succeeded);
+
+    cap_output(stdout.as_bytes(), stderr.as_bytes(), max_output_bytes)
+}
+
+pub fn cap_streams(stdout: &str, stderr: &str, max_output_bytes: usize) -> (String, String) {
+    cap_output(stdout.as_bytes(), stderr.as_bytes(), max_output_bytes)
+}
+
+pub fn diagnostic_text(output: &Output) -> String {
+    let compiler_diagnostics = compiler_diagnostic_text(&output.stdout)
+        .into_iter()
+        .chain(compiler_diagnostic_text(&output.stderr))
+        .collect::<Vec<_>>();
+
+    if !compiler_diagnostics.is_empty() {
+        return compiler_diagnostics.join("\n\n");
+    }
+
+    let command_succeeded = output.status.success();
+
+    [
+        output_stream_for_response(&output.stdout, command_succeeded),
+        output_stream_for_response(&output.stderr, command_succeeded),
+    ]
+    .into_iter()
+    .filter(|stream| !stream.trim().is_empty())
+    .collect::<Vec<_>>()
+    .join("\n\n")
+}
+
+#[cfg(test)]
+fn classify_status(output: &Output) -> RunStatus {
+    match output_status(output) {
+        CargoOutputStatus::Success => RunStatus::Passed,
+        CargoOutputStatus::TimedOut => RunStatus::TimedOut,
+        CargoOutputStatus::CompilerError => RunStatus::CompileError,
+        CargoOutputStatus::Failure => RunStatus::Failed,
     }
 }
 
@@ -40,6 +94,18 @@ fn cargo_reported_compiler_error(output: &[u8]) -> bool {
         Message::CompilerMessage(message) => is_error_level(&message.message.level),
         _ => false,
     })
+}
+
+fn compiler_diagnostic_text(output: &[u8]) -> Vec<String> {
+    cargo_messages(output)
+        .filter_map(|message| match message {
+            Message::CompilerMessage(message) => Some(message.message),
+            _ => None,
+        })
+        .map(|diagnostic| diagnostic.rendered.unwrap_or(diagnostic.message))
+        .map(|message| message.trim().to_string())
+        .filter(|message| !message.is_empty())
+        .collect()
 }
 
 fn output_stream_for_response(output: &[u8], command_succeeded: bool) -> String {

@@ -63,7 +63,8 @@ const configuredValidationSteps = (request: ValidationRequest) =>
     : [request.validation];
 
 const isBackendStep = (validation: LessonValidationStep) =>
-  validation.mode === "backend-cargo-test";
+  validation.mode === "backend-cargo-test" ||
+  validation.mode === "backend-compile-fail";
 
 const backendTimeoutMs = (validations: LessonValidationStep[]) =>
   Math.max(
@@ -99,7 +100,11 @@ const stepRequest = (
 });
 
 const stepLabel = (validation: LessonValidationStep) =>
-  isBackendStep(validation) ? "Rust runner" : "Browser checks";
+  validation.mode === "backend-compile-fail"
+    ? "Compile-fail checks"
+    : isBackendStep(validation)
+      ? "Rust runner"
+      : "Browser checks";
 
 const createWorker = () =>
   new Worker(new URL("./validationWorker.ts", import.meta.url), {
@@ -144,7 +149,7 @@ const runValidationStep = async (
 ): Promise<StepResult> => {
   const requestForStep = stepRequest(request, validation);
   const result =
-    validation.mode === "backend-cargo-test"
+    isBackendStep(validation)
       ? await runBackendValidation(requestForStep, BACKEND_URL)
       : await runWorkerValidation(requestForStep);
 

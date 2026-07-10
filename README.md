@@ -45,6 +45,8 @@ next lesson includes the authored solution from the previous day as read-only
 project code. The runner accepts a backend-controlled single-crate project
 snapshot: `src/**/*.rs`, `tests/**/*.rs`, `fixtures/**`, and `testdata/**`.
 The generated `Cargo.toml` remains controlled by the backend dependency set.
+Future and advanced lessons can also attach public compile-fail cases to prove
+that invalid API uses are rejected by the compiler.
 
 ## Run Locally
 
@@ -102,19 +104,22 @@ path:
 make smoke-runner
 make smoke-runner SMOKE_CASE=compile-error
 make smoke-runner SMOKE_CASE=multi-file-pass
+make smoke-runner SMOKE_CASE=compile-fail-pass
 ```
 
 This target wraps `scripts/play_run.py`, which uses only the Python 3 standard
 library. Supported cases are `pass`, `multi-file-pass`, `fail`,
-`compile-error`, and `timeout`. Set `SMOKE_URL` to test another deployment.
+`compile-error`, `timeout`, `compile-fail-pass`,
+`compile-fail-unexpected-pass`, and `compile-fail-wrong-diagnostic`. Set
+`SMOKE_URL` to test another deployment.
 
 ## Documentation
 
 - [Product specification](docs/SPEC.md)
 - [System architecture](ARCHITECTURE.md)
 - [Production deployment](docs/DEPLOYMENT.md)
-- [Compile-fail validation feature spec](docs/COMPILE_FAIL_VALIDATION_SPEC.md)
-- [Compile-fail validation implementation plan](docs/COMPILE_FAIL_VALIDATION_IMPLEMENTATION_PLAN.md)
+- [Compile-fail validation contract](docs/COMPILE_FAIL_VALIDATION_SPEC.md)
+- [Compile-fail validation implementation record](docs/COMPILE_FAIL_VALIDATION_IMPLEMENTATION_PLAN.md)
 - [Lessons 91-500 roadmap](docs/FUTURE_ADVANCED_CONCEPTS_IMPLEMENTATION_PLAN.md)
 
 ## Deployment
