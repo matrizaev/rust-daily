@@ -1,42 +1,11 @@
-use std::process::Output;
+use std::{io::Cursor, process::Output};
 
-use serde::Deserialize;
+use cargo_metadata::Message;
+use serde_json::Value;
 
 use crate::model::{RunResult, RunStatus};
 
 const TRUNCATION_MARKER: &str = "\n[output truncated]\n";
-
-#[derive(Debug, Deserialize)]
-struct CargoMessage {
-    reason: CargoMessageReason,
-    message: Option<CargoDiagnostic>,
-}
-
-#[derive(Debug, Deserialize, Eq, PartialEq)]
-#[serde(rename_all = "kebab-case")]
-enum CargoMessageReason {
-    CompilerMessage,
-    #[serde(other)]
-    Other,
-}
-
-#[derive(Debug, Deserialize)]
-struct CargoDiagnostic {
-    level: CargoDiagnosticLevel,
-}
-
-#[derive(Debug, Deserialize, Eq, PartialEq)]
-#[serde(rename_all = "lowercase")]
-enum CargoDiagnosticLevel {
-    Error,
-    #[serde(other)]
-    Other,
-}
-
-#[derive(Debug, Deserialize)]
-struct CargoResponseMessage {
-    reason: CargoMessageReason,
-}
 
 pub fn result_from_output(output: Output, duration_ms: u64, max_output_bytes: usize) -> RunResult {
     let status = classify_status(&output);
@@ -67,18 +36,10 @@ fn classify_status(output: &Output) -> RunStatus {
 }
 
 fn cargo_reported_compiler_error(output: &[u8]) -> bool {
-    String::from_utf8_lossy(output)
-        .lines()
-        .filter_map(|line| serde_json::from_str::<CargoMessage>(line).ok())
-        .any(|message| {
-            message.reason == CargoMessageReason::CompilerMessage
-                && matches!(
-                    message.message,
-                    Some(CargoDiagnostic {
-                        level: CargoDiagnosticLevel::Error,
-                    })
-                )
-        })
+    cargo_messages(output).any(|message| match message {
+        Message::CompilerMessage(message) => is_error_level(&message.message.level),
+        _ => false,
+    })
 }
 
 fn output_stream_for_response(output: &[u8], command_succeeded: bool) -> String {
@@ -94,14 +55,34 @@ fn should_include_response_line(line: &str, command_succeeded: bool) -> bool {
         return false;
     }
 
-    match serde_json::from_str::<CargoResponseMessage>(line) {
-        Ok(message) => message.reason == CargoMessageReason::CompilerMessage,
-        Err(_) => true,
+    match cargo_message(line) {
+        Some(Message::CompilerMessage(_)) | Some(Message::TextLine(_)) | None => true,
+        Some(
+            Message::CompilerArtifact(_)
+            | Message::BuildScriptExecuted(_)
+            | Message::BuildFinished(_),
+        ) => false,
+        _ => false,
     }
 }
 
 fn is_podman_log_line(line: &str) -> bool {
     line.starts_with("time=\"") && line.contains("\" level=") && line.contains(" msg=\"")
+}
+
+fn cargo_messages(output: &[u8]) -> impl Iterator<Item = Message> + '_ {
+    Message::parse_stream(Cursor::new(output)).filter_map(Result::ok)
+}
+
+fn cargo_message(line: &str) -> Option<Message> {
+    cargo_messages(line.as_bytes()).next()
+}
+
+fn is_error_level<T>(level: &T) -> bool
+where
+    T: serde::Serialize,
+{
+    matches!(serde_json::to_value(level), Ok(Value::String(level)) if level == "error")
 }
 
 fn cap_output(stdout: &[u8], stderr: &[u8], max_output_bytes: usize) -> (String, String) {
@@ -180,6 +161,8 @@ fn truncate_string(value: &str, max_bytes: usize) -> String {
 mod tests {
     use std::{os::unix::process::ExitStatusExt, process::ExitStatus};
 
+    use serde_json::json;
+
     use super::{cap_output, classify_status, result_from_output};
     use crate::model::RunStatus;
 
@@ -189,6 +172,58 @@ mod tests {
             stdout: stdout.as_bytes().to_vec(),
             stderr: stderr.as_bytes().to_vec(),
         }
+    }
+
+    fn cargo_target() -> serde_json::Value {
+        json!({
+            "kind": ["lib"],
+            "crate_types": ["lib"],
+            "name": "rust_daily_lesson",
+            "src_path": "/workspace/src/lib.rs",
+            "edition": "2024",
+            "doc": true,
+            "doctest": true,
+            "test": true
+        })
+    }
+
+    fn compiler_message(level: &str, rendered: &str) -> String {
+        json!({
+            "reason": "compiler-message",
+            "package_id": "path+file:///workspace#rust_daily_lesson@0.1.0",
+            "manifest_path": "/workspace/Cargo.toml",
+            "target": cargo_target(),
+            "message": {
+                "message": rendered,
+                "code": null,
+                "level": level,
+                "spans": [],
+                "children": [],
+                "rendered": rendered
+            }
+        })
+        .to_string()
+    }
+
+    fn compiler_artifact(index: usize) -> String {
+        json!({
+            "reason": "compiler-artifact",
+            "package_id": format!("path+file:///workspace#dep{index}@0.1.0"),
+            "manifest_path": "/workspace/Cargo.toml",
+            "target": cargo_target(),
+            "profile": {
+                "opt_level": "0",
+                "debuginfo": 0,
+                "debug_assertions": true,
+                "overflow_checks": true,
+                "test": true
+            },
+            "features": [],
+            "filenames": [],
+            "executable": null,
+            "fresh": false
+        })
+        .to_string()
     }
 
     #[test]
@@ -204,7 +239,7 @@ mod tests {
         assert_eq!(
             classify_status(&output(
                 101,
-                r#"{"reason":"compiler-message","message":{"level":"error"}}"#,
+                &compiler_message("error", "error: bad type"),
                 "",
             )),
             RunStatus::CompileError
@@ -241,7 +276,7 @@ mod tests {
     #[test]
     fn filters_cargo_artifact_json_before_capping_response_output() {
         let cargo_noise = (0..200)
-            .map(|index| format!(r#"{{"reason":"compiler-artifact","package_id":"pkg{index}"}}"#))
+            .map(compiler_artifact)
             .collect::<Vec<_>>()
             .join("\n");
         let raw_stdout = format!("{cargo_noise}\nreal test output\n");
@@ -283,13 +318,13 @@ mod tests {
 
     #[test]
     fn keeps_compiler_message_json_for_frontend_diagnostics() {
-        let raw_stdout = concat!(
-            r#"{"reason":"compiler-artifact","package_id":"noise"}"#,
-            "\n",
-            r#"{"reason":"compiler-message","message":{"level":"error","rendered":"error: bad type"}}"#,
+        let raw_stdout = format!(
+            "{}\n{}",
+            compiler_artifact(1),
+            compiler_message("error", "error: bad type")
         );
 
-        let result = result_from_output(output(101, raw_stdout, ""), 42, 400);
+        let result = result_from_output(output(101, &raw_stdout, ""), 42, 400);
 
         assert_eq!(result.status, RunStatus::CompileError);
         assert!(!result.stdout.contains("compiler-artifact"));
