@@ -86,6 +86,23 @@
             "sourcePath": "tests/public.rs"
           }
         ]
+      },
+      {
+        "mode": "backend-compile-fail",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "cases": [
+          {
+            "name": "money-direct-fields",
+            "expectedDiagnostics": [
+              "private"
+            ],
+            "forbiddenDiagnostics": [
+              "has no field named"
+            ],
+            "sourcePath": "compile_fail/money_direct_fields.rs"
+          }
+        ]
       }
     ]
   },

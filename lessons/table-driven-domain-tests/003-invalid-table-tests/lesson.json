@@ -66,6 +66,20 @@
             "sourcePath": "tests/public.rs"
           }
         ]
+      },
+      {
+        "mode": "backend-compile-fail",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "cases": [
+          {
+            "name": "percentage-direct-construction",
+            "expectedDiagnostics": [
+              "private"
+            ],
+            "sourcePath": "compile_fail/percentage_direct_construction.rs"
+          }
+        ]
       }
     ]
   },

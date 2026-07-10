@@ -63,6 +63,32 @@
         "mode": "backend-cargo-test",
         "timeoutMs": 10000,
         "dependencySet": "advanced"
+      },
+      {
+        "mode": "backend-compile-fail",
+        "timeoutMs": 10000,
+        "dependencySet": "advanced",
+        "cases": [
+          {
+            "name": "command-direct-fields",
+            "expectedDiagnostics": [
+              "private"
+            ],
+            "forbiddenDiagnostics": [
+              "has no field named"
+            ],
+            "path": "compile_fail/command_direct_fields.rs",
+            "content": "use rust_daily_lesson::RegisterUserCommand;\n\nfn main() {\n    let _ = RegisterUserCommand {\n        email: String::from(\"ada@example.com\"),\n        display_name: String::from(\"Ada\"),\n    };\n}\n"
+          },
+          {
+            "name": "command-serde-free",
+            "expectedDiagnostics": [
+              "Serialize"
+            ],
+            "path": "compile_fail/command_serde_free.rs",
+            "content": "use rust_daily_lesson::RegisterUserCommand;\n\nfn main() {\n    let command = RegisterUserCommand::new(\"ada@example.com\", \"Ada\");\n    let _ = serde_json::to_string(&command).unwrap();\n}\n"
+          }
+        ]
       }
     ]
   }

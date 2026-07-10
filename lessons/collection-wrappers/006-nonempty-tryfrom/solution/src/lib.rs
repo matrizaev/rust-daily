@@ -10,7 +10,7 @@ pub struct OrderLines {
 }
 
 impl OrderLines {
-    pub fn new(lines: Vec<OrderLine>) -> Self {
+    fn new(lines: Vec<OrderLine>) -> Self {
         Self { lines }
     }
 

@@ -2390,6 +2390,24 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "direct-field-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/direct_field_construction.rs",
+              "content": "use rust_daily_lesson::EmailAddress;\n\nfn main() {\n    let _ = EmailAddress { value: String::from(\"ada@example.com\") };\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -2461,6 +2479,24 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "direct-field-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/direct_field_construction.rs",
+              "content": "use rust_daily_lesson::EmailAddress;\n\nfn main() {\n    let _ = EmailAddress { value: String::from(\"ada@example.com\") };\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -2535,6 +2571,24 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "direct-field-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/direct_field_construction.rs",
+              "content": "use rust_daily_lesson::EmailAddress;\n\nfn main() {\n    let _ = EmailAddress { value: String::from(\"ada@example.com\") };\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -2606,6 +2660,24 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "direct-field-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/direct_field_construction.rs",
+              "content": "use rust_daily_lesson::EmailAddress;\n\nfn main() {\n    let _ = EmailAddress { value: String::from(\"ada@example.com\") };\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -2675,6 +2747,24 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "direct-field-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/direct_field_construction.rs",
+              "content": "use rust_daily_lesson::EmailAddress;\n\nfn main() {\n    let _ = EmailAddress { value: String::from(\"ada@example.com\") };\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -2746,6 +2836,24 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "direct-field-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/direct_field_construction.rs",
+              "content": "use rust_daily_lesson::EmailAddress;\n\nfn main() {\n    let _ = EmailAddress { value: String::from(\"ada@example.com\") };\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -2833,6 +2941,24 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "money-direct-fields",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/money_direct_fields.rs",
+              "content": "use rust_daily_lesson::{Currency, Money};\n\nfn main() {\n    let _ = Money { amount: 500, currency: Currency::Usd };\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -2901,6 +3027,24 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "money-direct-fields",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/money_direct_fields.rs",
+              "content": "use rust_daily_lesson::{Currency, Money};\n\nfn main() {\n    let _ = Money { amount: 500, currency: Currency::Usd };\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -2991,6 +3135,24 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "money-direct-fields",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/money_direct_fields.rs",
+              "content": "use rust_daily_lesson::{Currency, Money};\n\nfn main() {\n    let _ = Money { amount: 500, currency: Currency::Usd };\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -3080,6 +3242,24 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "money-direct-fields",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/money_direct_fields.rs",
+              "content": "use rust_daily_lesson::{Currency, Money};\n\nfn main() {\n    let _ = Money { amount: 500, currency: Currency::Usd };\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -3166,6 +3346,24 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "money-direct-fields",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/money_direct_fields.rs",
+              "content": "use rust_daily_lesson::{Currency, Money};\n\nfn main() {\n    let _ = Money { amount: 500, currency: Currency::Usd };\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -3230,6 +3428,24 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "money-direct-fields",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/money_direct_fields.rs",
+              "content": "use rust_daily_lesson::{Currency, Money};\n\nfn main() {\n    let _ = Money { amount: 500, currency: Currency::Usd };\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -3327,6 +3543,21 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "port-direct-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "path": "compile_fail/port_direct_construction.rs",
+              "content": "use std::num::NonZeroU16;\nuse rust_daily_lesson::Port;\n\nfn main() {\n    let _ = Port(NonZeroU16::new(8080).unwrap());\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -3427,6 +3658,29 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "port-direct-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "path": "compile_fail/port_direct_construction.rs",
+              "content": "use std::num::NonZeroU16;\nuse rust_daily_lesson::Port;\n\nfn main() {\n    let _ = Port(NonZeroU16::new(8080).unwrap());\n}\n"
+            },
+            {
+              "name": "host-direct-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "path": "compile_fail/host_direct_construction.rs",
+              "content": "use rust_daily_lesson::Host;\n\nfn main() {\n    let _ = Host(String::from(\"localhost\"));\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -3504,6 +3758,29 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "port-direct-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "path": "compile_fail/port_direct_construction.rs",
+              "content": "use std::num::NonZeroU16;\nuse rust_daily_lesson::Port;\n\nfn main() {\n    let _ = Port(NonZeroU16::new(8080).unwrap());\n}\n"
+            },
+            {
+              "name": "host-direct-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "path": "compile_fail/host_direct_construction.rs",
+              "content": "use rust_daily_lesson::Host;\n\nfn main() {\n    let _ = Host(String::from(\"localhost\"));\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -3624,6 +3901,40 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "port-direct-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "path": "compile_fail/port_direct_construction.rs",
+              "content": "use std::num::NonZeroU16;\nuse rust_daily_lesson::Port;\n\nfn main() {\n    let _ = Port(NonZeroU16::new(8080).unwrap());\n}\n"
+            },
+            {
+              "name": "host-direct-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "path": "compile_fail/host_direct_construction.rs",
+              "content": "use rust_daily_lesson::Host;\n\nfn main() {\n    let _ = Host(String::from(\"localhost\"));\n}\n"
+            },
+            {
+              "name": "endpoint-direct-fields",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/endpoint_direct_fields.rs",
+              "content": "use rust_daily_lesson::{Endpoint, Host, Port};\n\nfn main() {\n    let host = Host::try_from(\"localhost\").unwrap();\n    let port = Port::new(8080).unwrap();\n    let _ = Endpoint { host, port };\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -3700,6 +4011,40 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "port-direct-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "path": "compile_fail/port_direct_construction.rs",
+              "content": "use std::num::NonZeroU16;\nuse rust_daily_lesson::Port;\n\nfn main() {\n    let _ = Port(NonZeroU16::new(8080).unwrap());\n}\n"
+            },
+            {
+              "name": "host-direct-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "path": "compile_fail/host_direct_construction.rs",
+              "content": "use rust_daily_lesson::Host;\n\nfn main() {\n    let _ = Host(String::from(\"localhost\"));\n}\n"
+            },
+            {
+              "name": "endpoint-direct-fields",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/endpoint_direct_fields.rs",
+              "content": "use rust_daily_lesson::{Endpoint, Host, Port};\n\nfn main() {\n    let host = Host::try_from(\"localhost\").unwrap();\n    let port = Port::new(8080).unwrap();\n    let _ = Endpoint { host, port };\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -3776,6 +4121,40 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "port-direct-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "path": "compile_fail/port_direct_construction.rs",
+              "content": "use std::num::NonZeroU16;\nuse rust_daily_lesson::Port;\n\nfn main() {\n    let _ = Port(NonZeroU16::new(8080).unwrap());\n}\n"
+            },
+            {
+              "name": "host-direct-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "path": "compile_fail/host_direct_construction.rs",
+              "content": "use rust_daily_lesson::Host;\n\nfn main() {\n    let _ = Host(String::from(\"localhost\"));\n}\n"
+            },
+            {
+              "name": "endpoint-direct-fields",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/endpoint_direct_fields.rs",
+              "content": "use rust_daily_lesson::{Endpoint, Host, Port};\n\nfn main() {\n    let host = Host::try_from(\"localhost\").unwrap();\n    let port = Port::new(8080).unwrap();\n    let _ = Endpoint { host, port };\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -3945,6 +4324,32 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "advanced"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "advanced",
+          "cases": [
+            {
+              "name": "command-direct-fields",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/command_direct_fields.rs",
+              "content": "use rust_daily_lesson::RegisterUserCommand;\n\nfn main() {\n    let _ = RegisterUserCommand {\n        email: String::from(\"ada@example.com\"),\n        display_name: String::from(\"Ada\"),\n    };\n}\n"
+            },
+            {
+              "name": "command-serde-free",
+              "expectedDiagnostics": [
+                "Serialize"
+              ],
+              "path": "compile_fail/command_serde_free.rs",
+              "content": "use rust_daily_lesson::RegisterUserCommand;\n\nfn main() {\n    let command = RegisterUserCommand::new(\"ada@example.com\", \"Ada\");\n    let _ = serde_json::to_string(&command).unwrap();\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -4017,6 +4422,32 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "advanced"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "advanced",
+          "cases": [
+            {
+              "name": "command-direct-fields",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/command_direct_fields.rs",
+              "content": "use rust_daily_lesson::RegisterUserCommand;\n\nfn main() {\n    let _ = RegisterUserCommand {\n        email: String::from(\"ada@example.com\"),\n        display_name: String::from(\"Ada\"),\n    };\n}\n"
+            },
+            {
+              "name": "command-serde-free",
+              "expectedDiagnostics": [
+                "Serialize"
+              ],
+              "path": "compile_fail/command_serde_free.rs",
+              "content": "use rust_daily_lesson::RegisterUserCommand;\n\nfn main() {\n    let command = RegisterUserCommand::new(\"ada@example.com\", \"Ada\");\n    let _ = serde_json::to_string(&command).unwrap();\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -4094,6 +4525,32 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "advanced"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "advanced",
+          "cases": [
+            {
+              "name": "command-direct-fields",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/command_direct_fields.rs",
+              "content": "use rust_daily_lesson::RegisterUserCommand;\n\nfn main() {\n    let _ = RegisterUserCommand {\n        email: String::from(\"ada@example.com\"),\n        display_name: String::from(\"Ada\"),\n    };\n}\n"
+            },
+            {
+              "name": "command-serde-free",
+              "expectedDiagnostics": [
+                "Serialize"
+              ],
+              "path": "compile_fail/command_serde_free.rs",
+              "content": "use rust_daily_lesson::RegisterUserCommand;\n\nfn main() {\n    let command = RegisterUserCommand::new(\"ada@example.com\", \"Ada\");\n    let _ = serde_json::to_string(&command).unwrap();\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -4171,6 +4628,32 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "advanced"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "advanced",
+          "cases": [
+            {
+              "name": "command-direct-fields",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/command_direct_fields.rs",
+              "content": "use rust_daily_lesson::RegisterUserCommand;\n\nfn main() {\n    let _ = RegisterUserCommand {\n        email: String::from(\"ada@example.com\"),\n        display_name: String::from(\"Ada\"),\n    };\n}\n"
+            },
+            {
+              "name": "command-serde-free",
+              "expectedDiagnostics": [
+                "Serialize"
+              ],
+              "path": "compile_fail/command_serde_free.rs",
+              "content": "use rust_daily_lesson::RegisterUserCommand;\n\nfn main() {\n    let command = RegisterUserCommand::new(\"ada@example.com\", \"Ada\");\n    let _ = serde_json::to_string(&command).unwrap();\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -4240,6 +4723,32 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "advanced"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "advanced",
+          "cases": [
+            {
+              "name": "command-direct-fields",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/command_direct_fields.rs",
+              "content": "use rust_daily_lesson::RegisterUserCommand;\n\nfn main() {\n    let _ = RegisterUserCommand {\n        email: String::from(\"ada@example.com\"),\n        display_name: String::from(\"Ada\"),\n    };\n}\n"
+            },
+            {
+              "name": "command-serde-free",
+              "expectedDiagnostics": [
+                "Serialize"
+              ],
+              "path": "compile_fail/command_serde_free.rs",
+              "content": "use rust_daily_lesson::RegisterUserCommand;\n\nfn main() {\n    let command = RegisterUserCommand::new(\"ada@example.com\", \"Ada\");\n    let _ = serde_json::to_string(&command).unwrap();\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -4607,8 +5116,8 @@
     "conceptId": "wrap-nonempty-tryfrom",
     "difficulty": "medium",
     "estimatedMinutes": 8,
-    "scenario": "An order without lines is invalid. TryFrom<Vec<OrderLine>> can enforce that invariant at the wrapper boundary.",
-    "instructions": "Keep the iterator API active. Add drain(&mut self) and implement TryFrom<Vec<OrderLine>> for OrderLines, returning OrderLinesError::Empty for an empty Vec.",
+    "scenario": "An order without lines is invalid. TryFrom<Vec<OrderLine>> can enforce that invariant, but only if direct empty construction is no longer public.",
+    "instructions": "Keep the iterator API active. Make the existing OrderLines::new constructor private, add drain(&mut self), and implement TryFrom<Vec<OrderLine>> for OrderLines, returning OrderLinesError::Empty for an empty Vec.",
     "files": [
       {
         "path": "src/lib.rs",
@@ -4624,19 +5133,19 @@
     "hints": [
       {
         "level": 1,
-        "body": "TryFrom is the right API when construction can fail."
+        "body": "TryFrom is the right public API when construction can fail."
       },
       {
         "level": 2,
-        "body": "drain gives callers owned values while leaving the wrapper empty."
+        "body": "Keep new available to this module by removing pub. TryFrom can still call Self::new after checking that the Vec is not empty."
       },
       {
         "level": 3,
-        "body": "Use the existing constructor after the non-empty check passes.",
-        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn as_slice(&self) -> &[OrderLine] {\n        &self.lines\n    }\n}\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}\n\nimpl<'a> IntoIterator for &'a OrderLines {\n    type Item = &'a OrderLine;\n    type IntoIter = std::slice::Iter<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter()\n    }\n}\n\nimpl OrderLines {\n    pub fn iter_mut(&mut self) -> std::slice::IterMut<'_, OrderLine> {\n        self.lines.iter_mut()\n    }\n}\n\nimpl<'a> IntoIterator for &'a mut OrderLines {\n    type Item = &'a mut OrderLine;\n    type IntoIter = std::slice::IterMut<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter_mut()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum OrderLinesError {\n    Empty,\n}\n\nimpl OrderLines {\n    pub fn drain(&mut self) -> std::vec::Drain<'_, OrderLine> {\n        self.lines.drain(..)\n    }\n}\n\nimpl TryFrom<Vec<OrderLine>> for OrderLines {\n    type Error = OrderLinesError;\n\n    fn try_from(lines: Vec<OrderLine>) -> Result<Self, Self::Error> {\n        if lines.is_empty() {\n            return Err(OrderLinesError::Empty);\n        }\n\n        Ok(Self::new(lines))\n    }\n}"
+        "body": "Use the private constructor after the non-empty check passes.",
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn as_slice(&self) -> &[OrderLine] {\n        &self.lines\n    }\n}\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}\n\nimpl<'a> IntoIterator for &'a OrderLines {\n    type Item = &'a OrderLine;\n    type IntoIter = std::slice::Iter<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter()\n    }\n}\n\nimpl OrderLines {\n    pub fn iter_mut(&mut self) -> std::slice::IterMut<'_, OrderLine> {\n        self.lines.iter_mut()\n    }\n}\n\nimpl<'a> IntoIterator for &'a mut OrderLines {\n    type Item = &'a mut OrderLine;\n    type IntoIter = std::slice::IterMut<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter_mut()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum OrderLinesError {\n    Empty,\n}\n\nimpl OrderLines {\n    pub fn drain(&mut self) -> std::vec::Drain<'_, OrderLine> {\n        self.lines.drain(..)\n    }\n}\n\nimpl TryFrom<Vec<OrderLine>> for OrderLines {\n    type Error = OrderLinesError;\n\n    fn try_from(lines: Vec<OrderLine>) -> Result<Self, Self::Error> {\n        if lines.is_empty() {\n            return Err(OrderLinesError::Empty);\n        }\n\n        Ok(Self::new(lines))\n    }\n}"
       }
     ],
-    "completionExplanation": "OrderLines now has a complete collection-shaped API plus a fallible constructor for the non-empty invariant.",
+    "completionExplanation": "OrderLines now has a complete collection-shaped API plus one public fallible construction path for the non-empty invariant. Direct empty construction is rejected at compile time.",
     "validation": {
       "mode": "all",
       "validations": [
@@ -4670,6 +5179,32 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "orderlines-new-is-private",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "path": "compile_fail/orderlines_new_is_private.rs",
+              "content": "use rust_daily_lesson::{OrderLine, OrderLines};\n\nfn main() {\n    let _ = OrderLines::new(Vec::<OrderLine>::new());\n}\n"
+            },
+            {
+              "name": "orderlines-direct-fields",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/orderlines_direct_fields.rs",
+              "content": "use rust_daily_lesson::OrderLines;\n\nfn main() {\n    let _ = OrderLines { lines: Vec::new() };\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -6503,6 +7038,21 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "percentage-direct-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "path": "compile_fail/percentage_direct_construction.rs",
+              "content": "use rust_daily_lesson::Percentage;\n\nfn main() {\n    let _ = Percentage(255);\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -6569,6 +7119,21 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "percentage-direct-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "path": "compile_fail/percentage_direct_construction.rs",
+              "content": "use rust_daily_lesson::Percentage;\n\nfn main() {\n    let _ = Percentage(255);\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -6635,6 +7200,21 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "percentage-direct-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "path": "compile_fail/percentage_direct_construction.rs",
+              "content": "use rust_daily_lesson::Percentage;\n\nfn main() {\n    let _ = Percentage(255);\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -6699,6 +7279,21 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "percentage-direct-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "path": "compile_fail/percentage_direct_construction.rs",
+              "content": "use rust_daily_lesson::Percentage;\n\nfn main() {\n    let _ = Percentage(255);\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -6765,6 +7360,21 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "percentage-direct-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "path": "compile_fail/percentage_direct_construction.rs",
+              "content": "use rust_daily_lesson::Percentage;\n\nfn main() {\n    let _ = Percentage(255);\n}\n"
+            }
+          ]
         }
       ]
     }
@@ -6833,6 +7443,21 @@
           "mode": "backend-cargo-test",
           "timeoutMs": 10000,
           "dependencySet": "advanced"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "advanced",
+          "cases": [
+            {
+              "name": "percentage-direct-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "path": "compile_fail/percentage_direct_construction.rs",
+              "content": "use rust_daily_lesson::Percentage;\n\nfn main() {\n    let _ = Percentage(255);\n}\n"
+            }
+          ]
         }
       ]
     }

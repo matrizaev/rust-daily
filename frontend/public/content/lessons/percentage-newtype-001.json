@@ -65,6 +65,21 @@
         "mode": "backend-cargo-test",
         "timeoutMs": 10000,
         "dependencySet": "std"
+      },
+      {
+        "mode": "backend-compile-fail",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "cases": [
+          {
+            "name": "percentage-direct-construction",
+            "expectedDiagnostics": [
+              "private"
+            ],
+            "path": "compile_fail/percentage_direct_construction.rs",
+            "content": "use rust_daily_lesson::Percentage;\n\nfn main() {\n    let _ = Percentage(255);\n}\n"
+          }
+        ]
       }
     ]
   }

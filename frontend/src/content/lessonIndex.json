@@ -837,7 +837,7 @@
     "conceptId": "wrap-nonempty-tryfrom",
     "difficulty": "medium",
     "estimatedMinutes": 8,
-    "scenario": "An order without lines is invalid. TryFrom<Vec<OrderLine>> can enforce that invariant at the wrapper boundary."
+    "scenario": "An order without lines is invalid. TryFrom<Vec<OrderLine>> can enforce that invariant, but only if direct empty construction is no longer public."
   },
   {
     "schemaVersion": 2,

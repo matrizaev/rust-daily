@@ -68,6 +68,24 @@
         "mode": "backend-cargo-test",
         "timeoutMs": 10000,
         "dependencySet": "std"
+      },
+      {
+        "mode": "backend-compile-fail",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "cases": [
+          {
+            "name": "direct-field-construction",
+            "expectedDiagnostics": [
+              "private"
+            ],
+            "forbiddenDiagnostics": [
+              "has no field named"
+            ],
+            "path": "compile_fail/direct_field_construction.rs",
+            "content": "use rust_daily_lesson::EmailAddress;\n\nfn main() {\n    let _ = EmailAddress { value: String::from(\"ada@example.com\") };\n}\n"
+          }
+        ]
       }
     ]
   }

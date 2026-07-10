@@ -76,6 +76,37 @@
             "sourcePath": "tests/public.rs"
           }
         ]
+      },
+      {
+        "mode": "backend-compile-fail",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "cases": [
+          {
+            "name": "port-direct-construction",
+            "expectedDiagnostics": [
+              "private"
+            ],
+            "sourcePath": "compile_fail/port_direct_construction.rs"
+          },
+          {
+            "name": "host-direct-construction",
+            "expectedDiagnostics": [
+              "private"
+            ],
+            "sourcePath": "compile_fail/host_direct_construction.rs"
+          },
+          {
+            "name": "endpoint-direct-fields",
+            "expectedDiagnostics": [
+              "private"
+            ],
+            "forbiddenDiagnostics": [
+              "has no field named"
+            ],
+            "sourcePath": "compile_fail/endpoint_direct_fields.rs"
+          }
+        ]
       }
     ]
   },

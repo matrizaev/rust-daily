@@ -74,6 +74,23 @@
             "sourcePath": "tests/public.rs"
           }
         ]
+      },
+      {
+        "mode": "backend-compile-fail",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "cases": [
+          {
+            "name": "direct-field-construction",
+            "expectedDiagnostics": [
+              "private"
+            ],
+            "forbiddenDiagnostics": [
+              "has no field named"
+            ],
+            "sourcePath": "compile_fail/direct_field_construction.rs"
+          }
+        ]
       }
     ]
   },

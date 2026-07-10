@@ -21,10 +21,12 @@ contains:
 - 90 concepts;
 - schema V2 source content for every lesson;
 - structural browser checks and Cargo-backed tests for every lesson;
-- 59 `std` validation steps and 31 `advanced` validation steps.
+- 59 `std` Cargo-test steps and 31 `advanced` Cargo-test steps;
+- 30 lessons with backend compile-fail validation, covering 44 public
+  compile-fail cases.
 
-The platform also supports backend compile-fail validation for future
-single-crate lessons that need to prove an invalid API use does not compile.
+The platform supports backend compile-fail validation for single-crate lessons
+that need to prove an invalid API use does not compile.
 
 The future curriculum direction is maintained in
 [FUTURE_ADVANCED_CONCEPTS_IMPLEMENTATION_PLAN.md](FUTURE_ADVANCED_CONCEPTS_IMPLEMENTATION_PLAN.md).

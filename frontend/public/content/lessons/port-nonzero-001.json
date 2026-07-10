@@ -91,6 +91,21 @@
         "mode": "backend-cargo-test",
         "timeoutMs": 10000,
         "dependencySet": "std"
+      },
+      {
+        "mode": "backend-compile-fail",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "cases": [
+          {
+            "name": "port-direct-construction",
+            "expectedDiagnostics": [
+              "private"
+            ],
+            "path": "compile_fail/port_direct_construction.rs",
+            "content": "use std::num::NonZeroU16;\nuse rust_daily_lesson::Port;\n\nfn main() {\n    let _ = Port(NonZeroU16::new(8080).unwrap());\n}\n"
+          }
+        ]
       }
     ]
   }

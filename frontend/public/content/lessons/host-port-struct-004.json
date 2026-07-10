@@ -114,6 +114,40 @@
         "mode": "backend-cargo-test",
         "timeoutMs": 10000,
         "dependencySet": "std"
+      },
+      {
+        "mode": "backend-compile-fail",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "cases": [
+          {
+            "name": "port-direct-construction",
+            "expectedDiagnostics": [
+              "private"
+            ],
+            "path": "compile_fail/port_direct_construction.rs",
+            "content": "use std::num::NonZeroU16;\nuse rust_daily_lesson::Port;\n\nfn main() {\n    let _ = Port(NonZeroU16::new(8080).unwrap());\n}\n"
+          },
+          {
+            "name": "host-direct-construction",
+            "expectedDiagnostics": [
+              "private"
+            ],
+            "path": "compile_fail/host_direct_construction.rs",
+            "content": "use rust_daily_lesson::Host;\n\nfn main() {\n    let _ = Host(String::from(\"localhost\"));\n}\n"
+          },
+          {
+            "name": "endpoint-direct-fields",
+            "expectedDiagnostics": [
+              "private"
+            ],
+            "forbiddenDiagnostics": [
+              "has no field named"
+            ],
+            "path": "compile_fail/endpoint_direct_fields.rs",
+            "content": "use rust_daily_lesson::{Endpoint, Host, Port};\n\nfn main() {\n    let host = Host::try_from(\"localhost\").unwrap();\n    let port = Port::new(8080).unwrap();\n    let _ = Endpoint { host, port };\n}\n"
+          }
+        ]
       }
     ]
   }

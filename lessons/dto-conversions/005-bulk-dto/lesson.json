@@ -77,6 +77,30 @@
             "sourcePath": "tests/public.rs"
           }
         ]
+      },
+      {
+        "mode": "backend-compile-fail",
+        "timeoutMs": 10000,
+        "dependencySet": "advanced",
+        "cases": [
+          {
+            "name": "command-direct-fields",
+            "expectedDiagnostics": [
+              "private"
+            ],
+            "forbiddenDiagnostics": [
+              "has no field named"
+            ],
+            "sourcePath": "compile_fail/command_direct_fields.rs"
+          },
+          {
+            "name": "command-serde-free",
+            "expectedDiagnostics": [
+              "Serialize"
+            ],
+            "sourcePath": "compile_fail/command_serde_free.rs"
+          }
+        ]
       }
     ]
   },
