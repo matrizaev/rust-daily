@@ -1,5 +1,10 @@
 FROM docker.io/library/rust:1.95-slim
 
+ARG VCS_REF=unknown
+ARG RUNNER_SOURCE_HASH=unknown
+LABEL org.opencontainers.image.revision=$VCS_REF
+LABEL org.opencontainers.image.source-hash=$RUNNER_SOURCE_HASH
+
 WORKDIR /workspace
 
 RUN mkdir -p /tmp/dependency-cache/src /opt/rust-daily-target

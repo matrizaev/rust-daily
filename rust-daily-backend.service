@@ -12,8 +12,12 @@ Environment=RUST_DAILY_ENV=prod
 Environment=HOME=/var/www12
 Environment=XDG_CONFIG_HOME=/var/www12/.config
 Environment=XDG_DATA_HOME=/var/www12/.local/share
+Environment=XDG_RUNTIME_DIR=/run/rust-daily-backend
 Environment=PATH=/var/www12/bin:/var/www12/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 ExecStart=/var/www12/html/rust-daily-backend
+TemporaryFileSystem=/var/www12/rust-daily-runs:size=2G,nr_inodes=200000,mode=1777
+RuntimeDirectory=rust-daily-backend
+RuntimeDirectoryMode=0700
 
 Restart=on-failure
 RestartSec=2
@@ -29,11 +33,11 @@ TimeoutStopSec=15
 
 # Security hardening
 NoNewPrivileges=true
-#PrivateTmp=true
+PrivateTmp=true
 PrivateDevices=true
-#ProtectSystem=strict
-#ProtectHome=true
-ReadWritePaths=/var/www12
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/run/rust-daily-backend /var/www12/.cache /var/www12/.config /var/www12/.local/share /var/www12/rust-daily-runs
 AmbientCapabilities=
 CapabilityBoundingSet=
 LimitNOFILE=65535

@@ -13,6 +13,7 @@ runner:
   max_output_bytes: 65536
   image: rust-runner:1.95
   workspace_root: /tmp/rust-daily-runs
+  podman_path: podman
 
 validation:
   max_files: 8

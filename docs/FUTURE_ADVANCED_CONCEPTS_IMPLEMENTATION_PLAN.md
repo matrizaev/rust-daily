@@ -23,10 +23,9 @@ lessons 1-90. Existing lessons already establish:
 Future arcs should assume those skills and use them in larger or deeper
 contexts.
 
-The first infrastructure milestone for this roadmap, project snapshot
-validation with one editable artifact, is now part of the product contract. It
-is specified in
-[PROJECT_SNAPSHOT_VALIDATION_SPEC.md](PROJECT_SNAPSHOT_VALIDATION_SPEC.md).
+Project snapshot validation with one editable artifact is now part of the
+product contract. Future infrastructure should build on that model rather than
+adding multi-file editing.
 
 ## Target
 
@@ -66,6 +65,43 @@ one editable artifact even when validation compiles a larger project.
 Runner and content infrastructure therefore support multi-file projects, not
 multi-file editing. Future runner modes should extend the same rule to
 manifests, workspaces, migrations, and other artifact types.
+
+## Prerequisite Work Before Expansion
+
+Before adding lessons 91-500, finish the infrastructure and authoring guardrails
+that will prevent curriculum scale from creating avoidable maintenance debt.
+
+1. Add [compile-fail validation](COMPILE_FAIL_VALIDATION_SPEC.md).
+   This unlocks serious lessons on advanced ownership, lifetimes, trait bounds,
+   object safety, and macro diagnostics. Without it, many advanced Rust lessons
+   become textual explanations or force awkward runtime-only checks.
+2. Add an authoring scaffolder.
+   Provide a command that creates a lesson skeleton with `lesson.json`,
+   `starter/`, `solution/`, `tests/`, `notes.md`, dependency set, and editable
+   path. Large-scale lesson authoring should not depend on hand-copying JSON
+   structures.
+3. Strengthen source-content validation.
+   Check exactly one editable file, backend-supported paths, final-hint
+   solution parity, readonly continuity from the previous lesson, structural
+   checks targeting the editable file, and task text that names the editable
+   file when it is not `src/lib.rs`.
+4. Add a CI quality gate.
+   CI should run backend format, lint, and tests; source and generated content
+   validation; frontend build; Fallow checks; and lesson solution tests. Full
+   solution runs may be nightly if per-change runtime becomes too high.
+5. Polish readonly-file UX enough for snapshot-heavy lessons.
+   The editable filename header is in place. Readonly support files should stay
+   easy to scan, with future improvements such as remembered open panels or
+   copy affordances if author review shows friction.
+6. Create advanced lesson templates.
+   Maintain reusable shapes for owned and borrowed API modules, async service
+   ports, Actix boundaries, error mapping, table and property tests, and
+   compile-fail lessons once that runner mode exists.
+7. Maintain a curriculum review rubric.
+   Every new arc should confirm one concept per lesson, task text matching the
+   starter exactly, idiomatic reference code, previous solutions as readonly
+   context when needed, and no claim that one exercise teaches universally
+   perfect Rust.
 
 ## Curriculum Roadmap
 
@@ -275,14 +311,13 @@ tradeoffs rather than claim one universally perfect pattern.
 
 ## Runner and Dependency Roadmap
 
-The current runner supports one generated library crate and two dependency
-sets: `std` and `advanced`.
+The current runner supports multi-file snapshots for one generated library
+crate and two dependency sets: `std` and `advanced`.
 
 Add capabilities only when a planned arc requires them:
 
 | Capability | Required for |
 | --- | --- |
-| Multi-file project snapshots with one editable artifact | Advanced ownership, architecture, and capstones |
 | Multi-crate workspace generation | External API tests and procedural macros |
 | Compile-fail mode | Lifetimes, trait bounds, and macro diagnostics |
 | `advanced-db` with SQLx and SQLite | Persistence arcs |
@@ -349,8 +384,8 @@ Every future arc must:
 
 ## Implementation Order
 
-1. Build on project snapshot validation by adding compile-fail support for
-   invalid borrowing, object-safety, and API-bound examples.
+1. Complete the prerequisite work before expansion, starting with compile-fail
+   validation.
 2. Author lessons 91-150 around advanced ownership and API design.
 3. Expand async/concurrency validation and author lessons 151-210.
 4. Add workspace test modes and author lessons 211-270.

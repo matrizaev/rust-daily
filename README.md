@@ -113,8 +113,8 @@ library. Supported cases are `pass`, `multi-file-pass`, `fail`,
 - [Product specification](docs/SPEC.md)
 - [System architecture](ARCHITECTURE.md)
 - [Production deployment](docs/DEPLOYMENT.md)
-- [Project snapshot validation spec](docs/PROJECT_SNAPSHOT_VALIDATION_SPEC.md)
-- [Project snapshot validation implementation plan](docs/PROJECT_SNAPSHOT_VALIDATION_IMPLEMENTATION_PLAN.md)
+- [Compile-fail validation feature spec](docs/COMPILE_FAIL_VALIDATION_SPEC.md)
+- [Compile-fail validation implementation plan](docs/COMPILE_FAIL_VALIDATION_IMPLEMENTATION_PLAN.md)
 - [Lessons 91-500 roadmap](docs/FUTURE_ADVANCED_CONCEPTS_IMPLEMENTATION_PLAN.md)
 
 ## Deployment

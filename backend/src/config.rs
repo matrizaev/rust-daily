@@ -41,6 +41,7 @@ pub struct RunnerSettings {
     pub max_output_bytes: NonZeroUsize,
     pub image: RunnerImage,
     pub workspace_root: WorkspaceRoot,
+    pub podman_path: PodmanPath,
 }
 
 #[derive(Debug, Clone)]
@@ -83,6 +84,7 @@ struct RawRunnerSettings {
     max_output_bytes: usize,
     image: String,
     workspace_root: PathBuf,
+    podman_path: PathBuf,
 }
 
 #[derive(Debug, Deserialize)]
@@ -118,6 +120,7 @@ pub enum ConfigField {
     RunnerMaxOutputBytes,
     RunnerImage,
     RunnerWorkspaceRoot,
+    RunnerPodmanPath,
     FrontendDist,
     ServerCorsOrigin,
     ValidationMaxFiles,
@@ -136,6 +139,7 @@ impl std::fmt::Display for ConfigField {
             Self::RunnerMaxOutputBytes => "runner.max_output_bytes",
             Self::RunnerImage => "runner.image",
             Self::RunnerWorkspaceRoot => "runner.workspace_root",
+            Self::RunnerPodmanPath => "runner.podman_path",
             Self::FrontendDist => "frontend.dist",
             Self::ServerCorsOrigin => "server.cors_origin",
             Self::ValidationMaxFiles => "validation.max_files",
@@ -224,6 +228,29 @@ impl TryFrom<PathBuf> for WorkspaceRoot {
         if value.as_os_str().is_empty() {
             return Err(SettingsError::Empty {
                 field: ConfigField::RunnerWorkspaceRoot,
+            });
+        }
+
+        Ok(Self(value))
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct PodmanPath(PathBuf);
+
+impl PodmanPath {
+    pub fn as_path(&self) -> &Path {
+        &self.0
+    }
+}
+
+impl TryFrom<PathBuf> for PodmanPath {
+    type Error = SettingsError;
+
+    fn try_from(value: PathBuf) -> Result<Self, Self::Error> {
+        if value.as_os_str().is_empty() {
+            return Err(SettingsError::Empty {
+                field: ConfigField::RunnerPodmanPath,
             });
         }
 
@@ -349,6 +376,9 @@ fn apply_legacy_environment_overrides(
     if let Some(value) = env_string("RUST_DAILY_WORKSPACE_ROOT") {
         builder = builder.set_override("runner.workspace_root", value)?;
     }
+    if let Some(value) = env_string("RUST_DAILY_PODMAN_PATH") {
+        builder = builder.set_override("runner.podman_path", value)?;
+    }
     if let Some(value) = env_number("RUST_DAILY_MAX_FILES")? {
         builder = builder.set_override("validation.max_files", value)?;
     }
@@ -439,6 +469,7 @@ impl TryFrom<RawRunnerSettings> for RunnerSettings {
             max_output_bytes,
             image: RunnerImage::try_from(raw.image)?,
             workspace_root: WorkspaceRoot::try_from(raw.workspace_root)?,
+            podman_path: PodmanPath::try_from(raw.podman_path)?,
         })
     }
 }
@@ -520,6 +551,7 @@ runner:
         assert_eq!(settings.frontend.dist.as_path(), Path::new("frontend/dist"));
         assert_eq!(settings.runner.workers.get(), 3);
         assert_eq!(settings.runner.queue_capacity.get(), 20);
+        assert_eq!(settings.runner.podman_path.as_path(), Path::new("podman"));
         assert_eq!(settings.validation.limits.max_files(), 8);
     }
 
@@ -612,6 +644,7 @@ runner:
   max_output_bytes: 65536
   image: rust-runner:1.95
   workspace_root: /tmp/rust-daily-runs
+  podman_path: podman
 validation:
   max_files: 8
   max_file_bytes: 65536

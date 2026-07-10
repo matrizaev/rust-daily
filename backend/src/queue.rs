@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
 use thiserror::Error;
-use tokio::sync::{Mutex, mpsc, oneshot};
+use tokio::{
+    sync::{Mutex, mpsc, oneshot},
+    task::JoinError,
+};
 use tracing::{info, warn};
 use uuid::Uuid;
 
@@ -92,19 +95,49 @@ async fn worker_loop(
         };
 
         let job_id = job.id;
+        if job.response_tx.is_closed() {
+            warn!(%job_id, worker_id, "job skipped because result receiver was dropped");
+            continue;
+        }
+
         info!(%job_id, worker_id, "job started by worker");
 
-        let result = runner::run(job_id, job.request, &config).await;
-        info!(
-            %job_id,
-            worker_id,
-            status = ?result.status,
-            duration_ms = result.duration_ms,
-            "job finished"
-        );
+        run_job(job, worker_id, Arc::clone(&config)).await;
+    }
+}
 
-        if job.response_tx.send(result).is_err() {
-            warn!(%job_id, worker_id, "job result receiver was dropped");
+async fn run_job(mut job: RunJob, worker_id: usize, config: Arc<RunnerSettings>) {
+    let job_id = job.id;
+    let run_task = tokio::spawn(async move { runner::run(job_id, job.request, &config).await });
+    tokio::pin!(run_task);
+
+    tokio::select! {
+        result = &mut run_task => {
+            let result = match result {
+                Ok(result) => result,
+                Err(error) => runner_task_failed(job_id, worker_id, error),
+            };
+            info!(
+                %job_id,
+                worker_id,
+                status = ?result.status,
+                duration_ms = result.duration_ms,
+                "job finished"
+            );
+
+            if job.response_tx.send(result).is_err() {
+                warn!(%job_id, worker_id, "job result receiver was dropped");
+            }
+        }
+        () = job.response_tx.closed() => {
+            warn!(%job_id, worker_id, "job canceled because result receiver was dropped");
+            run_task.abort();
+            let _ = run_task.await;
         }
     }
+}
+
+fn runner_task_failed(job_id: Uuid, worker_id: usize, error: JoinError) -> RunResult {
+    warn!(%job_id, worker_id, error = %error, "runner task failed");
+    RunResult::internal_error("runner task failed", 0)
 }

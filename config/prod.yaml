@@ -1,10 +1,12 @@
 server:
   host: 127.0.0.1
   port: 8080
-  cors_origin: null
+  cors_origin: https://borrowquest.qzz.io
 
 frontend:
   dist: /var/www12/html/frontend/dist
 
 runner:
   image: rust-runner:1.95
+  workspace_root: /var/www12/rust-daily-runs
+  podman_path: /usr/bin/podman

@@ -25,8 +25,6 @@ contains:
 
 The future curriculum direction is maintained in
 [FUTURE_ADVANCED_CONCEPTS_IMPLEMENTATION_PLAN.md](FUTURE_ADVANCED_CONCEPTS_IMPLEMENTATION_PLAN.md).
-The next runner milestone is specified in
-[PROJECT_SNAPSHOT_VALIDATION_SPEC.md](PROJECT_SNAPSHOT_VALIDATION_SPEC.md).
 
 ## 2. Intended Outcome
 
@@ -435,9 +433,6 @@ The implementation is divided into:
 Detailed component and runtime flows are defined in
 [../ARCHITECTURE.md](../ARCHITECTURE.md). Production operation is defined in
 [DEPLOYMENT.md](DEPLOYMENT.md).
-The planned implementation for compiling complete lesson snapshots while
-preserving one editable artifact is defined in
-[PROJECT_SNAPSHOT_VALIDATION_SPEC.md](PROJECT_SNAPSHOT_VALIDATION_SPEC.md).
 
 Configuration is layered from `config/default.yaml`, an environment-specific
 YAML file, and `RUST_DAILY_*` environment overrides.

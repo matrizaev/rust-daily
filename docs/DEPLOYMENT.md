@@ -15,8 +15,10 @@ Cloudflare -> Nginx -> Actix -> Vite files
 
 Actix listens on `127.0.0.1:8080`, serves the frontend, exposes
 `GET /healthz`, and handles `POST /run`. Nginx terminates TLS and proxies every
-request to Actix. Production does not require CORS or a separate frontend API
-URL.
+request to Actix. Production uses one public browser origin,
+`https://borrowquest.qzz.io`, and does not require a separate frontend API URL.
+Actix CORS middleware only emits CORS headers for that origin and rejects
+requests that present any other browser `Origin`.
 
 ## Automatic Deployment
 
@@ -52,9 +54,10 @@ Runtime user:    www-data12
 Runtime group:   www-data
 ```
 
-The deployment workflow does **not** rebuild the Podman runner image. Rebuild it
-separately whenever Rust, lesson dependencies, the Dockerfile, or
-`run-advanced-lesson-tests.sh` changes.
+The deployment workflow rebuilds the Podman runner image before backend restart
+when the installed `rust-runner:1.95` image lacks the expected source-hash label
+or has a different one. Rebuilds are therefore automatic when Rust, lesson
+dependencies, the Dockerfile, or `run-advanced-lesson-tests.sh` changes.
 
 ## Installed Files
 
@@ -80,10 +83,23 @@ RUST_DAILY_ENV=prod
 HOME=/var/www12
 XDG_CONFIG_HOME=/var/www12/.config
 XDG_DATA_HOME=/var/www12/.local/share
+XDG_RUNTIME_DIR=/run/rust-daily-backend
 ```
 
 The XDG and home paths are important: rootless Podman must use the same storage
-when invoked manually and by systemd.
+when invoked manually and by systemd. The systemd unit creates
+`/run/rust-daily-backend` as a private runtime directory for Podman runtime
+state.
+
+Production runner workspaces use `/var/www12/rust-daily-runs`. The systemd unit
+mounts this path as a private tmpfs with `size=2G` and `nr_inodes=200000`, which
+bounds disk and inode abuse from writable `/workspace` container mounts. If the
+advanced dependency cache grows enough to hit this cap, tune
+`TemporaryFileSystem` and `config/prod.yaml` together.
+
+The service also enables `PrivateTmp`, `ProtectSystem=strict`, `ProtectHome`,
+and narrow `ReadWritePaths`. Production sets `runner.podman_path` to
+`/usr/bin/podman`, so runner execution does not depend on service `PATH`.
 
 Useful service commands:
 
@@ -97,20 +113,37 @@ The backend writes structured JSON logs through `tracing` to journald.
 
 ## Runner Image
 
-Build the image from the deployed repository as the runtime user:
+For manual recovery, build the image from the deployed repository as the runtime
+user:
 
 ```bash
 cd /var/www12/html
+RUNNER_SOURCE_HASH="$(
+  sha256sum docker/rust-runner.Dockerfile \
+    docker/run-advanced-lesson-tests.sh \
+    docker/dependency-cache/Cargo.toml \
+    docker/dependency-cache/src/lib.rs \
+    | sha256sum \
+    | cut -d' ' -f1
+)"
 sudo -H -u www-data12 podman build \
+  --build-arg VCS_REF=manual \
+  --build-arg RUNNER_SOURCE_HASH="$RUNNER_SOURCE_HASH" \
   -f docker/rust-runner.Dockerfile \
   -t rust-runner:1.95 .
 sudo -H -u www-data12 podman run --rm \
   rust-runner:1.95 rustc --version
+sudo -H -u www-data12 podman image inspect \
+  rust-runner:1.95 \
+  --format '{{ index .Labels "org.opencontainers.image.source-hash" }}'
 ```
 
 The image caches all `advanced` lesson crates and their compiled test
 artifacts. The runtime copies that cache into each writable lesson workspace
-and runs Cargo offline.
+and runs Cargo offline. Its `org.opencontainers.image.source-hash` label must
+match the hash of the runner Dockerfile, test script, and dependency-cache
+manifest/source files; deployment rebuilds the image on mismatch before
+restarting the backend.
 
 Rootless Podman requires subordinate ID ranges:
 
@@ -134,11 +167,18 @@ dependency sets in the browser.
 - redirects HTTP to HTTPS;
 - uses the certificate at `/etc/ssl/certs/borrowquest.qzz.io.pem`;
 - uses the key at `/etc/ssl/private/borrowquest.qzz.io.key`;
+- restores real client addresses from Cloudflare `CF-Connecting-IP` through
+  `/etc/nginx/cloudflare-real-ip.conf`;
 - limits request bodies to 1 MB;
+- rate-limits `POST /run` to 6 requests per minute per client with a burst of 4;
 - forwards the original host, client address, and scheme;
 - proxies to `http://127.0.0.1:8080`.
 
 Actix, not Nginx, serves static assets and owns `/run`.
+Deployment generates `/etc/nginx/cloudflare-real-ip.conf` from Cloudflare's
+published IPv4 and IPv6 ranges before `nginx -t`, so stale or unavailable
+Cloudflare range data fails deployment instead of silently weakening `/run`
+throttling.
 
 Validate proxy configuration with:
 
@@ -163,6 +203,7 @@ RUST_DAILY_SERVER__CORS_ORIGIN
 RUST_DAILY_FRONTEND__DIST
 RUST_DAILY_RUNNER__IMAGE
 RUST_DAILY_RUNNER__WORKSPACE_ROOT
+RUST_DAILY_RUNNER__PODMAN_PATH
 RUST_DAILY_RUNNER__QUEUE_CAPACITY
 RUST_DAILY_RUNNER__WORKERS
 RUST_DAILY_RUNNER__TIMEOUT_SECS

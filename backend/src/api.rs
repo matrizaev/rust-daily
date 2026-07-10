@@ -55,13 +55,18 @@ pub fn cors(origin: &str) -> actix_cors::Cors {
         .allowed_methods([Method::POST])
         .allowed_headers([header::CONTENT_TYPE])
         .max_age(3600)
+        .block_on_origin_mismatch(true)
 }
 
 #[cfg(test)]
 mod tests {
-    use actix_web::{App, http::StatusCode, test};
+    use actix_web::{
+        App, HttpResponse,
+        http::{StatusCode, header},
+        test, web,
+    };
 
-    use super::configure;
+    use super::{configure, cors};
 
     #[actix_web::test]
     async fn configured_routes_include_healthz() {
@@ -69,6 +74,42 @@ mod tests {
 
         let response =
             test::call_service(&app, test::TestRequest::get().uri("/healthz").to_request()).await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    #[actix_web::test]
+    async fn cors_rejects_mismatched_origin() {
+        let app = test::init_service(
+            App::new()
+                .wrap(cors("https://borrowquest.qzz.io"))
+                .route("/run", web::post().to(HttpResponse::Ok)),
+        )
+        .await;
+        let request = test::TestRequest::post()
+            .uri("/run")
+            .insert_header((header::ORIGIN, "https://evil.example"))
+            .to_request();
+
+        let response = test::call_service(&app, request).await;
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    }
+
+    #[actix_web::test]
+    async fn cors_allows_configured_origin() {
+        let app = test::init_service(
+            App::new()
+                .wrap(cors("https://borrowquest.qzz.io"))
+                .route("/run", web::post().to(HttpResponse::Ok)),
+        )
+        .await;
+        let request = test::TestRequest::post()
+            .uri("/run")
+            .insert_header((header::ORIGIN, "https://borrowquest.qzz.io"))
+            .to_request();
+
+        let response = test::call_service(&app, request).await;
 
         assert_eq!(response.status(), StatusCode::OK);
     }

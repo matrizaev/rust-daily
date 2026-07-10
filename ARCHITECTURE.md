@@ -222,8 +222,7 @@ Requests select either the `std` or `advanced` dependency set. `Cargo.toml`,
 lockfiles, build scripts, target directories, benches, examples, migrations,
 and arbitrary paths are rejected; the backend always generates the manifest.
 The snapshot transport preserves the one-editable-artifact product invariant
-without adding multi-file editor state. The implementation contract is defined
-in [docs/PROJECT_SNAPSHOT_VALIDATION_SPEC.md](docs/PROJECT_SNAPSHOT_VALIDATION_SPEC.md).
+without adding multi-file editor state.
 
 Run results use one of these statuses:
 
@@ -275,7 +274,10 @@ and request size limits. Typed configuration rejects empty or zero-valued
 settings that cannot operate safely.
 
 Local development runs Vite and Actix on separate origins. Production uses one
-origin, so the frontend posts to `/run` without production CORS configuration.
+origin, so the frontend posts to `/run`; Actix CORS middleware still pins the
+accepted browser origin to `https://borrowquest.qzz.io` and rejects requests with
+any other `Origin` header. This is browser request hygiene only; non-browser
+abuse is handled by rate limits, queue bounds, and runner isolation.
 
 ## Production Deployment
 
@@ -308,9 +310,8 @@ Operational details are in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
   service provides practice feedback, not tamper-resistant grading.
 - The backend has no durable store for user code, progress, drafts, or
   accounts. Temporary source workspaces are removed after normal run cleanup.
-- Lesson execution is currently limited to one editable library file and one
-  combined test file. Future execution may compile larger supplied project
-  snapshots, but each lesson will still expose exactly one editable artifact.
+- Lesson execution compiles a backend-controlled single-crate project snapshot
+  while exposing exactly one editable artifact.
 - Offline mode supports the app shell, cached lessons, editing, and local
   state. It does not provide Cargo compilation.
 - Adding a dependency set requires coordinated backend, image, harness, schema,
@@ -320,5 +321,3 @@ Product behavior and curriculum requirements are defined in
 [docs/SPEC.md](docs/SPEC.md). Future runner and curriculum evolution is defined
 in
 [docs/FUTURE_ADVANCED_CONCEPTS_IMPLEMENTATION_PLAN.md](docs/FUTURE_ADVANCED_CONCEPTS_IMPLEMENTATION_PLAN.md).
-The next runner milestone is specified in
-[docs/PROJECT_SNAPSHOT_VALIDATION_SPEC.md](docs/PROJECT_SNAPSHOT_VALIDATION_SPEC.md).
