@@ -1,8 +1,9 @@
 import type { ProgressStore } from "../types/progress";
-import { getCurrentStreak } from "./date";
+import { getCurrentStreak, hasCompletionToday } from "./date";
 
 export type ProgressSummary = {
   currentStreak: number;
+  completedToday: boolean;
   completedLessons: number;
   conceptsIntroduced: number;
 };
@@ -19,6 +20,7 @@ export const getProgressSummary = (
   progress: ProgressStore,
 ): ProgressSummary => ({
   currentStreak: getCurrentStreak(progress.completions),
+  completedToday: hasCompletionToday(progress.completions),
   completedLessons: getCompletedLessonCount(progress),
   conceptsIntroduced: getConceptsIntroducedCount(progress),
 });

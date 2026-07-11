@@ -15,6 +15,9 @@ type SummaryItemProps = {
 const plural = (count: number, singular: string, pluralName: string) =>
   count === 1 ? singular : pluralName;
 
+const streakIconClassName = (completedToday: boolean) =>
+  completedToday ? "streak-icon streak-icon-filled" : "streak-icon";
+
 const SummaryItem = ({ icon, label, value }: SummaryItemProps) => (
   <div className="progress-summary-item">
     {icon}
@@ -38,7 +41,13 @@ function ProgressSummary({ summary }: ProgressSummaryProps) {
   return (
     <section className="progress-summary" aria-label="Local progress">
       <SummaryItem
-        icon={<Flame size={19} aria-hidden="true" />}
+        icon={
+          <Flame
+            className={streakIconClassName(summary.completedToday)}
+            size={19}
+            aria-hidden="true"
+          />
+        }
         label={`${plural(summary.currentStreak, "day", "day")} streak`}
         value={summary.currentStreak}
       />

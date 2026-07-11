@@ -425,6 +425,8 @@ export function LessonScreen(props: LessonScreenProps) {
   );
 
   const footerCheckCopy = getFooterCheckCopy();
+  const checkStatus =
+    validation.state.kind === "result" ? validation.state.result.status : null;
 
   return (
     <main className="app-shell lesson-shell">
@@ -441,6 +443,7 @@ export function LessonScreen(props: LessonScreenProps) {
           <LessonActions
             canCheck={validation.canCheck}
             canRevealHint={draft.revealedHints < lesson.hints.length}
+            checkStatus={checkStatus}
             isChecking={validation.isChecking}
             onCheck={validation.handleCheck}
             onReset={draft.handleReset}

@@ -26,6 +26,11 @@ const addLocalDays = (localDate: string, days: number) => {
 const dateSetFromCompletions = (completions: LessonCompletion[]) =>
   new Set(completions.map((completion) => completion.localDate));
 
+export const hasCompletionToday = (
+  completions: LessonCompletion[],
+  now = new Date(),
+) => dateSetFromCompletions(completions).has(toLocalDate(now));
+
 const getStreakStartDate = (completedDates: Set<string>, today: string) => {
   const yesterday = addLocalDays(today, -1);
 

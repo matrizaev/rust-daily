@@ -36,6 +36,14 @@
   --button-muted: #2d322e;
   --button-muted-text: #c4cec4;
   --button-disabled-bg: #262b27;
+  --check-success: #7bd88f;
+  --check-success-hover: #a6f0b5;
+  --check-success-text: #111412;
+  --check-problem: #ff8a80;
+  --check-problem-hover: #ffd0ca;
+  --check-problem-text: #111412;
+  --check-checking: #172221;
+  --check-checking-text: #f1f5ef;
   --progress-bg: #16251c;
   --success-bg: #142519;
   --info-bg: #172221;
@@ -95,6 +103,14 @@
   --button-muted: #e8e0d6;
   --button-muted-text: #6f6a62;
   --button-disabled-bg: #eee8df;
+  --check-success: #2e6f56;
+  --check-success-hover: #235641;
+  --check-success-text: #fffdf8;
+  --check-problem: #b33b2c;
+  --check-problem-hover: #8f2f24;
+  --check-problem-text: #fffdf8;
+  --check-checking: #edf4f2;
+  --check-checking-text: #202521;
   --progress-bg: #f5fbf7;
   --success-bg: #edf7f1;
   --info-bg: #edf4f2;
@@ -739,6 +755,14 @@ p {
   color: var(--green-strong);
 }
 
+.streak-icon {
+  fill: none;
+}
+
+.streak-icon-filled {
+  fill: currentColor;
+}
+
 .progress-summary-item strong {
   color: var(--ink);
   font-size: 1.4rem;
@@ -860,7 +884,7 @@ p {
 
 .coding-workspace {
   display: grid;
-  grid-template-rows: auto auto minmax(420px, 1fr) auto auto auto;
+  grid-template-rows: auto auto minmax(420px, 1fr) repeat(5, auto);
   min-width: 0;
   overflow: hidden;
 }
@@ -875,9 +899,45 @@ p {
 
 .check-button {
   padding: 0 16px;
+  border: 1px solid var(--button-secondary-hover-border);
   margin-left: auto;
-  background: var(--button-muted);
-  color: var(--button-muted-text);
+  background: var(--button-secondary);
+  color: var(--ink);
+}
+
+.check-button:hover:not(:disabled) {
+  background: var(--button-secondary-hover);
+}
+
+.check-button-success {
+  border-color: transparent;
+  background: var(--check-success);
+  color: var(--check-success-text);
+}
+
+.check-button-success:hover:not(:disabled) {
+  background: var(--check-success-hover);
+}
+
+.check-button-problem {
+  border-color: transparent;
+  background: var(--check-problem);
+  color: var(--check-problem-text);
+}
+
+.check-button-problem:hover:not(:disabled) {
+  background: var(--check-problem-hover);
+}
+
+.check-button-checking {
+  border-color: var(--button-secondary-hover-border);
+  background: var(--check-checking);
+  color: var(--check-checking-text);
+}
+
+.check-button:disabled:not([aria-busy="true"]) {
+  background: var(--button-disabled-bg);
+  color: var(--disabled);
 }
 
 .editor-file-header {
@@ -1327,7 +1387,7 @@ p {
   }
 
   .coding-workspace {
-    grid-template-rows: auto minmax(520px, 62vh) auto auto;
+    grid-template-rows: auto auto minmax(520px, 62vh) repeat(5, auto);
   }
 
   .settings-section {
@@ -1410,6 +1470,10 @@ p {
 
   .code-editor {
     min-height: 460px;
+  }
+
+  .coding-workspace {
+    grid-template-rows: auto auto minmax(460px, 62vh) repeat(5, auto);
   }
 
   .pwa-status {
