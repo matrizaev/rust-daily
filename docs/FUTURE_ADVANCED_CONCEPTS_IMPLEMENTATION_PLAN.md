@@ -75,11 +75,11 @@ manifests, workspaces, migrations, and other artifact types.
 Before adding lessons 91-500, finish the infrastructure and authoring guardrails
 that will prevent curriculum scale from creating avoidable maintenance debt.
 
-1. Strengthen source-content validation.
-   Check exactly one editable file, backend-supported paths, final-hint
-   solution parity, readonly continuity from the previous lesson, structural
-   checks targeting the editable file, and task text that names the editable
-   file when it is not `src/lib.rs`.
+1. Source-content validation is strengthened.
+   The source validator checks exactly one editable file, backend-supported
+   paths, final-hint solution parity, previous editable-artifact continuity,
+   structural checks targeting the editable file, and task text that names the
+   editable file when it is not `src/lib.rs`.
 2. Add a CI quality gate.
    CI should run backend format, lint, and tests; source and generated content
    validation; frontend build; Fallow checks; and lesson solution tests. Full
@@ -379,9 +379,8 @@ Every future arc must:
 
 ## Implementation Order
 
-1. Complete the remaining prerequisite work: stronger source-content validation,
-   CI quality gate, readonly UX polish, advanced templates, and curriculum
-   review rubric.
+1. Complete the remaining prerequisite work: CI quality gate, readonly UX
+   polish, advanced templates, and curriculum review rubric.
 2. Author lessons 91-150 around advanced ownership and API design.
 3. Expand async/concurrency validation and author lessons 151-210.
 4. Add workspace test modes and author lessons 211-270.

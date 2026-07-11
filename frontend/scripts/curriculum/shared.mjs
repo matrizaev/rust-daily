@@ -1,11 +1,14 @@
 import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
-import { dirname, join, relative } from "node:path";
+import { writeSync } from "node:fs";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const FRONTEND_DIR = join(SCRIPT_DIR, "..", "..");
 const REPO_ROOT = join(FRONTEND_DIR, "..");
-export const LESSONS_ROOT = join(REPO_ROOT, "lessons");
+export const LESSONS_ROOT = process.env.LESSONS_ROOT_OVERRIDE
+  ? resolve(process.env.LESSONS_ROOT_OVERRIDE)
+  : join(REPO_ROOT, "lessons");
 export const FRONTEND_LESSONS_PATH = join(
   FRONTEND_DIR,
   "src",
@@ -65,9 +68,9 @@ export const writeJsonFile = async (path, value) => {
 };
 
 export const isTestFilePath = (path) => path.startsWith("tests/") && path.endsWith(".rs");
-const isSourceFilePath = (path) => path.startsWith("src/") && path.endsWith(".rs");
-const isFixturePath = (path) => path.startsWith("fixtures/");
-const isTestdataPath = (path) => path.startsWith("testdata/");
+export const isSourceFilePath = (path) => path.startsWith("src/") && path.endsWith(".rs");
+export const isFixturePath = (path) => path.startsWith("fixtures/");
+export const isTestdataPath = (path) => path.startsWith("testdata/");
 export const isRunnerPath = (path) =>
   [isSourceFilePath, isTestFilePath, isFixturePath, isTestdataPath].some((matches) =>
     matches(path),
@@ -90,6 +93,8 @@ const hasUnsafePathSyntax = (path) =>
   unsafePathPredicates.some((isUnsafe) => isUnsafe(path));
 
 export const isSafeRelativePath = (path) => isString(path) && !hasUnsafePathSyntax(path);
+export const normalizeSource = (source) =>
+  source.replace(/\r\n/g, "\n").replace(/\r/g, "\n").replace(/\n$/, "");
 
 const recordOrder = (record) =>
   Number.isFinite(record.orderStart) ? record.orderStart : record.order ?? 0;
@@ -170,9 +175,10 @@ export const validateHintObject = (
 
 export const reportErrorsOrLog = (errors, failureSummary, successSummary) => {
   if (errors.length > 0) {
-    console.error(`${failureSummary} with ${errors.length} issue(s):`);
-    errors.forEach((error) => console.error(`- ${error}`));
-    process.exit(1);
+    writeSync(2, `${failureSummary} with ${errors.length} issue(s):\n`);
+    errors.forEach((error) => writeSync(2, `- ${error}\n`));
+    process.exitCode = 1;
+    return;
   }
 
   console.log(successSummary);
@@ -211,6 +217,10 @@ const findFiles = async (root, filename) => {
 export const findLessonJsonFiles = () => findFiles(LESSONS_ROOT, "lesson.json");
 
 export const readSourceText = async (lessonJsonPath, sourcePath) => {
+  if (!isSafeRelativePath(sourcePath)) {
+    throw new Error(`${sourcePath} is not a safe relative source path.`);
+  }
+
   const lessonDir = dirname(lessonJsonPath);
   const absolutePath = join(lessonDir, sourcePath);
 

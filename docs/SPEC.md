@@ -1,6 +1,6 @@
 # Rust Daily Product Specification
 
-Status: current implementation and product contract as of July 10, 2026.
+Status: current implementation and product contract as of July 11, 2026.
 
 ## 1. Product
 
@@ -239,6 +239,20 @@ The generated frontend content may contain the final hint's approved solution
 snippet. It must not expose author notes or the complete authoring solution
 directory as runtime content.
 
+Source content validation enforces the authoring contract before generation:
+
+- source file references are safe relative paths under the lesson directory;
+- source lesson files use `sourcePath` instead of inline `content`;
+- exactly one file is editable;
+- editable and read-only source roles stay within supported runner paths;
+- public test files use `tests/**/*.rs`;
+- final hints contain the only `solutionCode`, matching the authored solution
+  for the editable file;
+- when an editable path is not `src/lib.rs`, instructions name that path;
+- same-arc lessons preserve the previous lesson's authored editable artifact;
+- structural checks for the current lesson pass against the editable solution
+  file, with broader project behavior covered by Cargo tests.
+
 ### 6.1 Code Standards
 
 Lesson code must:
@@ -474,6 +488,7 @@ A lesson change is complete only when:
 - source content validation passes;
 - generated content is refreshed and validates;
 - exactly one artifact is editable;
+- final hint solution code matches the author solution for that artifact;
 - that artifact compiles with the complete supplied project snapshot;
 - the authored solution passes its public tests;
 - starter, task, tests, hints, solution, and explanation agree;
