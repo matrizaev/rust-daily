@@ -70,24 +70,21 @@ Runner and content infrastructure therefore support multi-file projects, not
 multi-file editing. Future runner modes should extend the same rule to
 manifests, workspaces, migrations, and other artifact types.
 
-## Prerequisite Work Before Expansion
+## Authoring Guardrails
 
-Before adding lessons 91-500, finish the infrastructure and authoring guardrails
-that will prevent curriculum scale from creating avoidable maintenance debt.
+Before adding lessons 91-500, keep the implemented authoring guardrails in use
+so curriculum scale does not create avoidable maintenance debt.
 
-1. Polish readonly-file UX enough for snapshot-heavy lessons.
-   The editable filename header is in place. Readonly support files should stay
-   easy to scan, with future improvements such as remembered open panels or
-   copy affordances if author review shows friction.
-2. Create advanced lesson templates.
-   Maintain reusable shapes for owned and borrowed API modules, async service
-   ports, Actix boundaries, error mapping, table and property tests, and
-   compile-fail lessons.
-3. Maintain a curriculum review rubric.
-   Every new arc should confirm one concept per lesson, task text matching the
-   starter exactly, idiomatic reference code, previous solutions as readonly
-   context when needed, and no claim that one exercise teaches universally
-   perfect Rust.
+Advanced lesson templates are implemented in the curriculum scaffolder. They
+provide reusable shapes for owned and borrowed API modules, async service ports,
+Actix boundaries, error mapping, table and property tests, and compile-fail
+lessons.
+
+The curriculum review rubric is maintained in
+[CURRICULUM_REVIEW_RUBRIC.md](CURRICULUM_REVIEW_RUBRIC.md). Every new arc
+should confirm one concept per lesson, task text matching the starter exactly,
+idiomatic reference code, previous solutions as readonly context when needed,
+and no claim that one exercise teaches universally perfect Rust.
 
 ## Curriculum Roadmap
 
@@ -370,15 +367,13 @@ Every future arc must:
 
 ## Implementation Order
 
-1. Complete the remaining prerequisite work: readonly UX polish, advanced
-   templates, and curriculum review rubric.
-2. Author lessons 91-150 around advanced ownership and API design.
-3. Expand async/concurrency validation and author lessons 151-210.
-4. Add workspace test modes and author lessons 211-270.
-5. Add `advanced-db` and author lessons 271-330.
-6. Add multi-crate macro support and author lessons 331-390.
-7. Add benchmark and unsafe authoring checks for lessons 391-450.
-8. Build capstone workspace support and complete lessons 451-500.
+1. Author lessons 91-150 around advanced ownership and API design.
+2. Expand async/concurrency validation and author lessons 151-210.
+3. Add workspace test modes and author lessons 211-270.
+4. Add `advanced-db` and author lessons 271-330.
+5. Add multi-crate macro support and author lessons 331-390.
+6. Add benchmark and unsafe authoring checks for lessons 391-450.
+7. Build capstone workspace support and complete lessons 451-500.
 
 This order makes each infrastructure investment pay for a full curriculum
 phase and delays the most expensive runner modes until their prerequisites are

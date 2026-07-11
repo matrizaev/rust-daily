@@ -10,6 +10,7 @@
     "content:check-refs": "node scripts/curriculum/check-content-refs.mjs",
     "content:generate": "node scripts/curriculum/generate-frontend-content.mjs",
     "content:scaffold-lesson": "node scripts/curriculum/scaffold-lesson.mjs",
+    "content:scaffold-lesson:test": "node scripts/curriculum/test-scaffold-lesson.mjs",
     "content:validate-source:test": "node scripts/curriculum/test-validate-source-content.mjs",
     "content:validate-source": "node scripts/curriculum/validate-source-content.mjs",
     "coverage": "vitest run --coverage",

@@ -21,12 +21,25 @@ import {
   sortRecordsByOrderThenId,
   writeJsonFile,
 } from "./shared.mjs";
+import {
+  PLACEHOLDER_MARKER,
+  applyPresetDefaults,
+  formatPresetList,
+  notesTemplate,
+  placeholder,
+} from "./scaffold-presets.mjs";
 
-const PLACEHOLDER_MARKER = "TODO(author):";
 const DEFAULT_TEST_PATH = "tests/public.rs";
 const VALID_DIFFICULTIES = new Set(["easy", "medium", "advanced"]);
 const ARC_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const BOOLEAN_FLAGS = new Set(["--structural", "--register-arc", "--register-concept", "--force"]);
+const BOOLEAN_FLAGS = new Set([
+  "--structural",
+  "--register-arc",
+  "--register-concept",
+  "--force",
+  "--help",
+  "--list-presets",
+]);
 const VALUE_FLAGS = new Map([
   ["--arc", "arc"],
   ["--lesson", "lesson"],
@@ -46,37 +59,6 @@ const VALUE_FLAGS = new Map([
   ["--preset", "preset"],
 ]);
 const REPEATABLE_KEYS = new Set(["readonly", "tests", "compileFail"]);
-
-const ADVANCED_PRESETS = {
-  "advanced-owned-api": {
-    structural: true,
-  },
-  "advanced-borrowed-api": {
-    structural: true,
-  },
-  "advanced-async-port": {
-    dependencySet: "advanced",
-    structural: true,
-    testTemplate: "tokio",
-  },
-  "advanced-actix-boundary": {
-    dependencySet: "advanced",
-    structural: true,
-    testTemplate: "actix",
-  },
-  "advanced-error-mapping": {
-    dependencySet: "advanced",
-    structural: true,
-  },
-  "advanced-property-test": {
-    dependencySet: "advanced",
-    testTemplate: "proptest",
-  },
-  "advanced-compile-fail": {
-    structural: true,
-    compileFailCases: ["public-contract"],
-  },
-};
 
 const emptyOptions = () => ({
   readonly: [],
@@ -163,6 +145,41 @@ const parseArgs = (argv) => {
 
   return { options, errors };
 };
+
+const usageText = () => `Usage:
+  npm run content:scaffold-lesson -- --arc <arc-id> --lesson <nnn-slug> \\
+    --title <title> --concept <concept-id> --difficulty <easy|medium|advanced> \\
+    --editable <src/file.rs> [--dependency-set <std|advanced>] [options]
+
+Required unless supplied by a preset:
+  --dependency-set <std|advanced>
+
+Common options:
+  --preset <preset-id>
+  --readonly <path>
+  --test <tests/path.rs>
+  --compile-fail <case-name>
+  --structural
+  --register-arc --arc-title <title> --arc-pillar <pillar> --arc-description <text>
+  --register-concept
+  --estimated-minutes <minutes>
+  --arc-length <count>
+  --force
+
+Discovery:
+  --help
+  --list-presets
+
+Presets:
+${formatPresetList()}
+
+Example:
+  npm run content:scaffold-lesson -- --preset advanced-borrowed-api \\
+    --arc borrowed-views --lesson 091-config-view --title "Borrowed config view" \\
+    --concept borrowed-config-view --difficulty advanced --editable src/lib.rs \\
+    --register-arc --arc-title "Borrowed Views" --arc-pillar ownership \\
+    --arc-description "Design borrowed APIs." --register-concept
+`;
 
 const parsePositiveInteger = (value, label, errors, defaultValue = null) => {
   if (value === undefined) {
@@ -325,54 +342,6 @@ const validateNoDuplicates = (errors, values, label) => {
   duplicateValues(values).forEach((value) => {
     errors.push(`Duplicate ${label} ${value}.`);
   });
-};
-
-const defaultPresetOptions = (options) => ({
-  ...options,
-  testTemplate: "default",
-  readonly: unique(options.readonly),
-  compileFail: unique(options.compileFail),
-});
-
-const validatePresetDependencySet = (options, preset, errors) => {
-  if (preset.dependencySet && options.dependencySet !== preset.dependencySet) {
-    errors.push(`${options.preset} requires dependency set ${preset.dependencySet}.`);
-  }
-};
-
-const presetCompileFailCases = (options, preset) =>
-  options.compileFail.length > 0 ? [] : preset.compileFailCases ?? [];
-
-const applyKnownPreset = (options, preset, errors) => {
-  validatePresetDependencySet(options, preset, errors);
-
-  return {
-    ...options,
-    structural: options.structural || Boolean(preset.structural),
-    readonly: unique([...(preset.readonly ?? []), ...options.readonly]),
-    compileFail: unique([...presetCompileFailCases(options, preset), ...options.compileFail]),
-    testTemplate: preset.testTemplate ?? "default",
-  };
-};
-
-const reportUnknownPreset = (options, errors) => {
-  errors.push(`Unknown preset ${options.preset}.`);
-
-  return { ...options, testTemplate: "default" };
-};
-
-const applyPreset = (options, errors) => {
-  if (!options.preset) {
-    return defaultPresetOptions(options);
-  }
-
-  const preset = ADVANCED_PRESETS[options.preset];
-
-  if (!preset) {
-    return reportUnknownPreset(options, errors);
-  }
-
-  return applyKnownPreset(options, preset, errors);
 };
 
 const parseLessonName = (lessonName, errors) => {
@@ -571,11 +540,16 @@ const buildNormalizedOptions = (options, lessonName, state) => {
 
 const normalizeInputs = async (initialOptions, initialErrors) => {
   const errors = [...initialErrors];
+  const options = applyPresetDefaults(parseNumericOptions(initialOptions, errors), errors);
 
-  validateRequiredOptions(initialOptions, errors);
+  validateRequiredOptions(options, errors);
 
-  const options = applyPreset(parseNumericOptions(initialOptions, errors), errors);
   const lessonName = parseLessonName(options.lesson, errors);
+
+  if (errors.length > 0) {
+    return { options, errors };
+  }
+
   const normalized = buildNormalizedOptions(options, lessonName, await readCurriculumState());
 
   await validateNormalizedOptions(normalized, errors);
@@ -698,18 +672,6 @@ const validateNormalizedOptions = async (options, errors) => {
   });
 };
 
-const placeholder = (text) => `${PLACEHOLDER_MARKER} ${text}`;
-
-const starterTemplate = () => `pub fn todo_lesson() {
-    todo!("${placeholder("replace starter code")}");
-}
-`;
-
-const solutionTemplate = () => `pub fn todo_lesson() {
-    todo!("${placeholder("replace solution code")}");
-}
-`;
-
 const sourceWithTodo = (source, text) => `${source.trimEnd()}
 
 // ${placeholder(text)}
@@ -720,7 +682,7 @@ const editableStarterContent = async (options) => {
 
   return sourcePath
     ? sourceWithTodo(await readFile(sourcePath, "utf8"), "replace or extend starter code.")
-    : starterTemplate();
+    : options.scaffoldPreset.starterTemplate();
 };
 
 const editableSolutionContent = async (options) => {
@@ -728,55 +690,8 @@ const editableSolutionContent = async (options) => {
 
   return sourcePath
     ? sourceWithTodo(await readFile(sourcePath, "utf8"), "replace or extend solution code.")
-    : solutionTemplate();
+    : options.scaffoldPreset.solutionTemplate();
 };
-
-const defaultTestTemplate = () => `#[test]
-fn public_behavior_is_authored() {
-    panic!("${placeholder("replace this test")}");
-}
-`;
-
-const tokioTestTemplate = () => `#[tokio::test]
-async fn public_behavior_is_authored() {
-    panic!("${placeholder("replace this async test")}");
-}
-`;
-
-const actixTestTemplate = () => `#[actix_rt::test]
-async fn public_behavior_is_authored() {
-    panic!("${placeholder("replace this Actix test")}");
-}
-`;
-
-const proptestTemplate = () => `use proptest::prelude::*;
-
-proptest! {
-    #[test]
-    fn public_behavior_is_authored(_value in 0u8..1) {
-        prop_assert!(false, "${placeholder("replace this property")}");
-    }
-}
-`;
-
-const testTemplate = (kind) => {
-  const templates = {
-    default: defaultTestTemplate,
-    tokio: tokioTestTemplate,
-    actix: actixTestTemplate,
-    proptest: proptestTemplate,
-  };
-
-  return (templates[kind] ?? defaultTestTemplate)();
-};
-
-const compileFailTemplate = () => `compile_error!("${placeholder("replace compile-fail case")}");
-`;
-
-const notesTemplate = () => `# Author Notes
-
-${placeholder("record lesson intent, idiomatic solution notes, and validation risks before publishing.")}
-`;
 
 const lessonFiles = (options) => [
   {
@@ -843,7 +758,7 @@ const lessonValidation = (options) => {
   };
 };
 
-const buildLessonJson = (options) => ({
+const buildLessonJson = (options, solutionCode) => ({
   schemaVersion: 2,
   id: options.lessonId,
   arcId: options.arc,
@@ -870,6 +785,7 @@ const buildLessonJson = (options) => ({
     {
       level: 3,
       body: placeholder("final hint before solution."),
+      solutionCode,
     },
   ],
   completionExplanation: placeholder("explain why the completed solution is idiomatic."),
@@ -974,19 +890,24 @@ const readonlyCopyWrites = async (options) =>
   );
 
 const buildWritePlan = async (options) => {
-  const lessonJson = buildLessonJson(options);
+  const starterContent = await editableStarterContent(options);
+  const solutionContent = await editableSolutionContent(options);
+  const lessonJson = buildLessonJson(options, solutionContent);
   const readonlyWrites = (await readonlyCopyWrites(options)).flat();
   const writes = [
     textWrite(join(options.lessonDir, "lesson.json"), `${JSON.stringify(lessonJson, null, 2)}\n`),
-    textWrite(join(options.lessonDir, "starter", options.editable), await editableStarterContent(options)),
-    textWrite(join(options.lessonDir, "solution", options.editable), await editableSolutionContent(options)),
+    textWrite(join(options.lessonDir, "starter", options.editable), starterContent),
+    textWrite(join(options.lessonDir, "solution", options.editable), solutionContent),
     ...options.tests.map((path) =>
-      textWrite(join(options.lessonDir, path), testTemplate(options.testTemplate)),
+      textWrite(join(options.lessonDir, path), options.scaffoldPreset.testTemplate()),
     ),
     ...options.compileFail.map((name) =>
-      textWrite(join(options.lessonDir, compileFailCasePath(name)), compileFailTemplate()),
+      textWrite(
+        join(options.lessonDir, compileFailCasePath(name)),
+        options.scaffoldPreset.compileFailTemplate(name),
+      ),
     ),
-    textWrite(join(options.lessonDir, "notes.md"), notesTemplate()),
+    textWrite(join(options.lessonDir, "notes.md"), notesTemplate(options.scaffoldPreset)),
     ...readonlyWrites,
     ...arcLessonLengthWrites(options),
     jsonWrite(SOURCE_ARCS_PATH, updatedArcs(options)),
@@ -1061,6 +982,9 @@ const printSuccess = (options, writes) => {
     .map((write) => `- ${repoRelativePath(write.path)}`);
 
   console.log("Created lesson scaffold:");
+  if (options.preset) {
+    console.log(`Preset: ${options.preset}`);
+  }
   console.log(sourceWrites.join("\n"));
   console.log("\nNext:");
   console.log("1. Replace every TODO(author) placeholder.");
@@ -1076,23 +1000,50 @@ const reportAndExit = (errors) => {
   process.exit(1);
 };
 
-const main = async () => {
-  const parsed = parseArgs(process.argv.slice(2));
-  const { options, errors } = await normalizeInputs(parsed.options, parsed.errors);
+const handleDiscoveryOutput = (options) => {
+  if (options.help) {
+    console.log(usageText());
+    return true;
+  }
 
+  if (options.listPresets) {
+    console.log(formatPresetList());
+    return true;
+  }
+
+  return false;
+};
+
+const reportIfErrors = (errors) => {
   if (errors.length > 0) {
     reportAndExit(errors);
   }
+};
 
+const writeScaffold = async (options) => {
   const { writes } = await buildWritePlan(options);
   const writeErrors = await validateWritePlan(writes, options.force);
 
-  if (writeErrors.length > 0) {
-    reportAndExit(writeErrors);
-  }
+  reportIfErrors(writeErrors);
 
   await executeWritePlan(writes);
   printSuccess(options, writes);
+};
+
+const main = async () => {
+  const parsed = parseArgs(process.argv.slice(2));
+
+  if (handleDiscoveryOutput(parsed.options)) {
+    return;
+  }
+
+  reportIfErrors(parsed.errors);
+
+  const { options, errors } = await normalizeInputs(parsed.options, []);
+
+  reportIfErrors(errors);
+
+  await writeScaffold(options);
 };
 
 await main();
