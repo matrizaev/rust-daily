@@ -1,11 +1,11 @@
-import { readdir, readFile, stat } from "node:fs/promises";
+import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const FRONTEND_DIR = join(SCRIPT_DIR, "..", "..");
 const REPO_ROOT = join(FRONTEND_DIR, "..");
-const LESSONS_ROOT = join(REPO_ROOT, "lessons");
+export const LESSONS_ROOT = join(REPO_ROOT, "lessons");
 export const FRONTEND_LESSONS_PATH = join(
   FRONTEND_DIR,
   "src",
@@ -31,12 +31,17 @@ export const FRONTEND_CONCEPTS_PATH = join(
   "concepts.json",
 );
 export const SOURCE_CONCEPTS_PATH = join(LESSONS_ROOT, "concepts.json");
+export const SOURCE_ARCS_PATH = join(LESSONS_ROOT, "arcs.json");
 
 export const readJson = async (path) => JSON.parse(await readFile(path, "utf8"));
 export const isRecord = (value) => typeof value === "object" && value !== null;
 export const isString = (value) => typeof value === "string" && value.trim().length > 0;
 export const isNumber = (value) => typeof value === "number" && Number.isFinite(value);
-const DEPENDENCY_SETS = new Set(["std", "advanced"]);
+export const KNOWN_DEPENDENCY_SETS = new Set(["std", "advanced"]);
+export const VALID_FILE_ROLES = new Set(["editable", "readonly", "test"]);
+export const REQUIRED_LIB_PATH = "src/lib.rs";
+export const TEST_FILE_PATTERN = "tests/**/*.rs";
+export const COMPILE_FAIL_PREFIX = "compile_fail/";
 export const push = (errors, message) => {
   errors.push(message);
 };
@@ -44,12 +49,73 @@ export const push = (errors, message) => {
 export const validateKnownDependencySet = (errors, lessonId, validation) => {
   const dependencySet = validation.dependencySet ?? "std";
 
-  if (!DEPENDENCY_SETS.has(dependencySet)) {
+  if (!KNOWN_DEPENDENCY_SETS.has(dependencySet)) {
     push(
       errors,
       `${lessonId} backend validation has unknown dependencySet ${String(dependencySet)}.`,
     );
   }
+};
+
+const formatJson = (value) => `${JSON.stringify(value, null, 2)}\n`;
+
+export const writeJsonFile = async (path, value) => {
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path, formatJson(value));
+};
+
+export const isTestFilePath = (path) => path.startsWith("tests/") && path.endsWith(".rs");
+const isSourceFilePath = (path) => path.startsWith("src/") && path.endsWith(".rs");
+const isFixturePath = (path) => path.startsWith("fixtures/");
+const isTestdataPath = (path) => path.startsWith("testdata/");
+export const isRunnerPath = (path) =>
+  [isSourceFilePath, isTestFilePath, isFixturePath, isTestdataPath].some((matches) =>
+    matches(path),
+  );
+export const isCompileFailPath = (path) =>
+  path.startsWith(COMPILE_FAIL_PREFIX) && path.endsWith(".rs");
+
+const hasUnsafePathComponent = (path) =>
+  path.split("/").some((component) => component === "" || component === "." || component === "..");
+
+const unsafePathPredicates = [
+  (path) => path.startsWith("/"),
+  (path) => path.includes("\\"),
+  (path) => path.includes("\0"),
+  (path) => path.endsWith("/"),
+  hasUnsafePathComponent,
+];
+
+const hasUnsafePathSyntax = (path) =>
+  unsafePathPredicates.some((isUnsafe) => isUnsafe(path));
+
+export const isSafeRelativePath = (path) => isString(path) && !hasUnsafePathSyntax(path);
+
+const recordOrder = (record) =>
+  Number.isFinite(record.orderStart) ? record.orderStart : record.order ?? 0;
+
+const compareRecordsByOrderThenId = (left, right) =>
+  recordOrder(left) - recordOrder(right) || left.id.localeCompare(right.id);
+
+export const sortRecordsByOrderThenId = (records) =>
+  [...records].sort(compareRecordsByOrderThenId);
+
+export const sortRecordsById = (records) =>
+  [...records].sort((left, right) => left.id.localeCompare(right.id));
+
+export const duplicateValues = (values) => {
+  const seen = new Set();
+  const duplicates = new Set();
+
+  values.forEach((value) => {
+    if (seen.has(value)) {
+      duplicates.add(value);
+    }
+
+    seen.add(value);
+  });
+
+  return [...duplicates];
 };
 
 const hintObjectKind = (allowString) =>

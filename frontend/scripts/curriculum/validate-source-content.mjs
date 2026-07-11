@@ -1,16 +1,24 @@
 import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import {
+  COMPILE_FAIL_PREFIX,
   findLessonJsonFiles,
+  isCompileFailPath,
   isNumber,
   isRecord,
+  isRunnerPath,
+  isSafeRelativePath,
+  isTestFilePath,
   isString,
   pathExists,
   push,
   readJson,
   reportErrorsOrLog,
   repoRelativePath,
+  REQUIRED_LIB_PATH,
   SOURCE_CONCEPTS_PATH,
+  TEST_FILE_PATTERN,
+  VALID_FILE_ROLES,
   validateHintObject,
   validateKnownDependencySet,
 } from "./shared.mjs";
@@ -34,45 +42,12 @@ const validateSourcePath = async (errors, lessonJsonPath, sourcePath, label) => 
   }
 };
 
-const VALID_FILE_ROLES = new Set(["editable", "readonly", "test"]);
-const REQUIRED_LIB_PATH = "src/lib.rs";
-const TEST_FILE_PATTERN = "tests/**/*.rs";
-const COMPILE_FAIL_PREFIX = "compile_fail/";
-
 const editableFile = (lesson) =>
   Array.isArray(lesson.files)
     ? lesson.files.find((file) => file.role === "editable")
     : null;
 
 const editablePath = (lesson) => editableFile(lesson)?.path ?? null;
-
-const isTestFilePath = (path) => path.startsWith("tests/") && path.endsWith(".rs");
-
-const isSourceFilePath = (path) => path.startsWith("src/") && path.endsWith(".rs");
-const isFixturePath = (path) => path.startsWith("fixtures/");
-const isTestdataPath = (path) => path.startsWith("testdata/");
-const isRunnerPath = (path) =>
-  [isSourceFilePath, isTestFilePath, isFixturePath, isTestdataPath].some((matches) =>
-    matches(path),
-  );
-const isCompileFailPath = (path) =>
-  path.startsWith(COMPILE_FAIL_PREFIX) && path.endsWith(".rs");
-
-const hasUnsafePathComponent = (path) =>
-  path.split("/").some((component) => component === "" || component === "." || component === "..");
-
-const unsafePathPredicates = [
-  (path) => path.startsWith("/"),
-  (path) => path.includes("\\"),
-  (path) => path.includes("\0"),
-  (path) => path.endsWith("/"),
-  hasUnsafePathComponent,
-];
-
-const hasUnsafePathSyntax = (path) =>
-  unsafePathPredicates.some((isUnsafe) => isUnsafe(path));
-
-const isSafeRelativePath = (path) => isString(path) && !hasUnsafePathSyntax(path);
 
 const validateEditableFileCount = (errors, lesson) => {
   const editableFiles = lesson.files.filter((file) => file.role === "editable");

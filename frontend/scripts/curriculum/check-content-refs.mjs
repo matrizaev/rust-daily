@@ -1,5 +1,6 @@
 import { dirname, join } from "node:path";
 import {
+  duplicateValues,
   findLessonJsonFiles,
   FRONTEND_CONCEPTS_PATH,
   FRONTEND_LESSONS_PATH,
@@ -153,20 +154,6 @@ const runtimeLessonFromSource = async (lessonJsonPath) => {
     files,
     validation,
   };
-};
-
-const duplicateValues = (values) => {
-  const seen = new Set();
-  const duplicates = new Set();
-
-  values.forEach((value) => {
-    if (seen.has(value)) {
-      duplicates.add(value);
-    }
-    seen.add(value);
-  });
-
-  return [...duplicates];
 };
 
 const validateArcReferences = (errors, arcs, lessons) => {

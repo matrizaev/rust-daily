@@ -26,7 +26,10 @@ contexts.
 Project snapshot validation with one editable artifact is now part of the
 product contract. Backend compile-fail validation is also implemented for
 single-crate snapshots. Future infrastructure should build on those models
-rather than adding multi-file editing.
+rather than adding multi-file editing. The authoring scaffolder is also
+implemented: `cd frontend && npm run content:scaffold-lesson -- ...` creates
+lesson skeletons with optional compile-fail cases, advanced presets,
+arc/concept registration, and read-only continuity copies.
 
 ## Target
 
@@ -72,29 +75,24 @@ manifests, workspaces, migrations, and other artifact types.
 Before adding lessons 91-500, finish the infrastructure and authoring guardrails
 that will prevent curriculum scale from creating avoidable maintenance debt.
 
-1. Add an authoring scaffolder.
-   Provide a command that creates a lesson skeleton with `lesson.json`,
-   `starter/`, `solution/`, `tests/`, `notes.md`, dependency set, and editable
-   path. Large-scale lesson authoring should not depend on hand-copying JSON
-   structures.
-2. Strengthen source-content validation.
+1. Strengthen source-content validation.
    Check exactly one editable file, backend-supported paths, final-hint
    solution parity, readonly continuity from the previous lesson, structural
    checks targeting the editable file, and task text that names the editable
    file when it is not `src/lib.rs`.
-3. Add a CI quality gate.
+2. Add a CI quality gate.
    CI should run backend format, lint, and tests; source and generated content
    validation; frontend build; Fallow checks; and lesson solution tests. Full
    solution runs may be nightly if per-change runtime becomes too high.
-4. Polish readonly-file UX enough for snapshot-heavy lessons.
+3. Polish readonly-file UX enough for snapshot-heavy lessons.
    The editable filename header is in place. Readonly support files should stay
    easy to scan, with future improvements such as remembered open panels or
    copy affordances if author review shows friction.
-5. Create advanced lesson templates.
+4. Create advanced lesson templates.
    Maintain reusable shapes for owned and borrowed API modules, async service
    ports, Actix boundaries, error mapping, table and property tests, and
    compile-fail lessons.
-6. Maintain a curriculum review rubric.
+5. Maintain a curriculum review rubric.
    Every new arc should confirm one concept per lesson, task text matching the
    starter exactly, idiomatic reference code, previous solutions as readonly
    context when needed, and no claim that one exercise teaches universally
@@ -381,9 +379,9 @@ Every future arc must:
 
 ## Implementation Order
 
-1. Complete the remaining prerequisite work: authoring scaffolder,
-   stronger source-content validation, CI quality gate, readonly UX polish,
-   advanced templates, and curriculum review rubric.
+1. Complete the remaining prerequisite work: stronger source-content validation,
+   CI quality gate, readonly UX polish, advanced templates, and curriculum
+   review rubric.
 2. Author lessons 91-150 around advanced ownership and API design.
 3. Expand async/concurrency validation and author lessons 151-210.
 4. Add workspace test modes and author lessons 211-270.

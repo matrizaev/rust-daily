@@ -45,8 +45,8 @@ next lesson includes the authored solution from the previous day as read-only
 project code. The runner accepts a backend-controlled single-crate project
 snapshot: `src/**/*.rs`, `tests/**/*.rs`, `fixtures/**`, and `testdata/**`.
 The generated `Cargo.toml` remains controlled by the backend dependency set.
-Future and advanced lessons can also attach public compile-fail cases to prove
-that invalid API uses are rejected by the compiler.
+Lessons can also attach public compile-fail cases to prove that invalid API uses
+are rejected by the compiler.
 
 ## Run Locally
 
@@ -97,6 +97,33 @@ scripts/test-lesson-solutions.sh lessons
 `content:check-refs` independently checks canonical arc references and verifies
 that generated lessons and concepts match their sources.
 
+## Author Lessons
+
+Create a new source lesson skeleton with:
+
+```bash
+cd frontend
+npm run content:scaffold-lesson -- \
+  --arc advanced-ownership \
+  --lesson 091-borrowed-config-view \
+  --title "Borrowed config views" \
+  --concept borrowed-config-view \
+  --difficulty medium \
+  --dependency-set std \
+  --editable src/lib.rs \
+  --preset advanced-borrowed-api \
+  --register-arc \
+  --arc-title "Advanced ownership and API design" \
+  --arc-pillar ownership \
+  --arc-description "Design APIs with deliberate ownership, borrowing, and allocation." \
+  --register-concept
+```
+
+The scaffolder enforces sequential lesson order, exactly one editable artifact,
+safe runner paths, optional compile-fail cases, and read-only continuity copies
+from the previous lesson's solution snapshot. Replace every `TODO(author)`
+placeholder, then run the normal content generation and lesson solution checks.
+
 With the backend running, smoke-test the real HTTP, queue, Podman, and Cargo
 path:
 
@@ -118,8 +145,6 @@ library. Supported cases are `pass`, `multi-file-pass`, `fail`,
 - [Product specification](docs/SPEC.md)
 - [System architecture](ARCHITECTURE.md)
 - [Production deployment](docs/DEPLOYMENT.md)
-- [Compile-fail validation contract](docs/COMPILE_FAIL_VALIDATION_SPEC.md)
-- [Compile-fail validation implementation record](docs/COMPILE_FAIL_VALIDATION_IMPLEMENTATION_PLAN.md)
 - [Lessons 91-500 roadmap](docs/FUTURE_ADVANCED_CONCEPTS_IMPLEMENTATION_PLAN.md)
 
 ## Deployment
