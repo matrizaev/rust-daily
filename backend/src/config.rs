@@ -513,11 +513,19 @@ fn nonzero_u64(field: ConfigField, value: u64) -> Result<NonZeroU64, SettingsErr
 
 #[cfg(test)]
 mod tests {
-    use std::{fs, path::Path};
+    use std::{
+        fs,
+        path::Path,
+        sync::{Mutex, MutexGuard},
+    };
 
     use tempfile::tempdir;
 
-    use super::{ConfigField, SettingsError, load_settings_from_dir_with_environment};
+    use super::{
+        ConfigField, SettingsError, load_settings_from_dir, load_settings_from_dir_with_environment,
+    };
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
 
     #[test]
     fn loads_default_and_environment_config_layers() {
@@ -618,6 +626,221 @@ validation:
         assert!(matches!(error, SettingsError::InvalidValidationLimits(_)));
     }
 
+    #[test]
+    fn config_fields_display_stable_paths() {
+        let fields = [
+            (ConfigField::ServerHost, "server.host"),
+            (ConfigField::RunnerQueueCapacity, "runner.queue_capacity"),
+            (ConfigField::RunnerWorkers, "runner.workers"),
+            (ConfigField::RunnerTimeoutSecs, "runner.timeout_secs"),
+            (ConfigField::RunnerMaxOutputBytes, "runner.max_output_bytes"),
+            (ConfigField::RunnerImage, "runner.image"),
+            (ConfigField::RunnerWorkspaceRoot, "runner.workspace_root"),
+            (ConfigField::RunnerPodmanPath, "runner.podman_path"),
+            (ConfigField::FrontendDist, "frontend.dist"),
+            (ConfigField::ServerCorsOrigin, "server.cors_origin"),
+            (ConfigField::ValidationMaxFiles, "validation.max_files"),
+            (
+                ConfigField::ValidationMaxFileBytes,
+                "validation.max_file_bytes",
+            ),
+            (
+                ConfigField::ValidationMaxTotalBytes,
+                "validation.max_total_bytes",
+            ),
+            (
+                ConfigField::ApiMaxJsonPayloadBytes,
+                "api.max_json_payload_bytes",
+            ),
+        ];
+
+        for (field, expected) in fields {
+            assert_eq!(field.to_string(), expected);
+        }
+    }
+
+    #[test]
+    fn rejects_empty_required_text_fields() {
+        let cases = [
+            (
+                "
+server:
+  host: '   '
+",
+                ConfigField::ServerHost,
+            ),
+            (
+                "
+runner:
+  image: '   '
+",
+                ConfigField::RunnerImage,
+            ),
+            (
+                "
+runner:
+  workspace_root: ''
+",
+                ConfigField::RunnerWorkspaceRoot,
+            ),
+            (
+                "
+runner:
+  podman_path: ''
+",
+                ConfigField::RunnerPodmanPath,
+            ),
+            (
+                "
+frontend:
+  dist: ''
+",
+                ConfigField::FrontendDist,
+            ),
+        ];
+
+        for (override_config, expected_field) in cases {
+            let error = load_with_local_override(override_config)
+                .expect_err("empty config field should fail");
+
+            assert!(matches!(
+                error,
+                SettingsError::Empty { field } if field == expected_field
+            ));
+        }
+    }
+
+    #[test]
+    fn rejects_zero_required_numeric_fields() {
+        let cases = [
+            (
+                "
+runner:
+  queue_capacity: 0
+",
+                ConfigField::RunnerQueueCapacity,
+            ),
+            (
+                "
+runner:
+  timeout_secs: 0
+",
+                ConfigField::RunnerTimeoutSecs,
+            ),
+            (
+                "
+runner:
+  max_output_bytes: 0
+",
+                ConfigField::RunnerMaxOutputBytes,
+            ),
+            (
+                "
+validation:
+  max_files: 0
+",
+                ConfigField::ValidationMaxFiles,
+            ),
+            (
+                "
+validation:
+  max_file_bytes: 0
+",
+                ConfigField::ValidationMaxFileBytes,
+            ),
+            (
+                "
+validation:
+  max_total_bytes: 0
+",
+                ConfigField::ValidationMaxTotalBytes,
+            ),
+            (
+                "
+api:
+  max_json_payload_bytes: 0
+",
+                ConfigField::ApiMaxJsonPayloadBytes,
+            ),
+        ];
+
+        for (override_config, expected_field) in cases {
+            let error = load_with_local_override(override_config)
+                .expect_err("zero config field should fail");
+
+            assert!(matches!(
+                error,
+                SettingsError::NonZero { field } if field == expected_field
+            ));
+        }
+    }
+
+    #[test]
+    fn legacy_environment_overrides_are_applied() {
+        let _guard = EnvGuard::set(&[
+            ("RUST_DAILY_HOST", "0.0.0.0"),
+            ("RUST_DAILY_PORT", "18080"),
+            ("RUST_DAILY_CORS_ORIGIN", "https://example.test"),
+            ("RUST_DAILY_FRONTEND_DIST", "dist/prod"),
+            ("RUST_DAILY_QUEUE_CAPACITY", "7"),
+            ("RUST_DAILY_WORKERS", "4"),
+            ("RUST_DAILY_TIMEOUT_SECS", "9"),
+            ("RUST_DAILY_MAX_OUTPUT_BYTES", "12345"),
+            ("RUST_DAILY_RUNNER_IMAGE", "runner:test"),
+            ("RUST_DAILY_WORKSPACE_ROOT", "/tmp/workspaces"),
+            ("RUST_DAILY_PODMAN_PATH", "/usr/bin/podman"),
+            ("RUST_DAILY_MAX_FILES", "6"),
+            ("RUST_DAILY_MAX_FILE_BYTES", "7000"),
+            ("RUST_DAILY_MAX_TOTAL_BYTES", "8000"),
+            ("RUST_DAILY_MAX_JSON_PAYLOAD_BYTES", "9000"),
+        ]);
+        let root = tempdir().expect("temp config dir should be created");
+        write_config(root.path(), "default.yaml", default_config());
+
+        let settings = load_settings_from_dir(root.path(), "local")
+            .expect("legacy environment should override config");
+
+        assert_eq!(settings.server.bind_address.as_str(), "0.0.0.0:18080");
+        assert_eq!(
+            settings
+                .server
+                .cors_origin
+                .as_ref()
+                .map(|value| value.as_str()),
+            Some("https://example.test")
+        );
+        assert_eq!(settings.frontend.dist.as_path(), Path::new("dist/prod"));
+        assert_eq!(settings.runner.queue_capacity.get(), 7);
+        assert_eq!(settings.runner.workers.get(), 4);
+        assert_eq!(settings.runner.timeout.as_secs(), 9);
+        assert_eq!(settings.runner.max_output_bytes.get(), 12345);
+        assert_eq!(settings.runner.image.as_str(), "runner:test");
+        assert_eq!(
+            settings.runner.workspace_root.as_path(),
+            Path::new("/tmp/workspaces")
+        );
+        assert_eq!(
+            settings.runner.podman_path.as_path(),
+            Path::new("/usr/bin/podman")
+        );
+        assert_eq!(settings.validation.limits.max_files(), 6);
+        assert_eq!(settings.validation.limits.max_file_bytes(), 7000);
+        assert_eq!(settings.validation.limits.max_total_bytes(), 8000);
+        assert_eq!(settings.api.max_json_payload_bytes.get(), 9000);
+    }
+
+    #[test]
+    fn legacy_environment_numbers_must_parse() {
+        let _guard = EnvGuard::set(&[("RUST_DAILY_PORT", "not-a-number")]);
+        let root = tempdir().expect("temp config dir should be created");
+        write_config(root.path(), "default.yaml", default_config());
+
+        let error =
+            load_settings_from_dir(root.path(), "local").expect_err("bad env number should fail");
+
+        assert!(matches!(error, SettingsError::Load(_)));
+    }
+
     fn load_settings_from_dir_without_environment(
         config_dir: &Path,
         app_env: &str,
@@ -625,8 +848,62 @@ validation:
         load_settings_from_dir_with_environment(config_dir, app_env, false)
     }
 
+    fn load_with_local_override(override_config: &str) -> Result<super::Settings, SettingsError> {
+        let root = tempdir().expect("temp config dir should be created");
+        write_config(root.path(), "default.yaml", default_config());
+        write_config(root.path(), "local.yaml", override_config);
+
+        load_settings_from_dir_without_environment(root.path(), "local")
+    }
+
     fn write_config(root: &Path, name: &str, contents: &str) {
         fs::write(root.join(name), contents).expect("test config should be written");
+    }
+
+    struct EnvGuard {
+        _lock: MutexGuard<'static, ()>,
+        names: Vec<&'static str>,
+    }
+
+    impl EnvGuard {
+        fn set(values: &[(&'static str, &'static str)]) -> Self {
+            let lock = ENV_LOCK.lock().expect("env test lock should be acquired");
+            let names = values.iter().map(|(name, _)| *name).collect::<Vec<_>>();
+
+            for name in &names {
+                remove_env(name);
+            }
+
+            for (name, value) in values {
+                set_env(name, value);
+            }
+
+            Self { _lock: lock, names }
+        }
+    }
+
+    impl Drop for EnvGuard {
+        fn drop(&mut self) {
+            for name in &self.names {
+                remove_env(name);
+            }
+        }
+    }
+
+    fn set_env(name: &str, value: &str) {
+        // SAFETY: These tests serialize environment mutation through ENV_LOCK and
+        // remove every key before releasing the guard.
+        unsafe {
+            std::env::set_var(name, value);
+        }
+    }
+
+    fn remove_env(name: &str) {
+        // SAFETY: These tests serialize environment mutation through ENV_LOCK and
+        // remove every key before releasing the guard.
+        unsafe {
+            std::env::remove_var(name);
+        }
     }
 
     fn default_config() -> &'static str {

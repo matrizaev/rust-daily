@@ -141,3 +141,79 @@ fn runner_task_failed(job_id: Uuid, worker_id: usize, error: JoinError) -> RunRe
     warn!(%job_id, worker_id, error = %error, "runner task failed");
     RunResult::internal_error("runner task failed", 0)
 }
+
+#[cfg(test)]
+mod tests {
+    use std::num::NonZeroUsize;
+
+    use tokio::sync::mpsc;
+
+    use crate::model::{
+        RunRequest, RunRequestValidation, SubmittedFile, ValidatedRunRequest, ValidationLimits,
+    };
+
+    use super::{EnqueueError, RunQueue};
+
+    fn validated_request() -> ValidatedRunRequest {
+        ValidatedRunRequest::try_from(RunRequestValidation::new(
+            RunRequest::new(vec![
+                SubmittedFile::new("src/lib.rs", "pub fn answer() -> u8 { 42 }\n"),
+                SubmittedFile::new("tests/lesson.rs", "#[test]\nfn answer() {}\n"),
+            ]),
+            validation_limits(),
+        ))
+        .expect("request should validate")
+    }
+
+    fn validation_limits() -> ValidationLimits {
+        ValidationLimits::try_new(nonzero(8), nonzero(65536), nonzero(262144))
+            .expect("test limits should be valid")
+    }
+
+    fn nonzero(value: usize) -> NonZeroUsize {
+        NonZeroUsize::new(value).expect("test value should be non-zero")
+    }
+
+    #[tokio::test]
+    async fn try_enqueue_accepts_jobs_until_capacity() {
+        let (sender, mut receiver) = mpsc::channel(1);
+        let queue = RunQueue { sender };
+
+        let response = queue
+            .try_enqueue(validated_request())
+            .expect("first enqueue should fit");
+        let job = receiver.recv().await.expect("job should be queued");
+
+        assert!(!job.id.is_nil());
+        assert!(!job.response_tx.is_closed());
+        drop(response);
+    }
+
+    #[tokio::test]
+    async fn try_enqueue_reports_full_queue() {
+        let (sender, _receiver) = mpsc::channel(1);
+        let queue = RunQueue { sender };
+        let _first = queue
+            .try_enqueue(validated_request())
+            .expect("first enqueue should fit");
+
+        let error = queue
+            .try_enqueue(validated_request())
+            .expect_err("second enqueue should be full");
+
+        assert!(matches!(error, EnqueueError::Full));
+    }
+
+    #[tokio::test]
+    async fn try_enqueue_reports_closed_queue() {
+        let (sender, receiver) = mpsc::channel(1);
+        drop(receiver);
+        let queue = RunQueue { sender };
+
+        let error = queue
+            .try_enqueue(validated_request())
+            .expect_err("closed channel should reject enqueue");
+
+        assert!(matches!(error, EnqueueError::Closed));
+    }
+}

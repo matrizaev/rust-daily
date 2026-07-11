@@ -500,6 +500,12 @@ A lesson change is complete only when:
 Repository validation commands are documented in
 [../README.md](../README.md).
 
+Pull requests run the GitHub Actions quality gate. It
+checks backend formatting, lint, tests, and at least 80% coverage for
+unit-testable backend library code; source and generated content; frontend
+build; at least 80% coverage for core frontend TypeScript logic; Fallow
+duplication, dead-code, and health checks; and all lesson reference solutions.
+
 ## 13. Current Exclusions
 
 Editing more than one artifact in a lesson is a permanent product non-goal.

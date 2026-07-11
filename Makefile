@@ -7,8 +7,10 @@ FRONTEND_ORIGIN ?= http://localhost:5173
 FRONTEND_BACKEND_URL ?= http://127.0.0.1:8080
 SMOKE_URL ?= http://127.0.0.1:8080
 SMOKE_CASE ?= pass
+BACKEND_COVERAGE_THRESHOLD ?= 80
+BACKEND_COVERAGE_EXCLUDE_FILES := src/main.rs src/server.rs src/static_files.rs src/observability.rs src/runner.rs
 
-.PHONY: format lint test runner-image smoke-runner dev-full
+.PHONY: format lint test coverage coverage-backend coverage-frontend runner-image smoke-runner dev-full
 
 format:
 	cargo fmt --manifest-path backend/Cargo.toml --all
@@ -18,6 +20,14 @@ lint:
 
 test:
 	cargo test --manifest-path backend/Cargo.toml
+
+coverage: coverage-backend coverage-frontend
+
+coverage-backend:
+	cargo tarpaulin --engine Llvm --manifest-path backend/Cargo.toml --exclude-files $(BACKEND_COVERAGE_EXCLUDE_FILES) --fail-under $(BACKEND_COVERAGE_THRESHOLD) --timeout 120 --out Xml
+
+coverage-frontend:
+	cd frontend && npm run coverage
 
 runner-image:
 	podman build --build-arg VCS_REF=$(RUNNER_IMAGE_REVISION) --build-arg RUNNER_SOURCE_HASH=$(RUNNER_SOURCE_HASH) -f docker/rust-runner.Dockerfile -t $(RUNNER_IMAGE) .

@@ -140,3 +140,199 @@ fn validation_details(error: &ValidationError) -> Value {
         ValidationError::DuplicateCompileFailCasePath { path } => json!({ "path": path }),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use actix_web::{ResponseError, body::to_bytes, http::StatusCode};
+    use serde_json::Value;
+
+    use crate::{
+        model::{SubmittedPath, ValidationError},
+        queue::EnqueueError,
+        service::RunServiceError,
+    };
+
+    use super::ApiError;
+
+    #[actix_web::test]
+    async fn error_response_serializes_codes_and_details() {
+        let response =
+            ApiError::Validation(ValidationError::TooManyFiles { max: 8 }).error_response();
+
+        assert_eq!(response.status(), StatusCode::PAYLOAD_TOO_LARGE);
+
+        let body = to_bytes(response.into_body())
+            .await
+            .expect("error body should serialize");
+        let payload: Value = serde_json::from_slice(&body).expect("body should be json");
+
+        assert_eq!(payload["code"], "too_many_files");
+        assert_eq!(payload["details"], serde_json::json!({ "max": 8 }));
+    }
+
+    #[test]
+    fn validation_errors_map_to_stable_codes_and_statuses() {
+        let duplicate_path = SubmittedPath::try_from("src/lib.rs").expect("valid path");
+        let cases = [
+            (
+                ValidationError::EmptyFiles,
+                StatusCode::BAD_REQUEST,
+                "empty_files",
+                serde_json::json!({}),
+            ),
+            (
+                ValidationError::TooManyFiles { max: 8 },
+                StatusCode::PAYLOAD_TOO_LARGE,
+                "too_many_files",
+                serde_json::json!({ "max": 8 }),
+            ),
+            (
+                ValidationError::FileTooLarge {
+                    path: "src/lib.rs".to_string(),
+                    max_bytes: 100,
+                },
+                StatusCode::PAYLOAD_TOO_LARGE,
+                "file_too_large",
+                serde_json::json!({ "path": "src/lib.rs", "max_bytes": 100 }),
+            ),
+            (
+                ValidationError::TotalTooLarge { max_bytes: 200 },
+                StatusCode::PAYLOAD_TOO_LARGE,
+                "total_too_large",
+                serde_json::json!({ "max_bytes": 200 }),
+            ),
+            (
+                ValidationError::UnsafePath {
+                    path: "../src/lib.rs".to_string(),
+                },
+                StatusCode::BAD_REQUEST,
+                "unsafe_path",
+                serde_json::json!({ "path": "../src/lib.rs" }),
+            ),
+            (
+                ValidationError::UnsupportedPath {
+                    path: "README.md".to_string(),
+                },
+                StatusCode::BAD_REQUEST,
+                "unsupported_path",
+                serde_json::json!({ "path": "README.md" }),
+            ),
+            (
+                ValidationError::DuplicatePath {
+                    path: duplicate_path,
+                },
+                StatusCode::BAD_REQUEST,
+                "duplicate_path",
+                serde_json::json!({ "path": "src/lib.rs" }),
+            ),
+            (
+                ValidationError::MissingRequiredFile { path: "src/lib.rs" },
+                StatusCode::BAD_REQUEST,
+                "missing_required_file",
+                serde_json::json!({ "path": "src/lib.rs" }),
+            ),
+            (
+                ValidationError::CompileFailCasesNotAllowed,
+                StatusCode::BAD_REQUEST,
+                "compile_fail_cases_not_allowed",
+                serde_json::json!({}),
+            ),
+            (
+                ValidationError::MissingCompileFailCases,
+                StatusCode::BAD_REQUEST,
+                "missing_compile_fail_cases",
+                serde_json::json!({}),
+            ),
+            (
+                ValidationError::TooManyCompileFailCases { max: 4 },
+                StatusCode::PAYLOAD_TOO_LARGE,
+                "too_many_compile_fail_cases",
+                serde_json::json!({ "max": 4 }),
+            ),
+            (
+                ValidationError::InvalidCompileFailCaseName {
+                    name: "bad/name".to_string(),
+                },
+                StatusCode::BAD_REQUEST,
+                "invalid_compile_fail_case_name",
+                serde_json::json!({ "name": "bad/name" }),
+            ),
+            (
+                ValidationError::DuplicateCompileFailCaseName {
+                    name: "case".to_string(),
+                },
+                StatusCode::BAD_REQUEST,
+                "duplicate_compile_fail_case_name",
+                serde_json::json!({ "name": "case" }),
+            ),
+            (
+                ValidationError::DuplicateCompileFailCasePath {
+                    path: "compile_fail/case.rs".to_string(),
+                },
+                StatusCode::BAD_REQUEST,
+                "duplicate_compile_fail_case_path",
+                serde_json::json!({ "path": "compile_fail/case.rs" }),
+            ),
+            (
+                ValidationError::MissingExpectedDiagnostics {
+                    name: "case".to_string(),
+                },
+                StatusCode::BAD_REQUEST,
+                "missing_expected_diagnostics",
+                serde_json::json!({ "name": "case" }),
+            ),
+            (
+                ValidationError::EmptyDiagnosticSnippet {
+                    name: "case".to_string(),
+                },
+                StatusCode::BAD_REQUEST,
+                "empty_diagnostic_snippet",
+                serde_json::json!({ "name": "case" }),
+            ),
+        ];
+
+        for (error, status, code, details) in cases {
+            let api_error = ApiError::Validation(error);
+
+            assert_eq!(api_error.status_code(), status);
+            assert_eq!(api_error.code(), code);
+            assert_eq!(api_error.details(), Some(details));
+        }
+    }
+
+    #[test]
+    fn queue_and_worker_errors_map_to_status_codes() {
+        let cases = [
+            (ApiError::JsonPayloadTooLarge, StatusCode::PAYLOAD_TOO_LARGE),
+            (
+                ApiError::from(EnqueueError::Full),
+                StatusCode::TOO_MANY_REQUESTS,
+            ),
+            (
+                ApiError::from(EnqueueError::Closed),
+                StatusCode::INTERNAL_SERVER_ERROR,
+            ),
+            (
+                ApiError::from(RunServiceError::WorkerDropped),
+                StatusCode::INTERNAL_SERVER_ERROR,
+            ),
+        ];
+
+        for (error, status) in cases {
+            assert_eq!(error.status_code(), status);
+            assert!(error.details().is_none());
+        }
+    }
+
+    #[test]
+    fn run_service_errors_convert_to_api_errors() {
+        let validation = RunServiceError::Validation(ValidationError::EmptyFiles);
+        let queue = RunServiceError::Enqueue(EnqueueError::Full);
+
+        assert!(matches!(
+            ApiError::from(validation),
+            ApiError::Validation(_)
+        ));
+        assert!(matches!(ApiError::from(queue), ApiError::QueueFull));
+    }
+}

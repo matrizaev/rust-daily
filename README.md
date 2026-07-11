@@ -76,9 +76,11 @@ npm run dev
 make format
 make lint
 make test
+make coverage
 
 cd frontend
 npm run content:validate-source
+npm run content:validate-source:test
 npm run content:generate
 npm run content:check-refs
 npm run content:check

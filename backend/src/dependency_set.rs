@@ -130,6 +130,38 @@ mod tests {
         );
     }
 
+    #[test]
+    fn std_dependency_set_uses_plain_cargo_commands() {
+        assert!(DependencySet::Std.dependencies().is_empty());
+
+        let test = DependencySet::Std.test_command();
+        assert_eq!(test.program(), "cargo");
+        assert_eq!(test.args(), ["test"]);
+
+        let check_lib = DependencySet::Std.check_lib_command();
+        assert_eq!(check_lib.program(), "cargo");
+        assert_eq!(check_lib.args(), ["check", "--lib"]);
+
+        let check_test = DependencySet::Std.check_test_command("case_name");
+        assert_eq!(check_test.program(), "cargo");
+        assert_eq!(check_test.args(), ["check", "--test", "case_name"]);
+    }
+
+    #[test]
+    fn advanced_dependency_set_uses_cached_runner_commands() {
+        let test = DependencySet::Advanced.test_command();
+        assert_eq!(test.program(), "run-advanced-lesson-cargo");
+        assert_eq!(test.args(), ["test"]);
+
+        let check_lib = DependencySet::Advanced.check_lib_command();
+        assert_eq!(check_lib.program(), "run-advanced-lesson-cargo");
+        assert_eq!(check_lib.args(), ["check", "--lib"]);
+
+        let check_test = DependencySet::Advanced.check_test_command("case_name");
+        assert_eq!(check_test.program(), "run-advanced-lesson-cargo");
+        assert_eq!(check_test.args(), ["check", "--test", "case_name"]);
+    }
+
     fn manifest_section_lines(manifest: &str, section: &str) -> Vec<String> {
         manifest
             .lines()

@@ -1,0 +1,86 @@
+name: Quality Gates
+
+on:
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.95.0
+        with:
+          components: rustfmt, clippy
+      - name: Check backend formatting
+        run: cargo fmt --manifest-path backend/Cargo.toml --all -- --check
+      - name: Lint backend
+        run: make lint
+      - name: Test backend
+        run: make test
+      - name: Install backend coverage tool
+        run: cargo install cargo-tarpaulin --version 0.34.1 --locked
+      - name: Check backend coverage
+        run: make coverage-backend
+
+  frontend:
+    name: Frontend and content
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+      - name: Validate source content
+        working-directory: ./frontend
+        run: npm run content:validate-source
+      - name: Test source content validator
+        working-directory: ./frontend
+        run: npm run content:validate-source:test
+      - name: Generate frontend content
+        working-directory: ./frontend
+        run: npm run content:generate
+      - name: Verify generated content is committed
+        run: git diff --exit-code -- frontend/src/content frontend/public/content
+      - name: Check lesson references
+        working-directory: ./frontend
+        run: npm run content:check-refs
+      - name: Check generated content
+        working-directory: ./frontend
+        run: npm run content:check
+      - name: Build frontend assets
+        working-directory: ./frontend
+        run: npm run build
+      - name: Check frontend coverage
+        run: make coverage-frontend
+      - name: Check duplicate code
+        working-directory: ./frontend
+        run: yes | npx fallow dupes
+      - name: Check dead code
+        working-directory: ./frontend
+        run: yes | npx fallow dead-code
+      - name: Check project health
+        working-directory: ./frontend
+        run: yes | npx fallow health
+
+  lessons:
+    name: Lesson solutions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: dtolnay/rust-toolchain@1.95.0
+      - name: Fetch lesson dependencies
+        run: cargo fetch --manifest-path docker/dependency-cache/Cargo.toml
+      - name: Test lesson solutions
+        run: scripts/test-lesson-solutions.sh lessons

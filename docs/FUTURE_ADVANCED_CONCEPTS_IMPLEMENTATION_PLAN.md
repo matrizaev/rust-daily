@@ -75,24 +75,15 @@ manifests, workspaces, migrations, and other artifact types.
 Before adding lessons 91-500, finish the infrastructure and authoring guardrails
 that will prevent curriculum scale from creating avoidable maintenance debt.
 
-1. Source-content validation is strengthened.
-   The source validator checks exactly one editable file, backend-supported
-   paths, final-hint solution parity, previous editable-artifact continuity,
-   structural checks targeting the editable file, and task text that names the
-   editable file when it is not `src/lib.rs`.
-2. Add a CI quality gate.
-   CI should run backend format, lint, and tests; source and generated content
-   validation; frontend build; Fallow checks; and lesson solution tests. Full
-   solution runs may be nightly if per-change runtime becomes too high.
-3. Polish readonly-file UX enough for snapshot-heavy lessons.
+1. Polish readonly-file UX enough for snapshot-heavy lessons.
    The editable filename header is in place. Readonly support files should stay
    easy to scan, with future improvements such as remembered open panels or
    copy affordances if author review shows friction.
-4. Create advanced lesson templates.
+2. Create advanced lesson templates.
    Maintain reusable shapes for owned and borrowed API modules, async service
    ports, Actix boundaries, error mapping, table and property tests, and
    compile-fail lessons.
-5. Maintain a curriculum review rubric.
+3. Maintain a curriculum review rubric.
    Every new arc should confirm one concept per lesson, task text matching the
    starter exactly, idiomatic reference code, previous solutions as readonly
    context when needed, and no claim that one exercise teaches universally
@@ -379,8 +370,8 @@ Every future arc must:
 
 ## Implementation Order
 
-1. Complete the remaining prerequisite work: CI quality gate, readonly UX
-   polish, advanced templates, and curriculum review rubric.
+1. Complete the remaining prerequisite work: readonly UX polish, advanced
+   templates, and curriculum review rubric.
 2. Author lessons 91-150 around advanced ownership and API design.
 3. Expand async/concurrency validation and author lessons 151-210.
 4. Add workspace test modes and author lessons 211-270.
