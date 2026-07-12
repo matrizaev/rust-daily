@@ -157,8 +157,54 @@ describe("runBackendValidation", () => {
       });
     await expect(runBackendValidation(cargoRequest(), "http://runner")).resolves
       .toMatchObject({
-        status: "internal_error",
-        summary: "The Rust runner returned HTTP 500.",
+        status: "unsupported",
+        summary: "The Rust runner could not complete this check. Try again shortly.",
+      });
+  });
+
+  it("uses only service-unavailable correlation IDs from error bodies", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            code: "service_unavailable",
+            error: "do not show this operational detail",
+            details: { correlation_id: "3db63dd2-7e7a-4cb6-ae5d-bdf7df13ca89" },
+          }),
+          { status: 503, headers: { "Content-Type": "application/json" } },
+        ),
+      ),
+    );
+
+    await expect(runBackendValidation(cargoRequest(), "http://runner")).resolves
+      .toMatchObject({
+        status: "unsupported",
+        summary:
+          "The Rust runner is temporarily unavailable. Try again shortly. Reference: 3db63dd2-7e7a-4cb6-ae5d-bdf7df13ca89.",
+        diagnostics: "",
+      });
+  });
+
+  it("does not render arbitrary correlation text", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            code: "service_unavailable",
+            details: { correlation_id: "database connection failed at /secret" },
+          }),
+          { status: 503, headers: { "Content-Type": "application/json" } },
+        ),
+      ),
+    );
+
+    await expect(runBackendValidation(cargoRequest(), "http://runner")).resolves
+      .toMatchObject({
+        status: "unsupported",
+        summary: "The Rust runner is temporarily unavailable. Try again shortly.",
+        diagnostics: "",
       });
   });
 
@@ -177,7 +223,7 @@ describe("runBackendValidation", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{")));
     await expect(runBackendValidation(cargoRequest(), "http://runner")).resolves
       .toMatchObject({
-        status: "internal_error",
+        status: "unsupported",
         summary: "The Rust runner returned an invalid response.",
       });
 
@@ -185,8 +231,7 @@ describe("runBackendValidation", () => {
     await expect(runBackendValidation(cargoRequest(), "http://runner")).resolves
       .toMatchObject({
         status: "unsupported",
-        summary:
-          "The Rust runner could not be reached. Check the configured backend URL and CORS setting.",
+        summary: "The Rust runner is unavailable. Try again shortly.",
       });
   });
 });

@@ -11,7 +11,7 @@ use uuid::Uuid;
 
 use crate::{
     config::RunnerSettings,
-    model::{RunDeadline, RunResult, RunStatus, ValidatedRunRequest},
+    model::{LearnerOutcome, RunDeadline, ServiceFailure, ValidatedRunRequest},
     runner::PodmanLessonRunner,
     service::{DispatchError, RunDispatcher},
 };
@@ -23,7 +23,7 @@ pub trait LessonRunner: Clone + Send + Sync + 'static {
         request: ValidatedRunRequest,
         deadline: RunDeadline,
         cancellation: CancellationToken,
-    ) -> impl Future<Output = RunResult> + Send;
+    ) -> impl Future<Output = Result<LearnerOutcome, ServiceFailure>> + Send;
 }
 
 #[derive(Clone)]
@@ -37,13 +37,13 @@ pub enum EnqueueError {
     #[error("too many run requests are queued")]
     Full,
     #[error("run queue is unavailable")]
-    Closed,
+    Closed(ServiceFailure),
 }
 
 struct RunJob {
     id: Uuid,
     request: ValidatedRunRequest,
-    response_tx: oneshot::Sender<RunResult>,
+    response_tx: oneshot::Sender<Result<LearnerOutcome, ServiceFailure>>,
     deadline: RunDeadline,
 }
 
@@ -51,15 +51,22 @@ impl RunQueue {
     pub fn try_enqueue(
         &self,
         request: ValidatedRunRequest,
-    ) -> Result<oneshot::Receiver<RunResult>, EnqueueError> {
+    ) -> Result<oneshot::Receiver<Result<LearnerOutcome, ServiceFailure>>, EnqueueError> {
         self.try_enqueue_with_deadline(request, RunDeadline::after(self.timeout))
+            .map(|(_, response)| response)
     }
 
     fn try_enqueue_with_deadline(
         &self,
         request: ValidatedRunRequest,
         deadline: RunDeadline,
-    ) -> Result<oneshot::Receiver<RunResult>, EnqueueError> {
+    ) -> Result<
+        (
+            Uuid,
+            oneshot::Receiver<Result<LearnerOutcome, ServiceFailure>>,
+        ),
+        EnqueueError,
+    > {
         let (response_tx, response_rx) = oneshot::channel();
         let job = RunJob {
             id: Uuid::new_v4(),
@@ -72,7 +79,7 @@ impl RunQueue {
         match self.sender.try_send(job) {
             Ok(()) => {
                 info!(%job_id, "job accepted");
-                Ok(response_rx)
+                Ok((job_id, response_rx))
             }
             Err(mpsc::error::TrySendError::Full(job)) => {
                 warn!(job_id = %job.id, "job rejected due to queue capacity");
@@ -80,39 +87,37 @@ impl RunQueue {
             }
             Err(mpsc::error::TrySendError::Closed(job)) => {
                 warn!(job_id = %job.id, "job rejected because queue is closed");
-                Err(EnqueueError::Closed)
+                Err(EnqueueError::Closed(ServiceFailure::new(job.id)))
             }
         }
     }
 }
 
 impl RunDispatcher for RunQueue {
-    async fn dispatch(&self, request: ValidatedRunRequest) -> Result<RunResult, DispatchError> {
+    async fn dispatch(
+        &self,
+        request: ValidatedRunRequest,
+    ) -> Result<LearnerOutcome, DispatchError> {
         let deadline = RunDeadline::after(self.timeout);
-        let response = self
-            .try_enqueue_with_deadline(request, deadline)
-            .map_err(|error| match error {
-                EnqueueError::Full => DispatchError::AtCapacity,
-                EnqueueError::Closed => DispatchError::Unavailable,
-            })?;
+        let (job_id, response) =
+            self.try_enqueue_with_deadline(request, deadline)
+                .map_err(|error| match error {
+                    EnqueueError::Full => DispatchError::AtCapacity,
+                    EnqueueError::Closed(failure) => DispatchError::ServiceFailure(failure),
+                })?;
 
         match tokio::time::timeout(deadline.remaining(), response).await {
-            Ok(result) => result.map_err(|_| DispatchError::WorkerLost),
-            Err(_) => Ok(RunResult::new(
-                RunStatus::TimedOut,
-                String::new(),
-                format!(
-                    "runner timed out after {} seconds",
-                    deadline.timeout().as_secs()
-                ),
-                duration_ms(deadline.timeout()),
-            )),
+            Ok(Ok(result)) => result.map_err(DispatchError::ServiceFailure),
+            Ok(Err(_)) => {
+                warn!(%job_id, "run worker dropped the result channel");
+                Err(DispatchError::ServiceFailure(ServiceFailure::new(job_id)))
+            }
+            Err(_) => {
+                warn!(%job_id, "job expired while waiting in queue");
+                Err(DispatchError::ServiceFailure(ServiceFailure::new(job_id)))
+            }
         }
     }
-}
-
-fn duration_ms(duration: std::time::Duration) -> u64 {
-    duration.as_millis().min(u128::from(u64::MAX)) as u64
 }
 
 pub fn spawn_workers(config: Arc<RunnerSettings>) -> RunQueue {
@@ -186,15 +191,18 @@ where
         result = &mut run_task => {
             let result = match result {
                 Ok(result) => result,
-                Err(error) => runner_task_failed(job_id, worker_id, error),
+                Err(error) => Err(runner_task_failed(job_id, worker_id, error)),
             };
-            info!(
-                %job_id,
-                worker_id,
-                status = ?result.status,
-                duration_ms = result.duration_ms,
-                "job finished"
-            );
+            match &result {
+                Ok(outcome) => info!(
+                    %job_id,
+                    worker_id,
+                    status = ?outcome.status,
+                    duration_ms = outcome.duration_ms,
+                    "job finished"
+                ),
+                Err(_) => warn!(%job_id, worker_id, "job failed internally"),
+            }
 
             if job.response_tx.send(result).is_err() {
                 warn!(%job_id, worker_id, "job result receiver was dropped");
@@ -208,9 +216,9 @@ where
     }
 }
 
-fn runner_task_failed(job_id: Uuid, worker_id: usize, error: JoinError) -> RunResult {
+fn runner_task_failed(job_id: Uuid, worker_id: usize, error: JoinError) -> ServiceFailure {
     warn!(%job_id, worker_id, error = %error, "runner task failed");
-    RunResult::internal_error("runner task failed", 0)
+    ServiceFailure::new(job_id)
 }
 
 #[cfg(test)]
@@ -228,8 +236,8 @@ mod tests {
 
     use crate::config::{PodmanPath, RunnerImage, RunnerSettings, WorkspaceRoot};
     use crate::model::{
-        RunDeadline, RunRequest, RunRequestValidation, RunResult, RunStatus, SubmittedFile,
-        ValidatedRunRequest, ValidationLimits,
+        LearnerOutcome, RunDeadline, RunRequest, RunRequestValidation, RunStatus, ServiceFailure,
+        SubmittedFile, ValidatedRunRequest, ValidationLimits,
     };
 
     use super::{EnqueueError, LessonRunner, RunQueue, spawn_workers_with_runner};
@@ -245,8 +253,13 @@ mod tests {
             _request: ValidatedRunRequest,
             _deadline: RunDeadline,
             _cancellation: CancellationToken,
-        ) -> RunResult {
-            RunResult::new(RunStatus::Passed, "ok".to_string(), String::new(), 1)
+        ) -> Result<LearnerOutcome, ServiceFailure> {
+            Ok(LearnerOutcome::new(
+                RunStatus::Passed,
+                "ok".to_string(),
+                String::new(),
+                1,
+            ))
         }
     }
 
@@ -263,11 +276,11 @@ mod tests {
             _request: ValidatedRunRequest,
             _deadline: RunDeadline,
             cancellation: CancellationToken,
-        ) -> RunResult {
+        ) -> Result<LearnerOutcome, ServiceFailure> {
             self.started.notify_one();
             cancellation.cancelled().await;
             self.cancelled.notify_one();
-            RunResult::internal_error("cancelled", 0)
+            Err(ServiceFailure::new(Uuid::nil()))
         }
     }
 
@@ -281,7 +294,7 @@ mod tests {
             _request: ValidatedRunRequest,
             _deadline: RunDeadline,
             _cancellation: CancellationToken,
-        ) -> RunResult {
+        ) -> Result<LearnerOutcome, ServiceFailure> {
             panic!("intentional runner panic")
         }
     }
@@ -390,7 +403,10 @@ mod tests {
             .try_enqueue(validated_request())
             .expect_err("closed channel should reject enqueue");
 
-        assert!(matches!(error, EnqueueError::Closed));
+        let EnqueueError::Closed(failure) = error else {
+            panic!("closed queue should preserve its correlation ID");
+        };
+        assert!(!failure.correlation_id().is_nil());
     }
 
     #[tokio::test]
@@ -401,13 +417,13 @@ mod tests {
             timeout: std::time::Duration::from_millis(10),
         };
 
-        let result = queue
-            .dispatch(validated_request())
-            .await
-            .expect("queue timeout should be a run result");
+        let result = queue.dispatch(validated_request()).await;
         let job = receiver.recv().await.expect("job should remain queued");
 
-        assert_eq!(result.status, crate::model::RunStatus::TimedOut);
+        assert!(matches!(
+            result,
+            Err(crate::service::DispatchError::ServiceFailure(_))
+        ));
         assert!(job.response_tx.is_closed());
     }
 
@@ -452,17 +468,16 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn worker_panic_becomes_internal_error_result() {
+    async fn worker_panic_becomes_service_failure() {
         let root = tempfile::tempdir().expect("test root should be created");
         let queue =
             spawn_workers_with_runner(runner_settings(root.path().join("runs")), PanicRunner);
 
-        let result = queue
-            .dispatch(validated_request())
-            .await
-            .expect("worker panic should become a run result");
+        let result = queue.dispatch(validated_request()).await;
 
-        assert_eq!(result.status, RunStatus::InternalError);
-        assert_eq!(result.stderr, "runner task failed");
+        assert!(matches!(
+            result,
+            Err(crate::service::DispatchError::ServiceFailure(_))
+        ));
     }
 }

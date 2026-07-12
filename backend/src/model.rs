@@ -7,6 +7,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+use uuid::Uuid;
 
 use crate::dependency_set::DependencySet;
 
@@ -831,7 +832,6 @@ pub enum RunStatus {
     Failed,
     CompileError,
     TimedOut,
-    InternalError,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -862,14 +862,14 @@ impl RunDeadline {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
-pub struct RunResult {
+pub struct LearnerOutcome {
     pub status: RunStatus,
     pub stdout: String,
     pub stderr: String,
     pub duration_ms: u64,
 }
 
-impl RunResult {
+impl LearnerOutcome {
     pub fn new(status: RunStatus, stdout: String, stderr: String, duration_ms: u64) -> Self {
         Self {
             status,
@@ -878,14 +878,21 @@ impl RunResult {
             duration_ms,
         }
     }
+}
 
-    pub fn internal_error(message: impl Into<String>, duration_ms: u64) -> Self {
-        Self {
-            status: RunStatus::InternalError,
-            stdout: String::new(),
-            stderr: message.into(),
-            duration_ms,
-        }
+#[derive(Debug, Clone, Copy, Error, Eq, PartialEq)]
+#[error("service failure")]
+pub struct ServiceFailure {
+    correlation_id: Uuid,
+}
+
+impl ServiceFailure {
+    pub fn new(correlation_id: Uuid) -> Self {
+        Self { correlation_id }
+    }
+
+    pub fn correlation_id(self) -> Uuid {
+        self.correlation_id
     }
 }
 

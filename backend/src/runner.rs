@@ -27,7 +27,8 @@ use crate::{
     config::RunnerSettings,
     dependency_set::DependencySet,
     model::{
-        RunDeadline, RunMode, RunResult, RunStatus, ValidatedCompileFailCase, ValidatedRunRequest,
+        LearnerOutcome, RunDeadline, RunMode, RunStatus, ServiceFailure, ValidatedCompileFailCase,
+        ValidatedRunRequest,
     },
     workspace::{TestTargetName, WorkspaceError, prepare_workspace, write_compile_fail_case},
 };
@@ -102,7 +103,7 @@ impl crate::queue::LessonRunner for PodmanLessonRunner {
         request: ValidatedRunRequest,
         deadline: RunDeadline,
         cancellation: CancellationToken,
-    ) -> RunResult {
+    ) -> Result<LearnerOutcome, ServiceFailure> {
         run(job_id, request, &self.config, deadline, cancellation).await
     }
 }
@@ -557,7 +558,7 @@ pub async fn run(
     config: &RunnerSettings,
     deadline: RunDeadline,
     cancellation: CancellationToken,
-) -> RunResult {
+) -> Result<LearnerOutcome, ServiceFailure> {
     run_with_executor(
         job_id,
         request,
@@ -576,14 +577,15 @@ async fn run_with_executor<E>(
     deadline: RunDeadline,
     cancellation: CancellationToken,
     executor: &E,
-) -> RunResult
+) -> Result<LearnerOutcome, ServiceFailure>
 where
     E: ProcessExecutor,
 {
     let started_at = Instant::now();
 
     if deadline.is_elapsed() {
-        return timeout_result(started_at, config);
+        warn!(%job_id, "job expired before runner started");
+        return Err(ServiceFailure::new(job_id));
     }
 
     match run_inner(
@@ -597,14 +599,14 @@ where
     )
     .await
     {
-        Ok(result) => result,
+        Ok(result) => Ok(result),
         Err(RunnerError::Podman(error)) if error.kind() == io::ErrorKind::TimedOut => {
-            timeout_result(started_at, config)
+            Ok(timeout_result(started_at, config))
         }
         Err(error) => {
             warn!(%job_id, error = %error, "runner internal error");
 
-            RunResult::internal_error(client_internal_error_message(), elapsed_ms(started_at))
+            Err(ServiceFailure::new(job_id))
         }
     }
 }
@@ -617,7 +619,7 @@ async fn run_inner<E>(
     cancellation: &CancellationToken,
     started_at: Instant,
     executor: &E,
-) -> Result<RunResult, RunnerError>
+) -> Result<LearnerOutcome, RunnerError>
 where
     E: ProcessExecutor,
 {
@@ -670,7 +672,7 @@ async fn run_cargo_test<E>(
     dependency_set: DependencySet,
     config: &RunnerSettings,
     started_at: Instant,
-) -> Result<RunResult, RunnerError>
+) -> Result<LearnerOutcome, RunnerError>
 where
     E: ProcessExecutor,
 {
@@ -696,11 +698,8 @@ where
                 );
             }
 
-            Ok(result_from_output(
-                output,
-                duration_ms,
-                config.max_output_bytes.get(),
-            ))
+            result_from_output(output, duration_ms, config.max_output_bytes.get())
+                .ok_or(RunnerError::ContainerRuntime { code: None })
         }
         PodmanOutcome::OuterTimeout => Ok(timeout_result(started_at, config)),
         PodmanOutcome::OutputLimitExceeded => Ok(output_limit_result(started_at, config)),
@@ -713,7 +712,7 @@ async fn run_compile_fail<E>(
     request: &ValidatedRunRequest,
     config: &RunnerSettings,
     started_at: Instant,
-) -> Result<RunResult, RunnerError>
+) -> Result<LearnerOutcome, RunnerError>
 where
     E: ProcessExecutor,
 {
@@ -734,18 +733,20 @@ where
             CargoOutputStatus::Success => {}
             CargoOutputStatus::TimedOut => return Ok(timeout_result(started_at, config)),
             CargoOutputStatus::CompilerError => {
-                return Ok(result_from_output(
+                return result_from_output(
                     output,
                     elapsed_ms(started_at),
                     config.max_output_bytes.get(),
-                ));
+                )
+                .ok_or(RunnerError::ContainerRuntime { code: None });
             }
             CargoOutputStatus::Failure => {
-                return Ok(result_from_output(
+                return result_from_output(
                     output,
                     elapsed_ms(started_at),
                     config.max_output_bytes.get(),
-                ));
+                )
+                .ok_or(RunnerError::ContainerRuntime { code: None });
             }
             CargoOutputStatus::CargoError => {
                 return Err(RunnerError::ContainerRuntime {
@@ -830,7 +831,7 @@ where
     };
     let (stdout, stderr) = cap_streams(&stdout, &stderr, config.max_output_bytes.get());
 
-    Ok(RunResult::new(
+    Ok(LearnerOutcome::new(
         status,
         stdout,
         stderr,
@@ -917,9 +918,9 @@ where
     }
 }
 
-fn timeout_result(started_at: Instant, config: &RunnerSettings) -> RunResult {
+fn timeout_result(started_at: Instant, config: &RunnerSettings) -> LearnerOutcome {
     info!("outer runner timeout elapsed");
-    RunResult::new(
+    LearnerOutcome::new(
         RunStatus::TimedOut,
         String::new(),
         format!(
@@ -930,8 +931,8 @@ fn timeout_result(started_at: Instant, config: &RunnerSettings) -> RunResult {
     )
 }
 
-fn output_limit_result(started_at: Instant, config: &RunnerSettings) -> RunResult {
-    RunResult::new(
+fn output_limit_result(started_at: Instant, config: &RunnerSettings) -> LearnerOutcome {
+    LearnerOutcome::new(
         RunStatus::Failed,
         String::new(),
         format!(
@@ -1114,10 +1115,6 @@ fn elapsed_ms(started_at: Instant) -> u64 {
     millis.min(u128::from(u64::MAX)) as u64
 }
 
-fn client_internal_error_message() -> &'static str {
-    "runner internal error"
-}
-
 fn log_output(output: &[u8]) -> String {
     const MAX_LOG_CHARS: usize = 4096;
 
@@ -1144,9 +1141,9 @@ mod tests {
     use uuid::Uuid;
 
     use super::{
-        ProcessCommandSpec, ProcessExecutor, cgroup_v2_path, client_internal_error_message,
-        collect_limited_stream, ensure_control_success, find_boolean_field, log_output,
-        run_with_executor, timeout_io_error, validate_measured_resource_limits,
+        ProcessCommandSpec, ProcessExecutor, cgroup_v2_path, collect_limited_stream,
+        ensure_control_success, find_boolean_field, log_output, run_with_executor,
+        timeout_io_error, validate_measured_resource_limits,
     };
     use crate::{
         config::{PodmanPath, RunnerImage, RunnerSettings, WorkspaceRoot},
@@ -1423,7 +1420,10 @@ mod tests {
             .expect("fake executor lock should be available")
             .clone();
 
-        assert_eq!(result.status, RunStatus::Passed);
+        assert_eq!(
+            result.expect("run should succeed").status,
+            RunStatus::Passed
+        );
         assert_eq!(specs.len(), 4);
 
         let start = args(&specs[0]);
@@ -1477,7 +1477,10 @@ mod tests {
             .expect("fake executor lock should be available");
         let start = args(&specs[0]);
 
-        assert_eq!(result.status, RunStatus::Passed);
+        assert_eq!(
+            result.expect("run should succeed").status,
+            RunStatus::Passed
+        );
         assert!(has_pair(
             &start,
             "--mount",
@@ -1505,6 +1508,7 @@ mod tests {
         )
         .await;
 
+        let result = result.expect("run should succeed");
         assert_eq!(result.status, RunStatus::Failed);
         assert!(result.stderr.contains("output exceeded 64 bytes"));
     }
@@ -1545,19 +1549,19 @@ mod tests {
             )
             .await;
 
-            assert_eq!(result.status, expected_status);
+            assert_eq!(result.expect("run should succeed").status, expected_status);
         }
     }
 
     #[tokio::test]
     async fn fake_executor_covers_timeout_and_infrastructure_results() {
         for (behavior, expected_status) in [
-            (FakeCargoBehavior::CompileError, RunStatus::CompileError),
-            (FakeCargoBehavior::TimedOut, RunStatus::TimedOut),
             (
-                FakeCargoBehavior::InfrastructureError,
-                RunStatus::InternalError,
+                FakeCargoBehavior::CompileError,
+                Some(RunStatus::CompileError),
             ),
+            (FakeCargoBehavior::TimedOut, Some(RunStatus::TimedOut)),
+            (FakeCargoBehavior::InfrastructureError, None),
         ] {
             let root = tempfile::tempdir().expect("test root should be created");
             let config = runner_settings(root.path().join("runs"));
@@ -1576,23 +1580,20 @@ mod tests {
             )
             .await;
 
-            assert_eq!(result.status, expected_status);
+            assert_eq!(result.ok().map(|outcome| outcome.status), expected_status);
         }
     }
 
     #[tokio::test]
     async fn fake_executor_covers_compile_fail_early_termination() {
         for (behavior, expected_status) in [
-            (FakeCargoBehavior::OutputFlood, RunStatus::Failed),
+            (FakeCargoBehavior::OutputFlood, Some(RunStatus::Failed)),
             (
                 FakeCargoBehavior::CompileFailCaseOutputFlood,
-                RunStatus::Failed,
+                Some(RunStatus::Failed),
             ),
-            (FakeCargoBehavior::TimedOut, RunStatus::TimedOut),
-            (
-                FakeCargoBehavior::InfrastructureError,
-                RunStatus::InternalError,
-            ),
+            (FakeCargoBehavior::TimedOut, Some(RunStatus::TimedOut)),
+            (FakeCargoBehavior::InfrastructureError, None),
         ] {
             let root = tempfile::tempdir().expect("test root should be created");
             let mut config = runner_settings(root.path().join("runs"));
@@ -1612,7 +1613,7 @@ mod tests {
             )
             .await;
 
-            assert_eq!(result.status, expected_status);
+            assert_eq!(result.ok().map(|outcome| outcome.status), expected_status);
         }
     }
 
@@ -1634,7 +1635,7 @@ mod tests {
             &executor,
         )
         .await;
-        assert_eq!(expired.status, RunStatus::TimedOut);
+        assert!(expired.is_err());
 
         let cancellation = CancellationToken::new();
         let cancel = cancellation.clone();
@@ -1652,7 +1653,7 @@ mod tests {
         };
         let (cancelled, ()) = tokio::join!(run, cancel_soon);
 
-        assert_eq!(cancelled.status, RunStatus::InternalError);
+        assert!(cancelled.is_err());
     }
 
     #[tokio::test]
@@ -1675,17 +1676,10 @@ mod tests {
         )
         .await;
 
-        assert_eq!(result.status, RunStatus::TimedOut);
-    }
-
-    #[test]
-    fn client_internal_error_message_is_generic() {
-        let message = client_internal_error_message();
-
-        assert_eq!(message, "runner internal error");
-        assert!(!message.contains('/'));
-        assert!(!message.contains("podman"));
-        assert!(!message.contains("workspace"));
+        assert_eq!(
+            result.expect("run should succeed").status,
+            RunStatus::TimedOut
+        );
     }
 
     #[test]

@@ -2,6 +2,7 @@ use actix_web::{HttpResponse, ResponseError, body::BoxBody, http::StatusCode};
 use serde::Serialize;
 use serde_json::{Value, json};
 use thiserror::Error;
+use uuid::Uuid;
 
 use crate::{
     model::ValidationError,
@@ -21,10 +22,8 @@ pub enum ApiError {
     },
     #[error("too many run requests are queued")]
     QueueFull,
-    #[error("run queue is unavailable")]
-    QueueClosed,
-    #[error("run worker dropped the result channel")]
-    WorkerDropped,
+    #[error("service temporarily unavailable")]
+    ServiceUnavailable { correlation_id: Uuid },
 }
 
 #[derive(Debug, Serialize)]
@@ -42,7 +41,7 @@ impl ResponseError for ApiError {
             Self::Validation(_) | Self::InvalidJson { .. } => StatusCode::BAD_REQUEST,
             Self::JsonPayloadTooLarge => StatusCode::PAYLOAD_TOO_LARGE,
             Self::QueueFull => StatusCode::TOO_MANY_REQUESTS,
-            Self::QueueClosed | Self::WorkerDropped => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::ServiceUnavailable { .. } => StatusCode::SERVICE_UNAVAILABLE,
         }
     }
 
@@ -62,8 +61,7 @@ impl ApiError {
             Self::JsonPayloadTooLarge => "json_payload_too_large",
             Self::InvalidJson { .. } => "invalid_json",
             Self::QueueFull => "queue_full",
-            Self::QueueClosed => "queue_closed",
-            Self::WorkerDropped => "worker_dropped",
+            Self::ServiceUnavailable { .. } => "service_unavailable",
         }
     }
 
@@ -71,10 +69,10 @@ impl ApiError {
         match self {
             Self::Validation(error) => Some(validation_details(error)),
             Self::InvalidJson { source } => Some(json!({ "reason": source.to_string() })),
-            Self::JsonPayloadTooLarge
-            | Self::QueueFull
-            | Self::QueueClosed
-            | Self::WorkerDropped => None,
+            Self::JsonPayloadTooLarge | Self::QueueFull => None,
+            Self::ServiceUnavailable { correlation_id } => {
+                Some(json!({ "correlation_id": correlation_id.to_string() }))
+            }
         }
     }
 }
@@ -83,8 +81,9 @@ impl From<DispatchError> for ApiError {
     fn from(error: DispatchError) -> Self {
         match error {
             DispatchError::AtCapacity => Self::QueueFull,
-            DispatchError::Unavailable => Self::QueueClosed,
-            DispatchError::WorkerLost => Self::WorkerDropped,
+            DispatchError::ServiceFailure(failure) => Self::ServiceUnavailable {
+                correlation_id: failure.correlation_id(),
+            },
         }
     }
 }
@@ -166,6 +165,7 @@ fn validation_details(error: &ValidationError) -> Value {
 mod tests {
     use actix_web::{ResponseError, body::to_bytes, http::StatusCode};
     use serde_json::Value;
+    use uuid::Uuid;
 
     use crate::{
         model::{SubmittedPath, ValidationError},
@@ -321,26 +321,36 @@ mod tests {
     }
 
     #[test]
-    fn queue_and_worker_errors_map_to_status_codes() {
+    fn dispatch_errors_map_to_status_codes_and_preserve_correlation_ids() {
+        let correlation_id = Uuid::new_v4();
         let cases = [
-            (ApiError::JsonPayloadTooLarge, StatusCode::PAYLOAD_TOO_LARGE),
+            (
+                ApiError::JsonPayloadTooLarge,
+                StatusCode::PAYLOAD_TOO_LARGE,
+                None,
+            ),
             (
                 ApiError::from(DispatchError::AtCapacity),
                 StatusCode::TOO_MANY_REQUESTS,
+                None,
             ),
             (
-                ApiError::from(DispatchError::Unavailable),
-                StatusCode::INTERNAL_SERVER_ERROR,
-            ),
-            (
-                ApiError::from(RunServiceError::Dispatch(DispatchError::WorkerLost)),
-                StatusCode::INTERNAL_SERVER_ERROR,
+                ApiError::from(DispatchError::ServiceFailure(
+                    crate::model::ServiceFailure::new(correlation_id),
+                )),
+                StatusCode::SERVICE_UNAVAILABLE,
+                Some(correlation_id),
             ),
         ];
 
-        for (error, status) in cases {
+        for (error, status, expected_correlation_id) in cases {
             assert_eq!(error.status_code(), status);
-            assert!(error.details().is_none());
+            assert_eq!(
+                error
+                    .details()
+                    .and_then(|details| details.get("correlation_id").cloned()),
+                expected_correlation_id.map(|id| serde_json::json!(id.to_string()))
+            );
         }
     }
 

@@ -7,7 +7,7 @@ use serde::Serialize;
 
 use crate::{
     error::ApiError,
-    model::{RunRequest, RunResult},
+    model::{LearnerOutcome, RunRequest},
     service::AppService,
 };
 
@@ -29,7 +29,7 @@ pub async fn healthz() -> web::Json<HealthResponse> {
 pub async fn run(
     service: web::Data<AppService>,
     request: web::Json<RunRequest>,
-) -> Result<web::Json<RunResult>, ApiError> {
+) -> Result<web::Json<LearnerOutcome>, ApiError> {
     let result = service.run_lesson(request.into_inner()).await?;
     Ok(web::Json(result))
 }

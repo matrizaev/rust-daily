@@ -4,7 +4,7 @@ use thiserror::Error;
 
 use crate::{
     model::{
-        RunRequest, RunRequestValidation, RunResult, ValidatedRunRequest, ValidationError,
+        LearnerOutcome, RunRequest, RunRequestValidation, ValidatedRunRequest, ValidationError,
         ValidationLimits,
     },
     queue::RunQueue,
@@ -16,7 +16,7 @@ pub trait RunDispatcher: Clone + Send + Sync + 'static {
     fn dispatch(
         &self,
         request: ValidatedRunRequest,
-    ) -> impl Future<Output = Result<RunResult, DispatchError>> + Send;
+    ) -> impl Future<Output = Result<LearnerOutcome, DispatchError>> + Send;
 }
 
 #[derive(Clone)]
@@ -36,7 +36,7 @@ where
         }
     }
 
-    pub async fn run_lesson(&self, request: RunRequest) -> Result<RunResult, RunServiceError> {
+    pub async fn run_lesson(&self, request: RunRequest) -> Result<LearnerOutcome, RunServiceError> {
         let request = ValidatedRunRequest::try_from(RunRequestValidation::new(
             request,
             self.validation_limits,
@@ -49,10 +49,8 @@ where
 pub enum DispatchError {
     #[error("too many run requests are queued")]
     AtCapacity,
-    #[error("run queue is unavailable")]
-    Unavailable,
-    #[error("run worker dropped the result channel")]
-    WorkerLost,
+    #[error("runner service failed")]
+    ServiceFailure(#[from] crate::model::ServiceFailure),
 }
 
 #[derive(Debug, Error)]
@@ -80,12 +78,12 @@ mod tests {
     }
 
     enum StubBehavior {
-        Return(RunResult),
+        Return(LearnerOutcome),
         Dispatch(DispatchError),
     }
 
     impl StubQueue {
-        fn returning(result: RunResult) -> Self {
+        fn returning(result: LearnerOutcome) -> Self {
             Self {
                 behavior: Arc::new(Mutex::new(StubBehavior::Return(result))),
             }
@@ -102,13 +100,14 @@ mod tests {
         async fn dispatch(
             &self,
             _request: ValidatedRunRequest,
-        ) -> Result<RunResult, DispatchError> {
+        ) -> Result<LearnerOutcome, DispatchError> {
             match &*self.behavior.lock().expect("stub queue lock") {
                 StubBehavior::Return(result) => Ok(result.clone()),
                 StubBehavior::Dispatch(error) => Err(match error {
                     DispatchError::AtCapacity => DispatchError::AtCapacity,
-                    DispatchError::Unavailable => DispatchError::Unavailable,
-                    DispatchError::WorkerLost => DispatchError::WorkerLost,
+                    DispatchError::ServiceFailure(failure) => {
+                        DispatchError::ServiceFailure(*failure)
+                    }
                 }),
             }
         }
@@ -142,7 +141,7 @@ mod tests {
     #[tokio::test]
     async fn run_lesson_returns_worker_result() {
         let service = LessonRunService::new(
-            StubQueue::returning(RunResult::new(
+            StubQueue::returning(LearnerOutcome::new(
                 RunStatus::Passed,
                 "ok".to_string(),
                 String::new(),
@@ -163,7 +162,12 @@ mod tests {
     #[tokio::test]
     async fn run_lesson_maps_validation_and_queue_failures() {
         let validation_service = LessonRunService::new(
-            StubQueue::returning(RunResult::internal_error("unused", 0)),
+            StubQueue::returning(LearnerOutcome::new(
+                RunStatus::Passed,
+                String::new(),
+                String::new(),
+                0,
+            )),
             validation_limits(),
         );
 
@@ -190,18 +194,22 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn run_lesson_maps_dropped_worker_channel() {
+    async fn run_lesson_maps_service_failure() {
+        let failure = crate::model::ServiceFailure::new(uuid::Uuid::new_v4());
         let service = LessonRunService::new(
-            StubQueue::dispatch_error(DispatchError::WorkerLost),
+            StubQueue::dispatch_error(DispatchError::ServiceFailure(failure)),
             validation_limits(),
         );
 
+        let error = service
+            .run_lesson(valid_request())
+            .await
+            .expect_err("service failure should be reported");
+
         assert!(matches!(
-            service
-                .run_lesson(valid_request())
-                .await
-                .expect_err("dropped channel should be reported"),
-            RunServiceError::Dispatch(DispatchError::WorkerLost)
+            error,
+            RunServiceError::Dispatch(DispatchError::ServiceFailure(actual))
+                if actual == failure
         ));
     }
 }

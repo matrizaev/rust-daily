@@ -2,11 +2,15 @@ use std::{io::Cursor, process::Output};
 
 use cargo_metadata::{Message, diagnostic::DiagnosticLevel};
 
-use crate::model::{RunResult, RunStatus};
+use crate::model::{LearnerOutcome, RunStatus};
 
 const TRUNCATION_MARKER: &str = "\n[output truncated]\n";
 
-pub fn result_from_output(output: Output, duration_ms: u64, max_output_bytes: usize) -> RunResult {
+pub fn result_from_output(
+    output: Output,
+    duration_ms: u64,
+    max_output_bytes: usize,
+) -> Option<LearnerOutcome> {
     let status = match output_status(&output) {
         CargoOutputStatus::Success => RunStatus::Passed,
         CargoOutputStatus::TimedOut => RunStatus::TimedOut,
@@ -15,12 +19,12 @@ pub fn result_from_output(output: Output, duration_ms: u64, max_output_bytes: us
         CargoOutputStatus::CargoError
         | CargoOutputStatus::InfrastructureError
         | CargoOutputStatus::InternalCompilerError => {
-            return RunResult::internal_error("runner internal error", duration_ms);
+            return None;
         }
     };
     let (stdout, stderr) = filtered_output_streams(&output, max_output_bytes);
 
-    RunResult::new(status, stdout, stderr, duration_ms)
+    Some(LearnerOutcome::new(status, stdout, stderr, duration_ms))
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -99,15 +103,15 @@ pub fn diagnostic_text(output: &Output) -> String {
 }
 
 #[cfg(test)]
-fn classify_status(output: &Output) -> RunStatus {
+fn classify_status(output: &Output) -> Option<RunStatus> {
     match output_status(output) {
-        CargoOutputStatus::Success => RunStatus::Passed,
-        CargoOutputStatus::TimedOut => RunStatus::TimedOut,
-        CargoOutputStatus::CompilerError => RunStatus::CompileError,
-        CargoOutputStatus::Failure => RunStatus::Failed,
+        CargoOutputStatus::Success => Some(RunStatus::Passed),
+        CargoOutputStatus::TimedOut => Some(RunStatus::TimedOut),
+        CargoOutputStatus::CompilerError => Some(RunStatus::CompileError),
+        CargoOutputStatus::Failure => Some(RunStatus::Failed),
         CargoOutputStatus::CargoError
         | CargoOutputStatus::InfrastructureError
-        | CargoOutputStatus::InternalCompilerError => RunStatus::InternalError,
+        | CargoOutputStatus::InternalCompilerError => None,
     }
 }
 
@@ -328,7 +332,7 @@ mod tests {
     fn classifies_successful_output_as_passed() {
         assert_eq!(
             classify_status(&output(0, "running 1 test", "")),
-            RunStatus::Passed
+            Some(RunStatus::Passed)
         );
     }
 
@@ -340,7 +344,7 @@ mod tests {
                 &compiler_message("error", "error: bad type"),
                 "",
             )),
-            RunStatus::CompileError
+            Some(RunStatus::CompileError)
         );
     }
 
@@ -352,13 +356,16 @@ mod tests {
                 &format!("{}\ntest answer_is_42 ... FAILED", build_finished(true)),
                 "error: test failed, to rerun pass `--test lesson`",
             )),
-            RunStatus::Failed
+            Some(RunStatus::Failed)
         );
     }
 
     #[test]
     fn classifies_inner_timeout_exit_code() {
-        assert_eq!(classify_status(&output(124, "", "")), RunStatus::TimedOut);
+        assert_eq!(
+            classify_status(&output(124, "", "")),
+            Some(RunStatus::TimedOut)
+        );
     }
 
     #[test]
@@ -379,7 +386,8 @@ mod tests {
             .join("\n");
         let raw_stdout = format!("{cargo_noise}\nreal test output\n");
 
-        let result = result_from_output(output(0, &raw_stdout, ""), 42, 80);
+        let result =
+            result_from_output(output(0, &raw_stdout, ""), 42, 80).expect("learner result");
 
         assert_eq!(result.status, RunStatus::Passed);
         assert_eq!(result.stdout, "real test output");
@@ -395,7 +403,8 @@ mod tests {
             "   Compiling rust_daily_lesson v0.1.0 (/workspace)\n",
         );
 
-        let result = result_from_output(output(0, "running 1 test", raw_stderr), 42, 400);
+        let result = result_from_output(output(0, "running 1 test", raw_stderr), 42, 400)
+            .expect("learner result");
 
         assert_eq!(result.status, RunStatus::Passed);
         assert_eq!(
@@ -410,8 +419,7 @@ mod tests {
 
         let result = result_from_output(output(125, "", raw_stderr), 42, 400);
 
-        assert_eq!(result.status, RunStatus::InternalError);
-        assert_eq!(result.stderr, "runner internal error");
+        assert!(result.is_none());
     }
 
     #[test]
@@ -422,7 +430,8 @@ mod tests {
             compiler_message("error", "error: bad type")
         );
 
-        let result = result_from_output(output(101, &raw_stdout, ""), 42, 400);
+        let result =
+            result_from_output(output(101, &raw_stdout, ""), 42, 400).expect("learner result");
 
         assert_eq!(result.status, RunStatus::CompileError);
         assert!(!result.stdout.contains("compiler-artifact"));

@@ -15,14 +15,20 @@ type BackendRunStatus =
   | "passed"
   | "failed"
   | "compile_error"
-  | "timed_out"
-  | "internal_error";
+  | "timed_out";
 
 type BackendRunResult = {
   status: BackendRunStatus;
   stdout: string;
   stderr: string;
   duration_ms: number;
+};
+
+type ServiceUnavailableResponse = {
+  code?: unknown;
+  details?: {
+    correlation_id?: unknown;
+  };
 };
 
 type BackendRunRequest = {
@@ -70,8 +76,13 @@ const BACKEND_STATUSES = new Set<string>([
   "failed",
   "compile_error",
   "timed_out",
-  "internal_error",
 ]);
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const isCorrelationId = (value: unknown): value is string =>
+  typeof value === "string" && UUID_PATTERN.test(value);
 
 const truncateText = (value: string, maxLength: number) =>
   value.length <= maxLength ? value : `${value.slice(0, maxLength)}...`;
@@ -317,7 +328,6 @@ const statusSummary = (
       failed: "Compile-fail checks failed.",
       compile_error: "The Rust code did not compile.",
       timed_out: "The Rust runner timed out.",
-      internal_error: "The Rust runner failed internally.",
     };
 
     return summaries[status];
@@ -328,7 +338,6 @@ const statusSummary = (
     failed: "Rust tests failed.",
     compile_error: "The Rust code did not compile.",
     timed_out: "The Rust runner timed out.",
-    internal_error: "The Rust runner failed internally.",
   };
 
   return summaries[status];
@@ -349,13 +358,11 @@ const failureForStatus = (
           compile_error:
             "Fix the compile error before running the compile-fail cases.",
           timed_out: "The runner stopped this check after the lesson timeout.",
-          internal_error: "The runner could not complete this check.",
         }
       : {
           failed: "At least one public Rust test failed.",
           compile_error: "Fix the compile error before running the tests again.",
           timed_out: "The runner stopped this check after the lesson timeout.",
-          internal_error: "The runner could not complete this check.",
         };
 
   return [
@@ -386,26 +393,16 @@ const resultFromBackend = (
     Math.max(0, Math.round(response.duration_ms)),
   );
 
-const readErrorDiagnostics = async (response: Response) => {
-  try {
-    return await response.text();
-  } catch {
-    return "";
-  }
-};
-
 const resultFromHttpError = async (
   response: Response,
   startedAt: number,
 ): Promise<ValidationResult> => {
-  const diagnostics = await readErrorDiagnostics(response);
-
   if (response.status === 413) {
     return result(
       "failed",
       startedAt,
       "This lesson payload is too large for the Rust runner.",
-      diagnostics,
+      "",
       [
         {
           name: "runner payload",
@@ -421,21 +418,39 @@ const resultFromHttpError = async (
       "unsupported",
       startedAt,
       "The Rust runner is busy. Try again shortly.",
-      diagnostics,
+    );
+  }
+
+  if (response.status === 503) {
+    const correlationId = await response
+      .json()
+      .then((payload: ServiceUnavailableResponse) =>
+        payload.code === "service_unavailable" &&
+        isCorrelationId(payload.details?.correlation_id)
+          ? payload.details.correlation_id
+          : null,
+      )
+      .catch(() => null);
+
+    return result(
+      "unsupported",
+      startedAt,
+      correlationId
+        ? `The Rust runner is temporarily unavailable. Try again shortly. Reference: ${correlationId}.`
+        : "The Rust runner is temporarily unavailable. Try again shortly.",
     );
   }
 
   return result(
-    "internal_error",
+    "unsupported",
     startedAt,
-    `The Rust runner returned HTTP ${response.status}.`,
-    diagnostics,
+    "The Rust runner could not complete this check. Try again shortly.",
   );
 };
 
 const invalidBackendResponseResult = (startedAt: number) =>
   result(
-    "internal_error",
+    "unsupported",
     startedAt,
     "The Rust runner returned an invalid response.",
   );
@@ -451,7 +466,7 @@ const unavailableResult = (startedAt: number) =>
   result(
     "unsupported",
     startedAt,
-    "The Rust runner could not be reached. Check the configured backend URL and CORS setting.",
+    "The Rust runner is unavailable. Try again shortly.",
   );
 
 const isBackendValidationRequest = (
