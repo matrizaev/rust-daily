@@ -10,7 +10,6 @@ const DIAGNOSTICS_LIMIT = 4096;
 const SUMMARY_LIMIT = 240;
 const FAILURE_LIMIT = 20;
 const BACKEND_RESPONSE_GRACE_MS = 3000;
-const MAX_JSON_PAYLOAD_BYTES = 1_600_000;
 
 type BackendRunStatus =
   | "passed"
@@ -111,8 +110,6 @@ const result = (
 
 const buildRunUrl = (backendUrl: string) =>
   `${backendUrl.trim().replace(/\/+$/, "")}/run`;
-
-const serializedByteLength = (value: string) => new TextEncoder().encode(value).byteLength;
 
 type BackendRunFile = BackendRunRequest["files"][number];
 
@@ -518,10 +515,6 @@ const fetchBackendRun = (
   signal: AbortSignal,
 ) => {
   const body = JSON.stringify(buildRunRequest(request));
-
-  if (serializedByteLength(body) > MAX_JSON_PAYLOAD_BYTES) {
-    return Promise.resolve(new Response(null, { status: 413 }));
-  }
 
   return fetch(buildRunUrl(backendUrl), {
     method: "POST",

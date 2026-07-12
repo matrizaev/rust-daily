@@ -162,8 +162,8 @@ describe("runBackendValidation", () => {
       });
   });
 
-  it("rejects an oversized serialized body before posting", async () => {
-    const fetchMock = vi.fn();
+  it("posts oversized bodies and lets the backend own payload limits", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("too large", { status: 413 }));
     vi.stubGlobal("fetch", fetchMock);
 
     const oversizedRequest = cargoRequest();
@@ -173,7 +173,7 @@ describe("runBackendValidation", () => {
         status: "failed",
         summary: "This lesson payload is too large for the Rust runner.",
       });
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledOnce();
   });
 
   it("uses only service-unavailable correlation IDs from error bodies", async () => {

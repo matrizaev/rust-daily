@@ -41,10 +41,10 @@ describe("runtime lesson details", () => {
     });
   });
 
-  it("rejects unknown detail fields and malformed validation DTOs", async () => {
+  it("trusts generated detail DTOs without browser-side schema decoding", async () => {
     const lesson = getLessonIndex()[1];
     const response = detailResponse(lesson.id, lesson.schemaVersion);
-    const invalid = {
+    const generated = {
       ...response,
       detail: {
         ...response.detail,
@@ -53,11 +53,12 @@ describe("runtime lesson details", () => {
       },
     };
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
-      new Response(JSON.stringify(invalid)),
+      new Response(JSON.stringify(generated)),
     ));
 
-    await expect(loadLesson(lesson.id)).rejects.toThrow(
-      `Invalid lesson detail schema for ${lesson.id}.`,
-    );
+    await expect(loadLesson(lesson.id)).resolves.toMatchObject({
+      id: lesson.id,
+      validation: { mode: "backend-cargo-test", unexpected: true },
+    });
   });
 });
