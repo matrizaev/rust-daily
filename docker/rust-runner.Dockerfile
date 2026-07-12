@@ -22,3 +22,9 @@ COPY docker/run-advanced-lesson-tests.sh /usr/local/bin/run-advanced-lesson-test
 
 RUN chmod 0755 /usr/local/bin/run-advanced-lesson-cargo \
     && chmod 0755 /usr/local/bin/run-advanced-lesson-tests
+
+RUN groupadd --gid 10001 rustdaily \
+    && useradd --uid 10001 --gid 10001 --no-create-home --shell /usr/sbin/nologin rustdaily \
+    && chown -R 10001:10001 /opt/rust-daily-target
+
+USER 10001:10001

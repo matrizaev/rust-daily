@@ -100,8 +100,13 @@ there would cover the tmpfs with the host directory. If the advanced dependency
 cache grows enough to hit this cap, tune `TemporaryFileSystem` and
 `config/prod.yaml` together.
 
+The backend mounts each prepared workspace read-only at `/input`. The managed
+container copies it into a size-bounded `/workspace` tmpfs before executing
+Cargo, so untrusted writes do not reach the host workspace.
+
 The service also enables `PrivateTmp`, `ProtectSystem=strict`, `ProtectHome`,
-and narrow `ReadWritePaths`. It intentionally does not set systemd
+narrow `ReadWritePaths`, `LimitCORE=0`, `MemoryMax=1G`, `MemorySwapMax=0`,
+`CPUQuota=200%`, and `TasksMax=512`. It intentionally does not set systemd
 `NoNewPrivileges`, because rootless Podman needs setuid `newuidmap`/`newgidmap`
 to set up subordinate user namespaces. It also avoids a service-level
 `CapabilityBoundingSet`, because clipping capabilities from setuid helpers can
@@ -121,6 +126,11 @@ sudo systemctl restart rust-daily-backend.service
 ```
 
 The backend writes structured JSON logs through `tracing` to journald.
+
+Before binding the HTTP server, startup verifies that Podman is rootless, the
+configured image exists locally, remote Podman environment variables are not
+set, and stale containers bearing `io.rust-daily.managed=true` can be removed.
+A failed preflight prevents the service from accepting validation requests.
 
 ## Runner Image
 
@@ -269,10 +279,12 @@ the compile-fail runner path.
 ## Security Boundary
 
 Submitted Rust is untrusted. The runner uses no network, memory/CPU/process
-limits, a read-only container filesystem, a small `noexec` temporary
-filesystem, dropped capabilities, `no-new-privileges`, and inner and outer
-timeouts.
+limits, a read-only container filesystem, a non-root user, bounded tmpfs
+filesystems, disabled proxy/log integration, dropped capabilities,
+`no-new-privileges`, structured Cargo/rustc classification, bounded raw process
+output, and inner, outer, and native container timeouts.
 
-The mounted lesson workspace is writable by design. Keep the backend bound to
-loopback, keep Podman rootless, and review runner changes as security-sensitive.
+Keep the backend bound to loopback, keep Podman rootless, and review runner
+changes as security-sensitive. Each request container has a unique name and is
+force-removed on completion, cancellation, timeout, or output overflow.
 The detailed trust model is in [../ARCHITECTURE.md](../ARCHITECTURE.md).

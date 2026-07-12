@@ -1,30 +1,22 @@
+use std::future::Future;
+
 use thiserror::Error;
-use tokio::sync::oneshot;
 
 use crate::{
     model::{
         RunRequest, RunRequestValidation, RunResult, ValidatedRunRequest, ValidationError,
         ValidationLimits,
     },
-    queue::{EnqueueError, RunQueue},
+    queue::RunQueue,
 };
 
 pub type AppService = LessonRunService<RunQueue>;
 
-pub trait RunQueuePort: Clone + Send + Sync + 'static {
-    fn try_enqueue(
+pub trait RunDispatcher: Clone + Send + Sync + 'static {
+    fn dispatch(
         &self,
         request: ValidatedRunRequest,
-    ) -> Result<oneshot::Receiver<RunResult>, EnqueueError>;
-}
-
-impl RunQueuePort for RunQueue {
-    fn try_enqueue(
-        &self,
-        request: ValidatedRunRequest,
-    ) -> Result<oneshot::Receiver<RunResult>, EnqueueError> {
-        RunQueue::try_enqueue(self, request)
-    }
+    ) -> impl Future<Output = Result<RunResult, DispatchError>> + Send;
 }
 
 #[derive(Clone)]
@@ -35,7 +27,7 @@ pub struct LessonRunService<Q> {
 
 impl<Q> LessonRunService<Q>
 where
-    Q: RunQueuePort,
+    Q: RunDispatcher,
 {
     pub fn new(queue: Q, validation_limits: ValidationLimits) -> Self {
         Self {
@@ -49,12 +41,18 @@ where
             request,
             self.validation_limits,
         ))?;
-        let response_rx = self.queue.try_enqueue(request)?;
-
-        response_rx
-            .await
-            .map_err(|_| RunServiceError::WorkerDropped)
+        self.queue.dispatch(request).await.map_err(Into::into)
     }
+}
+
+#[derive(Debug, Clone, Copy, Error, Eq, PartialEq)]
+pub enum DispatchError {
+    #[error("too many run requests are queued")]
+    AtCapacity,
+    #[error("run queue is unavailable")]
+    Unavailable,
+    #[error("run worker dropped the result channel")]
+    WorkerLost,
 }
 
 #[derive(Debug, Error)]
@@ -62,9 +60,7 @@ pub enum RunServiceError {
     #[error(transparent)]
     Validation(#[from] ValidationError),
     #[error(transparent)]
-    Enqueue(#[from] EnqueueError),
-    #[error("run worker dropped the result channel")]
-    WorkerDropped,
+    Dispatch(#[from] DispatchError),
 }
 
 #[cfg(test)]
@@ -73,8 +69,6 @@ mod tests {
         num::NonZeroUsize,
         sync::{Arc, Mutex},
     };
-
-    use tokio::sync::oneshot;
 
     use crate::model::{RunStatus, SubmittedFile};
 
@@ -87,8 +81,7 @@ mod tests {
 
     enum StubBehavior {
         Return(RunResult),
-        Enqueue(EnqueueError),
-        DropWorker,
+        Dispatch(DispatchError),
     }
 
     impl StubQueue {
@@ -98,40 +91,25 @@ mod tests {
             }
         }
 
-        fn enqueue_error(error: EnqueueError) -> Self {
+        fn dispatch_error(error: DispatchError) -> Self {
             Self {
-                behavior: Arc::new(Mutex::new(StubBehavior::Enqueue(error))),
-            }
-        }
-
-        fn dropped_worker() -> Self {
-            Self {
-                behavior: Arc::new(Mutex::new(StubBehavior::DropWorker)),
+                behavior: Arc::new(Mutex::new(StubBehavior::Dispatch(error))),
             }
         }
     }
 
-    impl RunQueuePort for StubQueue {
-        fn try_enqueue(
+    impl RunDispatcher for StubQueue {
+        async fn dispatch(
             &self,
             _request: ValidatedRunRequest,
-        ) -> Result<oneshot::Receiver<RunResult>, EnqueueError> {
+        ) -> Result<RunResult, DispatchError> {
             match &*self.behavior.lock().expect("stub queue lock") {
-                StubBehavior::Return(result) => {
-                    let (sender, receiver) = oneshot::channel();
-                    sender
-                        .send(result.clone())
-                        .expect("receiver should be open");
-                    Ok(receiver)
-                }
-                StubBehavior::Enqueue(error) => Err(match error {
-                    EnqueueError::Full => EnqueueError::Full,
-                    EnqueueError::Closed => EnqueueError::Closed,
+                StubBehavior::Return(result) => Ok(result.clone()),
+                StubBehavior::Dispatch(error) => Err(match error {
+                    DispatchError::AtCapacity => DispatchError::AtCapacity,
+                    DispatchError::Unavailable => DispatchError::Unavailable,
+                    DispatchError::WorkerLost => DispatchError::WorkerLost,
                 }),
-                StubBehavior::DropWorker => {
-                    let (_sender, receiver) = oneshot::channel();
-                    Ok(receiver)
-                }
             }
         }
     }
@@ -144,8 +122,17 @@ mod tests {
     }
 
     fn validation_limits() -> ValidationLimits {
-        ValidationLimits::try_new(nonzero(8), nonzero(65536), nonzero(262144))
-            .expect("test limits should be valid")
+        ValidationLimits::try_new(
+            nonzero(8),
+            nonzero(65536),
+            nonzero(262144),
+            nonzero(240),
+            nonzero(120),
+            nonzero(16),
+            nonzero(512),
+            nonzero(8192),
+        )
+        .expect("test limits should be valid")
     }
 
     fn nonzero(value: usize) -> NonZeroUsize {
@@ -189,7 +176,7 @@ mod tests {
         ));
 
         let queue_service = LessonRunService::new(
-            StubQueue::enqueue_error(EnqueueError::Full),
+            StubQueue::dispatch_error(DispatchError::AtCapacity),
             validation_limits(),
         );
 
@@ -198,20 +185,23 @@ mod tests {
                 .run_lesson(valid_request())
                 .await
                 .expect_err("queue full should propagate"),
-            RunServiceError::Enqueue(EnqueueError::Full)
+            RunServiceError::Dispatch(DispatchError::AtCapacity)
         ));
     }
 
     #[tokio::test]
     async fn run_lesson_maps_dropped_worker_channel() {
-        let service = LessonRunService::new(StubQueue::dropped_worker(), validation_limits());
+        let service = LessonRunService::new(
+            StubQueue::dispatch_error(DispatchError::WorkerLost),
+            validation_limits(),
+        );
 
         assert!(matches!(
             service
                 .run_lesson(valid_request())
                 .await
                 .expect_err("dropped channel should be reported"),
-            RunServiceError::WorkerDropped
+            RunServiceError::Dispatch(DispatchError::WorkerLost)
         ));
     }
 }

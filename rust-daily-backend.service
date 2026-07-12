@@ -41,6 +41,11 @@ ProtectHome=true
 ReadWritePaths=/run/rust-daily-backend /var/www12/.cache /var/www12/.config /var/www12/.local/share
 AmbientCapabilities=
 LimitNOFILE=65535
+LimitCORE=0
+MemoryMax=1G
+MemorySwapMax=0
+CPUQuota=200%
+TasksMax=512
 
 [Install]
 WantedBy=multi-user.target

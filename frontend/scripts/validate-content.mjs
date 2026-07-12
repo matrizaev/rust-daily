@@ -6,7 +6,10 @@ import {
   push,
   reportErrorsOrLog,
   validateHintObject,
+  validateDiagnosticAggregateByteLimit,
+  validateDiagnosticSnippetLimits,
   validateKnownDependencySet,
+  validateRunnerPathLimits,
 } from "./curriculum/shared.mjs";
 
 const LESSONS_PATH = new URL("../src/content/lessons.json", import.meta.url);
@@ -326,22 +329,42 @@ const validateCompileFailCaseName = (errors, label, name) => {
 };
 
 const validateCompileFailCasePath = (errors, label, path) => {
-  if (isString(path) && !isCompileFailPath(path)) {
+  if (!isString(path)) {
+    return;
+  }
+
+  if (!isCompileFailPath(path)) {
     push(errors, `${label} path must be under compile_fail/ and end with .rs.`);
+  }
+
+  validateRunnerPathLimits(errors, label, path, "path");
+};
+
+const validateExpectedDiagnosticsShape = (errors, label, expectedDiagnostics) => {
+  if (!isStringArray(expectedDiagnostics)) {
+    push(errors, `${label} expectedDiagnostics must be a non-empty string array.`);
   }
 };
 
-const validateCompileFailCaseDiagnostics = (errors, label, compileFailCase) => {
-  if (!isStringArray(compileFailCase.expectedDiagnostics)) {
-    push(errors, `${label} expectedDiagnostics must be a non-empty string array.`);
+const validateForbiddenDiagnosticsShape = (errors, label, compileFailCase) => {
+  if (!("forbiddenDiagnostics" in compileFailCase)) {
+    return;
   }
 
-  if (
-    "forbiddenDiagnostics" in compileFailCase &&
-    !isStringArray(compileFailCase.forbiddenDiagnostics)
-  ) {
+  if (!isStringArray(compileFailCase.forbiddenDiagnostics)) {
     push(errors, `${label} forbiddenDiagnostics must be a string array.`);
   }
+};
+
+const diagnosticArray = (value) => (Array.isArray(value) ? value : []);
+
+const validateCompileFailCaseDiagnostics = (errors, label, compileFailCase) => {
+  validateExpectedDiagnosticsShape(errors, label, compileFailCase.expectedDiagnostics);
+  validateForbiddenDiagnosticsShape(errors, label, compileFailCase);
+
+  const expected = diagnosticArray(compileFailCase.expectedDiagnostics);
+  const forbidden = diagnosticArray(compileFailCase.forbiddenDiagnostics);
+  validateDiagnosticSnippetLimits(errors, label, expected, forbidden);
 };
 
 const validateCompileFailCase = (errors, lesson, compileFailCase, index) => {
@@ -362,6 +385,27 @@ const validateCompileFailCase = (errors, lesson, compileFailCase, index) => {
   validateCompileFailCaseDiagnostics(errors, label, compileFailCase);
 };
 
+const compileFailCaseDiagnostics = (compileFailCase) => {
+  if (!isRecord(compileFailCase)) {
+    return [];
+  }
+
+  return [
+    ...diagnosticArray(compileFailCase.expectedDiagnostics),
+    ...diagnosticArray(compileFailCase.forbiddenDiagnostics),
+  ];
+};
+
+const validateCompileFailDiagnosticAggregateLimits = (errors, lesson, cases) => {
+  const snippets = cases.flatMap(compileFailCaseDiagnostics);
+
+  validateDiagnosticAggregateByteLimit(
+    errors,
+    `${lesson.id} compile-fail validation`,
+    snippets,
+  );
+};
+
 const validateCompileFailValidation = (errors, lesson, validation) => {
   validateBackendStepBase(errors, lesson, validation, "compile-fail validation");
 
@@ -373,6 +417,7 @@ const validateCompileFailValidation = (errors, lesson, validation) => {
   validation.cases.forEach((compileFailCase, index) =>
     validateCompileFailCase(errors, lesson, compileFailCase, index),
   );
+  validateCompileFailDiagnosticAggregateLimits(errors, lesson, validation.cases);
 };
 
 const validateCompileFailSiblings = (errors, lesson, validation) => {

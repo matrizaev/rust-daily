@@ -2,6 +2,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     num::NonZeroUsize,
     path::{Component, Path},
+    time::{Duration, Instant},
 };
 
 use serde::{Deserialize, Serialize};
@@ -17,6 +18,8 @@ const TESTDATA_PREFIX: &str = "testdata/";
 const COMPILE_FAIL_PREFIX: &str = "compile_fail/";
 const MAX_COMPILE_FAIL_CASES: usize = 4;
 const MAX_COMPILE_FAIL_CASE_NAME_BYTES: usize = 80;
+pub const MAX_PATH_BYTES_HARD_LIMIT: usize = 240;
+pub const MAX_PATH_COMPONENT_BYTES_HARD_LIMIT: usize = 120;
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
 pub struct RunRequest {
@@ -219,8 +222,8 @@ pub struct ValidatedCompileFailCase {
     name: CompileFailCaseName,
     path: CompileFailPath,
     content: SubmittedContent,
-    expected_diagnostics: Vec<DiagnosticSnippet>,
-    forbidden_diagnostics: Vec<DiagnosticSnippet>,
+    expected_diagnostics: BTreeSet<DiagnosticSnippet>,
+    forbidden_diagnostics: BTreeSet<DiagnosticSnippet>,
 }
 
 impl ValidatedCompileFailCase {
@@ -236,11 +239,11 @@ impl ValidatedCompileFailCase {
         &self.content
     }
 
-    pub fn expected_diagnostics(&self) -> &[DiagnosticSnippet] {
+    pub fn expected_diagnostics(&self) -> &BTreeSet<DiagnosticSnippet> {
         &self.expected_diagnostics
     }
 
-    pub fn forbidden_diagnostics(&self) -> &[DiagnosticSnippet] {
+    pub fn forbidden_diagnostics(&self) -> &BTreeSet<DiagnosticSnippet> {
         &self.forbidden_diagnostics
     }
 }
@@ -309,7 +312,7 @@ impl TryFrom<String> for CompileFailPath {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct DiagnosticSnippet(String);
 
 impl DiagnosticSnippet {
@@ -399,6 +402,7 @@ impl TryFrom<RunRequestValidation> for ValidatedRunRequest {
 
         for file in files {
             let (path, content) = file.into_parts();
+            validate_path_limits(&path, input.limits)?;
             let path = SubmittedPath::try_from(path)?;
 
             total_bytes = total_bytes.saturating_add(content.len());
@@ -434,13 +438,8 @@ impl TryFrom<RunRequestValidation> for ValidatedRunRequest {
             });
         }
 
-        let validated_compile_fail_cases = validate_compile_fail_cases(
-            mode,
-            compile_fail_cases,
-            input.limits.max_file_bytes(),
-            input.limits.max_total_bytes(),
-            &mut total_bytes,
-        )?;
+        let validated_compile_fail_cases =
+            validate_compile_fail_cases(mode, compile_fail_cases, input.limits, &mut total_bytes)?;
 
         Ok(Self {
             mode,
@@ -454,8 +453,7 @@ impl TryFrom<RunRequestValidation> for ValidatedRunRequest {
 fn validate_compile_fail_cases(
     mode: RunMode,
     cases: Vec<SubmittedCompileFailCase>,
-    max_file_bytes: usize,
-    max_total_bytes: usize,
+    limits: ValidationLimits,
     total_bytes: &mut usize,
 ) -> Result<Vec<ValidatedCompileFailCase>, ValidationError> {
     match mode {
@@ -479,10 +477,22 @@ fn validate_compile_fail_cases(
     let mut paths = BTreeSet::new();
     let mut target_names = BTreeSet::new();
     let mut validated = Vec::with_capacity(cases.len());
+    let mut diagnostic_bytes = 0usize;
 
     for case in cases {
         let (name, path, content, expected_diagnostics, forbidden_diagnostics) = case.into_parts();
         let name = CompileFailCaseName::try_from(name)?;
+
+        if expected_diagnostics
+            .len()
+            .saturating_add(forbidden_diagnostics.len())
+            > limits.max_diagnostic_snippets_per_case()
+        {
+            return Err(ValidationError::TooManyDiagnosticSnippets {
+                name: name.as_str().to_string(),
+                max: limits.max_diagnostic_snippets_per_case(),
+            });
+        }
 
         if !names.insert(name.clone()) {
             return Err(ValidationError::DuplicateCompileFailCaseName {
@@ -497,6 +507,7 @@ fn validate_compile_fail_cases(
             });
         }
 
+        validate_path_limits(&path, limits)?;
         let path = CompileFailPath::try_from(path)?;
 
         if !paths.insert(path.clone()) {
@@ -506,19 +517,24 @@ fn validate_compile_fail_cases(
         }
 
         *total_bytes = total_bytes.saturating_add(content.len());
-        if *total_bytes > max_total_bytes {
+        if *total_bytes > limits.max_total_bytes() {
             return Err(ValidationError::TotalTooLarge {
-                max_bytes: max_total_bytes,
+                max_bytes: limits.max_total_bytes(),
             });
         }
 
         let content = SubmittedContent::try_from(SubmittedContentInput::new(
             path.as_str(),
             content,
-            max_file_bytes,
+            limits.max_file_bytes(),
         ))?;
-        let expected_diagnostics =
-            validate_diagnostic_snippets(name.as_str(), expected_diagnostics)?;
+        let expected_diagnostics = validate_diagnostic_snippets(
+            name.as_str(),
+            expected_diagnostics,
+            limits,
+            &mut diagnostic_bytes,
+            total_bytes,
+        )?;
 
         if expected_diagnostics.is_empty() {
             return Err(ValidationError::MissingExpectedDiagnostics {
@@ -526,8 +542,23 @@ fn validate_compile_fail_cases(
             });
         }
 
-        let forbidden_diagnostics =
-            validate_diagnostic_snippets(name.as_str(), forbidden_diagnostics)?;
+        let forbidden_diagnostics = validate_diagnostic_snippets(
+            name.as_str(),
+            forbidden_diagnostics,
+            limits,
+            &mut diagnostic_bytes,
+            total_bytes,
+        )?;
+
+        if let Some(snippet) = expected_diagnostics
+            .intersection(&forbidden_diagnostics)
+            .next()
+        {
+            return Err(ValidationError::ConflictingDiagnosticSnippet {
+                name: name.as_str().to_string(),
+                snippet: snippet.as_str().to_string(),
+            });
+        }
 
         validated.push(ValidatedCompileFailCase {
             name,
@@ -544,11 +575,45 @@ fn validate_compile_fail_cases(
 fn validate_diagnostic_snippets(
     case_name: &str,
     snippets: Vec<String>,
-) -> Result<Vec<DiagnosticSnippet>, ValidationError> {
-    snippets
-        .into_iter()
-        .map(|snippet| DiagnosticSnippet::try_from((snippet, case_name)))
-        .collect()
+    limits: ValidationLimits,
+    diagnostic_bytes: &mut usize,
+    total_bytes: &mut usize,
+) -> Result<BTreeSet<DiagnosticSnippet>, ValidationError> {
+    let mut validated = BTreeSet::new();
+
+    for snippet in snippets {
+        let snippet_bytes = snippet.len();
+        if snippet_bytes > limits.max_diagnostic_snippet_bytes() {
+            return Err(ValidationError::DiagnosticSnippetTooLarge {
+                name: case_name.to_string(),
+                max_bytes: limits.max_diagnostic_snippet_bytes(),
+            });
+        }
+
+        *diagnostic_bytes = diagnostic_bytes.saturating_add(snippet_bytes);
+        if *diagnostic_bytes > limits.max_diagnostic_total_bytes() {
+            return Err(ValidationError::DiagnosticsTooLarge {
+                max_bytes: limits.max_diagnostic_total_bytes(),
+            });
+        }
+
+        *total_bytes = total_bytes.saturating_add(snippet_bytes);
+        if *total_bytes > limits.max_total_bytes() {
+            return Err(ValidationError::TotalTooLarge {
+                max_bytes: limits.max_total_bytes(),
+            });
+        }
+
+        let snippet = DiagnosticSnippet::try_from((snippet, case_name))?;
+        if !validated.insert(snippet.clone()) {
+            return Err(ValidationError::DuplicateDiagnosticSnippet {
+                name: case_name.to_string(),
+                snippet: snippet.as_str().to_string(),
+            });
+        }
+    }
+
+    Ok(validated)
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -556,13 +621,26 @@ pub struct ValidationLimits {
     max_files: NonZeroUsize,
     max_file_bytes: NonZeroUsize,
     max_total_bytes: NonZeroUsize,
+    max_path_bytes: NonZeroUsize,
+    max_path_component_bytes: NonZeroUsize,
+    max_diagnostic_snippets_per_case: NonZeroUsize,
+    max_diagnostic_snippet_bytes: NonZeroUsize,
+    max_diagnostic_total_bytes: NonZeroUsize,
 }
 
 impl ValidationLimits {
+    // Each value is independently configurable and already strongly typed; keeping the
+    // constructor exhaustive prevents silently falling back to a security-sensitive default.
+    #[allow(clippy::too_many_arguments)]
     pub fn try_new(
         max_files: NonZeroUsize,
         max_file_bytes: NonZeroUsize,
         max_total_bytes: NonZeroUsize,
+        max_path_bytes: NonZeroUsize,
+        max_path_component_bytes: NonZeroUsize,
+        max_diagnostic_snippets_per_case: NonZeroUsize,
+        max_diagnostic_snippet_bytes: NonZeroUsize,
+        max_diagnostic_total_bytes: NonZeroUsize,
     ) -> Result<Self, ValidationLimitsError> {
         if max_total_bytes.get() < max_file_bytes.get() {
             return Err(ValidationLimitsError::TotalBytesBelowFileBytes {
@@ -571,10 +649,42 @@ impl ValidationLimits {
             });
         }
 
+        if max_path_component_bytes.get() > max_path_bytes.get() {
+            return Err(ValidationLimitsError::PathComponentBytesAbovePathBytes {
+                max_path_bytes: max_path_bytes.get(),
+                max_path_component_bytes: max_path_component_bytes.get(),
+            });
+        }
+
+        if max_path_bytes.get() > MAX_PATH_BYTES_HARD_LIMIT
+            || max_path_component_bytes.get() > MAX_PATH_COMPONENT_BYTES_HARD_LIMIT
+        {
+            return Err(ValidationLimitsError::PathLimitAboveHardMaximum {
+                max_path_bytes: max_path_bytes.get(),
+                hard_max_path_bytes: MAX_PATH_BYTES_HARD_LIMIT,
+                max_path_component_bytes: max_path_component_bytes.get(),
+                hard_max_path_component_bytes: MAX_PATH_COMPONENT_BYTES_HARD_LIMIT,
+            });
+        }
+
+        if max_diagnostic_snippet_bytes.get() > max_diagnostic_total_bytes.get() {
+            return Err(
+                ValidationLimitsError::DiagnosticSnippetBytesAboveDiagnosticTotalBytes {
+                    max_diagnostic_snippet_bytes: max_diagnostic_snippet_bytes.get(),
+                    max_diagnostic_total_bytes: max_diagnostic_total_bytes.get(),
+                },
+            );
+        }
+
         Ok(Self {
             max_files,
             max_file_bytes,
             max_total_bytes,
+            max_path_bytes,
+            max_path_component_bytes,
+            max_diagnostic_snippets_per_case,
+            max_diagnostic_snippet_bytes,
+            max_diagnostic_total_bytes,
         })
     }
 
@@ -589,6 +699,26 @@ impl ValidationLimits {
     pub fn max_total_bytes(self) -> usize {
         self.max_total_bytes.get()
     }
+
+    pub fn max_path_bytes(self) -> usize {
+        self.max_path_bytes.get()
+    }
+
+    pub fn max_path_component_bytes(self) -> usize {
+        self.max_path_component_bytes.get()
+    }
+
+    pub fn max_diagnostic_snippets_per_case(self) -> usize {
+        self.max_diagnostic_snippets_per_case.get()
+    }
+
+    pub fn max_diagnostic_snippet_bytes(self) -> usize {
+        self.max_diagnostic_snippet_bytes.get()
+    }
+
+    pub fn max_diagnostic_total_bytes(self) -> usize {
+        self.max_diagnostic_total_bytes.get()
+    }
 }
 
 #[derive(Debug, Error)]
@@ -599,6 +729,29 @@ pub enum ValidationLimitsError {
     TotalBytesBelowFileBytes {
         max_file_bytes: usize,
         max_total_bytes: usize,
+    },
+    #[error(
+        "max path component bytes ({max_path_component_bytes}) must not exceed max path bytes ({max_path_bytes})"
+    )]
+    PathComponentBytesAbovePathBytes {
+        max_path_bytes: usize,
+        max_path_component_bytes: usize,
+    },
+    #[error(
+        "configured path limits ({max_path_bytes}/{max_path_component_bytes}) exceed hard maximums ({hard_max_path_bytes}/{hard_max_path_component_bytes})"
+    )]
+    PathLimitAboveHardMaximum {
+        max_path_bytes: usize,
+        hard_max_path_bytes: usize,
+        max_path_component_bytes: usize,
+        hard_max_path_component_bytes: usize,
+    },
+    #[error(
+        "max diagnostic snippet bytes ({max_diagnostic_snippet_bytes}) must not exceed max diagnostic total bytes ({max_diagnostic_total_bytes})"
+    )]
+    DiagnosticSnippetBytesAboveDiagnosticTotalBytes {
+        max_diagnostic_snippet_bytes: usize,
+        max_diagnostic_total_bytes: usize,
     },
 }
 
@@ -636,6 +789,16 @@ pub enum ValidationError {
     MissingExpectedDiagnostics { name: String },
     #[error("compile-fail case `{name}` has an empty diagnostic snippet")]
     EmptyDiagnosticSnippet { name: String },
+    #[error("compile-fail case `{name}` has too many diagnostic snippets: maximum is {max}")]
+    TooManyDiagnosticSnippets { name: String, max: usize },
+    #[error("compile-fail case `{name}` has a diagnostic snippet larger than {max_bytes} bytes")]
+    DiagnosticSnippetTooLarge { name: String, max_bytes: usize },
+    #[error("diagnostic snippets are too large: maximum is {max_bytes} bytes")]
+    DiagnosticsTooLarge { max_bytes: usize },
+    #[error("compile-fail case `{name}` has duplicate diagnostic snippet `{snippet}`")]
+    DuplicateDiagnosticSnippet { name: String, snippet: String },
+    #[error("compile-fail case `{name}` both expects and forbids diagnostic snippet `{snippet}`")]
+    ConflictingDiagnosticSnippet { name: String, snippet: String },
 }
 
 impl ValidationError {
@@ -646,6 +809,9 @@ impl ValidationError {
                 | Self::FileTooLarge { .. }
                 | Self::TotalTooLarge { .. }
                 | Self::TooManyCompileFailCases { .. }
+                | Self::TooManyDiagnosticSnippets { .. }
+                | Self::DiagnosticSnippetTooLarge { .. }
+                | Self::DiagnosticsTooLarge { .. }
         )
     }
 
@@ -666,6 +832,33 @@ pub enum RunStatus {
     CompileError,
     TimedOut,
     InternalError,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct RunDeadline {
+    started_at: Instant,
+    timeout: Duration,
+}
+
+impl RunDeadline {
+    pub fn after(timeout: Duration) -> Self {
+        Self {
+            started_at: Instant::now(),
+            timeout,
+        }
+    }
+
+    pub fn remaining(self) -> Duration {
+        self.timeout.saturating_sub(self.started_at.elapsed())
+    }
+
+    pub fn is_elapsed(self) -> bool {
+        self.remaining().is_zero()
+    }
+
+    pub fn timeout(self) -> Duration {
+        self.timeout
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
@@ -701,8 +894,14 @@ fn validate_safe_path(path: &str) -> Result<(), ValidationError> {
     if path.is_empty()
         || path.contains('\\')
         || path.contains('\0')
+        || path.chars().any(char::is_control)
         || path.ends_with('/')
         || path.split('/').any(str::is_empty)
+        || path.split('/').any(|segment| matches!(segment, "." | ".."))
+        || path.len() > MAX_PATH_BYTES_HARD_LIMIT
+        || path
+            .split('/')
+            .any(|segment| segment.len() > MAX_PATH_COMPONENT_BYTES_HARD_LIMIT)
         || parsed.is_absolute()
     {
         return Err(ValidationError::UnsafePath {
@@ -722,6 +921,20 @@ fn validate_safe_path(path: &str) -> Result<(), ValidationError> {
                 });
             }
         }
+    }
+
+    Ok(())
+}
+
+fn validate_path_limits(path: &str, limits: ValidationLimits) -> Result<(), ValidationError> {
+    if path.len() > limits.max_path_bytes()
+        || path
+            .split('/')
+            .any(|component| component.len() > limits.max_path_component_bytes())
+    {
+        return Err(ValidationError::UnsafePath {
+            path: path.to_string(),
+        });
     }
 
     Ok(())
@@ -758,8 +971,17 @@ mod tests {
     }
 
     fn limits() -> ValidationLimits {
-        ValidationLimits::try_new(nonzero(8), nonzero(64), nonzero(128))
-            .expect("test limits should be valid")
+        ValidationLimits::try_new(
+            nonzero(8),
+            nonzero(64),
+            nonzero(128),
+            nonzero(240),
+            nonzero(120),
+            nonzero(16),
+            nonzero(64),
+            nonzero(128),
+        )
+        .expect("test limits should be valid")
     }
 
     fn valid_request() -> RunRequest {
@@ -1218,5 +1440,117 @@ mod tests {
             validate(request),
             Err(ValidationError::TotalTooLarge { max_bytes: 128 })
         ));
+    }
+
+    #[test]
+    fn validation_rejects_normalized_path_aliases_and_controls() {
+        for path in ["src/./lib.rs", "fixtures/bad\nname"] {
+            let request = RunRequest::new(vec![
+                SubmittedFile::new("src/lib.rs", "pub fn answer() {}\n"),
+                SubmittedFile::new("tests/lesson.rs", "#[test]\nfn answer() {}\n"),
+                SubmittedFile::new(path, ""),
+            ]);
+
+            assert!(matches!(
+                validate(request),
+                Err(ValidationError::UnsafePath { .. })
+            ));
+        }
+    }
+
+    #[test]
+    fn validation_rejects_duplicate_and_conflicting_diagnostics() {
+        let duplicate = SubmittedCompileFailCase::new(
+            "duplicate",
+            "compile_fail/duplicate.rs",
+            "fn main() {}",
+            vec!["private".to_string(), " private ".to_string()],
+        );
+        let conflicting = SubmittedCompileFailCase::new(
+            "conflicting",
+            "compile_fail/conflicting.rs",
+            "fn main() {}",
+            vec!["private".to_string()],
+        )
+        .with_forbidden_diagnostics(vec!["private".to_string()]);
+
+        for (case, expected) in [(duplicate, "duplicate"), (conflicting, "conflicting")] {
+            let request = RunRequest::compile_fail(
+                vec![
+                    SubmittedFile::new("src/lib.rs", "pub struct UserId(u64);\n"),
+                    SubmittedFile::new("tests/lesson.rs", "#[test]\nfn compiles() {}\n"),
+                ],
+                vec![case],
+                DependencySet::Std,
+            );
+            let error = validate(request).expect_err("diagnostic invariant should fail");
+
+            match expected {
+                "duplicate" => {
+                    assert!(matches!(
+                        error,
+                        ValidationError::DuplicateDiagnosticSnippet { .. }
+                    ));
+                }
+                "conflicting" => {
+                    assert!(matches!(
+                        error,
+                        ValidationError::ConflictingDiagnosticSnippet { .. }
+                    ));
+                }
+                _ => unreachable!("test case should be known"),
+            }
+        }
+    }
+
+    #[test]
+    fn validation_rejects_diagnostic_count_and_size_limits() {
+        let too_many = SubmittedCompileFailCase::new(
+            "many",
+            "compile_fail/many.rs",
+            "fn main() {}",
+            (0..17).map(|index| format!("e{index}")).collect(),
+        );
+        let too_large = SubmittedCompileFailCase::new(
+            "large",
+            "compile_fail/large.rs",
+            "fn main() {}",
+            vec!["x".repeat(65)],
+        );
+        let too_many_combined = SubmittedCompileFailCase::new(
+            "many-combined",
+            "compile_fail/many_combined.rs",
+            "fn main() {}",
+            (0..9).map(|index| format!("expected-{index}")).collect(),
+        )
+        .with_forbidden_diagnostics((0..8).map(|index| format!("forbidden-{index}")).collect());
+
+        for (case, is_count) in [
+            (too_many, true),
+            (too_many_combined, true),
+            (too_large, false),
+        ] {
+            let request = RunRequest::compile_fail(
+                vec![
+                    SubmittedFile::new("src/lib.rs", "pub struct UserId(u64);\n"),
+                    SubmittedFile::new("tests/lesson.rs", "#[test]\nfn compiles() {}\n"),
+                ],
+                vec![case],
+                DependencySet::Std,
+            );
+            let error = validate(request).expect_err("diagnostic limit should fail");
+
+            if is_count {
+                assert!(matches!(
+                    error,
+                    ValidationError::TooManyDiagnosticSnippets { .. }
+                ));
+            } else {
+                assert!(matches!(
+                    error,
+                    ValidationError::DiagnosticSnippetTooLarge { .. }
+                ));
+            }
+        }
     }
 }

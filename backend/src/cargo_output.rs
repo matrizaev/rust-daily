@@ -1,7 +1,6 @@
 use std::{io::Cursor, process::Output};
 
-use cargo_metadata::Message;
-use serde_json::Value;
+use cargo_metadata::{Message, diagnostic::DiagnosticLevel};
 
 use crate::model::{RunResult, RunStatus};
 
@@ -13,6 +12,11 @@ pub fn result_from_output(output: Output, duration_ms: u64, max_output_bytes: us
         CargoOutputStatus::TimedOut => RunStatus::TimedOut,
         CargoOutputStatus::CompilerError => RunStatus::CompileError,
         CargoOutputStatus::Failure => RunStatus::Failed,
+        CargoOutputStatus::CargoError
+        | CargoOutputStatus::InfrastructureError
+        | CargoOutputStatus::InternalCompilerError => {
+            return RunResult::internal_error("runner internal error", duration_ms);
+        }
     };
     let (stdout, stderr) = filtered_output_streams(&output, max_output_bytes);
 
@@ -25,6 +29,9 @@ pub enum CargoOutputStatus {
     TimedOut,
     CompilerError,
     Failure,
+    CargoError,
+    InfrastructureError,
+    InternalCompilerError,
 }
 
 pub fn output_status(output: &Output) -> CargoOutputStatus {
@@ -36,12 +43,24 @@ pub fn output_status(output: &Output) -> CargoOutputStatus {
         return CargoOutputStatus::TimedOut;
     }
 
-    if cargo_reported_compiler_error(&output.stdout)
-        || cargo_reported_compiler_error(&output.stderr)
+    if matches!(output.status.code(), Some(125..=127)) {
+        return CargoOutputStatus::InfrastructureError;
+    }
+
+    if cargo_reported_level(&output.stdout, DiagnosticLevel::Ice)
+        || cargo_reported_level(&output.stderr, DiagnosticLevel::Ice)
+    {
+        return CargoOutputStatus::InternalCompilerError;
+    }
+
+    if cargo_reported_level(&output.stdout, DiagnosticLevel::Error)
+        || cargo_reported_level(&output.stderr, DiagnosticLevel::Error)
     {
         CargoOutputStatus::CompilerError
-    } else {
+    } else if cargo_build_succeeded(&output.stdout) || cargo_build_succeeded(&output.stderr) {
         CargoOutputStatus::Failure
+    } else {
+        CargoOutputStatus::CargoError
     }
 }
 
@@ -86,20 +105,32 @@ fn classify_status(output: &Output) -> RunStatus {
         CargoOutputStatus::TimedOut => RunStatus::TimedOut,
         CargoOutputStatus::CompilerError => RunStatus::CompileError,
         CargoOutputStatus::Failure => RunStatus::Failed,
+        CargoOutputStatus::CargoError
+        | CargoOutputStatus::InfrastructureError
+        | CargoOutputStatus::InternalCompilerError => RunStatus::InternalError,
     }
 }
 
-fn cargo_reported_compiler_error(output: &[u8]) -> bool {
+fn cargo_reported_level(output: &[u8], expected: DiagnosticLevel) -> bool {
     cargo_messages(output).any(|message| match message {
-        Message::CompilerMessage(message) => is_error_level(&message.message.level),
+        Message::CompilerMessage(message) => message.message.level == expected,
         _ => false,
     })
+}
+
+fn cargo_build_succeeded(output: &[u8]) -> bool {
+    cargo_messages(output)
+        .any(|message| matches!(message, Message::BuildFinished(finished) if finished.success))
 }
 
 fn compiler_diagnostic_text(output: &[u8]) -> Vec<String> {
     cargo_messages(output)
         .filter_map(|message| match message {
-            Message::CompilerMessage(message) => Some(message.message),
+            Message::CompilerMessage(message)
+                if message.message.level == DiagnosticLevel::Error =>
+            {
+                Some(message.message)
+            }
             _ => None,
         })
         .map(|diagnostic| diagnostic.rendered.unwrap_or(diagnostic.message))
@@ -142,13 +173,6 @@ fn cargo_messages(output: &[u8]) -> impl Iterator<Item = Message> + '_ {
 
 fn cargo_message(line: &str) -> Option<Message> {
     cargo_messages(line.as_bytes()).next()
-}
-
-fn is_error_level<T>(level: &T) -> bool
-where
-    T: serde::Serialize,
-{
-    matches!(serde_json::to_value(level), Ok(Value::String(level)) if level == "error")
 }
 
 fn cap_output(stdout: &[u8], stderr: &[u8], max_output_bytes: usize) -> (String, String) {
@@ -229,7 +253,7 @@ mod tests {
 
     use serde_json::json;
 
-    use super::{cap_output, classify_status, result_from_output};
+    use super::{cap_output, classify_status, diagnostic_text, result_from_output};
     use crate::model::RunStatus;
 
     fn output(status: i32, stdout: &str, stderr: &str) -> std::process::Output {
@@ -292,6 +316,14 @@ mod tests {
         .to_string()
     }
 
+    fn build_finished(success: bool) -> String {
+        json!({
+            "reason": "build-finished",
+            "success": success
+        })
+        .to_string()
+    }
+
     #[test]
     fn classifies_successful_output_as_passed() {
         assert_eq!(
@@ -317,7 +349,7 @@ mod tests {
         assert_eq!(
             classify_status(&output(
                 101,
-                "test answer_is_42 ... FAILED",
+                &format!("{}\ntest answer_is_42 ... FAILED", build_finished(true)),
                 "error: test failed, to rerun pass `--test lesson`",
             )),
             RunStatus::Failed
@@ -373,13 +405,13 @@ mod tests {
     }
 
     #[test]
-    fn keeps_podman_logs_from_failed_response_output() {
+    fn hides_podman_logs_from_infrastructure_failure_response() {
         let raw_stderr = r#"time="2026-07-10T10:36:30Z" level=error msg="cannot set up namespace""#;
 
         let result = result_from_output(output(125, "", raw_stderr), 42, 400);
 
-        assert_eq!(result.status, RunStatus::Failed);
-        assert!(result.stderr.contains("cannot set up namespace"));
+        assert_eq!(result.status, RunStatus::InternalError);
+        assert_eq!(result.stderr, "runner internal error");
     }
 
     #[test]
@@ -396,5 +428,20 @@ mod tests {
         assert!(!result.stdout.contains("compiler-artifact"));
         assert!(result.stdout.contains("compiler-message"));
         assert!(result.stdout.contains("error: bad type"));
+    }
+
+    #[test]
+    fn compile_fail_matching_text_contains_only_error_diagnostics() {
+        let raw_stdout = format!(
+            "{}\n{}",
+            compiler_message("warning", "expected text in warning"),
+            compiler_message("error", "actual rustc error")
+        );
+        let output = output(101, &raw_stdout, "");
+
+        let diagnostics = diagnostic_text(&output);
+
+        assert!(!diagnostics.contains("expected text in warning"));
+        assert!(diagnostics.contains("actual rustc error"));
     }
 }

@@ -8,7 +8,7 @@ FRONTEND_BACKEND_URL ?= http://127.0.0.1:8080
 SMOKE_URL ?= http://127.0.0.1:8080
 SMOKE_CASE ?= pass
 BACKEND_COVERAGE_THRESHOLD ?= 80
-BACKEND_COVERAGE_EXCLUDE_FILES := src/main.rs src/server.rs src/static_files.rs src/observability.rs src/runner.rs
+BACKEND_COVERAGE_EXCLUDE_FILES := src/main.rs src/server.rs src/static_files.rs src/observability.rs
 
 .PHONY: format lint test coverage coverage-backend coverage-frontend runner-image smoke-runner dev-full
 

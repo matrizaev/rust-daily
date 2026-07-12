@@ -107,6 +107,13 @@ pub async fn prepare_workspace(
 pub struct TestTargetName(String);
 
 impl TestTargetName {
+    pub fn from_case(case: &ValidatedCompileFailCase) -> Self {
+        Self(format!(
+            "compile_fail_{}",
+            case.name().as_str().replace('-', "_")
+        ))
+    }
+
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -116,10 +123,7 @@ pub async fn write_compile_fail_case(
     workspace: &Path,
     case: &ValidatedCompileFailCase,
 ) -> Result<TestTargetName, WorkspaceError> {
-    let target_name = TestTargetName(format!(
-        "compile_fail_{}",
-        case.name().as_str().replace('-', "_")
-    ));
+    let target_name = TestTargetName::from_case(case);
     let path = workspace
         .join("tests")
         .join(format!("{}.rs", target_name.as_str()));
@@ -164,13 +168,31 @@ mod tests {
     }
 
     fn limits() -> ValidationLimits {
-        ValidationLimits::try_new(nonzero(8), nonzero(64), nonzero(128))
-            .expect("test limits should be valid")
+        ValidationLimits::try_new(
+            nonzero(8),
+            nonzero(64),
+            nonzero(128),
+            nonzero(240),
+            nonzero(120),
+            nonzero(16),
+            nonzero(64),
+            nonzero(128),
+        )
+        .expect("test limits should be valid")
     }
 
     fn roomy_limits() -> ValidationLimits {
-        ValidationLimits::try_new(nonzero(16), nonzero(512), nonzero(2048))
-            .expect("test limits should be valid")
+        ValidationLimits::try_new(
+            nonzero(16),
+            nonzero(512),
+            nonzero(2048),
+            nonzero(240),
+            nonzero(120),
+            nonzero(16),
+            nonzero(512),
+            nonzero(1024),
+        )
+        .expect("test limits should be valid")
     }
 
     fn valid_request() -> ValidatedRunRequest {

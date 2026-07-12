@@ -11,7 +11,7 @@
 - Express canonical single-input representation conversions with `From`/`Into`, `TryFrom`/`TryInto`, or `FromStr` for text parsing. Keep named mapping helpers when conversion requires additional context, applies workflow policy, or cannot be implemented in the owning layer under Rust's orphan rules.
 - Avoid `unwrap`/`expect` in production paths. In tests and proven invariants, include a message that explains the invariant.
 - Keep Actix handlers thin: extract inputs, call `AppService`, and map errors. Keep runner and queue rules out of handlers.
-- Keep application logic generic over narrow ports such as `RunQueuePort` where that improves tests without obscuring the concrete production path.
+- Keep application logic generic over narrow semantic ports such as `RunDispatcher` where that improves tests without exposing Tokio channels or other infrastructure details.
 - Use Serde at API/config/content boundaries; avoid leaking transport DTOs into domain logic.
 - Use structured `tracing` logs with explicit fields such as `%job_id`, `worker_id`, `status`, and `duration_ms`. Avoid preformatted log strings for data that should be queryable. Keep the subscriber machine-readable for backend runtime logs unless there is a concrete local-dev reason to change it.
 - Prefer structured tool output over text heuristics. For example, parse `cargo --message-format=json` messages to classify compile errors instead of scanning stdout/stderr with ad hoc substrings.

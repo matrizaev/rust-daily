@@ -45,8 +45,10 @@ next lesson includes the authored solution from the previous day as read-only
 project code. The runner accepts a backend-controlled single-crate project
 snapshot: `src/**/*.rs`, `tests/**/*.rs`, `fixtures/**`, and `testdata/**`.
 The generated `Cargo.toml` remains controlled by the backend dependency set.
-Lessons can also attach public compile-fail cases to prove that invalid API uses
-are rejected by the compiler.
+Backend validation runs under one request deadline in a managed rootless Podman
+container with bounded output, diagnostics, workspace tmpfs, CPU, memory, and
+processes. Lessons can also attach public compile-fail cases to prove that
+invalid API uses are rejected by structured rustc diagnostics.
 
 ## Run Locally
 

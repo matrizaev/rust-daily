@@ -7,11 +7,13 @@ use crate::{
     api::{configure, cors, json_config},
     config::Settings,
     queue::spawn_workers,
+    runner::initialize_runtime,
     service::AppService,
     static_files::frontend_files,
 };
 
 pub async fn run(settings: Settings) -> io::Result<()> {
+    initialize_runtime(&settings.runner).await?;
     tokio::fs::create_dir_all(settings.runner.workspace_root.as_path()).await?;
     build_server(settings)?.await
 }

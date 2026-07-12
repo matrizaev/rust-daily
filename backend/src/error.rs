@@ -3,7 +3,10 @@ use serde::Serialize;
 use serde_json::{Value, json};
 use thiserror::Error;
 
-use crate::{model::ValidationError, queue::EnqueueError, service::RunServiceError};
+use crate::{
+    model::ValidationError,
+    service::{DispatchError, RunServiceError},
+};
 
 #[derive(Debug, Error)]
 pub enum ApiError {
@@ -76,11 +79,12 @@ impl ApiError {
     }
 }
 
-impl From<EnqueueError> for ApiError {
-    fn from(error: EnqueueError) -> Self {
+impl From<DispatchError> for ApiError {
+    fn from(error: DispatchError) -> Self {
         match error {
-            EnqueueError::Full => Self::QueueFull,
-            EnqueueError::Closed => Self::QueueClosed,
+            DispatchError::AtCapacity => Self::QueueFull,
+            DispatchError::Unavailable => Self::QueueClosed,
+            DispatchError::WorkerLost => Self::WorkerDropped,
         }
     }
 }
@@ -89,8 +93,7 @@ impl From<RunServiceError> for ApiError {
     fn from(error: RunServiceError) -> Self {
         match error {
             RunServiceError::Validation(error) => Self::Validation(error),
-            RunServiceError::Enqueue(error) => error.into(),
-            RunServiceError::WorkerDropped => Self::WorkerDropped,
+            RunServiceError::Dispatch(error) => error.into(),
         }
     }
 }
@@ -113,6 +116,11 @@ fn validation_code(error: &ValidationError) -> &'static str {
         ValidationError::DuplicateCompileFailCasePath { .. } => "duplicate_compile_fail_case_path",
         ValidationError::MissingExpectedDiagnostics { .. } => "missing_expected_diagnostics",
         ValidationError::EmptyDiagnosticSnippet { .. } => "empty_diagnostic_snippet",
+        ValidationError::TooManyDiagnosticSnippets { .. } => "too_many_diagnostic_snippets",
+        ValidationError::DiagnosticSnippetTooLarge { .. } => "diagnostic_snippet_too_large",
+        ValidationError::DiagnosticsTooLarge { .. } => "diagnostics_too_large",
+        ValidationError::DuplicateDiagnosticSnippet { .. } => "duplicate_diagnostic_snippet",
+        ValidationError::ConflictingDiagnosticSnippet { .. } => "conflicting_diagnostic_snippet",
     }
 }
 
@@ -138,6 +146,19 @@ fn validation_details(error: &ValidationError) -> Value {
         | ValidationError::MissingExpectedDiagnostics { name }
         | ValidationError::EmptyDiagnosticSnippet { name } => json!({ "name": name }),
         ValidationError::DuplicateCompileFailCasePath { path } => json!({ "path": path }),
+        ValidationError::TooManyDiagnosticSnippets { name, max } => {
+            json!({ "name": name, "max": max })
+        }
+        ValidationError::DiagnosticSnippetTooLarge { name, max_bytes } => {
+            json!({ "name": name, "max_bytes": max_bytes })
+        }
+        ValidationError::DiagnosticsTooLarge { max_bytes } => {
+            json!({ "max_bytes": max_bytes })
+        }
+        ValidationError::DuplicateDiagnosticSnippet { name, snippet }
+        | ValidationError::ConflictingDiagnosticSnippet { name, snippet } => {
+            json!({ "name": name, "snippet": snippet })
+        }
     }
 }
 
@@ -148,8 +169,7 @@ mod tests {
 
     use crate::{
         model::{SubmittedPath, ValidationError},
-        queue::EnqueueError,
-        service::RunServiceError,
+        service::{DispatchError, RunServiceError},
     };
 
     use super::ApiError;
@@ -305,15 +325,15 @@ mod tests {
         let cases = [
             (ApiError::JsonPayloadTooLarge, StatusCode::PAYLOAD_TOO_LARGE),
             (
-                ApiError::from(EnqueueError::Full),
+                ApiError::from(DispatchError::AtCapacity),
                 StatusCode::TOO_MANY_REQUESTS,
             ),
             (
-                ApiError::from(EnqueueError::Closed),
+                ApiError::from(DispatchError::Unavailable),
                 StatusCode::INTERNAL_SERVER_ERROR,
             ),
             (
-                ApiError::from(RunServiceError::WorkerDropped),
+                ApiError::from(RunServiceError::Dispatch(DispatchError::WorkerLost)),
                 StatusCode::INTERNAL_SERVER_ERROR,
             ),
         ];
@@ -327,7 +347,7 @@ mod tests {
     #[test]
     fn run_service_errors_convert_to_api_errors() {
         let validation = RunServiceError::Validation(ValidationError::EmptyFiles);
-        let queue = RunServiceError::Enqueue(EnqueueError::Full);
+        let queue = RunServiceError::Dispatch(DispatchError::AtCapacity);
 
         assert!(matches!(
             ApiError::from(validation),

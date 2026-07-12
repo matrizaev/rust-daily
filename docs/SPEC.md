@@ -339,7 +339,9 @@ The payload must include `src/lib.rs` and at least one `tests/**/*.rs` file.
 The Actix backend validates paths and sizes, places the request on a bounded
 queue, creates a temporary Cargo workspace, generates `Cargo.toml` from the
 selected dependency set, writes all validated files, and runs
-`cargo test --offline` in a restricted Podman container.
+`cargo test --offline` in a uniquely named, restricted Podman container. The
+host workspace is mounted read-only; execution occurs in a bounded container
+tmpfs.
 
 Supported dependency sets:
 
@@ -347,9 +349,11 @@ Supported dependency sets:
 - `advanced`: Serde, serde_json, thiserror, anyhow, Tokio, tracing,
   tracing-subscriber, Actix Web, actix-rt, http, and proptest.
 
-The runner reports passed tests, test failures, compiler errors, timeouts, and
-internal failures separately. Cargo metadata is filtered from learner-facing
-output, diagnostics are capped, and a full queue returns HTTP 429.
+The runner reports passed tests, test failures, compiler errors, timeouts,
+output-limit failures, and internal failures separately. Cargo metadata is
+filtered from learner-facing output, diagnostics are capped, Podman/Cargo
+infrastructure failures return generic internal errors, and a full queue returns
+HTTP 429.
 
 ### 7.3 Compile-Fail Checks
 
@@ -364,8 +368,8 @@ For compile-fail validation, the backend:
 2. runs `cargo check --offline --lib`;
 3. writes each case as a generated integration-test target under `tests/`;
 4. runs `cargo check --offline --test <generated-case>`;
-5. passes only when every case fails with the expected diagnostic snippets and
-   without any forbidden diagnostic snippets.
+5. passes only when every case fails with structured rustc error diagnostics
+   that include the expected snippets and exclude forbidden snippets.
 
 If the learner's library does not compile, the result is `compile_error`. If a
 compile-fail case compiles successfully or fails for the wrong reason, the
@@ -384,6 +388,13 @@ Default server limits are:
 | Workers | 2 |
 | Execution timeout | 10 seconds |
 | Combined output | 65,536 bytes |
+| Combined raw process stdout and stderr | 4,194,304 bytes |
+| Runner workspace tmpfs | 536,870,912 bytes |
+| Path | 240 bytes |
+| Path component | 120 bytes |
+| Expected plus forbidden diagnostic snippets per compile-fail case | 16 |
+| Individual diagnostic snippet | 512 bytes |
+| Compile-fail diagnostics total | 8,192 bytes |
 
 Paths must be relative, unique, traversal-free, and inside the supported
 single-crate allowlist: `src/**/*.rs`, `tests/**/*.rs`, `fixtures/**`, and
@@ -392,7 +403,16 @@ scripts, target directories, benches, examples, migrations, and arbitrary
 paths.
 
 Compile-fail case paths are validated separately and must be under
-`compile_fail/**/*.rs`; case bytes count toward the total request limit.
+`compile_fail/**/*.rs`; case and diagnostic bytes count toward the total
+request limit. Expected and forbidden snippets are trimmed, unique within each
+set, and disjoint.
+
+The execution deadline begins when the validated request enters the queue.
+Queue wait, container startup, all Cargo commands, and result collection share
+that deadline. A request still waiting in the queue completes as timed out and
+is not started later. The browser allows a three-second transport grace period
+beyond the authored lesson timeout so the backend remains the authority for
+execution timeouts.
 
 ### 7.5 Grading Boundary
 

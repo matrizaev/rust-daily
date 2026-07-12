@@ -9,6 +9,7 @@ import type {
 const DIAGNOSTICS_LIMIT = 4096;
 const SUMMARY_LIMIT = 240;
 const FAILURE_LIMIT = 20;
+const BACKEND_RESPONSE_GRACE_MS = 3000;
 
 type BackendRunStatus =
   | "passed"
@@ -548,7 +549,9 @@ export const runBackendValidation = async (
     return unavailableResult(startedAt);
   }
 
-  const timeout = createBackendTimeout(request.validation.timeoutMs);
+  const timeout = createBackendTimeout(
+    request.validation.timeoutMs + BACKEND_RESPONSE_GRACE_MS,
+  );
 
   try {
     const response = await fetchBackendRun(request, backendUrl, timeout.signal);

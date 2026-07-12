@@ -1,4 +1,5 @@
 use std::{
+    net::{IpAddr, SocketAddr},
     num::{NonZeroU64, NonZeroUsize},
     path::{Path, PathBuf},
     time::Duration,
@@ -7,6 +8,7 @@ use std::{
 use config::{Config, ConfigError, Environment, File};
 use serde::Deserialize;
 use thiserror::Error;
+use url::Url;
 
 use crate::model::{ValidationLimits, ValidationLimitsError};
 
@@ -38,7 +40,10 @@ pub struct RunnerSettings {
     pub queue_capacity: NonZeroUsize,
     pub workers: NonZeroUsize,
     pub timeout: Duration,
+    pub cleanup_timeout: Duration,
     pub max_output_bytes: NonZeroUsize,
+    pub max_process_output_bytes: NonZeroUsize,
+    pub workspace_tmpfs_bytes: NonZeroU64,
     pub image: RunnerImage,
     pub workspace_root: WorkspaceRoot,
     pub podman_path: PodmanPath,
@@ -81,7 +86,10 @@ struct RawRunnerSettings {
     queue_capacity: usize,
     workers: usize,
     timeout_secs: u64,
+    cleanup_timeout_secs: u64,
     max_output_bytes: usize,
+    max_process_output_bytes: usize,
+    workspace_tmpfs_bytes: u64,
     image: String,
     workspace_root: PathBuf,
     podman_path: PathBuf,
@@ -92,6 +100,11 @@ struct RawValidationSettings {
     max_files: usize,
     max_file_bytes: usize,
     max_total_bytes: usize,
+    max_path_bytes: usize,
+    max_path_component_bytes: usize,
+    max_diagnostic_snippets_per_case: usize,
+    max_diagnostic_snippet_bytes: usize,
+    max_diagnostic_total_bytes: usize,
 }
 
 #[derive(Debug, Deserialize)]
@@ -107,6 +120,11 @@ pub enum SettingsError {
     NonZero { field: ConfigField },
     #[error("configuration field `{field}` must not be empty")]
     Empty { field: ConfigField },
+    #[error("configuration field `{field}` is invalid: {reason}")]
+    Invalid {
+        field: ConfigField,
+        reason: &'static str,
+    },
     #[error("invalid validation limits: {0}")]
     InvalidValidationLimits(#[from] ValidationLimitsError),
 }
@@ -114,10 +132,14 @@ pub enum SettingsError {
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum ConfigField {
     ServerHost,
+    ServerPort,
     RunnerQueueCapacity,
     RunnerWorkers,
     RunnerTimeoutSecs,
+    RunnerCleanupTimeoutSecs,
     RunnerMaxOutputBytes,
+    RunnerMaxProcessOutputBytes,
+    RunnerWorkspaceTmpfsBytes,
     RunnerImage,
     RunnerWorkspaceRoot,
     RunnerPodmanPath,
@@ -126,6 +148,11 @@ pub enum ConfigField {
     ValidationMaxFiles,
     ValidationMaxFileBytes,
     ValidationMaxTotalBytes,
+    ValidationMaxPathBytes,
+    ValidationMaxPathComponentBytes,
+    ValidationMaxDiagnosticSnippetsPerCase,
+    ValidationMaxDiagnosticSnippetBytes,
+    ValidationMaxDiagnosticTotalBytes,
     ApiMaxJsonPayloadBytes,
 }
 
@@ -133,10 +160,14 @@ impl std::fmt::Display for ConfigField {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let name = match self {
             Self::ServerHost => "server.host",
+            Self::ServerPort => "server.port",
             Self::RunnerQueueCapacity => "runner.queue_capacity",
             Self::RunnerWorkers => "runner.workers",
             Self::RunnerTimeoutSecs => "runner.timeout_secs",
+            Self::RunnerCleanupTimeoutSecs => "runner.cleanup_timeout_secs",
             Self::RunnerMaxOutputBytes => "runner.max_output_bytes",
+            Self::RunnerMaxProcessOutputBytes => "runner.max_process_output_bytes",
+            Self::RunnerWorkspaceTmpfsBytes => "runner.workspace_tmpfs_bytes",
             Self::RunnerImage => "runner.image",
             Self::RunnerWorkspaceRoot => "runner.workspace_root",
             Self::RunnerPodmanPath => "runner.podman_path",
@@ -145,6 +176,13 @@ impl std::fmt::Display for ConfigField {
             Self::ValidationMaxFiles => "validation.max_files",
             Self::ValidationMaxFileBytes => "validation.max_file_bytes",
             Self::ValidationMaxTotalBytes => "validation.max_total_bytes",
+            Self::ValidationMaxPathBytes => "validation.max_path_bytes",
+            Self::ValidationMaxPathComponentBytes => "validation.max_path_component_bytes",
+            Self::ValidationMaxDiagnosticSnippetsPerCase => {
+                "validation.max_diagnostic_snippets_per_case"
+            }
+            Self::ValidationMaxDiagnosticSnippetBytes => "validation.max_diagnostic_snippet_bytes",
+            Self::ValidationMaxDiagnosticTotalBytes => "validation.max_diagnostic_total_bytes",
             Self::ApiMaxJsonPayloadBytes => "api.max_json_payload_bytes",
         };
 
@@ -153,17 +191,17 @@ impl std::fmt::Display for ConfigField {
 }
 
 #[derive(Debug, Clone)]
-pub struct BindAddress(String);
+pub struct BindAddress(SocketAddr);
 
 impl BindAddress {
-    pub fn as_str(&self) -> &str {
-        &self.0
+    pub fn socket_addr(&self) -> SocketAddr {
+        self.0
     }
 }
 
 impl std::fmt::Display for BindAddress {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        formatter.write_str(self.as_str())
+        self.0.fmt(formatter)
     }
 }
 
@@ -178,7 +216,15 @@ impl TryFrom<(String, u16)> for BindAddress {
             });
         }
 
-        Ok(Self(format!("{host}:{port}")))
+        let host = host.parse::<IpAddr>().map_err(|_| SettingsError::Invalid {
+            field: ConfigField::ServerHost,
+            reason: "must be an IPv4 or IPv6 address",
+        })?;
+        let port = std::num::NonZeroU16::new(port).ok_or(SettingsError::NonZero {
+            field: ConfigField::ServerPort,
+        })?;
+
+        Ok(Self(SocketAddr::new(host, port.get())))
     }
 }
 
@@ -205,6 +251,13 @@ impl TryFrom<String> for RunnerImage {
         if value.is_empty() {
             return Err(SettingsError::Empty {
                 field: ConfigField::RunnerImage,
+            });
+        }
+
+        if value.starts_with('-') || value.chars().any(|character| character.is_control()) {
+            return Err(SettingsError::Invalid {
+                field: ConfigField::RunnerImage,
+                reason: "must be an image reference without leading options or control characters",
             });
         }
 
@@ -301,7 +354,34 @@ impl TryFrom<String> for CorsOrigin {
             });
         }
 
-        Ok(Self(value.to_string()))
+        let parsed = Url::parse(value).map_err(|_| SettingsError::Invalid {
+            field: ConfigField::ServerCorsOrigin,
+            reason: "must be an absolute HTTP or HTTPS origin",
+        })?;
+
+        if !matches!(parsed.scheme(), "http" | "https")
+            || parsed.host_str().is_none()
+            || !parsed.username().is_empty()
+            || parsed.password().is_some()
+            || parsed.path() != "/"
+            || parsed.query().is_some()
+            || parsed.fragment().is_some()
+        {
+            return Err(SettingsError::Invalid {
+                field: ConfigField::ServerCorsOrigin,
+                reason: "must contain only an HTTP or HTTPS scheme, host, and optional port",
+            });
+        }
+
+        let normalized = parsed.origin().ascii_serialization();
+        if normalized == "null" {
+            return Err(SettingsError::Invalid {
+                field: ConfigField::ServerCorsOrigin,
+                reason: "must have a serializable origin",
+            });
+        }
+
+        Ok(Self(normalized))
     }
 }
 
@@ -367,8 +447,17 @@ fn apply_legacy_environment_overrides(
     if let Some(value) = env_number("RUST_DAILY_TIMEOUT_SECS")? {
         builder = builder.set_override("runner.timeout_secs", value)?;
     }
+    if let Some(value) = env_number("RUST_DAILY_CLEANUP_TIMEOUT_SECS")? {
+        builder = builder.set_override("runner.cleanup_timeout_secs", value)?;
+    }
     if let Some(value) = env_number("RUST_DAILY_MAX_OUTPUT_BYTES")? {
         builder = builder.set_override("runner.max_output_bytes", value)?;
+    }
+    if let Some(value) = env_number("RUST_DAILY_MAX_PROCESS_OUTPUT_BYTES")? {
+        builder = builder.set_override("runner.max_process_output_bytes", value)?;
+    }
+    if let Some(value) = env_number("RUST_DAILY_WORKSPACE_TMPFS_BYTES")? {
+        builder = builder.set_override("runner.workspace_tmpfs_bytes", value)?;
     }
     if let Some(value) = env_string("RUST_DAILY_RUNNER_IMAGE") {
         builder = builder.set_override("runner.image", value)?;
@@ -387,6 +476,21 @@ fn apply_legacy_environment_overrides(
     }
     if let Some(value) = env_number("RUST_DAILY_MAX_TOTAL_BYTES")? {
         builder = builder.set_override("validation.max_total_bytes", value)?;
+    }
+    if let Some(value) = env_number("RUST_DAILY_MAX_PATH_BYTES")? {
+        builder = builder.set_override("validation.max_path_bytes", value)?;
+    }
+    if let Some(value) = env_number("RUST_DAILY_MAX_PATH_COMPONENT_BYTES")? {
+        builder = builder.set_override("validation.max_path_component_bytes", value)?;
+    }
+    if let Some(value) = env_number("RUST_DAILY_MAX_DIAGNOSTIC_SNIPPETS_PER_CASE")? {
+        builder = builder.set_override("validation.max_diagnostic_snippets_per_case", value)?;
+    }
+    if let Some(value) = env_number("RUST_DAILY_MAX_DIAGNOSTIC_SNIPPET_BYTES")? {
+        builder = builder.set_override("validation.max_diagnostic_snippet_bytes", value)?;
+    }
+    if let Some(value) = env_number("RUST_DAILY_MAX_DIAGNOSTIC_TOTAL_BYTES")? {
+        builder = builder.set_override("validation.max_diagnostic_total_bytes", value)?;
     }
     if let Some(value) = env_number("RUST_DAILY_MAX_JSON_PAYLOAD_BYTES")? {
         builder = builder.set_override("api.max_json_payload_bytes", value)?;
@@ -459,14 +563,35 @@ impl TryFrom<RawRunnerSettings> for RunnerSettings {
         let queue_capacity = nonzero_usize(ConfigField::RunnerQueueCapacity, raw.queue_capacity)?;
         let workers = nonzero_usize(ConfigField::RunnerWorkers, raw.workers)?;
         let timeout_secs = nonzero_u64(ConfigField::RunnerTimeoutSecs, raw.timeout_secs)?;
+        let cleanup_timeout_secs = nonzero_u64(
+            ConfigField::RunnerCleanupTimeoutSecs,
+            raw.cleanup_timeout_secs,
+        )?;
         let max_output_bytes =
             nonzero_usize(ConfigField::RunnerMaxOutputBytes, raw.max_output_bytes)?;
+        let max_process_output_bytes = nonzero_usize(
+            ConfigField::RunnerMaxProcessOutputBytes,
+            raw.max_process_output_bytes,
+        )?;
+        if max_process_output_bytes < max_output_bytes {
+            return Err(SettingsError::Invalid {
+                field: ConfigField::RunnerMaxProcessOutputBytes,
+                reason: "must be greater than or equal to runner.max_output_bytes",
+            });
+        }
+        let workspace_tmpfs_bytes = nonzero_u64(
+            ConfigField::RunnerWorkspaceTmpfsBytes,
+            raw.workspace_tmpfs_bytes,
+        )?;
 
         Ok(Self {
             queue_capacity,
             workers,
             timeout: Duration::from_secs(timeout_secs.get()),
+            cleanup_timeout: Duration::from_secs(cleanup_timeout_secs.get()),
             max_output_bytes,
+            max_process_output_bytes,
+            workspace_tmpfs_bytes,
             image: RunnerImage::try_from(raw.image)?,
             workspace_root: WorkspaceRoot::try_from(raw.workspace_root)?,
             podman_path: PodmanPath::try_from(raw.podman_path)?,
@@ -483,9 +608,36 @@ impl TryFrom<RawValidationSettings> for ValidationSettings {
             nonzero_usize(ConfigField::ValidationMaxFileBytes, raw.max_file_bytes)?;
         let max_total_bytes =
             nonzero_usize(ConfigField::ValidationMaxTotalBytes, raw.max_total_bytes)?;
+        let max_path_bytes =
+            nonzero_usize(ConfigField::ValidationMaxPathBytes, raw.max_path_bytes)?;
+        let max_path_component_bytes = nonzero_usize(
+            ConfigField::ValidationMaxPathComponentBytes,
+            raw.max_path_component_bytes,
+        )?;
+        let max_diagnostic_snippets_per_case = nonzero_usize(
+            ConfigField::ValidationMaxDiagnosticSnippetsPerCase,
+            raw.max_diagnostic_snippets_per_case,
+        )?;
+        let max_diagnostic_snippet_bytes = nonzero_usize(
+            ConfigField::ValidationMaxDiagnosticSnippetBytes,
+            raw.max_diagnostic_snippet_bytes,
+        )?;
+        let max_diagnostic_total_bytes = nonzero_usize(
+            ConfigField::ValidationMaxDiagnosticTotalBytes,
+            raw.max_diagnostic_total_bytes,
+        )?;
 
         Ok(Self {
-            limits: ValidationLimits::try_new(max_files, max_file_bytes, max_total_bytes)?,
+            limits: ValidationLimits::try_new(
+                max_files,
+                max_file_bytes,
+                max_total_bytes,
+                max_path_bytes,
+                max_path_component_bytes,
+                max_diagnostic_snippets_per_case,
+                max_diagnostic_snippet_bytes,
+                max_diagnostic_total_bytes,
+            )?,
         })
     }
 }
@@ -546,7 +698,7 @@ runner:
         let settings = load_settings_from_dir_without_environment(root.path(), "local")
             .expect("settings should load");
 
-        assert_eq!(settings.server.bind_address.as_str(), "127.0.0.1:19090");
+        assert_eq!(settings.server.bind_address.to_string(), "127.0.0.1:19090");
         assert_eq!(
             settings
                 .server
@@ -630,10 +782,23 @@ validation:
     fn config_fields_display_stable_paths() {
         let fields = [
             (ConfigField::ServerHost, "server.host"),
+            (ConfigField::ServerPort, "server.port"),
             (ConfigField::RunnerQueueCapacity, "runner.queue_capacity"),
             (ConfigField::RunnerWorkers, "runner.workers"),
             (ConfigField::RunnerTimeoutSecs, "runner.timeout_secs"),
+            (
+                ConfigField::RunnerCleanupTimeoutSecs,
+                "runner.cleanup_timeout_secs",
+            ),
             (ConfigField::RunnerMaxOutputBytes, "runner.max_output_bytes"),
+            (
+                ConfigField::RunnerMaxProcessOutputBytes,
+                "runner.max_process_output_bytes",
+            ),
+            (
+                ConfigField::RunnerWorkspaceTmpfsBytes,
+                "runner.workspace_tmpfs_bytes",
+            ),
             (ConfigField::RunnerImage, "runner.image"),
             (ConfigField::RunnerWorkspaceRoot, "runner.workspace_root"),
             (ConfigField::RunnerPodmanPath, "runner.podman_path"),
@@ -647,6 +812,26 @@ validation:
             (
                 ConfigField::ValidationMaxTotalBytes,
                 "validation.max_total_bytes",
+            ),
+            (
+                ConfigField::ValidationMaxPathBytes,
+                "validation.max_path_bytes",
+            ),
+            (
+                ConfigField::ValidationMaxPathComponentBytes,
+                "validation.max_path_component_bytes",
+            ),
+            (
+                ConfigField::ValidationMaxDiagnosticSnippetsPerCase,
+                "validation.max_diagnostic_snippets_per_case",
+            ),
+            (
+                ConfigField::ValidationMaxDiagnosticSnippetBytes,
+                "validation.max_diagnostic_snippet_bytes",
+            ),
+            (
+                ConfigField::ValidationMaxDiagnosticTotalBytes,
+                "validation.max_diagnostic_total_bytes",
             ),
             (
                 ConfigField::ApiMaxJsonPayloadBytes,
@@ -800,7 +985,7 @@ api:
         let settings = load_settings_from_dir(root.path(), "local")
             .expect("legacy environment should override config");
 
-        assert_eq!(settings.server.bind_address.as_str(), "0.0.0.0:18080");
+        assert_eq!(settings.server.bind_address.to_string(), "0.0.0.0:18080");
         assert_eq!(
             settings
                 .server
@@ -918,7 +1103,10 @@ runner:
   queue_capacity: 20
   workers: 2
   timeout_secs: 10
+  cleanup_timeout_secs: 2
   max_output_bytes: 65536
+  max_process_output_bytes: 4194304
+  workspace_tmpfs_bytes: 536870912
   image: rust-runner:1.95
   workspace_root: /tmp/rust-daily-runs
   podman_path: podman
@@ -926,6 +1114,11 @@ validation:
   max_files: 8
   max_file_bytes: 65536
   max_total_bytes: 262144
+  max_path_bytes: 240
+  max_path_component_bytes: 120
+  max_diagnostic_snippets_per_case: 16
+  max_diagnostic_snippet_bytes: 512
+  max_diagnostic_total_bytes: 8192
 api:
   max_json_payload_bytes: 300000
 "

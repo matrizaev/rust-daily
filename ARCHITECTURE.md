@@ -205,14 +205,18 @@ api -> service -> model validation -> bounded queue
 ```
 
 - `api.rs` owns HTTP extraction and response mapping.
-- `service.rs` coordinates validation and queue submission behind a queue port.
+- `service.rs` coordinates validation and dispatch behind the semantic
+  `RunDispatcher` application port.
 - `model.rs` owns accepted paths, size limits, dependency sets, and result
   types.
 - `queue.rs` provides backpressure with a bounded Tokio channel and fixed
   worker count.
 - `workspace.rs` creates an isolated Cargo project per request.
-- `runner.rs` invokes Podman, applies timeouts, classifies Cargo output, caps
-  diagnostics, and removes the temporary workspace.
+- `runner.rs` owns a uniquely named managed Podman container per request,
+  applies the request deadline, classifies structured Cargo output, caps
+  combined raw stdout/stderr, and guarantees bounded container/workspace
+  cleanup. Pure command specifications and an injected process executor keep
+  sandbox flags and failure paths deterministic to test.
 
 The API accepts a backend-controlled single-crate snapshot with these path
 families:
@@ -252,16 +256,30 @@ returns `429` immediately rather than allowing unbounded work.
 
 ## Runner Isolation
 
-Each request gets a temporary host workspace mounted at `/workspace` in the
-runner container. Podman starts the container with:
+Each request gets one uniquely named managed container. The prepared host input
+is mounted read-only at `/input`, copied into a bounded `/workspace` tmpfs, and
+never exposed as a writable host mount. Podman starts the container with:
 
 - no network;
 - a read-only container filesystem;
 - a bounded memory, CPU, and process count;
 - dropped Linux capabilities;
 - `no-new-privileges`;
-- a small `noexec` temporary filesystem;
-- inner and outer execution timeouts.
+- a small `noexec` `/tmp` and a size-bounded writable `/workspace`;
+- a non-root numeric user;
+- disabled proxy and container logging integration;
+- inner command timeouts, a native container timeout, and one absolute request
+  deadline that includes queueing and cleanup.
+
+Queued requests complete as timed out when their deadline expires; the closed
+response channel prevents a later worker from starting them. Compile-fail
+expectations match only structured rustc error diagnostics. Warning text cannot
+satisfy an expected-error snippet.
+
+Startup refuses to serve traffic unless Podman reports rootless mode, the
+configured local image exists, and managed stale containers can be reconciled.
+Cancellation and output overflow both terminate the identified container with
+a bounded cleanup timeout.
 
 Cargo runs with `--offline`. The `std` set has no external dependencies. The
 `advanced` set includes a predefined ecosystem surface, including Serde, Tokio,
@@ -281,10 +299,11 @@ Backend settings are loaded in this order:
 2. `config/<RUST_DAILY_ENV>.yaml`
 3. `RUST_DAILY_*` environment overrides
 
-Configuration controls the bind address, CORS origin, static frontend path,
-queue size, worker count, runner timeout, output limit, image, workspace root,
-and request size limits. Typed configuration rejects empty or zero-valued
-settings that cannot operate safely.
+Configuration controls the typed bind address and CORS origin, static frontend
+path, queue size, worker count, runner and cleanup deadlines, response and raw
+process output limits, workspace tmpfs size, image, workspace root, path and
+diagnostic limits, and request size limits. Typed configuration rejects empty,
+zero-valued, inconsistent, or unsafe settings before startup.
 
 Local development runs Vite and Actix on separate origins. Production uses one
 origin, so the frontend posts to `/run`; Actix CORS middleware still pins the
@@ -319,10 +338,15 @@ Operational details are in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 ## Trust Model and Constraints
 
 - User code is untrusted; the Podman runner is the host protection boundary.
+- Runtime, Podman, Cargo infrastructure, and internal compiler failures return
+  generic internal errors rather than learner pass/fail outcomes.
+- Compile-fail expectations match only structured rustc error diagnostics; Cargo
+  noise, warnings, and runtime text cannot satisfy expected snippets.
 - Public tests are shipped to the browser and submitted by the client. The
   service provides practice feedback, not tamper-resistant grading.
-- The backend has no durable store for user code, progress, drafts, or
-  accounts. Temporary source workspaces are removed after normal run cleanup.
+- The backend has no durable store for user code, progress, drafts, or accounts.
+  Host input workspaces and managed containers are removed during bounded
+  cleanup.
 - Lesson execution compiles a backend-controlled single-crate project snapshot
   while exposing exactly one editable artifact.
 - Offline mode supports the app shell, cached lessons, editing, and local

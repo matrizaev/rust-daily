@@ -24,7 +24,10 @@ import {
   TEST_FILE_PATTERN,
   VALID_FILE_ROLES,
   validateHintObject,
+  validateDiagnosticAggregateByteLimit,
+  validateDiagnosticSnippetLimits,
   validateKnownDependencySet,
+  validateRunnerPathLimits,
 } from "./shared.mjs";
 
 const lessonDir = (lessonJsonPath) => dirname(lessonJsonPath);
@@ -51,6 +54,11 @@ const validateSourcePathSyntax = (errors, sourcePath, label, fieldName) => {
 
   if (!isSafeRelativePath(sourcePath)) {
     push(errors, `${label} ${fieldName} ${sourcePath} must be normalized, relative, and safe.`);
+    return false;
+  }
+
+
+  if (!validateRunnerPathLimits(errors, label, sourcePath, fieldName)) {
     return false;
   }
 
@@ -428,6 +436,44 @@ const validateCompileFailCase = async (
     compileFailCase.forbiddenDiagnostics,
     "forbiddenDiagnostics",
   );
+
+  validateCompileFailDiagnosticLimits(errors, lesson, compileFailCase);
+};
+
+const validateCompileFailDiagnosticLimits = (errors, lesson, compileFailCase) => {
+  const expected = Array.isArray(compileFailCase.expectedDiagnostics)
+    ? compileFailCase.expectedDiagnostics
+    : [];
+  const forbidden = Array.isArray(compileFailCase.forbiddenDiagnostics)
+    ? compileFailCase.forbiddenDiagnostics
+    : [];
+  const label = `${lesson.id} compile-fail case ${compileFailCase.name}`;
+  validateDiagnosticSnippetLimits(errors, label, expected, forbidden);
+};
+
+const compileFailCaseDiagnostics = (compileFailCase) => {
+  if (!isRecord(compileFailCase)) {
+    return [];
+  }
+
+  return [
+    ...(Array.isArray(compileFailCase.expectedDiagnostics)
+      ? compileFailCase.expectedDiagnostics
+      : []),
+    ...(Array.isArray(compileFailCase.forbiddenDiagnostics)
+      ? compileFailCase.forbiddenDiagnostics
+      : []),
+  ];
+};
+
+const validateCompileFailDiagnosticAggregateLimits = (errors, lesson, cases) => {
+  const snippets = cases.flatMap(compileFailCaseDiagnostics);
+
+  validateDiagnosticAggregateByteLimit(
+    errors,
+    `${lesson.id} compile-fail validation`,
+    snippets,
+  );
 };
 
 const reportDuplicate = (errors, lesson, label, value) => {
@@ -554,6 +600,7 @@ const validateCompileFailCases = async (
   }
 
   validateUniqueCompileFailCases(errors, lesson, cases);
+  validateCompileFailDiagnosticAggregateLimits(errors, lesson, cases);
   await Promise.all(
     cases.map((compileFailCase) =>
       validateCompileFailCase(errors, lessonJsonPath, lesson, compileFailCase),
