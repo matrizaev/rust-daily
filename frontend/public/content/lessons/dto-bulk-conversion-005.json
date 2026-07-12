@@ -1,103 +1,96 @@
 {
-  "schemaVersion": 2,
   "id": "dto-bulk-conversion-005",
-  "arcId": "dto-conversions",
-  "arcTitle": "Converting DTOs into domain commands",
-  "order": 53,
-  "day": 5,
-  "arcLength": 6,
-  "title": "Deserialize and validate a bulk DTO",
-  "conceptId": "dto-nested-conversions",
-  "difficulty": "medium",
-  "estimatedMinutes": 10,
-  "scenario": "Batch adapter input needs useful error context. Preserve the row index when one nested DTO cannot become a command.",
-  "instructions": "Add BulkRegisterDto with serde::Deserialize, BulkRegisterCommand, and BulkRegisterError. Implement TryFrom<BulkRegisterDto>, rejecting empty batches and reporting the index of the first invalid nested DTO.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "use serde::Deserialize;\n\n#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n    EmptyEmail,\n    EmptyDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        let email = value\n            .email\n            .ok_or(RegisterUserValidationError::MissingEmail)?;\n        let display_name = value\n            .display_name\n            .ok_or(RegisterUserValidationError::MissingDisplayName)?;\n        let email = email.trim();\n        let display_name = display_name.trim();\n\n        if email.is_empty() {\n            return Err(RegisterUserValidationError::EmptyEmail);\n        }\n\n        if display_name.is_empty() {\n            return Err(RegisterUserValidationError::EmptyDisplayName);\n        }\n\n        Ok(Self {\n            email: email.to_owned(),\n            display_name: display_name.to_owned(),\n        })\n    }\n}\n\n// TODO: add bulk DTO conversion with indexed errors.\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::{BulkRegisterCommand, BulkRegisterDto, BulkRegisterError, RegisterUserValidationError};\n\n#[test]\nfn deserializes_and_converts_bulk_dto() {\n    let dto: BulkRegisterDto = serde_json::from_str(\n        r#\"{\"users\":[{\"email\":\"ada@example.com\",\"display_name\":\"Ada\"}]}\"#,\n    )\n    .expect(\"bulk DTO should deserialize\");\n\n    let command = BulkRegisterCommand::try_from(dto).expect(\"bulk DTO should be valid\");\n\n    assert_eq!(command.commands().len(), 1);\n    assert_eq!(command.commands()[0].email(), \"ada@example.com\");\n}\n\n#[test]\nfn reports_first_invalid_user_index() {\n    let dto: BulkRegisterDto = serde_json::from_str(\n        r#\"{\"users\":[{\"email\":\"ada@example.com\",\"display_name\":\"Ada\"},{\"email\":\"\",\"display_name\":\"Grace\"}]}\"#,\n    )\n    .expect(\"bulk DTO should deserialize\");\n\n    assert_eq!(\n        BulkRegisterCommand::try_from(dto),\n        Err(BulkRegisterError::InvalidUser {\n            index: 1,\n            error: RegisterUserValidationError::EmptyEmail,\n        })\n    );\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "The bulk DTO is another transport shape, so it can derive Deserialize."
-    },
-    {
-      "level": 2,
-      "body": "Convert each nested DTO through the single-user TryFrom implementation."
-    },
-    {
-      "level": 3,
-      "body": "Use enumerate so InvalidUser can report the failing index.",
-      "solutionCode": "use serde::Deserialize;\n\n#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n    EmptyEmail,\n    EmptyDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        let email = value\n            .email\n            .ok_or(RegisterUserValidationError::MissingEmail)?;\n        let display_name = value\n            .display_name\n            .ok_or(RegisterUserValidationError::MissingDisplayName)?;\n        let email = email.trim();\n        let display_name = display_name.trim();\n\n        if email.is_empty() {\n            return Err(RegisterUserValidationError::EmptyEmail);\n        }\n\n        if display_name.is_empty() {\n            return Err(RegisterUserValidationError::EmptyDisplayName);\n        }\n\n        Ok(Self {\n            email: email.to_owned(),\n            display_name: display_name.to_owned(),\n        })\n    }\n}\n\n#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]\npub struct BulkRegisterDto {\n    pub users: Vec<RegisterUserDto>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct BulkRegisterCommand {\n    commands: Vec<RegisterUserCommand>,\n}\n\nimpl BulkRegisterCommand {\n    pub fn commands(&self) -> &[RegisterUserCommand] {\n        &self.commands\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BulkRegisterError {\n    EmptyBatch,\n    InvalidUser {\n        index: usize,\n        error: RegisterUserValidationError,\n    },\n}\n\nimpl TryFrom<BulkRegisterDto> for BulkRegisterCommand {\n    type Error = BulkRegisterError;\n\n    fn try_from(value: BulkRegisterDto) -> Result<Self, Self::Error> {\n        if value.users.is_empty() {\n            return Err(BulkRegisterError::EmptyBatch);\n        }\n\n        let mut commands = Vec::with_capacity(value.users.len());\n        for (index, dto) in value.users.into_iter().enumerate() {\n            let command = RegisterUserCommand::try_from(dto)\n                .map_err(|error| BulkRegisterError::InvalidUser { index, error })?;\n            commands.push(command);\n        }\n\n        Ok(Self { commands })\n    }\n}"
-    }
-  ],
-  "completionExplanation": "Bulk conversion now reuses the single DTO boundary rules and adds batch-level errors without duplicating validation.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Add BulkRegisterDto with serde::Deserialize, BulkRegisterCommand, and BulkRegisterError. Implement TryFrom<BulkRegisterDto>, rejecting empty batches and reporting the index of the first invalid nested DTO.",
+    "starterCode": "use serde::Deserialize;\n\n#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n    EmptyEmail,\n    EmptyDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        let email = value\n            .email\n            .ok_or(RegisterUserValidationError::MissingEmail)?;\n        let display_name = value\n            .display_name\n            .ok_or(RegisterUserValidationError::MissingDisplayName)?;\n        let email = email.trim();\n        let display_name = display_name.trim();\n\n        if email.is_empty() {\n            return Err(RegisterUserValidationError::EmptyEmail);\n        }\n\n        if display_name.is_empty() {\n            return Err(RegisterUserValidationError::EmptyDisplayName);\n        }\n\n        Ok(Self {\n            email: email.to_owned(),\n            display_name: display_name.to_owned(),\n        })\n    }\n}\n\n// TODO: add bulk DTO conversion with indexed errors.\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "struct_fields",
-            "structName": "BulkRegisterDto",
-            "requiredFields": [
-              {
-                "name": "users",
-                "typeIncludes": [
-                  "Vec",
-                  "RegisterUserDto"
-                ]
-              }
-            ]
-          },
-          {
-            "type": "impl_trait_for_type",
-            "traitName": "TryFrom<BulkRegisterDto>",
-            "typeName": "BulkRegisterCommand"
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "use serde::Deserialize;\n\n#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n    EmptyEmail,\n    EmptyDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        let email = value\n            .email\n            .ok_or(RegisterUserValidationError::MissingEmail)?;\n        let display_name = value\n            .display_name\n            .ok_or(RegisterUserValidationError::MissingDisplayName)?;\n        let email = email.trim();\n        let display_name = display_name.trim();\n\n        if email.is_empty() {\n            return Err(RegisterUserValidationError::EmptyEmail);\n        }\n\n        if display_name.is_empty() {\n            return Err(RegisterUserValidationError::EmptyDisplayName);\n        }\n\n        Ok(Self {\n            email: email.to_owned(),\n            display_name: display_name.to_owned(),\n        })\n    }\n}\n\n// TODO: add bulk DTO conversion with indexed errors.\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "advanced"
-      },
-      {
-        "mode": "backend-compile-fail",
-        "timeoutMs": 10000,
-        "dependencySet": "advanced",
-        "cases": [
-          {
-            "name": "command-direct-fields",
-            "expectedDiagnostics": [
-              "private"
-            ],
-            "forbiddenDiagnostics": [
-              "has no field named"
-            ],
-            "path": "compile_fail/command_direct_fields.rs",
-            "content": "use rust_daily_lesson::RegisterUserCommand;\n\nfn main() {\n    let _ = RegisterUserCommand {\n        email: String::from(\"ada@example.com\"),\n        display_name: String::from(\"Ada\"),\n    };\n}\n"
-          },
-          {
-            "name": "command-serde-free",
-            "expectedDiagnostics": [
-              "Serialize"
-            ],
-            "path": "compile_fail/command_serde_free.rs",
-            "content": "use rust_daily_lesson::RegisterUserCommand;\n\nfn main() {\n    let command = RegisterUserCommand::new(\"ada@example.com\", \"Ada\");\n    let _ = serde_json::to_string(&command).unwrap();\n}\n"
-          }
-        ]
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{BulkRegisterCommand, BulkRegisterDto, BulkRegisterError, RegisterUserValidationError};\n\n#[test]\nfn deserializes_and_converts_bulk_dto() {\n    let dto: BulkRegisterDto = serde_json::from_str(\n        r#\"{\"users\":[{\"email\":\"ada@example.com\",\"display_name\":\"Ada\"}]}\"#,\n    )\n    .expect(\"bulk DTO should deserialize\");\n\n    let command = BulkRegisterCommand::try_from(dto).expect(\"bulk DTO should be valid\");\n\n    assert_eq!(command.commands().len(), 1);\n    assert_eq!(command.commands()[0].email(), \"ada@example.com\");\n}\n\n#[test]\nfn reports_first_invalid_user_index() {\n    let dto: BulkRegisterDto = serde_json::from_str(\n        r#\"{\"users\":[{\"email\":\"ada@example.com\",\"display_name\":\"Ada\"},{\"email\":\"\",\"display_name\":\"Grace\"}]}\"#,\n    )\n    .expect(\"bulk DTO should deserialize\");\n\n    assert_eq!(\n        BulkRegisterCommand::try_from(dto),\n        Err(BulkRegisterError::InvalidUser {\n            index: 1,\n            error: RegisterUserValidationError::EmptyEmail,\n        })\n    );\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "The bulk DTO is another transport shape, so it can derive Deserialize."
+      },
+      {
+        "level": 2,
+        "body": "Convert each nested DTO through the single-user TryFrom implementation."
+      },
+      {
+        "level": 3,
+        "body": "Use enumerate so InvalidUser can report the failing index.",
+        "solutionCode": "use serde::Deserialize;\n\n#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n    EmptyEmail,\n    EmptyDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        let email = value\n            .email\n            .ok_or(RegisterUserValidationError::MissingEmail)?;\n        let display_name = value\n            .display_name\n            .ok_or(RegisterUserValidationError::MissingDisplayName)?;\n        let email = email.trim();\n        let display_name = display_name.trim();\n\n        if email.is_empty() {\n            return Err(RegisterUserValidationError::EmptyEmail);\n        }\n\n        if display_name.is_empty() {\n            return Err(RegisterUserValidationError::EmptyDisplayName);\n        }\n\n        Ok(Self {\n            email: email.to_owned(),\n            display_name: display_name.to_owned(),\n        })\n    }\n}\n\n#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]\npub struct BulkRegisterDto {\n    pub users: Vec<RegisterUserDto>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct BulkRegisterCommand {\n    commands: Vec<RegisterUserCommand>,\n}\n\nimpl BulkRegisterCommand {\n    pub fn commands(&self) -> &[RegisterUserCommand] {\n        &self.commands\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BulkRegisterError {\n    EmptyBatch,\n    InvalidUser {\n        index: usize,\n        error: RegisterUserValidationError,\n    },\n}\n\nimpl TryFrom<BulkRegisterDto> for BulkRegisterCommand {\n    type Error = BulkRegisterError;\n\n    fn try_from(value: BulkRegisterDto) -> Result<Self, Self::Error> {\n        if value.users.is_empty() {\n            return Err(BulkRegisterError::EmptyBatch);\n        }\n\n        let mut commands = Vec::with_capacity(value.users.len());\n        for (index, dto) in value.users.into_iter().enumerate() {\n            let command = RegisterUserCommand::try_from(dto)\n                .map_err(|error| BulkRegisterError::InvalidUser { index, error })?;\n            commands.push(command);\n        }\n\n        Ok(Self { commands })\n    }\n}"
+      }
+    ],
+    "completionExplanation": "Bulk conversion now reuses the single DTO boundary rules and adds batch-level errors without duplicating validation.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "struct_fields",
+              "structName": "BulkRegisterDto",
+              "requiredFields": [
+                {
+                  "name": "users",
+                  "typeIncludes": [
+                    "Vec",
+                    "RegisterUserDto"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "impl_trait_for_type",
+              "traitName": "TryFrom<BulkRegisterDto>",
+              "typeName": "BulkRegisterCommand"
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "advanced"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "advanced",
+          "cases": [
+            {
+              "name": "command-direct-fields",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/command_direct_fields.rs",
+              "content": "use rust_daily_lesson::RegisterUserCommand;\n\nfn main() {\n    let _ = RegisterUserCommand {\n        email: String::from(\"ada@example.com\"),\n        display_name: String::from(\"Ada\"),\n    };\n}\n"
+            },
+            {
+              "name": "command-serde-free",
+              "expectedDiagnostics": [
+                "Serialize"
+              ],
+              "path": "compile_fail/command_serde_free.rs",
+              "content": "use rust_daily_lesson::RegisterUserCommand;\n\nfn main() {\n    let command = RegisterUserCommand::new(\"ada@example.com\", \"Ada\");\n    let _ = serde_json::to_string(&command).unwrap();\n}\n"
+            }
+          ]
+        }
+      ]
+    }
   }
 }

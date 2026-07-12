@@ -1,89 +1,82 @@
 {
-  "schemaVersion": 2,
   "id": "register-handler-boundary-006",
-  "arcId": "register-user-use-case",
-  "arcTitle": "Register user use case boundaries",
-  "order": 78,
-  "day": 6,
-  "arcLength": 6,
-  "title": "Add an Actix handler boundary",
-  "conceptId": "register-handler-boundary",
-  "difficulty": "medium",
-  "estimatedMinutes": 10,
-  "scenario": "A handler adapter should translate request DTOs, call timeout-aware application code, and return response data without pushing HTTP concepts into domain code.",
-  "instructions": "The readonly application module already exposes register_user_with_timeout and TimedOut. In src/adapters.rs add Response, handle_register_user, and a thin Actix register_user_handler using web::Data, web::Json, HttpResponse, and Responder. Keep HTTP status mapping in adapters and the use case free of Actix types.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "readonly",
-      "content": "pub mod adapters;\npub mod application;\npub mod domain;\npub mod infrastructure;\n"
-    },
-    {
-      "path": "src/domain.rs",
-      "role": "readonly",
-      "content": "#[derive(Debug, Clone, PartialEq, Eq, Hash)]\npub struct EmailAddress(String);\n\nimpl EmailAddress {\n    pub fn new(value: impl Into<String>) -> Self {\n        Self(value.into())\n    }\n\n    pub fn as_str(&self) -> &str {\n        &self.0\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: EmailAddress,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: EmailAddress, display_name: impl Into<String>) -> Self {\n        Self {\n            email,\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &EmailAddress {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n"
-    },
-    {
-      "path": "src/application.rs",
-      "role": "readonly",
-      "content": "use std::time::Duration;\n\nuse thiserror::Error;\n\nuse crate::domain::RegisterUserCommand;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\npub struct UserId(u64);\n\nimpl UserId {\n    pub fn new(value: u64) -> Self {\n        Self(value)\n    }\n\n    pub fn value(self) -> u64 {\n        self.0\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct NewUser {\n    email: String,\n    display_name: String,\n}\n\nimpl NewUser {\n    pub fn from_command(command: RegisterUserCommand) -> Self {\n        Self {\n            email: command.email().as_str().to_owned(),\n            display_name: command.display_name().to_owned(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum RepositoryError {\n    #[error(\"repository is unavailable\")]\n    Unavailable,\n    #[error(\"email already exists\")]\n    Conflict,\n}\n\npub trait UserRepository: Send + Sync {\n    fn email_exists(\n        &self,\n        email: &str,\n    ) -> impl std::future::Future<Output = Result<bool, RepositoryError>> + Send;\n\n    fn save(\n        &self,\n        user: NewUser,\n    ) -> impl std::future::Future<Output = Result<UserId, RepositoryError>> + Send;\n}\n\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum RegisterUserError {\n    #[error(\"email already exists\")]\n    DuplicateEmail,\n    #[error(\"registration timed out\")]\n    TimedOut,\n    #[error(transparent)]\n    Repository(#[from] RepositoryError),\n}\n\npub async fn register_user<R: UserRepository>(\n    repository: &R,\n    command: RegisterUserCommand,\n) -> Result<UserId, RegisterUserError> {\n    if repository.email_exists(command.email().as_str()).await? {\n        return Err(RegisterUserError::DuplicateEmail);\n    }\n\n    match repository.save(NewUser::from_command(command)).await {\n        Ok(user_id) => Ok(user_id),\n        Err(RepositoryError::Conflict) => Err(RegisterUserError::DuplicateEmail),\n        Err(error) => Err(error.into()),\n    }\n}\n\npub async fn register_user_with_timeout<R: UserRepository>(\n    repository: &R,\n    command: RegisterUserCommand,\n    duration: Duration,\n) -> Result<UserId, RegisterUserError> {\n    tokio::time::timeout(duration, register_user(repository, command))\n        .await\n        .map_err(|_| RegisterUserError::TimedOut)?\n}\n"
-    },
-    {
-      "path": "src/infrastructure.rs",
-      "role": "readonly",
-      "content": "use std::{collections::HashMap, sync::Arc};\n\nuse tokio::sync::RwLock;\n\nuse crate::application::{NewUser, RepositoryError, UserId, UserRepository};\n\n#[derive(Debug, Clone)]\npub struct InMemoryUserRepository {\n    state: Arc<RwLock<State>>,\n}\n\n#[derive(Debug)]\nstruct State {\n    next_id: u64,\n    users_by_email: HashMap<String, UserId>,\n}\n\nimpl InMemoryUserRepository {\n    pub fn new() -> Self {\n        Self {\n            state: Arc::new(RwLock::new(State {\n                next_id: 1,\n                users_by_email: HashMap::new(),\n            })),\n        }\n    }\n\n    pub async fn len(&self) -> usize {\n        self.state.read().await.users_by_email.len()\n    }\n}\n\nimpl Default for InMemoryUserRepository {\n    fn default() -> Self {\n        Self::new()\n    }\n}\n\nimpl UserRepository for InMemoryUserRepository {\n    async fn email_exists(&self, email: &str) -> Result<bool, RepositoryError> {\n        Ok(self.state.read().await.users_by_email.contains_key(email))\n    }\n\n    async fn save(&self, user: NewUser) -> Result<UserId, RepositoryError> {\n        let mut state = self.state.write().await;\n\n        if state.users_by_email.contains_key(user.email()) {\n            return Err(RepositoryError::Conflict);\n        }\n\n        let user_id = UserId::new(state.next_id);\n        state.next_id += 1;\n        state\n            .users_by_email\n            .insert(user.email().to_owned(), user_id);\n\n        Ok(user_id)\n    }\n}\n"
-    },
-    {
-      "path": "src/adapters.rs",
-      "role": "editable",
-      "content": "use serde::Deserialize;\nuse thiserror::Error;\n\nuse crate::domain::{EmailAddress, RegisterUserCommand};\n\n#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]\npub struct RegisterUserRequest {\n    pub email: String,\n    pub display_name: String,\n}\n\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum RequestError {\n    #[error(\"email is empty\")]\n    EmptyEmail,\n    #[error(\"display name is empty\")]\n    EmptyDisplayName,\n}\n\nimpl TryFrom<RegisterUserRequest> for RegisterUserCommand {\n    type Error = RequestError;\n\n    fn try_from(request: RegisterUserRequest) -> Result<Self, Self::Error> {\n        let email = request.email.trim();\n        let display_name = request.display_name.trim();\n\n        if email.is_empty() {\n            return Err(RequestError::EmptyEmail);\n        }\n\n        if display_name.is_empty() {\n            return Err(RequestError::EmptyDisplayName);\n        }\n\n        Ok(RegisterUserCommand::new(\n            EmailAddress::new(email),\n            display_name,\n        ))\n    }\n}\n\n// TODO: add Response, handle_register_user, and the thin Actix handler.\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::{\n    adapters::{RegisterUserRequest, handle_register_user},\n    application::{\n        NewUser, RegisterUserError, RepositoryError, UserId, UserRepository,\n        register_user_with_timeout,\n    },\n    domain::{EmailAddress, RegisterUserCommand},\n    infrastructure::InMemoryUserRepository,\n};\nuse std::time::Duration;\n\nstruct SlowRepository;\n\nimpl UserRepository for SlowRepository {\n    async fn email_exists(&self, _email: &str) -> Result<bool, RepositoryError> {\n        tokio::time::sleep(Duration::from_millis(50)).await;\n        Ok(false)\n    }\n\n    async fn save(&self, _user: NewUser) -> Result<UserId, RepositoryError> {\n        Ok(UserId::new(1))\n    }\n}\n\n#[actix_rt::test]\nasync fn timeout_policy_maps_elapsed_work_to_timed_out() {\n    let command = RegisterUserCommand::new(EmailAddress::new(\"ada@example.com\"), \"Ada\");\n\n    let result =\n        register_user_with_timeout(&SlowRepository, command, Duration::from_millis(1)).await;\n\n    assert_eq!(result, Err(RegisterUserError::TimedOut));\n}\n\n#[actix_rt::test]\nasync fn adapter_maps_success_and_duplicate_to_http_status_values() {\n    let repository = InMemoryUserRepository::new();\n    let request = || RegisterUserRequest {\n        email: \"ada@example.com\".to_owned(),\n        display_name: \"Ada\".to_owned(),\n    };\n\n    let created = handle_register_user(&repository, request()).await;\n    let duplicate = handle_register_user(&repository, request()).await;\n\n    assert_eq!(created.status, 201);\n    assert_eq!(duplicate.status, 409);\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "Timeout is application policy; this file should translate its result into adapter responses."
-    },
-    {
-      "level": 2,
-      "body": "The handler should only extract inputs, call adapter/application code, and build an HTTP response."
-    },
-    {
-      "level": 3,
-      "body": "Do not pass web::Json or HttpResponse into domain or application modules.",
-      "solutionCode": "use std::time::Duration;\n\nuse actix_web::{HttpResponse, Responder, http::StatusCode, web};\nuse serde::Deserialize;\nuse thiserror::Error;\n\nuse crate::{\n    application::{RegisterUserError, UserRepository, register_user_with_timeout},\n    domain::{EmailAddress, RegisterUserCommand},\n};\n\n#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]\npub struct RegisterUserRequest {\n    pub email: String,\n    pub display_name: String,\n}\n\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum RequestError {\n    #[error(\"email is empty\")]\n    EmptyEmail,\n    #[error(\"display name is empty\")]\n    EmptyDisplayName,\n}\n\nimpl TryFrom<RegisterUserRequest> for RegisterUserCommand {\n    type Error = RequestError;\n\n    fn try_from(request: RegisterUserRequest) -> Result<Self, Self::Error> {\n        let email = request.email.trim();\n        let display_name = request.display_name.trim();\n\n        if email.is_empty() {\n            return Err(RequestError::EmptyEmail);\n        }\n\n        if display_name.is_empty() {\n            return Err(RequestError::EmptyDisplayName);\n        }\n\n        Ok(RegisterUserCommand::new(\n            EmailAddress::new(email),\n            display_name,\n        ))\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Response {\n    pub status: u16,\n    pub body: String,\n}\n\npub async fn handle_register_user<R: UserRepository>(\n    repository: &R,\n    request: RegisterUserRequest,\n) -> Response {\n    let command = match RegisterUserCommand::try_from(request) {\n        Ok(command) => command,\n        Err(error) => {\n            return Response {\n                status: 400,\n                body: error.to_string(),\n            };\n        }\n    };\n\n    match register_user_with_timeout(repository, command, Duration::from_secs(1)).await {\n        Ok(user_id) => Response {\n            status: 201,\n            body: user_id.value().to_string(),\n        },\n        Err(RegisterUserError::DuplicateEmail) => Response {\n            status: 409,\n            body: \"email already exists\".to_owned(),\n        },\n        Err(RegisterUserError::TimedOut) => Response {\n            status: 504,\n            body: \"registration timed out\".to_owned(),\n        },\n        Err(RegisterUserError::Repository(_)) => Response {\n            status: 503,\n            body: \"repository is unavailable\".to_owned(),\n        },\n    }\n}\n\npub async fn register_user_handler<R>(\n    repository: web::Data<R>,\n    request: web::Json<RegisterUserRequest>,\n) -> impl Responder\nwhere\n    R: UserRepository + 'static,\n{\n    let response = handle_register_user(repository.get_ref(), request.into_inner()).await;\n    let status = StatusCode::from_u16(response.status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);\n\n    HttpResponse::build(status).body(response.body)\n}"
-    }
-  ],
-  "completionExplanation": "The arc ends with cancellation-aware async application code and a thin Actix boundary that preserves module ownership.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "The readonly application module already exposes register_user_with_timeout and TimedOut. In src/adapters.rs add Response, handle_register_user, and a thin Actix register_user_handler using web::Data, web::Json, HttpResponse, and Responder. Keep HTTP status mapping in adapters and the use case free of Actix types.",
+    "starterCode": "use serde::Deserialize;\nuse thiserror::Error;\n\nuse crate::domain::{EmailAddress, RegisterUserCommand};\n\n#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]\npub struct RegisterUserRequest {\n    pub email: String,\n    pub display_name: String,\n}\n\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum RequestError {\n    #[error(\"email is empty\")]\n    EmptyEmail,\n    #[error(\"display name is empty\")]\n    EmptyDisplayName,\n}\n\nimpl TryFrom<RegisterUserRequest> for RegisterUserCommand {\n    type Error = RequestError;\n\n    fn try_from(request: RegisterUserRequest) -> Result<Self, Self::Error> {\n        let email = request.email.trim();\n        let display_name = request.display_name.trim();\n\n        if email.is_empty() {\n            return Err(RequestError::EmptyEmail);\n        }\n\n        if display_name.is_empty() {\n            return Err(RequestError::EmptyDisplayName);\n        }\n\n        Ok(RegisterUserCommand::new(\n            EmailAddress::new(email),\n            display_name,\n        ))\n    }\n}\n\n// TODO: add Response, handle_register_user, and the thin Actix handler.\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "source_includes",
-            "requiredSnippets": [
-              "use actix_web::",
-              "HttpResponse",
-              "Responder",
-              "pub async fn register_user_handler",
-              "RegisterUserError::TimedOut"
-            ]
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "readonly",
+        "content": "pub mod adapters;\npub mod application;\npub mod domain;\npub mod infrastructure;\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "advanced"
+        "path": "src/domain.rs",
+        "role": "readonly",
+        "content": "#[derive(Debug, Clone, PartialEq, Eq, Hash)]\npub struct EmailAddress(String);\n\nimpl EmailAddress {\n    pub fn new(value: impl Into<String>) -> Self {\n        Self(value.into())\n    }\n\n    pub fn as_str(&self) -> &str {\n        &self.0\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: EmailAddress,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: EmailAddress, display_name: impl Into<String>) -> Self {\n        Self {\n            email,\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &EmailAddress {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n"
+      },
+      {
+        "path": "src/application.rs",
+        "role": "readonly",
+        "content": "use std::time::Duration;\n\nuse thiserror::Error;\n\nuse crate::domain::RegisterUserCommand;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\npub struct UserId(u64);\n\nimpl UserId {\n    pub fn new(value: u64) -> Self {\n        Self(value)\n    }\n\n    pub fn value(self) -> u64 {\n        self.0\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct NewUser {\n    email: String,\n    display_name: String,\n}\n\nimpl NewUser {\n    pub fn from_command(command: RegisterUserCommand) -> Self {\n        Self {\n            email: command.email().as_str().to_owned(),\n            display_name: command.display_name().to_owned(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum RepositoryError {\n    #[error(\"repository is unavailable\")]\n    Unavailable,\n    #[error(\"email already exists\")]\n    Conflict,\n}\n\npub trait UserRepository: Send + Sync {\n    fn email_exists(\n        &self,\n        email: &str,\n    ) -> impl std::future::Future<Output = Result<bool, RepositoryError>> + Send;\n\n    fn save(\n        &self,\n        user: NewUser,\n    ) -> impl std::future::Future<Output = Result<UserId, RepositoryError>> + Send;\n}\n\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum RegisterUserError {\n    #[error(\"email already exists\")]\n    DuplicateEmail,\n    #[error(\"registration timed out\")]\n    TimedOut,\n    #[error(transparent)]\n    Repository(#[from] RepositoryError),\n}\n\npub async fn register_user<R: UserRepository>(\n    repository: &R,\n    command: RegisterUserCommand,\n) -> Result<UserId, RegisterUserError> {\n    if repository.email_exists(command.email().as_str()).await? {\n        return Err(RegisterUserError::DuplicateEmail);\n    }\n\n    match repository.save(NewUser::from_command(command)).await {\n        Ok(user_id) => Ok(user_id),\n        Err(RepositoryError::Conflict) => Err(RegisterUserError::DuplicateEmail),\n        Err(error) => Err(error.into()),\n    }\n}\n\npub async fn register_user_with_timeout<R: UserRepository>(\n    repository: &R,\n    command: RegisterUserCommand,\n    duration: Duration,\n) -> Result<UserId, RegisterUserError> {\n    tokio::time::timeout(duration, register_user(repository, command))\n        .await\n        .map_err(|_| RegisterUserError::TimedOut)?\n}\n"
+      },
+      {
+        "path": "src/infrastructure.rs",
+        "role": "readonly",
+        "content": "use std::{collections::HashMap, sync::Arc};\n\nuse tokio::sync::RwLock;\n\nuse crate::application::{NewUser, RepositoryError, UserId, UserRepository};\n\n#[derive(Debug, Clone)]\npub struct InMemoryUserRepository {\n    state: Arc<RwLock<State>>,\n}\n\n#[derive(Debug)]\nstruct State {\n    next_id: u64,\n    users_by_email: HashMap<String, UserId>,\n}\n\nimpl InMemoryUserRepository {\n    pub fn new() -> Self {\n        Self {\n            state: Arc::new(RwLock::new(State {\n                next_id: 1,\n                users_by_email: HashMap::new(),\n            })),\n        }\n    }\n\n    pub async fn len(&self) -> usize {\n        self.state.read().await.users_by_email.len()\n    }\n}\n\nimpl Default for InMemoryUserRepository {\n    fn default() -> Self {\n        Self::new()\n    }\n}\n\nimpl UserRepository for InMemoryUserRepository {\n    async fn email_exists(&self, email: &str) -> Result<bool, RepositoryError> {\n        Ok(self.state.read().await.users_by_email.contains_key(email))\n    }\n\n    async fn save(&self, user: NewUser) -> Result<UserId, RepositoryError> {\n        let mut state = self.state.write().await;\n\n        if state.users_by_email.contains_key(user.email()) {\n            return Err(RepositoryError::Conflict);\n        }\n\n        let user_id = UserId::new(state.next_id);\n        state.next_id += 1;\n        state\n            .users_by_email\n            .insert(user.email().to_owned(), user_id);\n\n        Ok(user_id)\n    }\n}\n"
+      },
+      {
+        "path": "src/adapters.rs",
+        "role": "editable",
+        "content": "use serde::Deserialize;\nuse thiserror::Error;\n\nuse crate::domain::{EmailAddress, RegisterUserCommand};\n\n#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]\npub struct RegisterUserRequest {\n    pub email: String,\n    pub display_name: String,\n}\n\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum RequestError {\n    #[error(\"email is empty\")]\n    EmptyEmail,\n    #[error(\"display name is empty\")]\n    EmptyDisplayName,\n}\n\nimpl TryFrom<RegisterUserRequest> for RegisterUserCommand {\n    type Error = RequestError;\n\n    fn try_from(request: RegisterUserRequest) -> Result<Self, Self::Error> {\n        let email = request.email.trim();\n        let display_name = request.display_name.trim();\n\n        if email.is_empty() {\n            return Err(RequestError::EmptyEmail);\n        }\n\n        if display_name.is_empty() {\n            return Err(RequestError::EmptyDisplayName);\n        }\n\n        Ok(RegisterUserCommand::new(\n            EmailAddress::new(email),\n            display_name,\n        ))\n    }\n}\n\n// TODO: add Response, handle_register_user, and the thin Actix handler.\n"
+      },
+      {
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{\n    adapters::{RegisterUserRequest, handle_register_user},\n    application::{\n        NewUser, RegisterUserError, RepositoryError, UserId, UserRepository,\n        register_user_with_timeout,\n    },\n    domain::{EmailAddress, RegisterUserCommand},\n    infrastructure::InMemoryUserRepository,\n};\nuse std::time::Duration;\n\nstruct SlowRepository;\n\nimpl UserRepository for SlowRepository {\n    async fn email_exists(&self, _email: &str) -> Result<bool, RepositoryError> {\n        tokio::time::sleep(Duration::from_millis(50)).await;\n        Ok(false)\n    }\n\n    async fn save(&self, _user: NewUser) -> Result<UserId, RepositoryError> {\n        Ok(UserId::new(1))\n    }\n}\n\n#[actix_rt::test]\nasync fn timeout_policy_maps_elapsed_work_to_timed_out() {\n    let command = RegisterUserCommand::new(EmailAddress::new(\"ada@example.com\"), \"Ada\");\n\n    let result =\n        register_user_with_timeout(&SlowRepository, command, Duration::from_millis(1)).await;\n\n    assert_eq!(result, Err(RegisterUserError::TimedOut));\n}\n\n#[actix_rt::test]\nasync fn adapter_maps_success_and_duplicate_to_http_status_values() {\n    let repository = InMemoryUserRepository::new();\n    let request = || RegisterUserRequest {\n        email: \"ada@example.com\".to_owned(),\n        display_name: \"Ada\".to_owned(),\n    };\n\n    let created = handle_register_user(&repository, request()).await;\n    let duplicate = handle_register_user(&repository, request()).await;\n\n    assert_eq!(created.status, 201);\n    assert_eq!(duplicate.status, 409);\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Timeout is application policy; this file should translate its result into adapter responses."
+      },
+      {
+        "level": 2,
+        "body": "The handler should only extract inputs, call adapter/application code, and build an HTTP response."
+      },
+      {
+        "level": 3,
+        "body": "Do not pass web::Json or HttpResponse into domain or application modules.",
+        "solutionCode": "use std::time::Duration;\n\nuse actix_web::{HttpResponse, Responder, http::StatusCode, web};\nuse serde::Deserialize;\nuse thiserror::Error;\n\nuse crate::{\n    application::{RegisterUserError, UserRepository, register_user_with_timeout},\n    domain::{EmailAddress, RegisterUserCommand},\n};\n\n#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]\npub struct RegisterUserRequest {\n    pub email: String,\n    pub display_name: String,\n}\n\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum RequestError {\n    #[error(\"email is empty\")]\n    EmptyEmail,\n    #[error(\"display name is empty\")]\n    EmptyDisplayName,\n}\n\nimpl TryFrom<RegisterUserRequest> for RegisterUserCommand {\n    type Error = RequestError;\n\n    fn try_from(request: RegisterUserRequest) -> Result<Self, Self::Error> {\n        let email = request.email.trim();\n        let display_name = request.display_name.trim();\n\n        if email.is_empty() {\n            return Err(RequestError::EmptyEmail);\n        }\n\n        if display_name.is_empty() {\n            return Err(RequestError::EmptyDisplayName);\n        }\n\n        Ok(RegisterUserCommand::new(\n            EmailAddress::new(email),\n            display_name,\n        ))\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Response {\n    pub status: u16,\n    pub body: String,\n}\n\npub async fn handle_register_user<R: UserRepository>(\n    repository: &R,\n    request: RegisterUserRequest,\n) -> Response {\n    let command = match RegisterUserCommand::try_from(request) {\n        Ok(command) => command,\n        Err(error) => {\n            return Response {\n                status: 400,\n                body: error.to_string(),\n            };\n        }\n    };\n\n    match register_user_with_timeout(repository, command, Duration::from_secs(1)).await {\n        Ok(user_id) => Response {\n            status: 201,\n            body: user_id.value().to_string(),\n        },\n        Err(RegisterUserError::DuplicateEmail) => Response {\n            status: 409,\n            body: \"email already exists\".to_owned(),\n        },\n        Err(RegisterUserError::TimedOut) => Response {\n            status: 504,\n            body: \"registration timed out\".to_owned(),\n        },\n        Err(RegisterUserError::Repository(_)) => Response {\n            status: 503,\n            body: \"repository is unavailable\".to_owned(),\n        },\n    }\n}\n\npub async fn register_user_handler<R>(\n    repository: web::Data<R>,\n    request: web::Json<RegisterUserRequest>,\n) -> impl Responder\nwhere\n    R: UserRepository + 'static,\n{\n    let response = handle_register_user(repository.get_ref(), request.into_inner()).await;\n    let status = StatusCode::from_u16(response.status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);\n\n    HttpResponse::build(status).body(response.body)\n}"
+      }
+    ],
+    "completionExplanation": "The arc ends with cancellation-aware async application code and a thin Actix boundary that preserves module ownership.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "source_includes",
+              "requiredSnippets": [
+                "use actix_web::",
+                "HttpResponse",
+                "Responder",
+                "pub async fn register_user_handler",
+                "RegisterUserError::TimedOut"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "advanced"
+        }
+      ]
+    }
   }
 }

@@ -1,73 +1,66 @@
 {
-  "schemaVersion": 2,
   "id": "config-err-enum-001",
-  "arcId": "config-loader-errors",
-  "arcTitle": "Hierarchical configuration loader errors",
-  "order": 61,
-  "day": 1,
-  "arcLength": 6,
-  "title": "Derive a typed config error with thiserror",
-  "conceptId": "config-err-enum",
-  "difficulty": "easy",
-  "estimatedMinutes": 6,
-  "scenario": "A configuration loader can fail for different reasons. Start with an enum that keeps those reasons programmatic.",
-  "instructions": "Define ConfigLoadError with MissingEnvironment, InvalidPort, and FileRead variants. Derive thiserror::Error and give every variant a concise #[error(...)] message.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "// TODO: define ConfigLoadError with thiserror.\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::ConfigLoadError;\n\n#[test]\nfn variants_have_human_readable_messages() {\n    assert_eq!(ConfigLoadError::MissingEnvironment.to_string(), \"missing APP_PORT\");\n    assert_eq!(ConfigLoadError::InvalidPort.to_string(), \"invalid APP_PORT\");\n    assert_eq!(ConfigLoadError::FileRead.to_string(), \"failed to read config file\");\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "Use thiserror::Error instead of handwritten Display and Error implementations."
-    },
-    {
-      "level": 2,
-      "body": "Place one #[error(\"...\")] attribute on each variant."
-    },
-    {
-      "level": 3,
-      "body": "Keep variants semantic; messages are presentation.",
-      "solutionCode": "use thiserror::Error;\n\n#[derive(Debug, Error)]\npub enum ConfigLoadError {\n    #[error(\"missing APP_PORT\")]\n    MissingEnvironment,\n    #[error(\"invalid APP_PORT\")]\n    InvalidPort,\n    #[error(\"failed to read config file\")]\n    FileRead,\n}"
-    }
-  ],
-  "completionExplanation": "ConfigLoadError is a normal typed Rust error without repetitive formatting boilerplate.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Define ConfigLoadError with MissingEnvironment, InvalidPort, and FileRead variants. Derive thiserror::Error and give every variant a concise #[error(...)] message.",
+    "starterCode": "// TODO: define ConfigLoadError with thiserror.\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "enum_unit_variants",
-            "enumName": "ConfigLoadError",
-            "requiredVariants": [
-              "MissingEnvironment",
-              "InvalidPort",
-              "FileRead"
-            ]
-          },
-          {
-            "type": "derived_trait_for_type",
-            "traitName": "thiserror::Error",
-            "typeName": "ConfigLoadError"
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "// TODO: define ConfigLoadError with thiserror.\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "advanced"
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::ConfigLoadError;\n\n#[test]\nfn variants_have_human_readable_messages() {\n    assert_eq!(ConfigLoadError::MissingEnvironment.to_string(), \"missing APP_PORT\");\n    assert_eq!(ConfigLoadError::InvalidPort.to_string(), \"invalid APP_PORT\");\n    assert_eq!(ConfigLoadError::FileRead.to_string(), \"failed to read config file\");\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Use thiserror::Error instead of handwritten Display and Error implementations."
+      },
+      {
+        "level": 2,
+        "body": "Place one #[error(\"...\")] attribute on each variant."
+      },
+      {
+        "level": 3,
+        "body": "Keep variants semantic; messages are presentation.",
+        "solutionCode": "use thiserror::Error;\n\n#[derive(Debug, Error)]\npub enum ConfigLoadError {\n    #[error(\"missing APP_PORT\")]\n    MissingEnvironment,\n    #[error(\"invalid APP_PORT\")]\n    InvalidPort,\n    #[error(\"failed to read config file\")]\n    FileRead,\n}"
+      }
+    ],
+    "completionExplanation": "ConfigLoadError is a normal typed Rust error without repetitive formatting boilerplate.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "enum_unit_variants",
+              "enumName": "ConfigLoadError",
+              "requiredVariants": [
+                "MissingEnvironment",
+                "InvalidPort",
+                "FileRead"
+              ]
+            },
+            {
+              "type": "derived_trait_for_type",
+              "traitName": "thiserror::Error",
+              "typeName": "ConfigLoadError"
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "advanced"
+        }
+      ]
+    }
   }
 }

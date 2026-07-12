@@ -57,21 +57,21 @@ export type LessonIndexEntry = Omit<
   | "instructions"
 >;
 
-export type LessonDetail = Omit<
-  Pick<
-    Lesson,
-    | "schemaVersion"
-    | "id"
-    | "instructions"
-    | "starterCode"
-    | "files"
-    | "hints"
-    | "completionExplanation"
-    | "validation"
-  >,
-  "starterCode"
-> &
-  Partial<Pick<Lesson, "starterCode">>;
+export type LessonDetail = Pick<
+  Lesson,
+  | "instructions"
+  | "starterCode"
+  | "files"
+  | "hints"
+  | "completionExplanation"
+  | "validation"
+>;
+
+export type LessonDetailResponse = {
+  id: string;
+  schemaVersion: 1 | 2;
+  detail: LessonDetail;
+};
 
 export type RawLesson = Omit<
   Lesson,

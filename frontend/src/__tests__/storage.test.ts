@@ -17,14 +17,14 @@ import {
 } from "../storage/progressPortability";
 import type { ProgressStore } from "../types/progress";
 
-const progress: ProgressStore = {
+const progress = {
   version: 1,
   createdAt: "2026-01-01T00:00:00.000Z",
   updatedAt: "2026-01-01T00:00:00.000Z",
   attempts: [],
   completions: [],
   concepts: {},
-};
+} as unknown as ProgressStore;
 
 const mockMatchMedia = (dark: boolean, reducedMotion = false) => {
   Object.defineProperty(window, "matchMedia", {
@@ -56,9 +56,12 @@ describe("draft storage", () => {
     const saved = saveDraft("lesson-1", "pub fn main() {}", "src/main.rs");
 
     expect(saved).toMatchObject({
+      ok: true,
+      record: {
       lessonId: "lesson-1",
       code: "pub fn main() {}",
       files: { "src/main.rs": "pub fn main() {}" },
+      },
     });
     expect(loadDraft("lesson-1")).toMatchObject({
       files: { "src/main.rs": "pub fn main() {}" },
@@ -92,6 +95,17 @@ describe("draft storage", () => {
 
     expect(clearAllDrafts()).toBe(2);
     expect(window.localStorage.getItem("other-key")).toBe("keep");
+  });
+
+  it("returns typed storage failures instead of reporting a successful save", () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("full", "QuotaExceededError");
+    });
+
+    expect(saveDraft("lesson-1", "code")).toEqual({
+      ok: false,
+      reason: "quota",
+    });
   });
 });
 

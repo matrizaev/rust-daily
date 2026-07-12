@@ -1,86 +1,79 @@
 {
-  "schemaVersion": 2,
   "id": "percentage-newtype-001",
-  "arcId": "table-driven-domain-tests",
-  "arcTitle": "Table-driven domain tests",
-  "order": 85,
-  "day": 1,
-  "arcLength": 6,
-  "title": "Define a property-friendly Percentage type",
-  "conceptId": "percentage-newtype",
-  "difficulty": "easy",
-  "estimatedMinutes": 6,
-  "scenario": "A percentage should not be represented as any arbitrary integer throughout the codebase.",
-  "instructions": "Define Percentage, PercentageError, value, and TryFrom<u16>. Accept values from 0 through 100 and reject larger values without panicking.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "// TODO: define Percentage and its range invariant.\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::{Percentage, PercentageError};\n\n#[test]\nfn enforces_percentage_bounds() {\n    assert_eq!(Percentage::try_from(100).map(Percentage::value), Ok(100));\n    assert_eq!(Percentage::try_from(101), Err(PercentageError::OutOfRange));\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "Store only valid values in the private u8 field."
-    },
-    {
-      "level": 2,
-      "body": "Validate before casting from u16."
-    },
-    {
-      "level": 3,
-      "body": "Return a typed OutOfRange error.",
-      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}"
-    }
-  ],
-  "completionExplanation": "Percentage establishes a compact invariant that can be tested with examples and generated inputs.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Define Percentage, PercentageError, value, and TryFrom<u16>. Accept values from 0 through 100 and reject larger values without panicking.",
+    "starterCode": "// TODO: define Percentage and its range invariant.\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "tuple_struct_fields",
-            "structName": "Percentage",
-            "requiredTypes": [
-              "u8"
-            ]
-          },
-          {
-            "type": "impl_trait_for_type",
-            "traitName": "TryFrom<u16>",
-            "typeName": "Percentage"
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "// TODO: define Percentage and its range invariant.\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "std"
-      },
-      {
-        "mode": "backend-compile-fail",
-        "timeoutMs": 10000,
-        "dependencySet": "std",
-        "cases": [
-          {
-            "name": "percentage-direct-construction",
-            "expectedDiagnostics": [
-              "private"
-            ],
-            "path": "compile_fail/percentage_direct_construction.rs",
-            "content": "use rust_daily_lesson::Percentage;\n\nfn main() {\n    let _ = Percentage(255);\n}\n"
-          }
-        ]
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{Percentage, PercentageError};\n\n#[test]\nfn enforces_percentage_bounds() {\n    assert_eq!(Percentage::try_from(100).map(Percentage::value), Ok(100));\n    assert_eq!(Percentage::try_from(101), Err(PercentageError::OutOfRange));\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Store only valid values in the private u8 field."
+      },
+      {
+        "level": 2,
+        "body": "Validate before casting from u16."
+      },
+      {
+        "level": 3,
+        "body": "Return a typed OutOfRange error.",
+        "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}"
+      }
+    ],
+    "completionExplanation": "Percentage establishes a compact invariant that can be tested with examples and generated inputs.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "tuple_struct_fields",
+              "structName": "Percentage",
+              "requiredTypes": [
+                "u8"
+              ]
+            },
+            {
+              "type": "impl_trait_for_type",
+              "traitName": "TryFrom<u16>",
+              "typeName": "Percentage"
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "percentage-direct-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "path": "compile_fail/percentage_direct_construction.rs",
+              "content": "use rust_daily_lesson::Percentage;\n\nfn main() {\n    let _ = Percentage(255);\n}\n"
+            }
+          ]
+        }
+      ]
+    }
   }
 }

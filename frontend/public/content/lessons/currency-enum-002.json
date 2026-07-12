@@ -1,86 +1,79 @@
 {
-  "schemaVersion": 2,
   "id": "currency-enum-002",
-  "arcId": "money-value-object",
-  "arcTitle": "Money and currency domain representation",
-  "order": 38,
-  "day": 2,
-  "arcLength": 6,
-  "title": "Add supported Currency variants",
-  "conceptId": "currency-enum",
-  "difficulty": "easy",
-  "estimatedMinutes": 5,
-  "scenario": "The payment gateway is expanding. We need to support British Pounds (GBP) in our Currency representation.",
-  "instructions": "Add Gbp to the Currency enum.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\n// Continue from the previous lesson.\n// TODO: Add British Pounds (Gbp)\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::Currency;\n\n#[test]\nfn currency_variants() {\n    assert_ne!(Currency::Usd, Currency::Eur);\n    assert_ne!(Currency::Eur, Currency::Gbp);\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "Enums are updated by adding new variants separated by commas."
-    },
-    {
-      "level": 2,
-      "body": "Add Gbp as a variant to the Currency enum."
-    },
-    {
-      "level": 3,
-      "body": "A canonical solution adds Gbp to the enum.",
-      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}"
-    }
-  ],
-  "completionExplanation": "Updating the enum extends the supported domain concepts without altering the rest of the type structure.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Add Gbp to the Currency enum.",
+    "starterCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\n// Continue from the previous lesson.\n// TODO: Add British Pounds (Gbp)\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "enum_unit_variants",
-            "enumName": "Currency",
-            "requiredVariants": [
-              "Usd",
-              "Eur",
-              "Gbp"
-            ]
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\n// Continue from the previous lesson.\n// TODO: Add British Pounds (Gbp)\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "std"
-      },
-      {
-        "mode": "backend-compile-fail",
-        "timeoutMs": 10000,
-        "dependencySet": "std",
-        "cases": [
-          {
-            "name": "money-direct-fields",
-            "expectedDiagnostics": [
-              "private"
-            ],
-            "forbiddenDiagnostics": [
-              "has no field named"
-            ],
-            "path": "compile_fail/money_direct_fields.rs",
-            "content": "use rust_daily_lesson::{Currency, Money};\n\nfn main() {\n    let _ = Money { amount: 500, currency: Currency::Usd };\n}\n"
-          }
-        ]
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::Currency;\n\n#[test]\nfn currency_variants() {\n    assert_ne!(Currency::Usd, Currency::Eur);\n    assert_ne!(Currency::Eur, Currency::Gbp);\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Enums are updated by adding new variants separated by commas."
+      },
+      {
+        "level": 2,
+        "body": "Add Gbp as a variant to the Currency enum."
+      },
+      {
+        "level": 3,
+        "body": "A canonical solution adds Gbp to the enum.",
+        "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}"
+      }
+    ],
+    "completionExplanation": "Updating the enum extends the supported domain concepts without altering the rest of the type structure.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "enum_unit_variants",
+              "enumName": "Currency",
+              "requiredVariants": [
+                "Usd",
+                "Eur",
+                "Gbp"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "money-direct-fields",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/money_direct_fields.rs",
+              "content": "use rust_daily_lesson::{Currency, Money};\n\nfn main() {\n    let _ = Money { amount: 500, currency: Currency::Usd };\n}\n"
+            }
+          ]
+        }
+      ]
+    }
   }
 }

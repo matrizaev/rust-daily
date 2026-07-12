@@ -1,106 +1,99 @@
 {
-  "schemaVersion": 2,
   "id": "config-result-validate-005",
-  "arcId": "config-service",
-  "arcTitle": "Configure a small service",
-  "order": 21,
-  "day": 5,
-  "arcLength": 6,
-  "title": "Return validation errors with Result",
-  "conceptId": "result-validation",
-  "difficulty": "medium",
-  "estimatedMinutes": 9,
-  "scenario": "Configuration validation should explain what is wrong instead of returning a bare boolean.",
-  "instructions": "Keep the Config fields from earlier lessons, including use_tls and timeout_seconds. Add ConfigError variants EmptyServiceUrl and ZeroConnections. Add Config::validate(&self) -> Result<(), ConfigError>.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n    pub timeout_seconds: Option<u64>,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n            timeout_seconds: None,\n        }\n    }\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: add ConfigError and Config::validate.\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::{Config, ConfigError};\n\n#[test]\nfn validate_reports_specific_failures() {\n    assert_eq!(\n        Config {\n            service_url: String::new(),\n            max_connections: 8,\n            use_tls: true,\n            timeout_seconds: Some(30),\n        }\n        .validate(),\n        Err(ConfigError::EmptyServiceUrl)\n    );\n    assert_eq!(\n        Config {\n            service_url: \"https://api.example.com\".to_owned(),\n            max_connections: 0,\n            use_tls: true,\n            timeout_seconds: Some(30),\n        }\n        .validate(),\n        Err(ConfigError::ZeroConnections)\n    );\n}\n\n#[test]\nfn validate_accepts_valid_config_with_timeout() {\n    assert_eq!(\n        Config {\n            service_url: \"https://api.example.com\".to_owned(),\n            max_connections: 8,\n            use_tls: true,\n            timeout_seconds: Some(30),\n        }\n        .validate(),\n        Ok(())\n    );\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "Result<(), ConfigError> says success has no extra value, but failure is typed."
-    },
-    {
-      "level": 2,
-      "body": "Use one variant for an empty URL and one for zero connections."
-    },
-    {
-      "level": 3,
-      "body": "Return Ok(()) only after all validation checks pass.",
-      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n    pub timeout_seconds: Option<u64>,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n            timeout_seconds: None,\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ConfigError {\n    EmptyServiceUrl,\n    ZeroConnections,\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n\n    pub fn validate(&self) -> Result<(), ConfigError> {\n        if self.service_url.is_empty() {\n            return Err(ConfigError::EmptyServiceUrl);\n        }\n\n        if self.max_connections == 0 {\n            return Err(ConfigError::ZeroConnections);\n        }\n\n        Ok(())\n    }\n}"
-    }
-  ],
-  "completionExplanation": "Result gives callers a success or a specific reason for failure. That is more useful than a boolean once validation can fail in multiple ways.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Keep the Config fields from earlier lessons, including use_tls and timeout_seconds. Add ConfigError variants EmptyServiceUrl and ZeroConnections. Add Config::validate(&self) -> Result<(), ConfigError>.",
+    "starterCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n    pub timeout_seconds: Option<u64>,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n            timeout_seconds: None,\n        }\n    }\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: add ConfigError and Config::validate.\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "struct_fields",
-            "structName": "Config",
-            "requiredFields": [
-              {
-                "name": "service_url",
-                "typeIncludes": [
-                  "String"
-                ]
-              },
-              {
-                "name": "max_connections",
-                "typeIncludes": [
-                  "usize"
-                ]
-              },
-              {
-                "name": "use_tls",
-                "typeIncludes": [
-                  "bool"
-                ]
-              },
-              {
-                "name": "timeout_seconds",
-                "typeIncludes": [
-                  "Option",
-                  "u64"
-                ]
-              }
-            ]
-          },
-          {
-            "type": "enum_unit_variants",
-            "enumName": "ConfigError",
-            "requiredVariants": [
-              "EmptyServiceUrl",
-              "ZeroConnections"
-            ]
-          },
-          {
-            "type": "impl_method",
-            "implFor": "Config",
-            "methodName": "validate",
-            "requiredSignatureIncludes": [
-              "Result<(), ConfigError>"
-            ]
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n    pub timeout_seconds: Option<u64>,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n            timeout_seconds: None,\n        }\n    }\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: add ConfigError and Config::validate.\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "std"
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{Config, ConfigError};\n\n#[test]\nfn validate_reports_specific_failures() {\n    assert_eq!(\n        Config {\n            service_url: String::new(),\n            max_connections: 8,\n            use_tls: true,\n            timeout_seconds: Some(30),\n        }\n        .validate(),\n        Err(ConfigError::EmptyServiceUrl)\n    );\n    assert_eq!(\n        Config {\n            service_url: \"https://api.example.com\".to_owned(),\n            max_connections: 0,\n            use_tls: true,\n            timeout_seconds: Some(30),\n        }\n        .validate(),\n        Err(ConfigError::ZeroConnections)\n    );\n}\n\n#[test]\nfn validate_accepts_valid_config_with_timeout() {\n    assert_eq!(\n        Config {\n            service_url: \"https://api.example.com\".to_owned(),\n            max_connections: 8,\n            use_tls: true,\n            timeout_seconds: Some(30),\n        }\n        .validate(),\n        Ok(())\n    );\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Result<(), ConfigError> says success has no extra value, but failure is typed."
+      },
+      {
+        "level": 2,
+        "body": "Use one variant for an empty URL and one for zero connections."
+      },
+      {
+        "level": 3,
+        "body": "Return Ok(()) only after all validation checks pass.",
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n    pub timeout_seconds: Option<u64>,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n            timeout_seconds: None,\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ConfigError {\n    EmptyServiceUrl,\n    ZeroConnections,\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n\n    pub fn validate(&self) -> Result<(), ConfigError> {\n        if self.service_url.is_empty() {\n            return Err(ConfigError::EmptyServiceUrl);\n        }\n\n        if self.max_connections == 0 {\n            return Err(ConfigError::ZeroConnections);\n        }\n\n        Ok(())\n    }\n}"
+      }
+    ],
+    "completionExplanation": "Result gives callers a success or a specific reason for failure. That is more useful than a boolean once validation can fail in multiple ways.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "struct_fields",
+              "structName": "Config",
+              "requiredFields": [
+                {
+                  "name": "service_url",
+                  "typeIncludes": [
+                    "String"
+                  ]
+                },
+                {
+                  "name": "max_connections",
+                  "typeIncludes": [
+                    "usize"
+                  ]
+                },
+                {
+                  "name": "use_tls",
+                  "typeIncludes": [
+                    "bool"
+                  ]
+                },
+                {
+                  "name": "timeout_seconds",
+                  "typeIncludes": [
+                    "Option",
+                    "u64"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "enum_unit_variants",
+              "enumName": "ConfigError",
+              "requiredVariants": [
+                "EmptyServiceUrl",
+                "ZeroConnections"
+              ]
+            },
+            {
+              "type": "impl_method",
+              "implFor": "Config",
+              "methodName": "validate",
+              "requiredSignatureIncludes": [
+                "Result<(), ConfigError>"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std"
+        }
+      ]
+    }
   }
 }

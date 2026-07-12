@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import contentRevisionData from "./src/content/contentRevision.json";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
@@ -79,7 +80,7 @@ export default defineConfig({
               url.pathname.endsWith(".json"),
             handler: "NetworkFirst",
             options: {
-              cacheName: "rust-daily-lesson-content",
+              cacheName: `rust-daily-lesson-content-${contentRevisionData.revision}`,
               networkTimeoutSeconds: 3,
               cacheableResponse: {
                 statuses: [0, 200],

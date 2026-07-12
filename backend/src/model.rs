@@ -442,6 +442,8 @@ impl TryFrom<RunRequestValidation> for ValidatedRunRequest {
         let validated_compile_fail_cases =
             validate_compile_fail_cases(mode, compile_fail_cases, input.limits, &mut total_bytes)?;
 
+        validate_path_tree(&validated_files, &validated_compile_fail_cases)?;
+
         Ok(Self {
             mode,
             files: validated_files,
@@ -449,6 +451,49 @@ impl TryFrom<RunRequestValidation> for ValidatedRunRequest {
             compile_fail_cases: validated_compile_fail_cases,
         })
     }
+}
+
+/// Files are materialized into one workspace. A path may not be both a file and
+/// a directory, and generated compile-fail integration targets must remain
+/// exclusively owned by the runner.
+fn validate_path_tree(
+    files: &BTreeMap<SubmittedPath, SubmittedContent>,
+    compile_fail_cases: &[ValidatedCompileFailCase],
+) -> Result<(), ValidationError> {
+    let submitted_paths: Vec<&str> = files.keys().map(SubmittedPath::as_str).collect();
+    for (index, path) in submitted_paths.iter().enumerate() {
+        for other in submitted_paths.iter().skip(index + 1) {
+            if paths_collide(path, other) {
+                return Err(ValidationError::PathTreeCollision {
+                    path: (*path).to_string(),
+                    conflicting_path: (*other).to_string(),
+                });
+            }
+        }
+    }
+
+    for case in compile_fail_cases {
+        let generated_path = format!(
+            "tests/compile_fail_{}.rs",
+            case.name().as_str().replace('-', "_")
+        );
+        if submitted_paths
+            .iter()
+            .any(|submitted_path| paths_collide(submitted_path, &generated_path))
+        {
+            return Err(ValidationError::GeneratedTargetCollision {
+                path: generated_path,
+            });
+        }
+    }
+
+    Ok(())
+}
+
+fn paths_collide(left: &str, right: &str) -> bool {
+    left == right
+        || left.starts_with(&format!("{right}/"))
+        || right.starts_with(&format!("{left}/"))
 }
 
 fn validate_compile_fail_cases(
@@ -689,6 +734,23 @@ impl ValidationLimits {
         })
     }
 
+    /// Maximum UTF-8 JSON request size admitted by these limits. JSON may
+    /// encode each input byte as a six-byte `\\u00XX` escape, so this is a
+    /// deliberate upper bound rather than an optimistic content estimate.
+    pub fn max_json_payload_bytes(&self) -> usize {
+        const JSON_ENVELOPE_BYTES: usize = 4096;
+        let path_bytes = self
+            .max_files
+            .get()
+            .saturating_add(MAX_COMPILE_FAIL_CASES)
+            .saturating_mul(self.max_path_bytes.get());
+        self.max_total_bytes
+            .get()
+            .saturating_add(path_bytes)
+            .saturating_mul(6)
+            .saturating_add(JSON_ENVELOPE_BYTES)
+    }
+
     pub fn max_files(self) -> usize {
         self.max_files.get()
     }
@@ -772,6 +834,15 @@ pub enum ValidationError {
     UnsupportedPath { path: String },
     #[error("duplicate file path: `{path}`")]
     DuplicatePath { path: SubmittedPath },
+    #[error(
+        "file paths cannot make a file an ancestor of another file: `{path}` and `{conflicting_path}`"
+    )]
+    PathTreeCollision {
+        path: String,
+        conflicting_path: String,
+    },
+    #[error("submitted file collides with generated compile-fail target: `{path}`")]
+    GeneratedTargetCollision { path: String },
     #[error("missing required file: `{path}`")]
     MissingRequiredFile { path: &'static str },
     #[error("compile-fail cases are only allowed for compile-fail requests")]
@@ -1067,6 +1138,26 @@ mod tests {
             validated.compile_fail_cases()[0].name().as_str(),
             "private-field-construction"
         );
+    }
+
+    #[test]
+    fn validation_rejects_submitted_file_below_generated_compile_fail_target() {
+        let request = RunRequest::compile_fail(
+            vec![
+                SubmittedFile::new("src/lib.rs", "pub struct UserId(u64);\n"),
+                SubmittedFile::new(
+                    "tests/compile_fail_private_field_construction.rs/child.rs",
+                    "#[test]\nfn placeholder() {}\n",
+                ),
+            ],
+            vec![compile_fail_case()],
+            DependencySet::Std,
+        );
+
+        assert!(matches!(
+            validate(request),
+            Err(ValidationError::GeneratedTargetCollision { .. })
+        ));
     }
 
     #[test]

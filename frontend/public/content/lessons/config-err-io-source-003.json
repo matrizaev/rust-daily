@@ -1,66 +1,59 @@
 {
-  "schemaVersion": 2,
   "id": "config-err-io-source-003",
-  "arcId": "config-loader-errors",
-  "arcTitle": "Hierarchical configuration loader errors",
-  "order": 63,
-  "day": 3,
-  "arcLength": 6,
-  "title": "Preserve an I/O error as a source",
-  "conceptId": "config-err-io-wrap",
-  "difficulty": "medium",
-  "estimatedMinutes": 8,
-  "scenario": "When file reading fails, the high-level config error should keep the original std::io::Error as its source.",
-  "instructions": "Change FileRead into a variant that stores std::io::Error in a source field marked #[source]. Update kind without changing the public error message.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "use thiserror::Error;\n\n#[derive(Debug, Error)]\npub enum ConfigLoadError {\n    #[error(\"missing APP_PORT\")]\n    MissingEnvironment,\n    #[error(\"invalid APP_PORT\")]\n    InvalidPort,\n    #[error(\"failed to read config file\")]\n    FileRead,\n}\n\nimpl ConfigLoadError {\n    pub fn kind(&self) -> &'static str {\n        match self {\n            Self::MissingEnvironment => \"missing_environment\",\n            Self::InvalidPort => \"invalid_port\",\n            Self::FileRead => \"file_read\",\n        }\n    }\n}\n\n// TODO: store std::io::Error in FileRead with #[source].\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use std::error::Error;\nuse rust_daily_lesson::ConfigLoadError;\n\n#[test]\nfn file_read_preserves_io_source() {\n    let error = ConfigLoadError::FileRead {\n        source: std::io::Error::new(std::io::ErrorKind::NotFound, \"missing config\"),\n    };\n\n    assert_eq!(error.kind(), \"file_read\");\n    assert!(error.source().is_some());\n    assert_eq!(error.to_string(), \"failed to read config file\");\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "thiserror can expose a source without a handwritten Error implementation."
-    },
-    {
-      "level": 2,
-      "body": "Use a named source field while this lesson focuses on explicit source tracking."
-    },
-    {
-      "level": 3,
-      "body": "Match FileRead { .. } in kind.",
-      "solutionCode": "use thiserror::Error;\n\n#[derive(Debug, Error)]\npub enum ConfigLoadError {\n    #[error(\"missing APP_PORT\")]\n    MissingEnvironment,\n    #[error(\"invalid APP_PORT\")]\n    InvalidPort,\n    #[error(\"failed to read config file\")]\n    FileRead {\n        #[source]\n        source: std::io::Error,\n    },\n}\n\nimpl ConfigLoadError {\n    pub fn kind(&self) -> &'static str {\n        match self {\n            Self::MissingEnvironment => \"missing_environment\",\n            Self::InvalidPort => \"invalid_port\",\n            Self::FileRead { .. } => \"file_read\",\n        }\n    }\n}"
-    }
-  ],
-  "completionExplanation": "The top-level config error keeps its stable message while preserving the concrete I/O cause in the standard error chain.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Change FileRead into a variant that stores std::io::Error in a source field marked #[source]. Update kind without changing the public error message.",
+    "starterCode": "use thiserror::Error;\n\n#[derive(Debug, Error)]\npub enum ConfigLoadError {\n    #[error(\"missing APP_PORT\")]\n    MissingEnvironment,\n    #[error(\"invalid APP_PORT\")]\n    InvalidPort,\n    #[error(\"failed to read config file\")]\n    FileRead,\n}\n\nimpl ConfigLoadError {\n    pub fn kind(&self) -> &'static str {\n        match self {\n            Self::MissingEnvironment => \"missing_environment\",\n            Self::InvalidPort => \"invalid_port\",\n            Self::FileRead => \"file_read\",\n        }\n    }\n}\n\n// TODO: store std::io::Error in FileRead with #[source].\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "enum_unit_variants",
-            "enumName": "ConfigLoadError",
-            "requiredVariants": [
-              "FileRead"
-            ]
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "use thiserror::Error;\n\n#[derive(Debug, Error)]\npub enum ConfigLoadError {\n    #[error(\"missing APP_PORT\")]\n    MissingEnvironment,\n    #[error(\"invalid APP_PORT\")]\n    InvalidPort,\n    #[error(\"failed to read config file\")]\n    FileRead,\n}\n\nimpl ConfigLoadError {\n    pub fn kind(&self) -> &'static str {\n        match self {\n            Self::MissingEnvironment => \"missing_environment\",\n            Self::InvalidPort => \"invalid_port\",\n            Self::FileRead => \"file_read\",\n        }\n    }\n}\n\n// TODO: store std::io::Error in FileRead with #[source].\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "advanced"
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use std::error::Error;\nuse rust_daily_lesson::ConfigLoadError;\n\n#[test]\nfn file_read_preserves_io_source() {\n    let error = ConfigLoadError::FileRead {\n        source: std::io::Error::new(std::io::ErrorKind::NotFound, \"missing config\"),\n    };\n\n    assert_eq!(error.kind(), \"file_read\");\n    assert!(error.source().is_some());\n    assert_eq!(error.to_string(), \"failed to read config file\");\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "thiserror can expose a source without a handwritten Error implementation."
+      },
+      {
+        "level": 2,
+        "body": "Use a named source field while this lesson focuses on explicit source tracking."
+      },
+      {
+        "level": 3,
+        "body": "Match FileRead { .. } in kind.",
+        "solutionCode": "use thiserror::Error;\n\n#[derive(Debug, Error)]\npub enum ConfigLoadError {\n    #[error(\"missing APP_PORT\")]\n    MissingEnvironment,\n    #[error(\"invalid APP_PORT\")]\n    InvalidPort,\n    #[error(\"failed to read config file\")]\n    FileRead {\n        #[source]\n        source: std::io::Error,\n    },\n}\n\nimpl ConfigLoadError {\n    pub fn kind(&self) -> &'static str {\n        match self {\n            Self::MissingEnvironment => \"missing_environment\",\n            Self::InvalidPort => \"invalid_port\",\n            Self::FileRead { .. } => \"file_read\",\n        }\n    }\n}"
+      }
+    ],
+    "completionExplanation": "The top-level config error keeps its stable message while preserving the concrete I/O cause in the standard error chain.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "enum_unit_variants",
+              "enumName": "ConfigLoadError",
+              "requiredVariants": [
+                "FileRead"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "advanced"
+        }
+      ]
+    }
   }
 }

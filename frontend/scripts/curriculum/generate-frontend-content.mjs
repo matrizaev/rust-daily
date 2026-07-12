@@ -1,18 +1,19 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { basename, dirname, join } from "node:path";
 import {
-  findLessonJsonFiles,
   FRONTEND_CONCEPTS_PATH,
+  FRONTEND_CONTENT_REVISION_PATH,
   FRONTEND_LESSON_DETAILS_DIR,
   FRONTEND_LESSON_INDEX_PATH,
   FRONTEND_LESSONS_PATH,
   inlineCompileFailValidation,
   isCompileFailValidation,
+  lessonStarterCode,
   pathExists,
-  readJson,
   readSourceText,
-  SOURCE_CONCEPTS_PATH,
 } from "./shared.mjs";
+import { validateSourceContent } from "./validate-source-content.mjs";
 
 const inlineFile = async (lessonJsonPath, file) => {
   if (typeof file.content === "string") {
@@ -33,18 +34,47 @@ const inlineFile = async (lessonJsonPath, file) => {
   };
 };
 
-const lessonIndexFromDetail = (lesson) => {
-  const {
-    files: _files,
-    hints: _hints,
-    completionExplanation: _completionExplanation,
-    validation: _validation,
-    instructions: _instructions,
-    ...indexLesson
-  } = lesson;
+const lessonIndexFromDetail = (lesson) => ({
+  schemaVersion: lesson.schemaVersion,
+  id: lesson.id,
+  arcId: lesson.arcId,
+  arcTitle: lesson.arcTitle,
+  order: lesson.order,
+  day: lesson.day,
+  arcLength: lesson.arcLength,
+  title: lesson.title,
+  conceptId: lesson.conceptId,
+  difficulty: lesson.difficulty,
+  estimatedMinutes: lesson.estimatedMinutes,
+  scenario: lesson.scenario,
+});
 
-  return indexLesson;
-};
+const lessonValidationDetail = (lesson) =>
+  lesson.validation ? { validation: lesson.validation } : {};
+
+const lessonDetailFromLesson = (lesson) => ({
+  id: lesson.id,
+  schemaVersion: lesson.schemaVersion,
+  detail: {
+    instructions: lesson.instructions,
+    starterCode: lessonStarterCode(lesson),
+    files: lesson.files,
+    hints: lesson.hints,
+    completionExplanation: lesson.completionExplanation,
+    ...lessonValidationDetail(lesson),
+  },
+});
+
+const conceptFromSource = (concept) => ({
+  id: concept.id,
+  name: concept.name,
+  description: concept.description,
+  prerequisites: concept.prerequisites,
+  difficulty: concept.difficulty,
+  lessonIds: concept.lessonIds,
+  tags: concept.tags,
+  masteryThreshold: concept.masteryThreshold,
+});
 
 const testFilesDuplicateLessonFiles = (lessonFiles, testFiles) => {
   const lessonFileContents = new Map(
@@ -121,37 +151,26 @@ const inlineLessonValidation = (lessonJsonPath, lesson, files) =>
     ? inlineBackendValidation(lessonJsonPath, lesson.validation, files)
     : undefined;
 
-const frontendLessonFromSource = async (lessonJsonPath) => {
-  const lesson = await readJson(lessonJsonPath);
+const frontendLessonFromSource = async (lessonJsonPath, lesson) => {
   const files = await inlineLessonFiles(lessonJsonPath, lesson);
   const validation = await inlineLessonValidation(lessonJsonPath, lesson, files);
-  const {
-    author: _author,
-    starterCode: _starterCode,
-    ...shippedLesson
-  } = lesson;
-
   return {
-    ...shippedLesson,
+    ...lessonIndexFromDetail(lesson),
+    instructions: lesson.instructions,
     files,
+    hints: lesson.hints.map(({ level, body, solutionCode }) => ({
+      level,
+      body,
+      ...(solutionCode === undefined ? {} : { solutionCode }),
+    })),
+    completionExplanation: lesson.completionExplanation,
     validation,
   };
 };
 
-const readSourceLessons = async () => {
-  const lessonJsonFiles = await findLessonJsonFiles();
-
-  return Promise.all(lessonJsonFiles.map(frontendLessonFromSource));
-};
-
-const mergeById = (baseItems, sourceItems) => {
-  const sourceIds = new Set(sourceItems.map((item) => item.id));
-
-  return [
-    ...baseItems.filter((item) => !sourceIds.has(item.id)),
-    ...sourceItems,
-  ];
-};
+const readSourceLessons = async (lessonRecords) =>
+  Promise.all(lessonRecords.map(({ lesson, lessonJsonPath }) =>
+    frontendLessonFromSource(lessonJsonPath, lesson)));
 
 const sortLessons = (lessons) =>
   [...lessons].sort((left, right) => {
@@ -161,40 +180,105 @@ const sortLessons = (lessons) =>
     return leftOrder - rightOrder || left.id.localeCompare(right.id);
   });
 
+const SAFE_LESSON_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*-\d{3}$/;
+
 const writeJson = async (path, value) => {
   await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, `${JSON.stringify(value, null, 2)}\n`);
+  const temporaryPath = `${path}.${process.pid}.tmp`;
+  await writeFile(temporaryPath, `${JSON.stringify(value, null, 2)}\n`);
+  await rename(temporaryPath, path);
 };
 
-const writeLessonDetails = async (lessons) =>
+const writeLessonDetails = async (directory, lessons) =>
   Promise.all(
     lessons.map((lesson) =>
-      writeJson(
-        join(FRONTEND_LESSON_DETAILS_DIR, `${lesson.id}.json`),
-        lesson,
-      ),
+      {
+        if (!SAFE_LESSON_ID.test(lesson.id)) {
+          throw new Error(`Refusing unsafe lesson detail output id: ${String(lesson.id)}.`);
+        }
+        return writeJson(
+          join(directory, `${lesson.id}.json`),
+          lessonDetailFromLesson(lesson),
+        );
+      },
     ),
   );
 
-const main = async () => {
-  const [currentLessons, currentConcepts, sourceLessons] = await Promise.all([
-    readJson(FRONTEND_LESSONS_PATH),
-    readJson(FRONTEND_CONCEPTS_PATH),
-    readSourceLessons(),
-  ]);
-  const sourceConcepts = await pathExists(SOURCE_CONCEPTS_PATH)
-    ? await readJson(SOURCE_CONCEPTS_PATH)
-    : [];
-  const lessons = sortLessons(mergeById(currentLessons, sourceLessons));
-  const lessonIndex = lessons.map(lessonIndexFromDetail);
-  const concepts = mergeById(currentConcepts, sourceConcepts);
+const moveStagedTarget = async ({ staged, target }, moved) => {
+  const backup = `${target}.${process.pid}.bak`;
+  if (await pathExists(target)) {
+    await rename(target, backup);
+  }
+  moved.push({ backup, target });
+  await rename(staged, target);
+};
 
-  await Promise.all([
-    writeJson(FRONTEND_LESSONS_PATH, lessons),
-    writeJson(FRONTEND_LESSON_INDEX_PATH, lessonIndex),
-    writeJson(FRONTEND_CONCEPTS_PATH, concepts),
-    writeLessonDetails(lessons),
-  ]);
+const restoreMovedTarget = async ({ backup, target }) => {
+  await rm(target, { force: true, recursive: true });
+  if (await pathExists(backup)) {
+    await rename(backup, target);
+  }
+};
+
+const restoreMovedTargets = (moved) =>
+  Promise.all([...moved].reverse().map(restoreMovedTarget));
+
+const removeBackups = (moved) =>
+  Promise.all(moved.map(({ backup }) => rm(backup, { force: true, recursive: true })));
+
+const replaceGeneratedCorpus = async (stagedTargets) => {
+  const moved = [];
+  try {
+    for (const stagedTarget of stagedTargets) {
+      await moveStagedTarget(stagedTarget, moved);
+    }
+  } catch (error) {
+    await restoreMovedTargets(moved);
+    throw error;
+  }
+  await removeBackups(moved);
+};
+
+const main = async () => {
+  const validation = await validateSourceContent({ report: false });
+  if (validation.errors.length > 0) {
+    throw new Error(`Refusing to generate invalid source content (${validation.errors.join("; ")}).`);
+  }
+  const sourceLessons = await readSourceLessons(validation.lessonRecords);
+  const sourceConcepts = validation.concepts;
+  const lessons = sortLessons(sourceLessons);
+  const lessonIndex = lessons.map(lessonIndexFromDetail);
+  const concepts = sourceConcepts.map(conceptFromSource);
+  const contentRevision = createHash("sha256")
+    .update(JSON.stringify({ concepts, lessons }))
+    .digest("hex")
+    .slice(0, 16);
+
+  const stagingRoot = await mkdtemp(join(dirname(FRONTEND_LESSON_DETAILS_DIR), ".content-generation-"));
+  const stagedDetails = join(stagingRoot, "lessons");
+  const stagedLessons = join(stagingRoot, basename(FRONTEND_LESSONS_PATH));
+  const stagedIndex = join(stagingRoot, basename(FRONTEND_LESSON_INDEX_PATH));
+  const stagedConcepts = join(stagingRoot, basename(FRONTEND_CONCEPTS_PATH));
+  const stagedRevision = join(stagingRoot, basename(FRONTEND_CONTENT_REVISION_PATH));
+
+  try {
+    await Promise.all([
+      writeJson(stagedLessons, lessons),
+      writeJson(stagedIndex, lessonIndex),
+      writeJson(stagedConcepts, concepts),
+      writeJson(stagedRevision, { revision: contentRevision }),
+      writeLessonDetails(stagedDetails, lessons),
+    ]);
+    await replaceGeneratedCorpus([
+      { staged: stagedLessons, target: FRONTEND_LESSONS_PATH },
+      { staged: stagedIndex, target: FRONTEND_LESSON_INDEX_PATH },
+      { staged: stagedConcepts, target: FRONTEND_CONCEPTS_PATH },
+      { staged: stagedRevision, target: FRONTEND_CONTENT_REVISION_PATH },
+      { staged: stagedDetails, target: FRONTEND_LESSON_DETAILS_DIR },
+    ]);
+  } finally {
+    await rm(stagingRoot, { force: true, recursive: true });
+  }
 
   console.log(`Generated ${lessons.length} lessons and ${concepts.length} concepts.`);
 };

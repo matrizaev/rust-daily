@@ -1,105 +1,98 @@
 {
-  "schemaVersion": 2,
   "id": "wrap-nonempty-tryfrom-006",
-  "arcId": "collection-wrappers",
-  "arcTitle": "Exposing iteration on collection wrappers",
-  "order": 60,
-  "day": 6,
-  "arcLength": 6,
-  "title": "Validate and drain collection wrappers",
-  "conceptId": "wrap-nonempty-tryfrom",
-  "difficulty": "medium",
-  "estimatedMinutes": 8,
-  "scenario": "An order without lines is invalid. TryFrom<Vec<OrderLine>> can enforce that invariant, but only if direct empty construction is no longer public.",
-  "instructions": "Keep the iterator API active. Make the existing OrderLines::new constructor private, add drain(&mut self), and implement TryFrom<Vec<OrderLine>> for OrderLines, returning OrderLinesError::Empty for an empty Vec.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn as_slice(&self) -> &[OrderLine] {\n        &self.lines\n    }\n}\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}\n\nimpl<'a> IntoIterator for &'a OrderLines {\n    type Item = &'a OrderLine;\n    type IntoIter = std::slice::Iter<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter()\n    }\n}\n\nimpl OrderLines {\n    pub fn iter_mut(&mut self) -> std::slice::IterMut<'_, OrderLine> {\n        self.lines.iter_mut()\n    }\n}\n\nimpl<'a> IntoIterator for &'a mut OrderLines {\n    type Item = &'a mut OrderLine;\n    type IntoIter = std::slice::IterMut<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter_mut()\n    }\n}\n\n// TODO: add drain and non-empty TryFrom validation.\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::{OrderLine, OrderLines, OrderLinesError};\n\n#[test]\nfn validates_nonempty_lines() {\n    assert_eq!(OrderLines::try_from(Vec::new()), Err(OrderLinesError::Empty));\n    assert_eq!(\n        OrderLines::try_from(vec![OrderLine { sku: \"A\".to_owned(), quantity: 2 }]).map(|lines| lines.len()),\n        Ok(1)\n    );\n}\n\n#[test]\nfn drains_owned_lines() {\n    let mut lines = OrderLines::try_from(vec![OrderLine { sku: \"A\".to_owned(), quantity: 2 }]).expect(\"line is present\");\n    let drained: Vec<OrderLine> = lines.drain().collect();\n\n    assert_eq!(drained.len(), 1);\n    assert!(lines.is_empty());\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "TryFrom is the right public API when construction can fail."
-    },
-    {
-      "level": 2,
-      "body": "Keep new available to this module by removing pub. TryFrom can still call Self::new after checking that the Vec is not empty."
-    },
-    {
-      "level": 3,
-      "body": "Use the private constructor after the non-empty check passes.",
-      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn as_slice(&self) -> &[OrderLine] {\n        &self.lines\n    }\n}\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}\n\nimpl<'a> IntoIterator for &'a OrderLines {\n    type Item = &'a OrderLine;\n    type IntoIter = std::slice::Iter<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter()\n    }\n}\n\nimpl OrderLines {\n    pub fn iter_mut(&mut self) -> std::slice::IterMut<'_, OrderLine> {\n        self.lines.iter_mut()\n    }\n}\n\nimpl<'a> IntoIterator for &'a mut OrderLines {\n    type Item = &'a mut OrderLine;\n    type IntoIter = std::slice::IterMut<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter_mut()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum OrderLinesError {\n    Empty,\n}\n\nimpl OrderLines {\n    pub fn drain(&mut self) -> std::vec::Drain<'_, OrderLine> {\n        self.lines.drain(..)\n    }\n}\n\nimpl TryFrom<Vec<OrderLine>> for OrderLines {\n    type Error = OrderLinesError;\n\n    fn try_from(lines: Vec<OrderLine>) -> Result<Self, Self::Error> {\n        if lines.is_empty() {\n            return Err(OrderLinesError::Empty);\n        }\n\n        Ok(Self::new(lines))\n    }\n}"
-    }
-  ],
-  "completionExplanation": "OrderLines now has a complete collection-shaped API plus one public fallible construction path for the non-empty invariant. Direct empty construction is rejected at compile time.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Keep the iterator API active. Make the existing OrderLines::new constructor private, add drain(&mut self), and implement TryFrom<Vec<OrderLine>> for OrderLines, returning OrderLinesError::Empty for an empty Vec.",
+    "starterCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn as_slice(&self) -> &[OrderLine] {\n        &self.lines\n    }\n}\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}\n\nimpl<'a> IntoIterator for &'a OrderLines {\n    type Item = &'a OrderLine;\n    type IntoIter = std::slice::Iter<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter()\n    }\n}\n\nimpl OrderLines {\n    pub fn iter_mut(&mut self) -> std::slice::IterMut<'_, OrderLine> {\n        self.lines.iter_mut()\n    }\n}\n\nimpl<'a> IntoIterator for &'a mut OrderLines {\n    type Item = &'a mut OrderLine;\n    type IntoIter = std::slice::IterMut<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter_mut()\n    }\n}\n\n// TODO: add drain and non-empty TryFrom validation.\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "enum_unit_variants",
-            "enumName": "OrderLinesError",
-            "requiredVariants": [
-              "Empty"
-            ]
-          },
-          {
-            "type": "impl_trait_for_type",
-            "traitName": "TryFrom<Vec<OrderLine>>",
-            "typeName": "OrderLines"
-          },
-          {
-            "type": "impl_method",
-            "implFor": "OrderLines",
-            "methodName": "drain",
-            "requiredSignatureIncludes": [
-              "fn drain(&mut self) -> std::vec::Drain"
-            ]
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn as_slice(&self) -> &[OrderLine] {\n        &self.lines\n    }\n}\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}\n\nimpl<'a> IntoIterator for &'a OrderLines {\n    type Item = &'a OrderLine;\n    type IntoIter = std::slice::Iter<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter()\n    }\n}\n\nimpl OrderLines {\n    pub fn iter_mut(&mut self) -> std::slice::IterMut<'_, OrderLine> {\n        self.lines.iter_mut()\n    }\n}\n\nimpl<'a> IntoIterator for &'a mut OrderLines {\n    type Item = &'a mut OrderLine;\n    type IntoIter = std::slice::IterMut<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter_mut()\n    }\n}\n\n// TODO: add drain and non-empty TryFrom validation.\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "std"
-      },
-      {
-        "mode": "backend-compile-fail",
-        "timeoutMs": 10000,
-        "dependencySet": "std",
-        "cases": [
-          {
-            "name": "orderlines-new-is-private",
-            "expectedDiagnostics": [
-              "private"
-            ],
-            "path": "compile_fail/orderlines_new_is_private.rs",
-            "content": "use rust_daily_lesson::{OrderLine, OrderLines};\n\nfn main() {\n    let _ = OrderLines::new(Vec::<OrderLine>::new());\n}\n"
-          },
-          {
-            "name": "orderlines-direct-fields",
-            "expectedDiagnostics": [
-              "private"
-            ],
-            "forbiddenDiagnostics": [
-              "has no field named"
-            ],
-            "path": "compile_fail/orderlines_direct_fields.rs",
-            "content": "use rust_daily_lesson::OrderLines;\n\nfn main() {\n    let _ = OrderLines { lines: Vec::new() };\n}\n"
-          }
-        ]
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{OrderLine, OrderLines, OrderLinesError};\n\n#[test]\nfn validates_nonempty_lines() {\n    assert_eq!(OrderLines::try_from(Vec::new()), Err(OrderLinesError::Empty));\n    assert_eq!(\n        OrderLines::try_from(vec![OrderLine { sku: \"A\".to_owned(), quantity: 2 }]).map(|lines| lines.len()),\n        Ok(1)\n    );\n}\n\n#[test]\nfn drains_owned_lines() {\n    let mut lines = OrderLines::try_from(vec![OrderLine { sku: \"A\".to_owned(), quantity: 2 }]).expect(\"line is present\");\n    let drained: Vec<OrderLine> = lines.drain().collect();\n\n    assert_eq!(drained.len(), 1);\n    assert!(lines.is_empty());\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "TryFrom is the right public API when construction can fail."
+      },
+      {
+        "level": 2,
+        "body": "Keep new available to this module by removing pub. TryFrom can still call Self::new after checking that the Vec is not empty."
+      },
+      {
+        "level": 3,
+        "body": "Use the private constructor after the non-empty check passes.",
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn as_slice(&self) -> &[OrderLine] {\n        &self.lines\n    }\n}\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}\n\nimpl<'a> IntoIterator for &'a OrderLines {\n    type Item = &'a OrderLine;\n    type IntoIter = std::slice::Iter<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter()\n    }\n}\n\nimpl OrderLines {\n    pub fn iter_mut(&mut self) -> std::slice::IterMut<'_, OrderLine> {\n        self.lines.iter_mut()\n    }\n}\n\nimpl<'a> IntoIterator for &'a mut OrderLines {\n    type Item = &'a mut OrderLine;\n    type IntoIter = std::slice::IterMut<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter_mut()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum OrderLinesError {\n    Empty,\n}\n\nimpl OrderLines {\n    pub fn drain(&mut self) -> std::vec::Drain<'_, OrderLine> {\n        self.lines.drain(..)\n    }\n}\n\nimpl TryFrom<Vec<OrderLine>> for OrderLines {\n    type Error = OrderLinesError;\n\n    fn try_from(lines: Vec<OrderLine>) -> Result<Self, Self::Error> {\n        if lines.is_empty() {\n            return Err(OrderLinesError::Empty);\n        }\n\n        Ok(Self::new(lines))\n    }\n}"
+      }
+    ],
+    "completionExplanation": "OrderLines now has a complete collection-shaped API plus one public fallible construction path for the non-empty invariant. Direct empty construction is rejected at compile time.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "enum_unit_variants",
+              "enumName": "OrderLinesError",
+              "requiredVariants": [
+                "Empty"
+              ]
+            },
+            {
+              "type": "impl_trait_for_type",
+              "traitName": "TryFrom<Vec<OrderLine>>",
+              "typeName": "OrderLines"
+            },
+            {
+              "type": "impl_method",
+              "implFor": "OrderLines",
+              "methodName": "drain",
+              "requiredSignatureIncludes": [
+                "fn drain(&mut self) -> std::vec::Drain"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "orderlines-new-is-private",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "path": "compile_fail/orderlines_new_is_private.rs",
+              "content": "use rust_daily_lesson::{OrderLine, OrderLines};\n\nfn main() {\n    let _ = OrderLines::new(Vec::<OrderLine>::new());\n}\n"
+            },
+            {
+              "name": "orderlines-direct-fields",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/orderlines_direct_fields.rs",
+              "content": "use rust_daily_lesson::OrderLines;\n\nfn main() {\n    let _ = OrderLines { lines: Vec::new() };\n}\n"
+            }
+          ]
+        }
+      ]
+    }
   }
 }

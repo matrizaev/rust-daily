@@ -1,64 +1,57 @@
 {
-  "schemaVersion": 2,
   "id": "wrap-owned-intoiterator-003",
-  "arcId": "collection-wrappers",
-  "arcTitle": "Exposing iteration on collection wrappers",
-  "order": 57,
-  "day": 3,
-  "arcLength": 6,
-  "title": "Consume a wrapper with owned IntoIterator",
-  "conceptId": "wrap-into-iterator",
-  "difficulty": "medium",
-  "estimatedMinutes": 8,
-  "scenario": "When callers are done with a wrapper, IntoIterator should let them move owned values out naturally.",
-  "instructions": "Implement IntoIterator for OrderLines, yielding owned OrderLine values through std::vec::IntoIter<OrderLine>.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn as_slice(&self) -> &[OrderLine] {\n        &self.lines\n    }\n}\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\n// TODO: add owned IntoIterator for OrderLines.\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::{OrderLine, OrderLines};\n\n#[test]\nfn owned_iteration_moves_lines_out() {\n    let lines = OrderLines::new(vec![OrderLine { sku: \"A\".to_owned(), quantity: 2 }]);\n    let skus: Vec<String> = lines.into_iter().map(|line| line.sku).collect();\n\n    assert_eq!(skus, vec![\"A\".to_owned()]);\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "Owned IntoIterator should consume self."
-    },
-    {
-      "level": 2,
-      "body": "The item type is OrderLine, not &OrderLine."
-    },
-    {
-      "level": 3,
-      "body": "Move the inner Vec into its own iterator.",
-      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn as_slice(&self) -> &[OrderLine] {\n        &self.lines\n    }\n}\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}"
-    }
-  ],
-  "completionExplanation": "Callers can now choose ownership transfer with for line in lines when they are done with the wrapper.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Implement IntoIterator for OrderLines, yielding owned OrderLine values through std::vec::IntoIter<OrderLine>.",
+    "starterCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn as_slice(&self) -> &[OrderLine] {\n        &self.lines\n    }\n}\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\n// TODO: add owned IntoIterator for OrderLines.\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "impl_trait_for_type",
-            "traitName": "IntoIterator",
-            "typeName": "OrderLines"
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn as_slice(&self) -> &[OrderLine] {\n        &self.lines\n    }\n}\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\n// TODO: add owned IntoIterator for OrderLines.\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "std"
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{OrderLine, OrderLines};\n\n#[test]\nfn owned_iteration_moves_lines_out() {\n    let lines = OrderLines::new(vec![OrderLine { sku: \"A\".to_owned(), quantity: 2 }]);\n    let skus: Vec<String> = lines.into_iter().map(|line| line.sku).collect();\n\n    assert_eq!(skus, vec![\"A\".to_owned()]);\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Owned IntoIterator should consume self."
+      },
+      {
+        "level": 2,
+        "body": "The item type is OrderLine, not &OrderLine."
+      },
+      {
+        "level": 3,
+        "body": "Move the inner Vec into its own iterator.",
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn as_slice(&self) -> &[OrderLine] {\n        &self.lines\n    }\n}\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}"
+      }
+    ],
+    "completionExplanation": "Callers can now choose ownership transfer with for line in lines when they are done with the wrapper.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "impl_trait_for_type",
+              "traitName": "IntoIterator",
+              "typeName": "OrderLines"
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std"
+        }
+      ]
+    }
   }
 }

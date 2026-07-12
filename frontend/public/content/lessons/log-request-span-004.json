@@ -1,67 +1,60 @@
 {
-  "schemaVersion": 2,
   "id": "log-request-span-004",
-  "arcId": "structured-request-logging",
-  "arcTitle": "Structured request logging",
-  "order": 82,
-  "day": 4,
-  "arcLength": 6,
-  "title": "Create a request span for async work",
-  "conceptId": "log-request-span",
-  "difficulty": "medium",
-  "estimatedMinutes": 8,
-  "scenario": "A span carries context shared by multiple events. Request-scoped fields should not be rebuilt by every call site.",
-  "instructions": "Implement request_span(request_id, path) -> tracing::Span with tracing::info_span!. Name it \"http.request\" and record request_id and path fields so async work can enter or instrument the span.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "pub fn log_request_received(request_id: &str) {\n    tracing::info!(\n        event_name = \"request.received\",\n        request_id = %request_id,\n        \"request received\"\n    );\n}\n\npub fn log_request_started(\n    request_id: &str,\n    user_id: Option<&str>,\n    attempt: u32,\n) {\n    tracing::info!(\n        event_name = \"request.started\",\n        request_id = %request_id,\n        user_id = user_id.unwrap_or(\"anonymous\"),\n        attempt,\n        \"request processing started\"\n    );\n}\n\n#[derive(Debug, Clone, Copy)]\npub struct Secret<'a>(&'a str);\n\nimpl<'a> Secret<'a> {\n    pub fn new(value: &'a str) -> Self {\n        Self(value)\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.0.is_empty()\n    }\n}\n\nimpl std::fmt::Display for Secret<'_> {\n    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        formatter.write_str(\"[redacted]\")\n    }\n}\n\npub fn log_authentication_attempt(request_id: &str, secret: Secret<'_>) {\n    tracing::info!(\n        event_name = \"authentication.attempt\",\n        request_id = %request_id,\n        secret = %secret,\n        \"authentication attempted\"\n    );\n}\n\n// TODO: add request_span with info_span!.\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::request_span;\n\n#[test]\nfn creates_request_span() {\n    let _span = request_span(\"req-1\", \"/users\");\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "Spans represent work with a beginning and end."
-    },
-    {
-      "level": 2,
-      "body": "Return the Span so callers can enter it or instrument a future."
-    },
-    {
-      "level": 3,
-      "body": "Keep request context on the span instead of repeating it in every message.",
-      "solutionCode": "pub fn log_request_received(request_id: &str) {\n    tracing::info!(\n        event_name = \"request.received\",\n        request_id = %request_id,\n        \"request received\"\n    );\n}\n\npub fn log_request_started(\n    request_id: &str,\n    user_id: Option<&str>,\n    attempt: u32,\n) {\n    tracing::info!(\n        event_name = \"request.started\",\n        request_id = %request_id,\n        user_id = user_id.unwrap_or(\"anonymous\"),\n        attempt,\n        \"request processing started\"\n    );\n}\n\n#[derive(Debug, Clone, Copy)]\npub struct Secret<'a>(&'a str);\n\nimpl<'a> Secret<'a> {\n    pub fn new(value: &'a str) -> Self {\n        Self(value)\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.0.is_empty()\n    }\n}\n\nimpl std::fmt::Display for Secret<'_> {\n    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        formatter.write_str(\"[redacted]\")\n    }\n}\n\npub fn log_authentication_attempt(request_id: &str, secret: Secret<'_>) {\n    tracing::info!(\n        event_name = \"authentication.attempt\",\n        request_id = %request_id,\n        secret = %secret,\n        \"authentication attempted\"\n    );\n}\n\npub fn request_span(request_id: &str, path: &str) -> tracing::Span {\n    tracing::info_span!(\n        \"http.request\",\n        request_id = %request_id,\n        path = %path\n    )\n}"
-    }
-  ],
-  "completionExplanation": "Request-scoped context can now propagate through synchronous or asynchronous work with a real tracing span.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Implement request_span(request_id, path) -> tracing::Span with tracing::info_span!. Name it \"http.request\" and record request_id and path fields so async work can enter or instrument the span.",
+    "starterCode": "pub fn log_request_received(request_id: &str) {\n    tracing::info!(\n        event_name = \"request.received\",\n        request_id = %request_id,\n        \"request received\"\n    );\n}\n\npub fn log_request_started(\n    request_id: &str,\n    user_id: Option<&str>,\n    attempt: u32,\n) {\n    tracing::info!(\n        event_name = \"request.started\",\n        request_id = %request_id,\n        user_id = user_id.unwrap_or(\"anonymous\"),\n        attempt,\n        \"request processing started\"\n    );\n}\n\n#[derive(Debug, Clone, Copy)]\npub struct Secret<'a>(&'a str);\n\nimpl<'a> Secret<'a> {\n    pub fn new(value: &'a str) -> Self {\n        Self(value)\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.0.is_empty()\n    }\n}\n\nimpl std::fmt::Display for Secret<'_> {\n    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        formatter.write_str(\"[redacted]\")\n    }\n}\n\npub fn log_authentication_attempt(request_id: &str, secret: Secret<'_>) {\n    tracing::info!(\n        event_name = \"authentication.attempt\",\n        request_id = %request_id,\n        secret = %secret,\n        \"authentication attempted\"\n    );\n}\n\n// TODO: add request_span with info_span!.\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "source_includes",
-            "requiredSnippets": [
-              "tracing::info_span!",
-              "\"http.request\"",
-              "path = %path"
-            ]
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "pub fn log_request_received(request_id: &str) {\n    tracing::info!(\n        event_name = \"request.received\",\n        request_id = %request_id,\n        \"request received\"\n    );\n}\n\npub fn log_request_started(\n    request_id: &str,\n    user_id: Option<&str>,\n    attempt: u32,\n) {\n    tracing::info!(\n        event_name = \"request.started\",\n        request_id = %request_id,\n        user_id = user_id.unwrap_or(\"anonymous\"),\n        attempt,\n        \"request processing started\"\n    );\n}\n\n#[derive(Debug, Clone, Copy)]\npub struct Secret<'a>(&'a str);\n\nimpl<'a> Secret<'a> {\n    pub fn new(value: &'a str) -> Self {\n        Self(value)\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.0.is_empty()\n    }\n}\n\nimpl std::fmt::Display for Secret<'_> {\n    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        formatter.write_str(\"[redacted]\")\n    }\n}\n\npub fn log_authentication_attempt(request_id: &str, secret: Secret<'_>) {\n    tracing::info!(\n        event_name = \"authentication.attempt\",\n        request_id = %request_id,\n        secret = %secret,\n        \"authentication attempted\"\n    );\n}\n\n// TODO: add request_span with info_span!.\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "advanced"
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::request_span;\n\n#[test]\nfn creates_request_span() {\n    let _span = request_span(\"req-1\", \"/users\");\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Spans represent work with a beginning and end."
+      },
+      {
+        "level": 2,
+        "body": "Return the Span so callers can enter it or instrument a future."
+      },
+      {
+        "level": 3,
+        "body": "Keep request context on the span instead of repeating it in every message.",
+        "solutionCode": "pub fn log_request_received(request_id: &str) {\n    tracing::info!(\n        event_name = \"request.received\",\n        request_id = %request_id,\n        \"request received\"\n    );\n}\n\npub fn log_request_started(\n    request_id: &str,\n    user_id: Option<&str>,\n    attempt: u32,\n) {\n    tracing::info!(\n        event_name = \"request.started\",\n        request_id = %request_id,\n        user_id = user_id.unwrap_or(\"anonymous\"),\n        attempt,\n        \"request processing started\"\n    );\n}\n\n#[derive(Debug, Clone, Copy)]\npub struct Secret<'a>(&'a str);\n\nimpl<'a> Secret<'a> {\n    pub fn new(value: &'a str) -> Self {\n        Self(value)\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.0.is_empty()\n    }\n}\n\nimpl std::fmt::Display for Secret<'_> {\n    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        formatter.write_str(\"[redacted]\")\n    }\n}\n\npub fn log_authentication_attempt(request_id: &str, secret: Secret<'_>) {\n    tracing::info!(\n        event_name = \"authentication.attempt\",\n        request_id = %request_id,\n        secret = %secret,\n        \"authentication attempted\"\n    );\n}\n\npub fn request_span(request_id: &str, path: &str) -> tracing::Span {\n    tracing::info_span!(\n        \"http.request\",\n        request_id = %request_id,\n        path = %path\n    )\n}"
+      }
+    ],
+    "completionExplanation": "Request-scoped context can now propagate through synchronous or asynchronous work with a real tracing span.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "source_includes",
+              "requiredSnippets": [
+                "tracing::info_span!",
+                "\"http.request\"",
+                "path = %path"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "advanced"
+        }
+      ]
+    }
   }
 }

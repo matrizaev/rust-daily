@@ -11,11 +11,13 @@ import {
   recordHintReveal,
   recordLessonCompletion,
   recordValidationAttempt,
+  readProgress,
   resetProgress,
 } from "../progress/progressStore";
 import { selectDailyLesson } from "../progression/selectDailyLesson";
 import type { Concept, LessonIndexEntry } from "../types/lesson";
 import type { ProgressStore } from "../types/progress";
+import type { LessonCompletion } from "../types/progress";
 
 const progress = (
   completions: ProgressStore["completions"] = [],
@@ -26,19 +28,19 @@ const progress = (
   attempts: [],
   completions,
   concepts: {},
-});
+} as unknown as ProgressStore);
 
 const completion = (
   lessonId: string,
   localDate: string,
   conceptId = "ownership",
-) => ({
+): LessonCompletion => ({
   lessonId,
   conceptId,
   completedAt: `${localDate}T12:00:00.000Z`,
   localDate,
   timezoneOffsetMinutes: 0,
-});
+} as LessonCompletion);
 
 const lesson = (id: string, order: number): LessonIndexEntry => ({
   schemaVersion: 1,
@@ -128,7 +130,7 @@ describe("progress selectors", () => {
           nextReviewAt: null,
         },
       },
-    } satisfies ProgressStore;
+    } as unknown as ProgressStore;
 
     expect(getProgressSummary(store)).toEqual({
       currentStreak: 2,
@@ -153,6 +155,62 @@ describe("progress store", () => {
     });
     expect(isProgressStore({ version: 1 })).toBe(false);
     expect(isProgressStore(progress())).toBe(true);
+  });
+
+  it("rejects contradictory attempts, invalid calendar dates, and negative counters", () => {
+    const completedAt = "2026-07-11T12:00:00.000Z";
+    const validAttempt = {
+      id: "lesson-1:attempt",
+      lessonId: "lesson-1",
+      startedAt: "2026-07-11T11:00:00.000Z",
+      completedAt,
+      status: "completed" as const,
+      validationAttempts: 1,
+      hintsRevealed: 0,
+      durationSeconds: 3600,
+    };
+    const valid = {
+      ...progress(),
+      attempts: [validAttempt],
+      completions: [completion("lesson-1", "2026-07-11")],
+      concepts: {
+        ownership: {
+          conceptId: "ownership",
+          state: "introduced" as const,
+          completedLessons: 1,
+          successfulReviews: 0,
+          lastPracticedAt: completedAt,
+          nextReviewAt: null,
+        },
+      },
+    };
+
+    expect(isProgressStore(valid)).toBe(true);
+    expect(isProgressStore({
+      ...valid,
+      attempts: [{ ...validAttempt, status: "in_progress", completedAt }],
+    })).toBe(false);
+    expect(isProgressStore({
+      ...valid,
+      attempts: [{ ...validAttempt, validationAttempts: -1 }],
+    })).toBe(false);
+    expect(isProgressStore({
+      ...valid,
+      completions: [{ ...valid.completions[0], localDate: "2026-02-31" }],
+    })).toBe(false);
+    expect(isProgressStore({ ...valid, createdAt: "1" })).toBe(false);
+  });
+
+  it("does not overwrite invalid persisted progress during an update", () => {
+    const invalid = "{not-json";
+    window.localStorage.setItem("rust-daily:v1:progress", invalid);
+
+    expect(readProgress()).toMatchObject({ ok: false, reason: "invalid" });
+    expect(recordValidationAttempt("lesson-1")).toMatchObject({
+      ok: false,
+      reason: "invalid",
+    });
+    expect(window.localStorage.getItem("rust-daily:v1:progress")).toBe(invalid);
   });
 
   it("records attempts, validation count, hints, and completions", () => {

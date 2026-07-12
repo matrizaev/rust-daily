@@ -1,67 +1,60 @@
 {
-  "schemaVersion": 2,
   "id": "wrap-borrowed-iter-002",
-  "arcId": "collection-wrappers",
-  "arcTitle": "Exposing iteration on collection wrappers",
-  "order": 56,
-  "day": 2,
-  "arcLength": 6,
-  "title": "Expose borrowed iteration explicitly",
-  "conceptId": "wrap-borrowed-iter",
-  "difficulty": "easy",
-  "estimatedMinutes": 6,
-  "scenario": "Callers often need to inspect a collection wrapper without consuming it. A borrowed iterator exposes a view without leaking fields.",
-  "instructions": "Add OrderLines::iter(&self) -> std::slice::Iter<'_, OrderLine>. Keep as_slice so callers can choose either a slice or an iterator.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn as_slice(&self) -> &[OrderLine] {\n        &self.lines\n    }\n}\n\n// TODO: add the borrowed iter method.\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::{OrderLine, OrderLines};\n\n#[test]\nfn iter_yields_borrowed_lines() {\n    let lines = OrderLines::new(vec![OrderLine { sku: \"A\".to_owned(), quantity: 2 }]);\n    let skus: Vec<&str> = lines.iter().map(|line| line.sku.as_str()).collect();\n\n    assert_eq!(skus, vec![\"A\"]);\n    assert_eq!(lines.len(), 1);\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "iter should borrow self; it should not clone the Vec."
-    },
-    {
-      "level": 2,
-      "body": "The item type should be &OrderLine."
-    },
-    {
-      "level": 3,
-      "body": "Delegate to self.lines.iter().",
-      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn as_slice(&self) -> &[OrderLine] {\n        &self.lines\n    }\n}\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}"
-    }
-  ],
-  "completionExplanation": "The wrapper now supports idiomatic borrowed iteration without exposing its inner Vec.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Add OrderLines::iter(&self) -> std::slice::Iter<'_, OrderLine>. Keep as_slice so callers can choose either a slice or an iterator.",
+    "starterCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn as_slice(&self) -> &[OrderLine] {\n        &self.lines\n    }\n}\n\n// TODO: add the borrowed iter method.\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "impl_method",
-            "implFor": "OrderLines",
-            "methodName": "iter",
-            "requiredSignatureIncludes": [
-              "fn iter(&self) -> std::slice::Iter"
-            ]
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn as_slice(&self) -> &[OrderLine] {\n        &self.lines\n    }\n}\n\n// TODO: add the borrowed iter method.\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "std"
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{OrderLine, OrderLines};\n\n#[test]\nfn iter_yields_borrowed_lines() {\n    let lines = OrderLines::new(vec![OrderLine { sku: \"A\".to_owned(), quantity: 2 }]);\n    let skus: Vec<&str> = lines.iter().map(|line| line.sku.as_str()).collect();\n\n    assert_eq!(skus, vec![\"A\"]);\n    assert_eq!(lines.len(), 1);\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "iter should borrow self; it should not clone the Vec."
+      },
+      {
+        "level": 2,
+        "body": "The item type should be &OrderLine."
+      },
+      {
+        "level": 3,
+        "body": "Delegate to self.lines.iter().",
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn as_slice(&self) -> &[OrderLine] {\n        &self.lines\n    }\n}\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}"
+      }
+    ],
+    "completionExplanation": "The wrapper now supports idiomatic borrowed iteration without exposing its inner Vec.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "impl_method",
+              "implFor": "OrderLines",
+              "methodName": "iter",
+              "requiredSignatureIncludes": [
+                "fn iter(&self) -> std::slice::Iter"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std"
+        }
+      ]
+    }
   }
 }

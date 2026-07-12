@@ -1,110 +1,103 @@
 {
-  "schemaVersion": 2,
   "id": "endpoint-display-006",
-  "arcId": "host-port-config",
-  "arcTitle": "Host and port configuration modeling",
-  "order": 48,
-  "day": 6,
-  "arcLength": 6,
-  "title": "Implement Display for Endpoint",
-  "conceptId": "endpoint-display",
-  "difficulty": "easy",
-  "estimatedMinutes": 6,
-  "scenario": "Connection logs and configuration output need endpoint formatting in host:port style without exposing Endpoint internals.",
-  "instructions": "Implement Display for Endpoint by formatting self.host().as_str() and self.port().value() as host:port.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "use std::num::NonZeroU16;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Port(NonZeroU16);\n\nimpl Port {\n    pub fn new(value: u16) -> Option<Self> {\n        NonZeroU16::new(value).map(Self)\n    }\n\n    pub fn value(&self) -> u16 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum HostValidationError {\n    Empty,\n    InvalidCharacters,\n}\n\nfn validate_host(value: &str) -> Result<(), HostValidationError> {\n    if value.is_empty() {\n        return Err(HostValidationError::Empty);\n    }\n\n    if value.contains(char::is_whitespace) {\n        return Err(HostValidationError::InvalidCharacters);\n    }\n\n    Ok(())\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Host(String);\n\nimpl Host {\n    pub fn as_str(&self) -> &str {\n        &self.0\n    }\n}\n\nimpl TryFrom<&str> for Host {\n    type Error = HostValidationError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        validate_host(value)?;\n\n        Ok(Self(value.to_owned()))\n    }\n}\n\nimpl TryFrom<String> for Host {\n    type Error = HostValidationError;\n\n    fn try_from(value: String) -> Result<Self, Self::Error> {\n        validate_host(value.as_str())?;\n\n        Ok(Self(value))\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Endpoint {\n    host: Host,\n    port: Port,\n}\n\nimpl Endpoint {\n    pub fn new(host: Host, port: Port) -> Self {\n        Self { host, port }\n    }\n\n    pub fn host(&self) -> &Host {\n        &self.host\n    }\n\n    pub fn port(&self) -> Port {\n        self.port\n    }\n}\n\nimpl Port {\n    pub const LOCAL_DEVELOPMENT: Self = Self(NonZeroU16::MIN.saturating_add(8079));\n}\n\nimpl Host {\n    pub fn localhost() -> Self {\n        Self(\"localhost\".to_owned())\n    }\n}\n\nimpl Default for Endpoint {\n    fn default() -> Self {\n        Self::new(Host::localhost(), Port::LOCAL_DEVELOPMENT)\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: Implement std::fmt::Display for Endpoint.\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::{Endpoint, Host, Port};\n\n#[test]\nfn endpoint_display() -> Result<(), String> {\n    let host =\n        Host::try_from(\"127.0.0.1\").map_err(|error| format!(\"invalid test host: {error:?}\"))?;\n    let port = Port::new(80).ok_or_else(|| \"port fixture must be non-zero\".to_owned())?;\n    let endpoint = Endpoint::new(host, port);\n\n    assert_eq!(endpoint.to_string(), \"127.0.0.1:80\");\n\n    Ok(())\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "Implement std::fmt::Display for Endpoint."
-    },
-    {
-      "level": 2,
-      "body": "Use the public accessors: self.host().as_str() and self.port().value()."
-    },
-    {
-      "level": 3,
-      "body": "A canonical solution formats the composite through its public API.",
-      "solutionCode": "use std::num::NonZeroU16;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Port(NonZeroU16);\n\nimpl Port {\n    pub fn new(value: u16) -> Option<Self> {\n        NonZeroU16::new(value).map(Self)\n    }\n\n    pub fn value(&self) -> u16 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum HostValidationError {\n    Empty,\n    InvalidCharacters,\n}\n\nfn validate_host(value: &str) -> Result<(), HostValidationError> {\n    if value.is_empty() {\n        return Err(HostValidationError::Empty);\n    }\n\n    if value.contains(char::is_whitespace) {\n        return Err(HostValidationError::InvalidCharacters);\n    }\n\n    Ok(())\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Host(String);\n\nimpl Host {\n    pub fn as_str(&self) -> &str {\n        &self.0\n    }\n}\n\nimpl TryFrom<&str> for Host {\n    type Error = HostValidationError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        validate_host(value)?;\n\n        Ok(Self(value.to_owned()))\n    }\n}\n\nimpl TryFrom<String> for Host {\n    type Error = HostValidationError;\n\n    fn try_from(value: String) -> Result<Self, Self::Error> {\n        validate_host(value.as_str())?;\n\n        Ok(Self(value))\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Endpoint {\n    host: Host,\n    port: Port,\n}\n\nimpl Endpoint {\n    pub fn new(host: Host, port: Port) -> Self {\n        Self { host, port }\n    }\n\n    pub fn host(&self) -> &Host {\n        &self.host\n    }\n\n    pub fn port(&self) -> Port {\n        self.port\n    }\n}\n\nimpl Port {\n    pub const LOCAL_DEVELOPMENT: Self = Self(NonZeroU16::MIN.saturating_add(8079));\n}\n\nimpl Host {\n    pub fn localhost() -> Self {\n        Self(\"localhost\".to_owned())\n    }\n}\n\nimpl Default for Endpoint {\n    fn default() -> Self {\n        Self::new(Host::localhost(), Port::LOCAL_DEVELOPMENT)\n    }\n}\n\nimpl std::fmt::Display for Endpoint {\n    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        write!(f, \"{}:{}\", self.host().as_str(), self.port().value())\n    }\n}"
-    }
-  ],
-  "completionExplanation": "Display gives the composite type a standard textual representation while callers and formatting code continue to use the public API instead of reaching into private fields.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Implement Display for Endpoint by formatting self.host().as_str() and self.port().value() as host:port.",
+    "starterCode": "use std::num::NonZeroU16;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Port(NonZeroU16);\n\nimpl Port {\n    pub fn new(value: u16) -> Option<Self> {\n        NonZeroU16::new(value).map(Self)\n    }\n\n    pub fn value(&self) -> u16 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum HostValidationError {\n    Empty,\n    InvalidCharacters,\n}\n\nfn validate_host(value: &str) -> Result<(), HostValidationError> {\n    if value.is_empty() {\n        return Err(HostValidationError::Empty);\n    }\n\n    if value.contains(char::is_whitespace) {\n        return Err(HostValidationError::InvalidCharacters);\n    }\n\n    Ok(())\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Host(String);\n\nimpl Host {\n    pub fn as_str(&self) -> &str {\n        &self.0\n    }\n}\n\nimpl TryFrom<&str> for Host {\n    type Error = HostValidationError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        validate_host(value)?;\n\n        Ok(Self(value.to_owned()))\n    }\n}\n\nimpl TryFrom<String> for Host {\n    type Error = HostValidationError;\n\n    fn try_from(value: String) -> Result<Self, Self::Error> {\n        validate_host(value.as_str())?;\n\n        Ok(Self(value))\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Endpoint {\n    host: Host,\n    port: Port,\n}\n\nimpl Endpoint {\n    pub fn new(host: Host, port: Port) -> Self {\n        Self { host, port }\n    }\n\n    pub fn host(&self) -> &Host {\n        &self.host\n    }\n\n    pub fn port(&self) -> Port {\n        self.port\n    }\n}\n\nimpl Port {\n    pub const LOCAL_DEVELOPMENT: Self = Self(NonZeroU16::MIN.saturating_add(8079));\n}\n\nimpl Host {\n    pub fn localhost() -> Self {\n        Self(\"localhost\".to_owned())\n    }\n}\n\nimpl Default for Endpoint {\n    fn default() -> Self {\n        Self::new(Host::localhost(), Port::LOCAL_DEVELOPMENT)\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: Implement std::fmt::Display for Endpoint.\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "impl_trait_for_type",
-            "traitName": "std::fmt::Display",
-            "typeName": "Endpoint"
-          },
-          {
-            "type": "source_includes",
-            "requiredSnippets": [
-              "fn fmt",
-              "write!"
-            ],
-            "forbiddenSnippets": [
-              ".unwrap()",
-              ".expect(",
-              "panic!"
-            ]
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "use std::num::NonZeroU16;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Port(NonZeroU16);\n\nimpl Port {\n    pub fn new(value: u16) -> Option<Self> {\n        NonZeroU16::new(value).map(Self)\n    }\n\n    pub fn value(&self) -> u16 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum HostValidationError {\n    Empty,\n    InvalidCharacters,\n}\n\nfn validate_host(value: &str) -> Result<(), HostValidationError> {\n    if value.is_empty() {\n        return Err(HostValidationError::Empty);\n    }\n\n    if value.contains(char::is_whitespace) {\n        return Err(HostValidationError::InvalidCharacters);\n    }\n\n    Ok(())\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Host(String);\n\nimpl Host {\n    pub fn as_str(&self) -> &str {\n        &self.0\n    }\n}\n\nimpl TryFrom<&str> for Host {\n    type Error = HostValidationError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        validate_host(value)?;\n\n        Ok(Self(value.to_owned()))\n    }\n}\n\nimpl TryFrom<String> for Host {\n    type Error = HostValidationError;\n\n    fn try_from(value: String) -> Result<Self, Self::Error> {\n        validate_host(value.as_str())?;\n\n        Ok(Self(value))\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Endpoint {\n    host: Host,\n    port: Port,\n}\n\nimpl Endpoint {\n    pub fn new(host: Host, port: Port) -> Self {\n        Self { host, port }\n    }\n\n    pub fn host(&self) -> &Host {\n        &self.host\n    }\n\n    pub fn port(&self) -> Port {\n        self.port\n    }\n}\n\nimpl Port {\n    pub const LOCAL_DEVELOPMENT: Self = Self(NonZeroU16::MIN.saturating_add(8079));\n}\n\nimpl Host {\n    pub fn localhost() -> Self {\n        Self(\"localhost\".to_owned())\n    }\n}\n\nimpl Default for Endpoint {\n    fn default() -> Self {\n        Self::new(Host::localhost(), Port::LOCAL_DEVELOPMENT)\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: Implement std::fmt::Display for Endpoint.\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "std"
-      },
-      {
-        "mode": "backend-compile-fail",
-        "timeoutMs": 10000,
-        "dependencySet": "std",
-        "cases": [
-          {
-            "name": "port-direct-construction",
-            "expectedDiagnostics": [
-              "private"
-            ],
-            "path": "compile_fail/port_direct_construction.rs",
-            "content": "use std::num::NonZeroU16;\nuse rust_daily_lesson::Port;\n\nfn main() {\n    let _ = Port(NonZeroU16::new(8080).unwrap());\n}\n"
-          },
-          {
-            "name": "host-direct-construction",
-            "expectedDiagnostics": [
-              "private"
-            ],
-            "path": "compile_fail/host_direct_construction.rs",
-            "content": "use rust_daily_lesson::Host;\n\nfn main() {\n    let _ = Host(String::from(\"localhost\"));\n}\n"
-          },
-          {
-            "name": "endpoint-direct-fields",
-            "expectedDiagnostics": [
-              "private"
-            ],
-            "forbiddenDiagnostics": [
-              "has no field named"
-            ],
-            "path": "compile_fail/endpoint_direct_fields.rs",
-            "content": "use rust_daily_lesson::{Endpoint, Host, Port};\n\nfn main() {\n    let host = Host::try_from(\"localhost\").unwrap();\n    let port = Port::new(8080).unwrap();\n    let _ = Endpoint { host, port };\n}\n"
-          }
-        ]
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{Endpoint, Host, Port};\n\n#[test]\nfn endpoint_display() -> Result<(), String> {\n    let host =\n        Host::try_from(\"127.0.0.1\").map_err(|error| format!(\"invalid test host: {error:?}\"))?;\n    let port = Port::new(80).ok_or_else(|| \"port fixture must be non-zero\".to_owned())?;\n    let endpoint = Endpoint::new(host, port);\n\n    assert_eq!(endpoint.to_string(), \"127.0.0.1:80\");\n\n    Ok(())\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Implement std::fmt::Display for Endpoint."
+      },
+      {
+        "level": 2,
+        "body": "Use the public accessors: self.host().as_str() and self.port().value()."
+      },
+      {
+        "level": 3,
+        "body": "A canonical solution formats the composite through its public API.",
+        "solutionCode": "use std::num::NonZeroU16;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Port(NonZeroU16);\n\nimpl Port {\n    pub fn new(value: u16) -> Option<Self> {\n        NonZeroU16::new(value).map(Self)\n    }\n\n    pub fn value(&self) -> u16 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum HostValidationError {\n    Empty,\n    InvalidCharacters,\n}\n\nfn validate_host(value: &str) -> Result<(), HostValidationError> {\n    if value.is_empty() {\n        return Err(HostValidationError::Empty);\n    }\n\n    if value.contains(char::is_whitespace) {\n        return Err(HostValidationError::InvalidCharacters);\n    }\n\n    Ok(())\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Host(String);\n\nimpl Host {\n    pub fn as_str(&self) -> &str {\n        &self.0\n    }\n}\n\nimpl TryFrom<&str> for Host {\n    type Error = HostValidationError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        validate_host(value)?;\n\n        Ok(Self(value.to_owned()))\n    }\n}\n\nimpl TryFrom<String> for Host {\n    type Error = HostValidationError;\n\n    fn try_from(value: String) -> Result<Self, Self::Error> {\n        validate_host(value.as_str())?;\n\n        Ok(Self(value))\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Endpoint {\n    host: Host,\n    port: Port,\n}\n\nimpl Endpoint {\n    pub fn new(host: Host, port: Port) -> Self {\n        Self { host, port }\n    }\n\n    pub fn host(&self) -> &Host {\n        &self.host\n    }\n\n    pub fn port(&self) -> Port {\n        self.port\n    }\n}\n\nimpl Port {\n    pub const LOCAL_DEVELOPMENT: Self = Self(NonZeroU16::MIN.saturating_add(8079));\n}\n\nimpl Host {\n    pub fn localhost() -> Self {\n        Self(\"localhost\".to_owned())\n    }\n}\n\nimpl Default for Endpoint {\n    fn default() -> Self {\n        Self::new(Host::localhost(), Port::LOCAL_DEVELOPMENT)\n    }\n}\n\nimpl std::fmt::Display for Endpoint {\n    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        write!(f, \"{}:{}\", self.host().as_str(), self.port().value())\n    }\n}"
+      }
+    ],
+    "completionExplanation": "Display gives the composite type a standard textual representation while callers and formatting code continue to use the public API instead of reaching into private fields.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "impl_trait_for_type",
+              "traitName": "std::fmt::Display",
+              "typeName": "Endpoint"
+            },
+            {
+              "type": "source_includes",
+              "requiredSnippets": [
+                "fn fmt",
+                "write!"
+              ],
+              "forbiddenSnippets": [
+                ".unwrap()",
+                ".expect(",
+                "panic!"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "port-direct-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "path": "compile_fail/port_direct_construction.rs",
+              "content": "use std::num::NonZeroU16;\nuse rust_daily_lesson::Port;\n\nfn main() {\n    let _ = Port(NonZeroU16::new(8080).unwrap());\n}\n"
+            },
+            {
+              "name": "host-direct-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "path": "compile_fail/host_direct_construction.rs",
+              "content": "use rust_daily_lesson::Host;\n\nfn main() {\n    let _ = Host(String::from(\"localhost\"));\n}\n"
+            },
+            {
+              "name": "endpoint-direct-fields",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/endpoint_direct_fields.rs",
+              "content": "use rust_daily_lesson::{Endpoint, Host, Port};\n\nfn main() {\n    let host = Host::try_from(\"localhost\").unwrap();\n    let port = Port::new(8080).unwrap();\n    let _ = Endpoint { host, port };\n}\n"
+            }
+          ]
+        }
+      ]
+    }
   }
 }

@@ -1,80 +1,73 @@
 {
-  "schemaVersion": 2,
   "id": "wrap-collection-001",
-  "arcId": "collection-wrappers",
-  "arcTitle": "Exposing iteration on collection wrappers",
-  "order": 55,
-  "day": 1,
-  "arcLength": 6,
-  "title": "Wrap order lines behind a slice API",
-  "conceptId": "wrap-collection",
-  "difficulty": "easy",
-  "estimatedMinutes": 6,
-  "scenario": "A collection wrapper can own a Vec while keeping later invariants and iteration APIs under one type.",
-  "instructions": "Define OrderLines with a private Vec<OrderLine>, a constructor, len, is_empty, and as_slice so callers can inspect lines without taking ownership of the Vec.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "// TODO: wrap order lines in an API-owned collection type.\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::{OrderLine, OrderLines};\n\n#[test]\nfn exposes_lines_as_slice_without_moving_vec() {\n    let lines = OrderLines::new(vec![OrderLine { sku: \"A\".to_owned(), quantity: 2 }]);\n\n    assert_eq!(lines.len(), 1);\n    assert!(!lines.is_empty());\n    assert_eq!(lines.as_slice()[0].sku, \"A\");\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "Keep the Vec private so the wrapper can protect future invariants."
-    },
-    {
-      "level": 2,
-      "body": "Return a slice for read-only access instead of cloning or exposing the Vec."
-    },
-    {
-      "level": 3,
-      "body": "Add as_slice alongside len and is_empty.",
-      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn as_slice(&self) -> &[OrderLine] {\n        &self.lines\n    }\n}"
-    }
-  ],
-  "completionExplanation": "OrderLines now owns its representation while exposing a cheap borrowed view for callers.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Define OrderLines with a private Vec<OrderLine>, a constructor, len, is_empty, and as_slice so callers can inspect lines without taking ownership of the Vec.",
+    "starterCode": "// TODO: wrap order lines in an API-owned collection type.\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "struct_fields",
-            "structName": "OrderLines",
-            "requiredFields": [
-              {
-                "name": "lines",
-                "typeIncludes": [
-                  "Vec",
-                  "OrderLine"
-                ]
-              }
-            ]
-          },
-          {
-            "type": "impl_method",
-            "implFor": "OrderLines",
-            "methodName": "as_slice",
-            "requiredSignatureIncludes": [
-              "fn as_slice(&self) -> &[OrderLine]"
-            ]
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "// TODO: wrap order lines in an API-owned collection type.\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "std"
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{OrderLine, OrderLines};\n\n#[test]\nfn exposes_lines_as_slice_without_moving_vec() {\n    let lines = OrderLines::new(vec![OrderLine { sku: \"A\".to_owned(), quantity: 2 }]);\n\n    assert_eq!(lines.len(), 1);\n    assert!(!lines.is_empty());\n    assert_eq!(lines.as_slice()[0].sku, \"A\");\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Keep the Vec private so the wrapper can protect future invariants."
+      },
+      {
+        "level": 2,
+        "body": "Return a slice for read-only access instead of cloning or exposing the Vec."
+      },
+      {
+        "level": 3,
+        "body": "Add as_slice alongside len and is_empty.",
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn as_slice(&self) -> &[OrderLine] {\n        &self.lines\n    }\n}"
+      }
+    ],
+    "completionExplanation": "OrderLines now owns its representation while exposing a cheap borrowed view for callers.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "struct_fields",
+              "structName": "OrderLines",
+              "requiredFields": [
+                {
+                  "name": "lines",
+                  "typeIncludes": [
+                    "Vec",
+                    "OrderLine"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "impl_method",
+              "implFor": "OrderLines",
+              "methodName": "as_slice",
+              "requiredSignatureIncludes": [
+                "fn as_slice(&self) -> &[OrderLine]"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std"
+        }
+      ]
+    }
   }
 }

@@ -1,108 +1,101 @@
 {
-  "schemaVersion": 2,
   "id": "money-invariants-003",
-  "arcId": "money-value-object",
-  "arcTitle": "Money and currency domain representation",
-  "order": 39,
-  "day": 3,
-  "arcLength": 6,
-  "title": "Add a Money constructor and accessors",
-  "conceptId": "money-invariants",
-  "difficulty": "medium",
-  "estimatedMinutes": 8,
-  "scenario": "Now that Money has private fields, callers need an intentional way to create values and read them back without mutating the representation directly.",
-  "instructions": "Expose Money::new(amount: u64, currency: Currency) -> Self and accessor methods amount(&self) -> u64 and currency(&self) -> Currency.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\n// Continue from the previous lesson.\n// TODO: Implement new, amount, and currency methods.\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::{Currency, Money};\n\n#[test]\nfn money_constructor_and_accessors() {\n    let money = Money::new(100, Currency::Gbp);\n\n    assert_eq!(money.amount(), 100);\n    assert_eq!(money.currency(), Currency::Gbp);\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "Put the constructor and accessors inside an impl Money block."
-    },
-    {
-      "level": 2,
-      "body": "new should return Self. The accessors should borrow self and return copyable values."
-    },
-    {
-      "level": 3,
-      "body": "A canonical solution keeps the fields private and exposes a narrow public API.",
-      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\nimpl Money {\n    pub fn new(amount: u64, currency: Currency) -> Self {\n        Self { amount, currency }\n    }\n\n    pub fn amount(&self) -> u64 {\n        self.amount\n    }\n\n    pub fn currency(&self) -> Currency {\n        self.currency\n    }\n}"
-    }
-  ],
-  "completionExplanation": "A constructor and read-only accessors give callers the operations they need while keeping the representation under the type's control. That makes later validation and checked operations possible without changing every call site.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Expose Money::new(amount: u64, currency: Currency) -> Self and accessor methods amount(&self) -> u64 and currency(&self) -> Currency.",
+    "starterCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\n// Continue from the previous lesson.\n// TODO: Implement new, amount, and currency methods.\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "impl_method",
-            "implFor": "Money",
-            "methodName": "new",
-            "requiredSignatureIncludes": [
-              "pub fn new",
-              "amount: u64",
-              "currency: Currency",
-              "Self"
-            ]
-          },
-          {
-            "type": "impl_method",
-            "implFor": "Money",
-            "methodName": "amount",
-            "requiredSignatureIncludes": [
-              "pub fn amount",
-              "&self",
-              "u64"
-            ]
-          },
-          {
-            "type": "impl_method",
-            "implFor": "Money",
-            "methodName": "currency",
-            "requiredSignatureIncludes": [
-              "pub fn currency",
-              "&self",
-              "Currency"
-            ]
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\n// Continue from the previous lesson.\n// TODO: Implement new, amount, and currency methods.\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "std"
-      },
-      {
-        "mode": "backend-compile-fail",
-        "timeoutMs": 10000,
-        "dependencySet": "std",
-        "cases": [
-          {
-            "name": "money-direct-fields",
-            "expectedDiagnostics": [
-              "private"
-            ],
-            "forbiddenDiagnostics": [
-              "has no field named"
-            ],
-            "path": "compile_fail/money_direct_fields.rs",
-            "content": "use rust_daily_lesson::{Currency, Money};\n\nfn main() {\n    let _ = Money { amount: 500, currency: Currency::Usd };\n}\n"
-          }
-        ]
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{Currency, Money};\n\n#[test]\nfn money_constructor_and_accessors() {\n    let money = Money::new(100, Currency::Gbp);\n\n    assert_eq!(money.amount(), 100);\n    assert_eq!(money.currency(), Currency::Gbp);\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Put the constructor and accessors inside an impl Money block."
+      },
+      {
+        "level": 2,
+        "body": "new should return Self. The accessors should borrow self and return copyable values."
+      },
+      {
+        "level": 3,
+        "body": "A canonical solution keeps the fields private and exposes a narrow public API.",
+        "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\nimpl Money {\n    pub fn new(amount: u64, currency: Currency) -> Self {\n        Self { amount, currency }\n    }\n\n    pub fn amount(&self) -> u64 {\n        self.amount\n    }\n\n    pub fn currency(&self) -> Currency {\n        self.currency\n    }\n}"
+      }
+    ],
+    "completionExplanation": "A constructor and read-only accessors give callers the operations they need while keeping the representation under the type's control. That makes later validation and checked operations possible without changing every call site.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "impl_method",
+              "implFor": "Money",
+              "methodName": "new",
+              "requiredSignatureIncludes": [
+                "pub fn new",
+                "amount: u64",
+                "currency: Currency",
+                "Self"
+              ]
+            },
+            {
+              "type": "impl_method",
+              "implFor": "Money",
+              "methodName": "amount",
+              "requiredSignatureIncludes": [
+                "pub fn amount",
+                "&self",
+                "u64"
+              ]
+            },
+            {
+              "type": "impl_method",
+              "implFor": "Money",
+              "methodName": "currency",
+              "requiredSignatureIncludes": [
+                "pub fn currency",
+                "&self",
+                "Currency"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "money-direct-fields",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/money_direct_fields.rs",
+              "content": "use rust_daily_lesson::{Currency, Money};\n\nfn main() {\n    let _ = Money { amount: 500, currency: Currency::Usd };\n}\n"
+            }
+          ]
+        }
+      ]
+    }
   }
 }

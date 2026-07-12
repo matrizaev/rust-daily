@@ -1,4 +1,4 @@
-import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
+import { lstat, mkdir, readdir, readFile, realpath, stat, writeFile } from "node:fs/promises";
 import { writeSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -33,6 +33,12 @@ export const FRONTEND_CONCEPTS_PATH = join(
   "content",
   "concepts.json",
 );
+export const FRONTEND_CONTENT_REVISION_PATH = join(
+  FRONTEND_DIR,
+  "src",
+  "content",
+  "contentRevision.json",
+);
 export const SOURCE_CONCEPTS_PATH = join(LESSONS_ROOT, "concepts.json");
 export const SOURCE_ARCS_PATH = join(LESSONS_ROOT, "arcs.json");
 
@@ -45,6 +51,14 @@ export const VALID_FILE_ROLES = new Set(["editable", "readonly", "test"]);
 export const REQUIRED_LIB_PATH = "src/lib.rs";
 export const TEST_FILE_PATTERN = "tests/**/*.rs";
 export const COMPILE_FAIL_PREFIX = "compile_fail/";
+
+export const lessonStarterCode = (lesson) => {
+  if (lesson.starterCode !== undefined) {
+    return lesson.starterCode;
+  }
+  return lesson.files?.find((file) => file.role === "editable")?.content ?? "";
+};
+
 const MAX_RUNNER_PATH_BYTES = 240;
 const MAX_RUNNER_PATH_COMPONENT_BYTES = 120;
 const MAX_DIAGNOSTIC_SNIPPETS_PER_CASE = 16;
@@ -282,6 +296,20 @@ export const pathExists = async (path) => {
   }
 };
 
+const matchingFile = (path, filename, entry) =>
+  entry.isFile() && entry.name === filename ? [path] : [];
+
+const findFilesForEntry = async (root, filename, entry) => {
+  const path = join(root, entry.name);
+  if (entry.isSymbolicLink()) {
+    throw new Error(`Source corpus must not contain symlinks: ${path}`);
+  }
+  if (entry.isDirectory()) {
+    return findFiles(path, filename);
+  }
+  return matchingFile(path, filename, entry);
+};
+
 const findFiles = async (root, filename) => {
   if (!(await pathExists(root))) {
     return [];
@@ -289,15 +317,7 @@ const findFiles = async (root, filename) => {
 
   const entries = await readdir(root, { withFileTypes: true });
   const childResults = await Promise.all(
-    entries.map(async (entry) => {
-      const path = join(root, entry.name);
-
-      if (entry.isDirectory()) {
-        return findFiles(path, filename);
-      }
-
-      return entry.isFile() && entry.name === filename ? [path] : [];
-    }),
+    entries.map((entry) => findFilesForEntry(root, filename, entry)),
   );
 
   return childResults.flat().sort();
@@ -305,15 +325,35 @@ const findFiles = async (root, filename) => {
 
 export const findLessonJsonFiles = () => findFiles(LESSONS_ROOT, "lesson.json");
 
-export const readSourceText = async (lessonJsonPath, sourcePath) => {
+const assertSafeSourcePath = (sourcePath) => {
   if (!isSafeRelativePath(sourcePath)) {
     throw new Error(`${sourcePath} is not a safe relative source path.`);
   }
+};
 
-  const lessonDir = dirname(lessonJsonPath);
+const assertNotSymlink = (sourcePath, metadata) => {
+  if (metadata.isSymbolicLink()) {
+    throw new Error(`${sourcePath} must not be a symlink.`);
+  }
+};
+
+const assertContainedSourcePath = (sourcePath, lessonDir, canonicalPath) => {
+  const relativePath = relative(lessonDir, canonicalPath);
+  const escapes = relativePath === "" || relativePath.startsWith("..") || relativePath.includes("../");
+  if (escapes) {
+    throw new Error(`${sourcePath} escapes its lesson directory.`);
+  }
+};
+
+export const readSourceText = async (lessonJsonPath, sourcePath) => {
+  assertSafeSourcePath(sourcePath);
+  const lessonDir = await realpath(dirname(lessonJsonPath));
   const absolutePath = join(lessonDir, sourcePath);
-
-  return readFile(absolutePath, "utf8");
+  const metadata = await lstat(absolutePath);
+  assertNotSymlink(sourcePath, metadata);
+  const canonicalPath = await realpath(absolutePath);
+  assertContainedSourcePath(sourcePath, lessonDir, canonicalPath);
+  return readFile(canonicalPath, "utf8");
 };
 
 export const isCompileFailValidation = (validation) =>

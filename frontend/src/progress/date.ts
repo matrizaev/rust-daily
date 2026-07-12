@@ -1,4 +1,4 @@
-import type { LessonCompletion } from "../types/progress";
+import type { LessonCompletion, LocalDate } from "../types/progress";
 
 const padDatePart = (value: number) => String(value).padStart(2, "0");
 
@@ -7,7 +7,7 @@ export const toLocalDate = (date: Date) => {
   const month = padDatePart(date.getMonth() + 1);
   const day = padDatePart(date.getDate());
 
-  return `${year}-${month}-${day}`;
+  return `${year}-${month}-${day}` as LocalDate;
 };
 
 const dateFromLocalDate = (localDate: string) => {
@@ -24,7 +24,7 @@ const addLocalDays = (localDate: string, days: number) => {
 };
 
 const dateSetFromCompletions = (completions: LessonCompletion[]) =>
-  new Set(completions.map((completion) => completion.localDate));
+  new Set<string>(completions.map((completion) => completion.localDate));
 
 export const hasCompletionToday = (
   completions: LessonCompletion[],

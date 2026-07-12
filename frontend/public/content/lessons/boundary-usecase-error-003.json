@@ -1,72 +1,65 @@
 {
-  "schemaVersion": 2,
   "id": "boundary-usecase-error-003",
-  "arcId": "boundary-error-mapping",
-  "arcTitle": "Translating errors across boundaries",
-  "order": 69,
-  "day": 3,
-  "arcLength": 6,
-  "title": "Compose boundary errors without flattening them",
-  "conceptId": "boundary-usecase-error",
-  "difficulty": "medium",
-  "estimatedMinutes": 7,
-  "scenario": "The application layer can compose domain and repository errors without leaking adapter response details.",
-  "instructions": "Define #[non_exhaustive] CreateOrderUseCaseError with Domain(CreateOrderError) and Repository(RepositoryError). Derive thiserror::Error and make each wrapped error a transparent source.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "use thiserror::Error;\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum CreateOrderError {\n    #[error(\"order must contain at least one line\")]\n    EmptyOrder,\n    #[error(\"order line quantity must be positive\")]\n    InvalidQuantity,\n}\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum RepositoryError {\n    #[error(\"repository is unavailable\")]\n    Unavailable,\n    #[error(\"order conflicts with existing data\")]\n    Conflict,\n}\n\n// TODO: add CreateOrderUseCaseError with transparent sources.\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use std::error::Error;\nuse rust_daily_lesson::{CreateOrderError, CreateOrderUseCaseError};\n\n#[test]\nfn usecase_error_preserves_domain_source() {\n    let error = CreateOrderUseCaseError::Domain(CreateOrderError::EmptyOrder);\n\n    assert_eq!(error.to_string(), \"domain error: order must contain at least one line\");\n    assert!(error.source().is_some());\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "The use case should preserve which layer failed."
-    },
-    {
-      "level": 2,
-      "body": "Transparent variants reuse the wrapped error message."
-    },
-    {
-      "level": 3,
-      "body": "Use #[source] before adding automatic conversions.",
-      "solutionCode": "use thiserror::Error;\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum CreateOrderError {\n    #[error(\"order must contain at least one line\")]\n    EmptyOrder,\n    #[error(\"order line quantity must be positive\")]\n    InvalidQuantity,\n}\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum RepositoryError {\n    #[error(\"repository is unavailable\")]\n    Unavailable,\n    #[error(\"order conflicts with existing data\")]\n    Conflict,\n}\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum CreateOrderUseCaseError {\n    #[error(\"domain error: {0}\")]\n    Domain(#[source] CreateOrderError),\n    #[error(\"repository error: {0}\")]\n    Repository(#[source] RepositoryError),\n}"
-    }
-  ],
-  "completionExplanation": "The application error composes lower-layer failures without converting them into strings or losing their sources.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Define #[non_exhaustive] CreateOrderUseCaseError with Domain(CreateOrderError) and Repository(RepositoryError). Derive thiserror::Error and make each wrapped error a transparent source.",
+    "starterCode": "use thiserror::Error;\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum CreateOrderError {\n    #[error(\"order must contain at least one line\")]\n    EmptyOrder,\n    #[error(\"order line quantity must be positive\")]\n    InvalidQuantity,\n}\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum RepositoryError {\n    #[error(\"repository is unavailable\")]\n    Unavailable,\n    #[error(\"order conflicts with existing data\")]\n    Conflict,\n}\n\n// TODO: add CreateOrderUseCaseError with transparent sources.\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "enum_unit_variants",
-            "enumName": "CreateOrderUseCaseError",
-            "requiredVariants": [
-              "Domain",
-              "Repository"
-            ]
-          },
-          {
-            "type": "derived_trait_for_type",
-            "traitName": "thiserror::Error",
-            "typeName": "CreateOrderUseCaseError"
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "use thiserror::Error;\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum CreateOrderError {\n    #[error(\"order must contain at least one line\")]\n    EmptyOrder,\n    #[error(\"order line quantity must be positive\")]\n    InvalidQuantity,\n}\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum RepositoryError {\n    #[error(\"repository is unavailable\")]\n    Unavailable,\n    #[error(\"order conflicts with existing data\")]\n    Conflict,\n}\n\n// TODO: add CreateOrderUseCaseError with transparent sources.\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "advanced"
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use std::error::Error;\nuse rust_daily_lesson::{CreateOrderError, CreateOrderUseCaseError};\n\n#[test]\nfn usecase_error_preserves_domain_source() {\n    let error = CreateOrderUseCaseError::Domain(CreateOrderError::EmptyOrder);\n\n    assert_eq!(error.to_string(), \"domain error: order must contain at least one line\");\n    assert!(error.source().is_some());\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "The use case should preserve which layer failed."
+      },
+      {
+        "level": 2,
+        "body": "Transparent variants reuse the wrapped error message."
+      },
+      {
+        "level": 3,
+        "body": "Use #[source] before adding automatic conversions.",
+        "solutionCode": "use thiserror::Error;\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum CreateOrderError {\n    #[error(\"order must contain at least one line\")]\n    EmptyOrder,\n    #[error(\"order line quantity must be positive\")]\n    InvalidQuantity,\n}\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum RepositoryError {\n    #[error(\"repository is unavailable\")]\n    Unavailable,\n    #[error(\"order conflicts with existing data\")]\n    Conflict,\n}\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum CreateOrderUseCaseError {\n    #[error(\"domain error: {0}\")]\n    Domain(#[source] CreateOrderError),\n    #[error(\"repository error: {0}\")]\n    Repository(#[source] RepositoryError),\n}"
+      }
+    ],
+    "completionExplanation": "The application error composes lower-layer failures without converting them into strings or losing their sources.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "enum_unit_variants",
+              "enumName": "CreateOrderUseCaseError",
+              "requiredVariants": [
+                "Domain",
+                "Repository"
+              ]
+            },
+            {
+              "type": "derived_trait_for_type",
+              "traitName": "thiserror::Error",
+              "typeName": "CreateOrderUseCaseError"
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "advanced"
+        }
+      ]
+    }
   }
 }

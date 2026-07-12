@@ -1,79 +1,72 @@
 {
-  "schemaVersion": 2,
   "id": "config-load-port-006",
-  "arcId": "config-loader-errors",
-  "arcTitle": "Hierarchical configuration loader errors",
-  "order": 66,
-  "day": 6,
-  "arcLength": 6,
-  "title": "Add context at the application boundary",
-  "conceptId": "config-load-error-propagation",
-  "difficulty": "medium",
-  "estimatedMinutes": 8,
-  "scenario": "Once conversions exist, loader functions can stay small and let ? preserve the typed error boundary.",
-  "instructions": "Implement load_port with typed ConfigLoadError values. Then add load_port_with_context returning anyhow::Result<u16> and attach \"failed to load APP_PORT\" context without replacing the typed inner error.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "use thiserror::Error;\n\n#[derive(Debug, Error)]\npub enum ConfigLoadError {\n    #[error(\"missing APP_PORT\")]\n    MissingEnvironment,\n    #[error(\"invalid APP_PORT\")]\n    InvalidPort(#[from] std::num::ParseIntError),\n    #[error(\"failed to read config file\")]\n    FileRead(#[from] std::io::Error),\n}\n\nimpl ConfigLoadError {\n    pub fn kind(&self) -> &'static str {\n        match self {\n            Self::MissingEnvironment => \"missing_environment\",\n            Self::InvalidPort(_) => \"invalid_port\",\n            Self::FileRead(_) => \"file_read\",\n        }\n    }\n}\n\npub fn parse_port(value: &str) -> Result<u16, ConfigLoadError> {\n    Ok(value.parse()?)\n}\n\n// TODO: implement typed load_port and contextual load_port_with_context.\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::{load_port, load_port_with_context, ConfigLoadError};\n\n#[test]\nfn loads_and_parses_port() {\n    let port = load_port(|key| (key == \"APP_PORT\").then(|| \"8080\".to_owned()))\n        .expect(\"port should load\");\n\n    assert_eq!(port, 8080);\n}\n\n#[test]\nfn missing_value_remains_typed() {\n    assert!(matches!(\n        load_port(|_| None),\n        Err(ConfigLoadError::MissingEnvironment)\n    ));\n}\n\n#[test]\nfn application_boundary_adds_context() {\n    let error = load_port_with_context(|_| None).expect_err(\"port is missing\");\n\n    assert!(format!(\"{error:#}\").contains(\"failed to load APP_PORT\"));\n    assert!(format!(\"{error:#}\").contains(\"missing APP_PORT\"));\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "Keep ConfigLoadError inside the reusable loader."
-    },
-    {
-      "level": 2,
-      "body": "Use anyhow::Context only where the application wants operation-level context."
-    },
-    {
-      "level": 3,
-      "body": "The context should wrap the typed error, not erase it.",
-      "solutionCode": "use anyhow::Context;\nuse thiserror::Error;\n\n#[derive(Debug, Error)]\npub enum ConfigLoadError {\n    #[error(\"missing APP_PORT\")]\n    MissingEnvironment,\n    #[error(\"invalid APP_PORT\")]\n    InvalidPort(#[from] std::num::ParseIntError),\n    #[error(\"failed to read config file\")]\n    FileRead(#[from] std::io::Error),\n}\n\nimpl ConfigLoadError {\n    pub fn kind(&self) -> &'static str {\n        match self {\n            Self::MissingEnvironment => \"missing_environment\",\n            Self::InvalidPort(_) => \"invalid_port\",\n            Self::FileRead(_) => \"file_read\",\n        }\n    }\n}\n\npub fn parse_port(value: &str) -> Result<u16, ConfigLoadError> {\n    Ok(value.parse()?)\n}\n\npub fn load_port(\n    lookup: impl Fn(&str) -> Option<String>,\n) -> Result<u16, ConfigLoadError> {\n    let value = lookup(\"APP_PORT\").ok_or(ConfigLoadError::MissingEnvironment)?;\n\n    parse_port(&value)\n}\n\npub fn load_port_with_context(\n    lookup: impl Fn(&str) -> Option<String>,\n) -> anyhow::Result<u16> {\n    load_port(lookup).context(\"failed to load APP_PORT\")\n}"
-    }
-  ],
-  "completionExplanation": "Reusable code returns typed errors, while the application boundary adds operational context for diagnostics.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Implement load_port with typed ConfigLoadError values. Then add load_port_with_context returning anyhow::Result<u16> and attach \"failed to load APP_PORT\" context without replacing the typed inner error.",
+    "starterCode": "use thiserror::Error;\n\n#[derive(Debug, Error)]\npub enum ConfigLoadError {\n    #[error(\"missing APP_PORT\")]\n    MissingEnvironment,\n    #[error(\"invalid APP_PORT\")]\n    InvalidPort(#[from] std::num::ParseIntError),\n    #[error(\"failed to read config file\")]\n    FileRead(#[from] std::io::Error),\n}\n\nimpl ConfigLoadError {\n    pub fn kind(&self) -> &'static str {\n        match self {\n            Self::MissingEnvironment => \"missing_environment\",\n            Self::InvalidPort(_) => \"invalid_port\",\n            Self::FileRead(_) => \"file_read\",\n        }\n    }\n}\n\npub fn parse_port(value: &str) -> Result<u16, ConfigLoadError> {\n    Ok(value.parse()?)\n}\n\n// TODO: implement typed load_port and contextual load_port_with_context.\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "function_signature",
-            "functionName": "load_port",
-            "requiredSignatureIncludes": [
-              "Result<u16, ConfigLoadError>"
-            ]
-          },
-          {
-            "type": "function_signature",
-            "functionName": "load_port_with_context",
-            "requiredSignatureIncludes": [
-              "anyhow::Result<u16>"
-            ]
-          },
-          {
-            "type": "source_includes",
-            "requiredSnippets": [
-              ".context(\"failed to load APP_PORT\")"
-            ]
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "use thiserror::Error;\n\n#[derive(Debug, Error)]\npub enum ConfigLoadError {\n    #[error(\"missing APP_PORT\")]\n    MissingEnvironment,\n    #[error(\"invalid APP_PORT\")]\n    InvalidPort(#[from] std::num::ParseIntError),\n    #[error(\"failed to read config file\")]\n    FileRead(#[from] std::io::Error),\n}\n\nimpl ConfigLoadError {\n    pub fn kind(&self) -> &'static str {\n        match self {\n            Self::MissingEnvironment => \"missing_environment\",\n            Self::InvalidPort(_) => \"invalid_port\",\n            Self::FileRead(_) => \"file_read\",\n        }\n    }\n}\n\npub fn parse_port(value: &str) -> Result<u16, ConfigLoadError> {\n    Ok(value.parse()?)\n}\n\n// TODO: implement typed load_port and contextual load_port_with_context.\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "advanced"
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{load_port, load_port_with_context, ConfigLoadError};\n\n#[test]\nfn loads_and_parses_port() {\n    let port = load_port(|key| (key == \"APP_PORT\").then(|| \"8080\".to_owned()))\n        .expect(\"port should load\");\n\n    assert_eq!(port, 8080);\n}\n\n#[test]\nfn missing_value_remains_typed() {\n    assert!(matches!(\n        load_port(|_| None),\n        Err(ConfigLoadError::MissingEnvironment)\n    ));\n}\n\n#[test]\nfn application_boundary_adds_context() {\n    let error = load_port_with_context(|_| None).expect_err(\"port is missing\");\n\n    assert!(format!(\"{error:#}\").contains(\"failed to load APP_PORT\"));\n    assert!(format!(\"{error:#}\").contains(\"missing APP_PORT\"));\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Keep ConfigLoadError inside the reusable loader."
+      },
+      {
+        "level": 2,
+        "body": "Use anyhow::Context only where the application wants operation-level context."
+      },
+      {
+        "level": 3,
+        "body": "The context should wrap the typed error, not erase it.",
+        "solutionCode": "use anyhow::Context;\nuse thiserror::Error;\n\n#[derive(Debug, Error)]\npub enum ConfigLoadError {\n    #[error(\"missing APP_PORT\")]\n    MissingEnvironment,\n    #[error(\"invalid APP_PORT\")]\n    InvalidPort(#[from] std::num::ParseIntError),\n    #[error(\"failed to read config file\")]\n    FileRead(#[from] std::io::Error),\n}\n\nimpl ConfigLoadError {\n    pub fn kind(&self) -> &'static str {\n        match self {\n            Self::MissingEnvironment => \"missing_environment\",\n            Self::InvalidPort(_) => \"invalid_port\",\n            Self::FileRead(_) => \"file_read\",\n        }\n    }\n}\n\npub fn parse_port(value: &str) -> Result<u16, ConfigLoadError> {\n    Ok(value.parse()?)\n}\n\npub fn load_port(\n    lookup: impl Fn(&str) -> Option<String>,\n) -> Result<u16, ConfigLoadError> {\n    let value = lookup(\"APP_PORT\").ok_or(ConfigLoadError::MissingEnvironment)?;\n\n    parse_port(&value)\n}\n\npub fn load_port_with_context(\n    lookup: impl Fn(&str) -> Option<String>,\n) -> anyhow::Result<u16> {\n    load_port(lookup).context(\"failed to load APP_PORT\")\n}"
+      }
+    ],
+    "completionExplanation": "Reusable code returns typed errors, while the application boundary adds operational context for diagnostics.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "function_signature",
+              "functionName": "load_port",
+              "requiredSignatureIncludes": [
+                "Result<u16, ConfigLoadError>"
+              ]
+            },
+            {
+              "type": "function_signature",
+              "functionName": "load_port_with_context",
+              "requiredSignatureIncludes": [
+                "anyhow::Result<u16>"
+              ]
+            },
+            {
+              "type": "source_includes",
+              "requiredSnippets": [
+                ".context(\"failed to load APP_PORT\")"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "advanced"
+        }
+      ]
+    }
   }
 }

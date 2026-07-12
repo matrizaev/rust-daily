@@ -1,72 +1,65 @@
 {
-  "schemaVersion": 2,
   "id": "boundary-repo-error-002",
-  "arcId": "boundary-error-mapping",
-  "arcTitle": "Translating errors across boundaries",
-  "order": 68,
-  "day": 2,
-  "arcLength": 6,
-  "title": "Keep repository failures at their boundary",
-  "conceptId": "boundary-repo-error",
-  "difficulty": "easy",
-  "estimatedMinutes": 7,
-  "scenario": "Repository failures are infrastructure boundary failures. Keep them distinct from domain rule failures.",
-  "instructions": "Keep CreateOrderError. Add a separate #[non_exhaustive] RepositoryError with Unavailable and Conflict variants, deriving thiserror::Error instead of mixing infrastructure failures into the domain enum.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "use thiserror::Error;\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum CreateOrderError {\n    #[error(\"order must contain at least one line\")]\n    EmptyOrder,\n    #[error(\"order line quantity must be positive\")]\n    InvalidQuantity,\n}\n\n// TODO: add a non-exhaustive RepositoryError.\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::RepositoryError;\n\n#[test]\nfn repository_errors_have_boundary_specific_messages() {\n    assert_eq!(RepositoryError::Unavailable.to_string(), \"repository is unavailable\");\n    assert_eq!(RepositoryError::Conflict.to_string(), \"order conflicts with existing data\");\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "Repository failures belong to the repository boundary."
-    },
-    {
-      "level": 2,
-      "body": "Keep domain and persistence concerns in separate enums."
-    },
-    {
-      "level": 3,
-      "body": "Mark the public repository enum non-exhaustive too.",
-      "solutionCode": "use thiserror::Error;\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum CreateOrderError {\n    #[error(\"order must contain at least one line\")]\n    EmptyOrder,\n    #[error(\"order line quantity must be positive\")]\n    InvalidQuantity,\n}\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum RepositoryError {\n    #[error(\"repository is unavailable\")]\n    Unavailable,\n    #[error(\"order conflicts with existing data\")]\n    Conflict,\n}"
-    }
-  ],
-  "completionExplanation": "Domain and repository failures now evolve independently and remain clear at call sites.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Keep CreateOrderError. Add a separate #[non_exhaustive] RepositoryError with Unavailable and Conflict variants, deriving thiserror::Error instead of mixing infrastructure failures into the domain enum.",
+    "starterCode": "use thiserror::Error;\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum CreateOrderError {\n    #[error(\"order must contain at least one line\")]\n    EmptyOrder,\n    #[error(\"order line quantity must be positive\")]\n    InvalidQuantity,\n}\n\n// TODO: add a non-exhaustive RepositoryError.\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "enum_unit_variants",
-            "enumName": "RepositoryError",
-            "requiredVariants": [
-              "Unavailable",
-              "Conflict"
-            ]
-          },
-          {
-            "type": "derived_trait_for_type",
-            "traitName": "thiserror::Error",
-            "typeName": "RepositoryError"
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "use thiserror::Error;\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum CreateOrderError {\n    #[error(\"order must contain at least one line\")]\n    EmptyOrder,\n    #[error(\"order line quantity must be positive\")]\n    InvalidQuantity,\n}\n\n// TODO: add a non-exhaustive RepositoryError.\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "advanced"
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::RepositoryError;\n\n#[test]\nfn repository_errors_have_boundary_specific_messages() {\n    assert_eq!(RepositoryError::Unavailable.to_string(), \"repository is unavailable\");\n    assert_eq!(RepositoryError::Conflict.to_string(), \"order conflicts with existing data\");\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Repository failures belong to the repository boundary."
+      },
+      {
+        "level": 2,
+        "body": "Keep domain and persistence concerns in separate enums."
+      },
+      {
+        "level": 3,
+        "body": "Mark the public repository enum non-exhaustive too.",
+        "solutionCode": "use thiserror::Error;\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum CreateOrderError {\n    #[error(\"order must contain at least one line\")]\n    EmptyOrder,\n    #[error(\"order line quantity must be positive\")]\n    InvalidQuantity,\n}\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum RepositoryError {\n    #[error(\"repository is unavailable\")]\n    Unavailable,\n    #[error(\"order conflicts with existing data\")]\n    Conflict,\n}"
+      }
+    ],
+    "completionExplanation": "Domain and repository failures now evolve independently and remain clear at call sites.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "enum_unit_variants",
+              "enumName": "RepositoryError",
+              "requiredVariants": [
+                "Unavailable",
+                "Conflict"
+              ]
+            },
+            {
+              "type": "derived_trait_for_type",
+              "traitName": "thiserror::Error",
+              "typeName": "RepositoryError"
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "advanced"
+        }
+      ]
+    }
   }
 }

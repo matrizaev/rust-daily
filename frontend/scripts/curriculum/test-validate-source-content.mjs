@@ -354,6 +354,14 @@ const cases = [
     },
   },
   {
+    name: "unknown nested fields fail",
+    expectPass: false,
+    expectedOutput: "file 1 has unknown field unexpected",
+    mutate: (state) => {
+      state.lessons[0].lesson.files[0].unexpected = true;
+    },
+  },
+  {
     name: "test role with src path fails",
     expectPass: false,
     expectedOutput: "fixture-001 test file src/helper.rs must be under tests/**/*.rs.",

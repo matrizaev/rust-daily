@@ -1,84 +1,77 @@
 {
-  "schemaVersion": 2,
   "id": "request-struct-001",
-  "arcId": "request-api",
-  "arcTitle": "Build a request API",
-  "order": 5,
-  "day": 1,
-  "arcLength": 6,
-  "title": "Define the Request surface",
-  "conceptId": "api-structs",
-  "difficulty": "easy",
-  "estimatedMinutes": 5,
-  "scenario": "A small client library needs a request type that can be passed around after setup.",
-  "instructions": "Define Request with method: String, path: String, and body: Option<String>.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "// TODO: define the Request type used by the client API.\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::Request;\n\n#[test]\nfn request_surface_owns_completed_request_data() {\n    let request = Request {\n        method: \"POST\".to_owned(),\n        path: \"/users\".to_owned(),\n        body: Some(\"{}\".to_owned()),\n    };\n\n    assert_eq!(request.method, \"POST\");\n    assert_eq!(request.path, \"/users\");\n    assert_eq!(request.body, Some(\"{}\".to_owned()));\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "Keep the request data owned so it can outlive the builder."
-    },
-    {
-      "level": 2,
-      "body": "The body may be absent, which makes Option a good fit."
-    },
-    {
-      "level": 3,
-      "body": "Use clear field names that match the API vocabulary.",
-      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Request {\n    pub method: String,\n    pub path: String,\n    pub body: Option<String>,\n}"
-    }
-  ],
-  "completionExplanation": "A focused Request struct gives the API a stable output type. Owned fields keep the request independent from temporary builder input.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Define Request with method: String, path: String, and body: Option<String>.",
+    "starterCode": "// TODO: define the Request type used by the client API.\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "struct_fields",
-            "structName": "Request",
-            "requiredFields": [
-              {
-                "name": "method",
-                "typeIncludes": [
-                  "String"
-                ]
-              },
-              {
-                "name": "path",
-                "typeIncludes": [
-                  "String"
-                ]
-              },
-              {
-                "name": "body",
-                "typeIncludes": [
-                  "Option",
-                  "String"
-                ]
-              }
-            ]
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "// TODO: define the Request type used by the client API.\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "std"
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::Request;\n\n#[test]\nfn request_surface_owns_completed_request_data() {\n    let request = Request {\n        method: \"POST\".to_owned(),\n        path: \"/users\".to_owned(),\n        body: Some(\"{}\".to_owned()),\n    };\n\n    assert_eq!(request.method, \"POST\");\n    assert_eq!(request.path, \"/users\");\n    assert_eq!(request.body, Some(\"{}\".to_owned()));\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Keep the request data owned so it can outlive the builder."
+      },
+      {
+        "level": 2,
+        "body": "The body may be absent, which makes Option a good fit."
+      },
+      {
+        "level": 3,
+        "body": "Use clear field names that match the API vocabulary.",
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Request {\n    pub method: String,\n    pub path: String,\n    pub body: Option<String>,\n}"
+      }
+    ],
+    "completionExplanation": "A focused Request struct gives the API a stable output type. Owned fields keep the request independent from temporary builder input.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "struct_fields",
+              "structName": "Request",
+              "requiredFields": [
+                {
+                  "name": "method",
+                  "typeIncludes": [
+                    "String"
+                  ]
+                },
+                {
+                  "name": "path",
+                  "typeIncludes": [
+                    "String"
+                  ]
+                },
+                {
+                  "name": "body",
+                  "typeIncludes": [
+                    "Option",
+                    "String"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std"
+        }
+      ]
+    }
   }
 }

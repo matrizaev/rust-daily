@@ -1,74 +1,67 @@
 {
-  "schemaVersion": 2,
   "id": "wrap-mut-intoiterator-005",
-  "arcId": "collection-wrappers",
-  "arcTitle": "Exposing iteration on collection wrappers",
-  "order": 59,
-  "day": 5,
-  "arcLength": 6,
-  "title": "Mutate through wrapper iterators",
-  "conceptId": "wrap-mut-into-iterator",
-  "difficulty": "medium",
-  "estimatedMinutes": 8,
-  "scenario": "Some update operations should borrow the wrapper mutably and edit each line in place without exposing the Vec field.",
-  "instructions": "Add iter_mut and implement IntoIterator for &mut OrderLines, yielding &mut OrderLine values without exposing the inner Vec.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn as_slice(&self) -> &[OrderLine] {\n        &self.lines\n    }\n}\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}\n\nimpl<'a> IntoIterator for &'a OrderLines {\n    type Item = &'a OrderLine;\n    type IntoIter = std::slice::Iter<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter()\n    }\n}\n\n// TODO: add mutable iteration over OrderLines.\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::{OrderLine, OrderLines};\n\n#[test]\nfn mutable_iteration_updates_lines_in_place() {\n    let mut lines = OrderLines::new(vec![OrderLine { sku: \"A\".to_owned(), quantity: 2 }]);\n\n    for line in &mut lines {\n        line.quantity += 3;\n    }\n\n    assert_eq!(lines.as_slice()[0].quantity, 5);\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "Mutable iteration should borrow the wrapper mutably."
-    },
-    {
-      "level": 2,
-      "body": "Yield &mut OrderLine so callers can update line fields in place."
-    },
-    {
-      "level": 3,
-      "body": "Delegate the IntoIterator implementation to iter_mut.",
-      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn as_slice(&self) -> &[OrderLine] {\n        &self.lines\n    }\n}\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}\n\nimpl<'a> IntoIterator for &'a OrderLines {\n    type Item = &'a OrderLine;\n    type IntoIter = std::slice::Iter<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter()\n    }\n}\n\nimpl OrderLines {\n    pub fn iter_mut(&mut self) -> std::slice::IterMut<'_, OrderLine> {\n        self.lines.iter_mut()\n    }\n}\n\nimpl<'a> IntoIterator for &'a mut OrderLines {\n    type Item = &'a mut OrderLine;\n    type IntoIter = std::slice::IterMut<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter_mut()\n    }\n}"
-    }
-  ],
-  "completionExplanation": "The wrapper supports controlled in-place updates while preserving ownership of the collection.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Add iter_mut and implement IntoIterator for &mut OrderLines, yielding &mut OrderLine values without exposing the inner Vec.",
+    "starterCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn as_slice(&self) -> &[OrderLine] {\n        &self.lines\n    }\n}\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}\n\nimpl<'a> IntoIterator for &'a OrderLines {\n    type Item = &'a OrderLine;\n    type IntoIter = std::slice::Iter<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter()\n    }\n}\n\n// TODO: add mutable iteration over OrderLines.\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "impl_method",
-            "implFor": "OrderLines",
-            "methodName": "iter_mut",
-            "requiredSignatureIncludes": [
-              "fn iter_mut(&mut self) -> std::slice::IterMut"
-            ]
-          },
-          {
-            "type": "source_includes",
-            "requiredSnippets": [
-              "impl<'a> IntoIterator for &'a mut OrderLines",
-              "type Item = &'a mut OrderLine"
-            ]
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn as_slice(&self) -> &[OrderLine] {\n        &self.lines\n    }\n}\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}\n\nimpl<'a> IntoIterator for &'a OrderLines {\n    type Item = &'a OrderLine;\n    type IntoIter = std::slice::Iter<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter()\n    }\n}\n\n// TODO: add mutable iteration over OrderLines.\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "std"
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{OrderLine, OrderLines};\n\n#[test]\nfn mutable_iteration_updates_lines_in_place() {\n    let mut lines = OrderLines::new(vec![OrderLine { sku: \"A\".to_owned(), quantity: 2 }]);\n\n    for line in &mut lines {\n        line.quantity += 3;\n    }\n\n    assert_eq!(lines.as_slice()[0].quantity, 5);\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Mutable iteration should borrow the wrapper mutably."
+      },
+      {
+        "level": 2,
+        "body": "Yield &mut OrderLine so callers can update line fields in place."
+      },
+      {
+        "level": 3,
+        "body": "Delegate the IntoIterator implementation to iter_mut.",
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLine {\n    pub sku: String,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct OrderLines {\n    lines: Vec<OrderLine>,\n}\n\nimpl OrderLines {\n    pub fn new(lines: Vec<OrderLine>) -> Self {\n        Self { lines }\n    }\n\n    pub fn len(&self) -> usize {\n        self.lines.len()\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.lines.is_empty()\n    }\n\n    pub fn as_slice(&self) -> &[OrderLine] {\n        &self.lines\n    }\n}\n\nimpl OrderLines {\n    pub fn iter(&self) -> std::slice::Iter<'_, OrderLine> {\n        self.lines.iter()\n    }\n}\n\nimpl IntoIterator for OrderLines {\n    type Item = OrderLine;\n    type IntoIter = std::vec::IntoIter<OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.lines.into_iter()\n    }\n}\n\nimpl<'a> IntoIterator for &'a OrderLines {\n    type Item = &'a OrderLine;\n    type IntoIter = std::slice::Iter<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter()\n    }\n}\n\nimpl OrderLines {\n    pub fn iter_mut(&mut self) -> std::slice::IterMut<'_, OrderLine> {\n        self.lines.iter_mut()\n    }\n}\n\nimpl<'a> IntoIterator for &'a mut OrderLines {\n    type Item = &'a mut OrderLine;\n    type IntoIter = std::slice::IterMut<'a, OrderLine>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.iter_mut()\n    }\n}"
+      }
+    ],
+    "completionExplanation": "The wrapper supports controlled in-place updates while preserving ownership of the collection.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "impl_method",
+              "implFor": "OrderLines",
+              "methodName": "iter_mut",
+              "requiredSignatureIncludes": [
+                "fn iter_mut(&mut self) -> std::slice::IterMut"
+              ]
+            },
+            {
+              "type": "source_includes",
+              "requiredSnippets": [
+                "impl<'a> IntoIterator for &'a mut OrderLines",
+                "type Item = &'a mut OrderLine"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std"
+        }
+      ]
+    }
   }
 }

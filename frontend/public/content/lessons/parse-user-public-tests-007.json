@@ -1,73 +1,66 @@
 {
-  "schemaVersion": 2,
   "id": "parse-user-public-tests-007",
-  "arcId": "parse-user",
-  "arcTitle": "Parse a user from text",
-  "order": 30,
-  "day": 7,
-  "arcLength": 7,
-  "title": "Write parser behavior checks",
-  "conceptId": "basic-tests",
-  "difficulty": "medium",
-  "estimatedMinutes": 8,
-  "scenario": "The parser arc ends with examples that document success and failure behavior for future maintainers.",
-  "instructions": "Fill in the two TODO blocks with one success check and one failure check. Use assert_eq! and matches! or a match expression; do not use unwrap or expect.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "use std::convert::TryFrom;\nuse std::error::Error;\nuse std::fmt;\nuse std::num::ParseIntError;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct User {\n    pub id: u64,\n    pub name: String,\n    pub email: String,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId(ParseIntError),\n}\n\nimpl From<ParseIntError> for ParseUserError {\n    fn from(error: ParseIntError) -> Self {\n        ParseUserError::InvalidId(error)\n    }\n}\n\npub fn parse_user(input: &str) -> Result<User, ParseUserError> {\n    let mut parts = input.split(',');\n\n    let id_text = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingId)?;\n    let id = id_text.parse::<u64>()?;\n    let name = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingName)?;\n    let email = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingEmail)?;\n\n    Ok(User {\n        id,\n        name: name.to_owned(),\n        email: email.to_owned(),\n    })\n}\n\nimpl TryFrom<&str> for User {\n    type Error = ParseUserError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        parse_user(value)\n    }\n}\n\nimpl fmt::Display for ParseUserError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            ParseUserError::MissingId => write!(f, \"missing id\"),\n            ParseUserError::MissingName => write!(f, \"missing name\"),\n            ParseUserError::MissingEmail => write!(f, \"missing email\"),\n            ParseUserError::InvalidId(_) => write!(f, \"invalid id\"),\n        }\n    }\n}\n\nimpl Error for ParseUserError {\n    fn source(&self) -> Option<&(dyn Error + 'static)> {\n        match self {\n            ParseUserError::InvalidId(error) => Some(error),\n            ParseUserError::MissingId\n            | ParseUserError::MissingName\n            | ParseUserError::MissingEmail => None,\n        }\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: assert that a complete input returns the expected User.\n// TODO: assert that an input without email returns MissingEmail.\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::{parse_user, ParseUserError, User};\n\n#[test]\nfn parser_still_behaves_as_documented() {\n    assert_eq!(\n        parse_user(\"7,Grace,grace@example.com\"),\n        Ok(User {\n            id: 7,\n            name: \"Grace\".to_owned(),\n            email: \"grace@example.com\".to_owned(),\n        })\n    );\n    assert_eq!(parse_user(\"7,Grace\"), Err(ParseUserError::MissingEmail));\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "A useful success example compares the full Ok(User { ... }) value."
-    },
-    {
-      "level": 2,
-      "body": "A useful failure example checks the exact error variant, not just that an error happened."
-    },
-    {
-      "level": 3,
-      "body": "matches!(result, Err(ParseUserError::MissingEmail)) is a compact shape for the failure case.",
-      "solutionCode": "use std::convert::TryFrom;\nuse std::error::Error;\nuse std::fmt;\nuse std::num::ParseIntError;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct User {\n    pub id: u64,\n    pub name: String,\n    pub email: String,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId(ParseIntError),\n}\n\nimpl From<ParseIntError> for ParseUserError {\n    fn from(error: ParseIntError) -> Self {\n        ParseUserError::InvalidId(error)\n    }\n}\n\npub fn parse_user(input: &str) -> Result<User, ParseUserError> {\n    let mut parts = input.split(',');\n\n    let id_text = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingId)?;\n    let id = id_text.parse::<u64>()?;\n    let name = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingName)?;\n    let email = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingEmail)?;\n\n    Ok(User {\n        id,\n        name: name.to_owned(),\n        email: email.to_owned(),\n    })\n}\n\nimpl TryFrom<&str> for User {\n    type Error = ParseUserError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        parse_user(value)\n    }\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn parses_valid_user() {\n        assert_eq!(\n            parse_user(\"42,Ada,ada@example.com\"),\n            Ok(User {\n                id: 42,\n                name: \"Ada\".to_owned(),\n                email: \"ada@example.com\".to_owned(),\n            })\n        );\n    }\n\n    #[test]\n    fn rejects_missing_email() {\n        assert!(matches!(\n            parse_user(\"42,Ada\"),\n            Err(ParseUserError::MissingEmail)\n        ));\n    }\n}\n\nimpl fmt::Display for ParseUserError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            ParseUserError::MissingId => write!(f, \"missing id\"),\n            ParseUserError::MissingName => write!(f, \"missing name\"),\n            ParseUserError::MissingEmail => write!(f, \"missing email\"),\n            ParseUserError::InvalidId(_) => write!(f, \"invalid id\"),\n        }\n    }\n}\n\nimpl Error for ParseUserError {\n    fn source(&self) -> Option<&(dyn Error + 'static)> {\n        match self {\n            ParseUserError::InvalidId(error) => Some(error),\n            ParseUserError::MissingId\n            | ParseUserError::MissingName\n            | ParseUserError::MissingEmail => None,\n        }\n    }\n}"
-    }
-  ],
-  "completionExplanation": "Focused behavior checks turn the parser contract into executable examples for humans and future tooling. They show both the happy path and the important failure shape.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Fill in the two TODO blocks with one success check and one failure check. Use assert_eq! and matches! or a match expression; do not use unwrap or expect.",
+    "starterCode": "use std::convert::TryFrom;\nuse std::error::Error;\nuse std::fmt;\nuse std::num::ParseIntError;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct User {\n    pub id: u64,\n    pub name: String,\n    pub email: String,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId(ParseIntError),\n}\n\nimpl From<ParseIntError> for ParseUserError {\n    fn from(error: ParseIntError) -> Self {\n        ParseUserError::InvalidId(error)\n    }\n}\n\npub fn parse_user(input: &str) -> Result<User, ParseUserError> {\n    let mut parts = input.split(',');\n\n    let id_text = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingId)?;\n    let id = id_text.parse::<u64>()?;\n    let name = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingName)?;\n    let email = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingEmail)?;\n\n    Ok(User {\n        id,\n        name: name.to_owned(),\n        email: email.to_owned(),\n    })\n}\n\nimpl TryFrom<&str> for User {\n    type Error = ParseUserError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        parse_user(value)\n    }\n}\n\nimpl fmt::Display for ParseUserError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            ParseUserError::MissingId => write!(f, \"missing id\"),\n            ParseUserError::MissingName => write!(f, \"missing name\"),\n            ParseUserError::MissingEmail => write!(f, \"missing email\"),\n            ParseUserError::InvalidId(_) => write!(f, \"invalid id\"),\n        }\n    }\n}\n\nimpl Error for ParseUserError {\n    fn source(&self) -> Option<&(dyn Error + 'static)> {\n        match self {\n            ParseUserError::InvalidId(error) => Some(error),\n            ParseUserError::MissingId\n            | ParseUserError::MissingName\n            | ParseUserError::MissingEmail => None,\n        }\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: assert that a complete input returns the expected User.\n// TODO: assert that an input without email returns MissingEmail.\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "source_includes",
-            "requiredSnippets": [
-              "assert_eq!",
-              "matches!",
-              "ParseUserError::MissingEmail"
-            ],
-            "forbiddenSnippets": [
-              ".unwrap()",
-              ".expect(",
-              "panic!",
-              "unimplemented!"
-            ]
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "use std::convert::TryFrom;\nuse std::error::Error;\nuse std::fmt;\nuse std::num::ParseIntError;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct User {\n    pub id: u64,\n    pub name: String,\n    pub email: String,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId(ParseIntError),\n}\n\nimpl From<ParseIntError> for ParseUserError {\n    fn from(error: ParseIntError) -> Self {\n        ParseUserError::InvalidId(error)\n    }\n}\n\npub fn parse_user(input: &str) -> Result<User, ParseUserError> {\n    let mut parts = input.split(',');\n\n    let id_text = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingId)?;\n    let id = id_text.parse::<u64>()?;\n    let name = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingName)?;\n    let email = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingEmail)?;\n\n    Ok(User {\n        id,\n        name: name.to_owned(),\n        email: email.to_owned(),\n    })\n}\n\nimpl TryFrom<&str> for User {\n    type Error = ParseUserError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        parse_user(value)\n    }\n}\n\nimpl fmt::Display for ParseUserError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            ParseUserError::MissingId => write!(f, \"missing id\"),\n            ParseUserError::MissingName => write!(f, \"missing name\"),\n            ParseUserError::MissingEmail => write!(f, \"missing email\"),\n            ParseUserError::InvalidId(_) => write!(f, \"invalid id\"),\n        }\n    }\n}\n\nimpl Error for ParseUserError {\n    fn source(&self) -> Option<&(dyn Error + 'static)> {\n        match self {\n            ParseUserError::InvalidId(error) => Some(error),\n            ParseUserError::MissingId\n            | ParseUserError::MissingName\n            | ParseUserError::MissingEmail => None,\n        }\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: assert that a complete input returns the expected User.\n// TODO: assert that an input without email returns MissingEmail.\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "std"
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{parse_user, ParseUserError, User};\n\n#[test]\nfn parser_still_behaves_as_documented() {\n    assert_eq!(\n        parse_user(\"7,Grace,grace@example.com\"),\n        Ok(User {\n            id: 7,\n            name: \"Grace\".to_owned(),\n            email: \"grace@example.com\".to_owned(),\n        })\n    );\n    assert_eq!(parse_user(\"7,Grace\"), Err(ParseUserError::MissingEmail));\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "A useful success example compares the full Ok(User { ... }) value."
+      },
+      {
+        "level": 2,
+        "body": "A useful failure example checks the exact error variant, not just that an error happened."
+      },
+      {
+        "level": 3,
+        "body": "matches!(result, Err(ParseUserError::MissingEmail)) is a compact shape for the failure case.",
+        "solutionCode": "use std::convert::TryFrom;\nuse std::error::Error;\nuse std::fmt;\nuse std::num::ParseIntError;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct User {\n    pub id: u64,\n    pub name: String,\n    pub email: String,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum ParseUserError {\n    MissingId,\n    MissingName,\n    MissingEmail,\n    InvalidId(ParseIntError),\n}\n\nimpl From<ParseIntError> for ParseUserError {\n    fn from(error: ParseIntError) -> Self {\n        ParseUserError::InvalidId(error)\n    }\n}\n\npub fn parse_user(input: &str) -> Result<User, ParseUserError> {\n    let mut parts = input.split(',');\n\n    let id_text = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingId)?;\n    let id = id_text.parse::<u64>()?;\n    let name = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingName)?;\n    let email = parts\n        .next()\n        .filter(|value| !value.is_empty())\n        .ok_or(ParseUserError::MissingEmail)?;\n\n    Ok(User {\n        id,\n        name: name.to_owned(),\n        email: email.to_owned(),\n    })\n}\n\nimpl TryFrom<&str> for User {\n    type Error = ParseUserError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        parse_user(value)\n    }\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn parses_valid_user() {\n        assert_eq!(\n            parse_user(\"42,Ada,ada@example.com\"),\n            Ok(User {\n                id: 42,\n                name: \"Ada\".to_owned(),\n                email: \"ada@example.com\".to_owned(),\n            })\n        );\n    }\n\n    #[test]\n    fn rejects_missing_email() {\n        assert!(matches!(\n            parse_user(\"42,Ada\"),\n            Err(ParseUserError::MissingEmail)\n        ));\n    }\n}\n\nimpl fmt::Display for ParseUserError {\n    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n        match self {\n            ParseUserError::MissingId => write!(f, \"missing id\"),\n            ParseUserError::MissingName => write!(f, \"missing name\"),\n            ParseUserError::MissingEmail => write!(f, \"missing email\"),\n            ParseUserError::InvalidId(_) => write!(f, \"invalid id\"),\n        }\n    }\n}\n\nimpl Error for ParseUserError {\n    fn source(&self) -> Option<&(dyn Error + 'static)> {\n        match self {\n            ParseUserError::InvalidId(error) => Some(error),\n            ParseUserError::MissingId\n            | ParseUserError::MissingName\n            | ParseUserError::MissingEmail => None,\n        }\n    }\n}"
+      }
+    ],
+    "completionExplanation": "Focused behavior checks turn the parser contract into executable examples for humans and future tooling. They show both the happy path and the important failure shape.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "source_includes",
+              "requiredSnippets": [
+                "assert_eq!",
+                "matches!",
+                "ParseUserError::MissingEmail"
+              ],
+              "forbiddenSnippets": [
+                ".unwrap()",
+                ".expect(",
+                "panic!",
+                "unimplemented!"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std"
+        }
+      ]
+    }
   }
 }

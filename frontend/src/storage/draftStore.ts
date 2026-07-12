@@ -5,6 +5,14 @@ export type DraftRecord = {
   updatedAt: string;
 };
 
+export type DraftWriteResult =
+  | { ok: true; record: DraftRecord | null }
+  | { ok: false; reason: "unavailable" | "quota" };
+
+export type DraftReadResult =
+  | { ok: true; record: DraftRecord | null }
+  | { ok: false; reason: "unavailable" | "invalid" };
+
 const PREFIX = "rust-daily:v1:draft";
 
 const getDraftKey = (lessonId: string) => `${PREFIX}:${lessonId}`;
@@ -69,21 +77,29 @@ const parseDraft = (raw: string, lessonId: string): DraftRecord | null => {
   return isDraftCandidate(record, lessonId) ? normalizeDraft(record) : null;
 };
 
-export const loadDraft = (lessonId: string): DraftRecord | null => {
+export const readDraft = (lessonId: string): DraftReadResult => {
   try {
     const raw = window.localStorage.getItem(getDraftKey(lessonId));
-
-    return raw ? parseDraft(raw, lessonId) : null;
+    if (!raw) {
+      return { ok: true, record: null };
+    }
+    const record = parseDraft(raw, lessonId);
+    return record ? { ok: true, record } : { ok: false, reason: "invalid" };
   } catch {
-    return null;
+    return { ok: false, reason: "unavailable" };
   }
+};
+
+export const loadDraft = (lessonId: string): DraftRecord | null => {
+  const result = readDraft(lessonId);
+  return result.ok ? result.record : null;
 };
 
 export const saveDraft = (
   lessonId: string,
   code: string,
   path = "src/lib.rs",
-): DraftRecord | null => {
+): DraftWriteResult => {
   const files = {
     [path]: code,
   };
@@ -96,17 +112,23 @@ export const saveDraft = (
 
   try {
     window.localStorage.setItem(getDraftKey(lessonId), JSON.stringify(record));
-    return record;
-  } catch {
-    return null;
+    return { ok: true, record };
+  } catch (error) {
+    return {
+      ok: false,
+      reason: error instanceof DOMException && error.name === "QuotaExceededError"
+        ? "quota"
+        : "unavailable",
+    };
   }
 };
 
 export const clearDraft = (lessonId: string) => {
   try {
     window.localStorage.removeItem(getDraftKey(lessonId));
+    return { ok: true } as const;
   } catch {
-    // LocalStorage can be unavailable in restricted browser modes.
+    return { ok: false, reason: "unavailable" } as const;
   }
 };
 

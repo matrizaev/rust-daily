@@ -18,6 +18,7 @@ import {
 import { getProgressSummary } from "./progress/progressSelectors";
 import {
   loadProgress,
+  readProgress,
   replaceProgress,
   resetProgress,
 } from "./progress/progressStore";
@@ -252,16 +253,26 @@ const useSettingsState = () => {
 };
 
 const useProgressState = () => {
-  const [progress, setProgress] = useState(() => loadProgress());
+  const initialProgress = useMemo(() => readProgress(), []);
+  const [progress, setProgress] = useState(initialProgress.progress);
+  const [storageError, setStorageError] = useState<string | null>(
+    initialProgress.ok ? null : initialProgress.reason,
+  );
   const summary = useMemo(() => getProgressSummary(progress), [progress]);
 
   const handleProgressChange = useCallback(() => {
-    setProgress(loadProgress());
+    const result = readProgress();
+    setProgress(result.progress);
+    setStorageError(result.ok ? null : result.reason);
   }, []);
 
   const handleDeleteProgress = useCallback(() => {
-    resetProgress();
-    setProgress(loadProgress());
+    const result = resetProgress();
+    if (result.ok) {
+      setProgress(loadProgress());
+      setStorageError(null);
+    }
+    return result.ok;
   }, []);
 
   const handleDeleteDrafts = useCallback(() => clearAllDrafts(), []);
@@ -274,7 +285,7 @@ const useProgressState = () => {
     try {
       const importedProgress = await readProgressExportFile(file);
 
-      if (!replaceProgress(importedProgress)) {
+      if (!replaceProgress(importedProgress).ok) {
         return {
           ok: false,
           message: "Progress import was valid, but this browser could not save it.",
@@ -282,6 +293,7 @@ const useProgressState = () => {
       }
 
       setProgress(importedProgress);
+      setStorageError(null);
 
       return {
         ok: true,
@@ -300,6 +312,7 @@ const useProgressState = () => {
 
   return {
     progress,
+    storageError,
     summary,
     handleDeleteDrafts,
     handleDeleteProgress,
@@ -732,6 +745,12 @@ function App() {
 
   return (
     <>
+      {progressState.storageError ? (
+        <aside className="storage-warning" role="alert">
+          Progress storage is {progressState.storageError}. Existing data was left untouched;
+          use Settings to export, import, or reset it.
+        </aside>
+      ) : null}
       <AppRouteView
         activeConcept={activeConcept}
         activeLesson={activeLesson}

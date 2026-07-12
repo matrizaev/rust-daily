@@ -106,6 +106,8 @@ fn validation_code(error: &ValidationError) -> &'static str {
         ValidationError::UnsafePath { .. } => "unsafe_path",
         ValidationError::UnsupportedPath { .. } => "unsupported_path",
         ValidationError::DuplicatePath { .. } => "duplicate_path",
+        ValidationError::PathTreeCollision { .. } => "path_tree_collision",
+        ValidationError::GeneratedTargetCollision { .. } => "generated_target_collision",
         ValidationError::MissingRequiredFile { .. } => "missing_required_file",
         ValidationError::CompileFailCasesNotAllowed => "compile_fail_cases_not_allowed",
         ValidationError::MissingCompileFailCases => "missing_compile_fail_cases",
@@ -135,6 +137,13 @@ fn validation_details(error: &ValidationError) -> Value {
             json!({ "path": path })
         }
         ValidationError::DuplicatePath { path } => json!({ "path": path.as_str() }),
+        ValidationError::PathTreeCollision {
+            path,
+            conflicting_path,
+        } => {
+            json!({ "path": path, "conflicting_path": conflicting_path })
+        }
+        ValidationError::GeneratedTargetCollision { path } => json!({ "path": path }),
         ValidationError::MissingRequiredFile { path } => json!({ "path": path }),
         ValidationError::CompileFailCasesNotAllowed | ValidationError::MissingCompileFailCases => {
             json!({})

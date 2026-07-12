@@ -1,79 +1,72 @@
 {
-  "schemaVersion": 2,
   "id": "register-domain-command-001",
-  "arcId": "register-user-use-case",
-  "arcTitle": "Register user use case boundaries",
-  "order": 73,
-  "day": 1,
-  "arcLength": 6,
-  "title": "Keep async service types out of the domain",
-  "conceptId": "register-domain-command",
-  "difficulty": "medium",
-  "estimatedMinutes": 8,
-  "scenario": "Domain types should not depend on HTTP, JSON, databases, or logging setup. Start with pure command and value-object types.",
-  "instructions": "In src/domain.rs define EmailAddress and RegisterUserCommand. Keep fields private, expose borrowed accessors, and do not import Tokio, Actix, or serde into the domain module.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "readonly",
-      "content": "pub mod domain;\n"
-    },
-    {
-      "path": "src/domain.rs",
-      "role": "editable",
-      "content": "// TODO: define framework-free register-user domain types here.\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::domain::{EmailAddress, RegisterUserCommand};\n\n#[test]\nfn domain_command_exposes_borrowed_values() {\n    let command = RegisterUserCommand::new(EmailAddress::new(\"ada@example.com\"), \"Ada\");\n\n    assert_eq!(command.email().as_str(), \"ada@example.com\");\n    assert_eq!(command.display_name(), \"Ada\");\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "The domain should not know which runtime or web framework calls it."
-    },
-    {
-      "level": 2,
-      "body": "Use private owned fields and borrowed accessors."
-    },
-    {
-      "level": 3,
-      "body": "Keep src/domain.rs free of framework imports.",
-      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq, Hash)]\npub struct EmailAddress(String);\n\nimpl EmailAddress {\n    pub fn new(value: impl Into<String>) -> Self {\n        Self(value.into())\n    }\n\n    pub fn as_str(&self) -> &str {\n        &self.0\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: EmailAddress,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: EmailAddress, display_name: impl Into<String>) -> Self {\n        Self {\n            email,\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &EmailAddress {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}"
-    }
-  ],
-  "completionExplanation": "The core register-user types are runtime-independent and can be reused by HTTP, jobs, or tests.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "In src/domain.rs define EmailAddress and RegisterUserCommand. Keep fields private, expose borrowed accessors, and do not import Tokio, Actix, or serde into the domain module.",
+    "starterCode": "// TODO: define framework-free register-user domain types here.\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "tuple_struct_fields",
-            "structName": "EmailAddress",
-            "requiredTypes": [
-              "String"
-            ]
-          },
-          {
-            "type": "impl_method",
-            "implFor": "RegisterUserCommand",
-            "methodName": "email",
-            "requiredSignatureIncludes": [
-              "fn email(&self) -> &EmailAddress"
-            ]
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "readonly",
+        "content": "pub mod domain;\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "advanced"
+        "path": "src/domain.rs",
+        "role": "editable",
+        "content": "// TODO: define framework-free register-user domain types here.\n"
+      },
+      {
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::domain::{EmailAddress, RegisterUserCommand};\n\n#[test]\nfn domain_command_exposes_borrowed_values() {\n    let command = RegisterUserCommand::new(EmailAddress::new(\"ada@example.com\"), \"Ada\");\n\n    assert_eq!(command.email().as_str(), \"ada@example.com\");\n    assert_eq!(command.display_name(), \"Ada\");\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "The domain should not know which runtime or web framework calls it."
+      },
+      {
+        "level": 2,
+        "body": "Use private owned fields and borrowed accessors."
+      },
+      {
+        "level": 3,
+        "body": "Keep src/domain.rs free of framework imports.",
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq, Hash)]\npub struct EmailAddress(String);\n\nimpl EmailAddress {\n    pub fn new(value: impl Into<String>) -> Self {\n        Self(value.into())\n    }\n\n    pub fn as_str(&self) -> &str {\n        &self.0\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: EmailAddress,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: EmailAddress, display_name: impl Into<String>) -> Self {\n        Self {\n            email,\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &EmailAddress {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}"
+      }
+    ],
+    "completionExplanation": "The core register-user types are runtime-independent and can be reused by HTTP, jobs, or tests.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "tuple_struct_fields",
+              "structName": "EmailAddress",
+              "requiredTypes": [
+                "String"
+              ]
+            },
+            {
+              "type": "impl_method",
+              "implFor": "RegisterUserCommand",
+              "methodName": "email",
+              "requiredSignatureIncludes": [
+                "fn email(&self) -> &EmailAddress"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "advanced"
+        }
+      ]
+    }
   }
 }

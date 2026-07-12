@@ -1,88 +1,81 @@
 {
-  "schemaVersion": 2,
   "id": "request-builder-result-004",
-  "arcId": "request-api",
-  "arcTitle": "Build a request API",
-  "order": 19,
-  "day": 4,
-  "arcLength": 6,
-  "title": "Validate builder output",
-  "conceptId": "builder-result",
-  "difficulty": "medium",
-  "estimatedMinutes": 9,
-  "scenario": "A builder can be incomplete. build should report missing required fields instead of creating a bad Request.",
-  "instructions": "Add a path setter, define BuildError with MissingMethod and MissingPath, and implement build so missing required fields return the matching error. A built Request should keep body as None for now.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Request {\n    pub method: String,\n    pub path: String,\n    pub body: Option<String>,\n}\n\n#[derive(Debug, Clone, Default, PartialEq, Eq)]\npub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl RequestBuilder {\n    pub fn new() -> Self {\n        Self::default()\n    }\n\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n        self.method = Some(method.into());\n        self\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: add path, build, and specific BuildError variants.\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::{BuildError, Request, RequestBuilder};\n\n#[test]\nfn builds_complete_request() {\n    assert_eq!(\n        RequestBuilder::new().method(\"GET\").path(\"/health\").build(),\n        Ok(Request {\n            method: \"GET\".to_owned(),\n            path: \"/health\".to_owned(),\n            body: None,\n        })\n    );\n}\n\n#[test]\nfn reports_missing_fields() {\n    assert_eq!(\n        RequestBuilder::new().path(\"/health\").build(),\n        Err(BuildError::MissingMethod)\n    );\n    assert_eq!(\n        RequestBuilder::new().method(\"GET\").build(),\n        Err(BuildError::MissingPath)\n    );\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "The build method is where optional builder state becomes required request state."
-    },
-    {
-      "level": 2,
-      "body": "ok_or can turn an Option into a Result with a specific missing-field error."
-    },
-    {
-      "level": 3,
-      "body": "Bind method and path first, then return Ok(Request { method, path, body: None }).",
-      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Request {\n    pub method: String,\n    pub path: String,\n    pub body: Option<String>,\n}\n\n#[derive(Debug, Clone, Default, PartialEq, Eq)]\npub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl RequestBuilder {\n    pub fn new() -> Self {\n        Self::default()\n    }\n\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n        self.method = Some(method.into());\n        self\n    }\n\n    pub fn path(mut self, path: impl Into<String>) -> Self {\n        self.path = Some(path.into());\n        self\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum BuildError {\n    MissingMethod,\n    MissingPath,\n}\n\nimpl RequestBuilder {\n    pub fn build(self) -> Result<Request, BuildError> {\n        let method = self.method.ok_or(BuildError::MissingMethod)?;\n        let path = self.path.ok_or(BuildError::MissingPath)?;\n\n        Ok(Request {\n            method,\n            path,\n            body: None,\n        })\n    }\n}"
-    }
-  ],
-  "completionExplanation": "Returning Result keeps invalid builder states from silently becoming invalid requests. Specific missing-field variants tell callers exactly what still needs to be set.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Add a path setter, define BuildError with MissingMethod and MissingPath, and implement build so missing required fields return the matching error. A built Request should keep body as None for now.",
+    "starterCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Request {\n    pub method: String,\n    pub path: String,\n    pub body: Option<String>,\n}\n\n#[derive(Debug, Clone, Default, PartialEq, Eq)]\npub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl RequestBuilder {\n    pub fn new() -> Self {\n        Self::default()\n    }\n\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n        self.method = Some(method.into());\n        self\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: add path, build, and specific BuildError variants.\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "enum_unit_variants",
-            "enumName": "BuildError",
-            "requiredVariants": [
-              "MissingMethod",
-              "MissingPath"
-            ]
-          },
-          {
-            "type": "impl_method",
-            "implFor": "RequestBuilder",
-            "methodName": "build",
-            "requiredSignatureIncludes": [
-              "Result<Request, BuildError>"
-            ]
-          },
-          {
-            "type": "source_includes",
-            "requiredSnippets": [
-              "ok_or(BuildError::MissingMethod)",
-              "ok_or(BuildError::MissingPath)"
-            ],
-            "forbiddenSnippets": [
-              "Incomplete",
-              "unwrap",
-              "expect",
-              "panic!"
-            ]
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Request {\n    pub method: String,\n    pub path: String,\n    pub body: Option<String>,\n}\n\n#[derive(Debug, Clone, Default, PartialEq, Eq)]\npub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl RequestBuilder {\n    pub fn new() -> Self {\n        Self::default()\n    }\n\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n        self.method = Some(method.into());\n        self\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: add path, build, and specific BuildError variants.\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "std"
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{BuildError, Request, RequestBuilder};\n\n#[test]\nfn builds_complete_request() {\n    assert_eq!(\n        RequestBuilder::new().method(\"GET\").path(\"/health\").build(),\n        Ok(Request {\n            method: \"GET\".to_owned(),\n            path: \"/health\".to_owned(),\n            body: None,\n        })\n    );\n}\n\n#[test]\nfn reports_missing_fields() {\n    assert_eq!(\n        RequestBuilder::new().path(\"/health\").build(),\n        Err(BuildError::MissingMethod)\n    );\n    assert_eq!(\n        RequestBuilder::new().method(\"GET\").build(),\n        Err(BuildError::MissingPath)\n    );\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "The build method is where optional builder state becomes required request state."
+      },
+      {
+        "level": 2,
+        "body": "ok_or can turn an Option into a Result with a specific missing-field error."
+      },
+      {
+        "level": 3,
+        "body": "Bind method and path first, then return Ok(Request { method, path, body: None }).",
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Request {\n    pub method: String,\n    pub path: String,\n    pub body: Option<String>,\n}\n\n#[derive(Debug, Clone, Default, PartialEq, Eq)]\npub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl RequestBuilder {\n    pub fn new() -> Self {\n        Self::default()\n    }\n\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n        self.method = Some(method.into());\n        self\n    }\n\n    pub fn path(mut self, path: impl Into<String>) -> Self {\n        self.path = Some(path.into());\n        self\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum BuildError {\n    MissingMethod,\n    MissingPath,\n}\n\nimpl RequestBuilder {\n    pub fn build(self) -> Result<Request, BuildError> {\n        let method = self.method.ok_or(BuildError::MissingMethod)?;\n        let path = self.path.ok_or(BuildError::MissingPath)?;\n\n        Ok(Request {\n            method,\n            path,\n            body: None,\n        })\n    }\n}"
+      }
+    ],
+    "completionExplanation": "Returning Result keeps invalid builder states from silently becoming invalid requests. Specific missing-field variants tell callers exactly what still needs to be set.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "enum_unit_variants",
+              "enumName": "BuildError",
+              "requiredVariants": [
+                "MissingMethod",
+                "MissingPath"
+              ]
+            },
+            {
+              "type": "impl_method",
+              "implFor": "RequestBuilder",
+              "methodName": "build",
+              "requiredSignatureIncludes": [
+                "Result<Request, BuildError>"
+              ]
+            },
+            {
+              "type": "source_includes",
+              "requiredSnippets": [
+                "ok_or(BuildError::MissingMethod)",
+                "ok_or(BuildError::MissingPath)"
+              ],
+              "forbiddenSnippets": [
+                "Incomplete",
+                "unwrap",
+                "expect",
+                "panic!"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std"
+        }
+      ]
+    }
   }
 }

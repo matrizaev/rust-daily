@@ -1,123 +1,116 @@
 {
-  "schemaVersion": 2,
   "id": "host-domain-002",
-  "arcId": "host-port-config",
-  "arcTitle": "Host and port configuration modeling",
-  "order": 44,
-  "day": 2,
-  "arcLength": 6,
-  "title": "Define and validate a Host value object",
-  "conceptId": "host-domain",
-  "difficulty": "medium",
-  "estimatedMinutes": 8,
-  "scenario": "Hosts arrive as borrowed text from configuration and adapters. We want a domain type that rejects empty values and whitespace before storing an owned String.",
-  "instructions": "Define HostValidationError and a validate_host helper, then define a Host tuple struct with a private String field. Expose Host::as_str(&self) -> &str and implement TryFrom<&str> for Host by reusing validate_host.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "use std::num::NonZeroU16;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Port(NonZeroU16);\n\nimpl Port {\n    pub fn new(value: u16) -> Option<Self> {\n        NonZeroU16::new(value).map(Self)\n    }\n\n    pub fn value(&self) -> u16 {\n        self.0.get()\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: Define HostValidationError with Empty and InvalidCharacters.\n// TODO: Add a validate_host(&str) helper for the shared rules.\n// TODO: Define Host as a public tuple struct with a private String field.\n// TODO: Expose as_str(&self) -> &str.\n// TODO: Implement TryFrom<&str> for Host.\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::{Host, HostValidationError};\n\n#[test]\nfn host_representation_is_validated() {\n    assert_eq!(\n        Host::try_from(\"localhost\").map(|host| host.as_str().to_owned()),\n        Ok(\"localhost\".to_owned())\n    );\n    assert_eq!(Host::try_from(\"\"), Err(HostValidationError::Empty));\n    assert_eq!(\n        Host::try_from(\"bad host\"),\n        Err(HostValidationError::InvalidCharacters)\n    );\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "Put the empty and whitespace checks in validate_host so later conversions can reuse the same rules."
-    },
-    {
-      "level": 2,
-      "body": "Return Empty for an empty string and InvalidCharacters if the input contains whitespace; allocate only after validation passes."
-    },
-    {
-      "level": 3,
-      "body": "A canonical solution validates borrowed text before storing an owned string.",
-      "solutionCode": "use std::num::NonZeroU16;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Port(NonZeroU16);\n\nimpl Port {\n    pub fn new(value: u16) -> Option<Self> {\n        NonZeroU16::new(value).map(Self)\n    }\n\n    pub fn value(&self) -> u16 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum HostValidationError {\n    Empty,\n    InvalidCharacters,\n}\n\nfn validate_host(value: &str) -> Result<(), HostValidationError> {\n    if value.is_empty() {\n        return Err(HostValidationError::Empty);\n    }\n\n    if value.contains(char::is_whitespace) {\n        return Err(HostValidationError::InvalidCharacters);\n    }\n\n    Ok(())\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Host(String);\n\nimpl Host {\n    pub fn as_str(&self) -> &str {\n        &self.0\n    }\n}\n\nimpl TryFrom<&str> for Host {\n    type Error = HostValidationError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        validate_host(value)?;\n\n        Ok(Self(value.to_owned()))\n    }\n}"
-    }
-  ],
-  "completionExplanation": "A validated value object keeps raw strings at the boundary. Implementing TryFrom<&str> avoids forcing callers to allocate invalid input, while Host owns the accepted value after validation.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Define HostValidationError and a validate_host helper, then define a Host tuple struct with a private String field. Expose Host::as_str(&self) -> &str and implement TryFrom<&str> for Host by reusing validate_host.",
+    "starterCode": "use std::num::NonZeroU16;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Port(NonZeroU16);\n\nimpl Port {\n    pub fn new(value: u16) -> Option<Self> {\n        NonZeroU16::new(value).map(Self)\n    }\n\n    pub fn value(&self) -> u16 {\n        self.0.get()\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: Define HostValidationError with Empty and InvalidCharacters.\n// TODO: Add a validate_host(&str) helper for the shared rules.\n// TODO: Define Host as a public tuple struct with a private String field.\n// TODO: Expose as_str(&self) -> &str.\n// TODO: Implement TryFrom<&str> for Host.\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "tuple_struct_fields",
-            "structName": "Host",
-            "requiredTypes": [
-              "String"
-            ]
-          },
-          {
-            "type": "impl_method",
-            "implFor": "Host",
-            "methodName": "as_str",
-            "requiredSignatureIncludes": [
-              "&self",
-              "&str"
-            ]
-          },
-          {
-            "type": "impl_trait_for_type",
-            "traitName": "TryFrom<&str>",
-            "typeName": "Host"
-          },
-          {
-            "type": "enum_unit_variants",
-            "enumName": "HostValidationError",
-            "requiredVariants": [
-              "Empty",
-              "InvalidCharacters"
-            ]
-          },
-          {
-            "type": "source_includes",
-            "requiredSnippets": [
-              "to_owned"
-            ],
-            "forbiddenSnippets": [
-              "new_unchecked",
-              ".unwrap()",
-              ".expect(",
-              "panic!"
-            ]
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "use std::num::NonZeroU16;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Port(NonZeroU16);\n\nimpl Port {\n    pub fn new(value: u16) -> Option<Self> {\n        NonZeroU16::new(value).map(Self)\n    }\n\n    pub fn value(&self) -> u16 {\n        self.0.get()\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: Define HostValidationError with Empty and InvalidCharacters.\n// TODO: Add a validate_host(&str) helper for the shared rules.\n// TODO: Define Host as a public tuple struct with a private String field.\n// TODO: Expose as_str(&self) -> &str.\n// TODO: Implement TryFrom<&str> for Host.\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "std"
-      },
-      {
-        "mode": "backend-compile-fail",
-        "timeoutMs": 10000,
-        "dependencySet": "std",
-        "cases": [
-          {
-            "name": "port-direct-construction",
-            "expectedDiagnostics": [
-              "private"
-            ],
-            "path": "compile_fail/port_direct_construction.rs",
-            "content": "use std::num::NonZeroU16;\nuse rust_daily_lesson::Port;\n\nfn main() {\n    let _ = Port(NonZeroU16::new(8080).unwrap());\n}\n"
-          },
-          {
-            "name": "host-direct-construction",
-            "expectedDiagnostics": [
-              "private"
-            ],
-            "path": "compile_fail/host_direct_construction.rs",
-            "content": "use rust_daily_lesson::Host;\n\nfn main() {\n    let _ = Host(String::from(\"localhost\"));\n}\n"
-          }
-        ]
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{Host, HostValidationError};\n\n#[test]\nfn host_representation_is_validated() {\n    assert_eq!(\n        Host::try_from(\"localhost\").map(|host| host.as_str().to_owned()),\n        Ok(\"localhost\".to_owned())\n    );\n    assert_eq!(Host::try_from(\"\"), Err(HostValidationError::Empty));\n    assert_eq!(\n        Host::try_from(\"bad host\"),\n        Err(HostValidationError::InvalidCharacters)\n    );\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Put the empty and whitespace checks in validate_host so later conversions can reuse the same rules."
+      },
+      {
+        "level": 2,
+        "body": "Return Empty for an empty string and InvalidCharacters if the input contains whitespace; allocate only after validation passes."
+      },
+      {
+        "level": 3,
+        "body": "A canonical solution validates borrowed text before storing an owned string.",
+        "solutionCode": "use std::num::NonZeroU16;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Port(NonZeroU16);\n\nimpl Port {\n    pub fn new(value: u16) -> Option<Self> {\n        NonZeroU16::new(value).map(Self)\n    }\n\n    pub fn value(&self) -> u16 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum HostValidationError {\n    Empty,\n    InvalidCharacters,\n}\n\nfn validate_host(value: &str) -> Result<(), HostValidationError> {\n    if value.is_empty() {\n        return Err(HostValidationError::Empty);\n    }\n\n    if value.contains(char::is_whitespace) {\n        return Err(HostValidationError::InvalidCharacters);\n    }\n\n    Ok(())\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Host(String);\n\nimpl Host {\n    pub fn as_str(&self) -> &str {\n        &self.0\n    }\n}\n\nimpl TryFrom<&str> for Host {\n    type Error = HostValidationError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        validate_host(value)?;\n\n        Ok(Self(value.to_owned()))\n    }\n}"
+      }
+    ],
+    "completionExplanation": "A validated value object keeps raw strings at the boundary. Implementing TryFrom<&str> avoids forcing callers to allocate invalid input, while Host owns the accepted value after validation.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "tuple_struct_fields",
+              "structName": "Host",
+              "requiredTypes": [
+                "String"
+              ]
+            },
+            {
+              "type": "impl_method",
+              "implFor": "Host",
+              "methodName": "as_str",
+              "requiredSignatureIncludes": [
+                "&self",
+                "&str"
+              ]
+            },
+            {
+              "type": "impl_trait_for_type",
+              "traitName": "TryFrom<&str>",
+              "typeName": "Host"
+            },
+            {
+              "type": "enum_unit_variants",
+              "enumName": "HostValidationError",
+              "requiredVariants": [
+                "Empty",
+                "InvalidCharacters"
+              ]
+            },
+            {
+              "type": "source_includes",
+              "requiredSnippets": [
+                "to_owned"
+              ],
+              "forbiddenSnippets": [
+                "new_unchecked",
+                ".unwrap()",
+                ".expect(",
+                "panic!"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "port-direct-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "path": "compile_fail/port_direct_construction.rs",
+              "content": "use std::num::NonZeroU16;\nuse rust_daily_lesson::Port;\n\nfn main() {\n    let _ = Port(NonZeroU16::new(8080).unwrap());\n}\n"
+            },
+            {
+              "name": "host-direct-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "path": "compile_fail/host_direct_construction.rs",
+              "content": "use rust_daily_lesson::Host;\n\nfn main() {\n    let _ = Host(String::from(\"localhost\"));\n}\n"
+            }
+          ]
+        }
+      ]
+    }
   }
 }

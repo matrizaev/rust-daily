@@ -1,78 +1,71 @@
 {
-  "schemaVersion": 2,
   "id": "boundary-domain-error-001",
-  "arcId": "boundary-error-mapping",
-  "arcTitle": "Translating errors across boundaries",
-  "order": 67,
-  "day": 1,
-  "arcLength": 6,
-  "title": "Design a non-exhaustive domain error",
-  "conceptId": "boundary-domain-error",
-  "difficulty": "easy",
-  "estimatedMinutes": 6,
-  "scenario": "Domain errors should name business-rule failures without mentioning databases, HTTP, or UI details.",
-  "instructions": "Define CreateOrderError with EmptyOrder and InvalidQuantity. Derive thiserror::Error, add concise messages, and mark the public enum #[non_exhaustive] so new variants remain a compatible API change.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "// TODO: define the public domain error surface.\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::CreateOrderError;\n\n#[test]\nfn domain_errors_are_specific_and_readable() {\n    assert_eq!(CreateOrderError::EmptyOrder.to_string(), \"order must contain at least one line\");\n    assert_eq!(CreateOrderError::InvalidQuantity.to_string(), \"order line quantity must be positive\");\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "Public error enums often gain variants over time."
-    },
-    {
-      "level": 2,
-      "body": "Use #[non_exhaustive] to force downstream wildcard handling."
-    },
-    {
-      "level": 3,
-      "body": "Use thiserror for the Display and Error implementations.",
-      "solutionCode": "use thiserror::Error;\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum CreateOrderError {\n    #[error(\"order must contain at least one line\")]\n    EmptyOrder,\n    #[error(\"order line quantity must be positive\")]\n    InvalidQuantity,\n}"
-    }
-  ],
-  "completionExplanation": "The domain error is typed, readable, and designed for API evolution.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Define CreateOrderError with EmptyOrder and InvalidQuantity. Derive thiserror::Error, add concise messages, and mark the public enum #[non_exhaustive] so new variants remain a compatible API change.",
+    "starterCode": "// TODO: define the public domain error surface.\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "enum_unit_variants",
-            "enumName": "CreateOrderError",
-            "requiredVariants": [
-              "EmptyOrder",
-              "InvalidQuantity"
-            ]
-          },
-          {
-            "type": "derived_trait_for_type",
-            "traitName": "thiserror::Error",
-            "typeName": "CreateOrderError"
-          },
-          {
-            "type": "source_includes",
-            "requiredSnippets": [
-              "#[non_exhaustive]"
-            ]
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "// TODO: define the public domain error surface.\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "advanced"
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::CreateOrderError;\n\n#[test]\nfn domain_errors_are_specific_and_readable() {\n    assert_eq!(CreateOrderError::EmptyOrder.to_string(), \"order must contain at least one line\");\n    assert_eq!(CreateOrderError::InvalidQuantity.to_string(), \"order line quantity must be positive\");\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Public error enums often gain variants over time."
+      },
+      {
+        "level": 2,
+        "body": "Use #[non_exhaustive] to force downstream wildcard handling."
+      },
+      {
+        "level": 3,
+        "body": "Use thiserror for the Display and Error implementations.",
+        "solutionCode": "use thiserror::Error;\n\n#[non_exhaustive]\n#[derive(Debug, Clone, Copy, Error, PartialEq, Eq)]\npub enum CreateOrderError {\n    #[error(\"order must contain at least one line\")]\n    EmptyOrder,\n    #[error(\"order line quantity must be positive\")]\n    InvalidQuantity,\n}"
+      }
+    ],
+    "completionExplanation": "The domain error is typed, readable, and designed for API evolution.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "enum_unit_variants",
+              "enumName": "CreateOrderError",
+              "requiredVariants": [
+                "EmptyOrder",
+                "InvalidQuantity"
+              ]
+            },
+            {
+              "type": "derived_trait_for_type",
+              "traitName": "thiserror::Error",
+              "typeName": "CreateOrderError"
+            },
+            {
+              "type": "source_includes",
+              "requiredSnippets": [
+                "#[non_exhaustive]"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "advanced"
+        }
+      ]
+    }
   }
 }

@@ -1,112 +1,105 @@
 {
-  "schemaVersion": 2,
   "id": "port-nonzero-001",
-  "arcId": "host-port-config",
-  "arcTitle": "Host and port configuration modeling",
-  "order": 43,
-  "day": 1,
-  "arcLength": 6,
-  "title": "Use NonZeroU16 for Port representation",
-  "conceptId": "port-nonzero",
-  "difficulty": "easy",
-  "estimatedMinutes": 6,
-  "scenario": "A port of 0 is invalid for this application. The standard library NonZeroU16 lets the Port type store only non-zero values after construction.",
-  "instructions": "Define a Port tuple struct wrapping std::num::NonZeroU16 privately. Expose Port::new(value: u16) -> Option<Self> and Port::value(&self) -> u16.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "use std::num::NonZeroU16;\n\n// TODO: Define Port as a public tuple struct wrapping NonZeroU16 privately.\n\nimpl Port {\n    // TODO: Expose Port::new(value: u16) -> Option<Self>.\n\n    // TODO: Expose Port::value(&self) -> u16.\n}\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::Port;\n\n#[test]\nfn port_safety() {\n    assert_eq!(Port::new(8080).map(|port| port.value()), Some(8080));\n    assert_eq!(Port::new(0).map(|port| port.value()), None);\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "Use a tuple struct: pub struct Port(NonZeroU16);"
-    },
-    {
-      "level": 2,
-      "body": "NonZeroU16::new(value) returns Option<NonZeroU16>. Map this into Port with .map(Self), then use get() in the accessor."
-    },
-    {
-      "level": 3,
-      "body": "A canonical solution wraps NonZeroU16 and exposes only intentional construction and read access.",
-      "solutionCode": "use std::num::NonZeroU16;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Port(NonZeroU16);\n\nimpl Port {\n    pub fn new(value: u16) -> Option<Self> {\n        NonZeroU16::new(value).map(Self)\n    }\n\n    pub fn value(&self) -> u16 {\n        self.0.get()\n    }\n}"
-    }
-  ],
-  "completionExplanation": "Using NonZeroU16 moves the non-zero rule into the type representation after construction. Downstream code can trust Port values and does not need to repeat the zero check.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Define a Port tuple struct wrapping std::num::NonZeroU16 privately. Expose Port::new(value: u16) -> Option<Self> and Port::value(&self) -> u16.",
+    "starterCode": "use std::num::NonZeroU16;\n\n// TODO: Define Port as a public tuple struct wrapping NonZeroU16 privately.\n\nimpl Port {\n    // TODO: Expose Port::new(value: u16) -> Option<Self>.\n\n    // TODO: Expose Port::value(&self) -> u16.\n}\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "tuple_struct_fields",
-            "structName": "Port",
-            "requiredTypes": [
-              "NonZeroU16"
-            ]
-          },
-          {
-            "type": "impl_method",
-            "implFor": "Port",
-            "methodName": "new",
-            "requiredSignatureIncludes": [
-              "pub fn new",
-              "value: u16",
-              "Option<Self>"
-            ]
-          },
-          {
-            "type": "impl_method",
-            "implFor": "Port",
-            "methodName": "value",
-            "requiredSignatureIncludes": [
-              "pub fn value",
-              "&self",
-              "u16"
-            ]
-          },
-          {
-            "type": "source_includes",
-            "requiredSnippets": [
-              "NonZeroU16::new"
-            ],
-            "forbiddenSnippets": [
-              ".unwrap()",
-              ".expect(",
-              "panic!"
-            ]
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "use std::num::NonZeroU16;\n\n// TODO: Define Port as a public tuple struct wrapping NonZeroU16 privately.\n\nimpl Port {\n    // TODO: Expose Port::new(value: u16) -> Option<Self>.\n\n    // TODO: Expose Port::value(&self) -> u16.\n}\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "std"
-      },
-      {
-        "mode": "backend-compile-fail",
-        "timeoutMs": 10000,
-        "dependencySet": "std",
-        "cases": [
-          {
-            "name": "port-direct-construction",
-            "expectedDiagnostics": [
-              "private"
-            ],
-            "path": "compile_fail/port_direct_construction.rs",
-            "content": "use std::num::NonZeroU16;\nuse rust_daily_lesson::Port;\n\nfn main() {\n    let _ = Port(NonZeroU16::new(8080).unwrap());\n}\n"
-          }
-        ]
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::Port;\n\n#[test]\nfn port_safety() {\n    assert_eq!(Port::new(8080).map(|port| port.value()), Some(8080));\n    assert_eq!(Port::new(0).map(|port| port.value()), None);\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Use a tuple struct: pub struct Port(NonZeroU16);"
+      },
+      {
+        "level": 2,
+        "body": "NonZeroU16::new(value) returns Option<NonZeroU16>. Map this into Port with .map(Self), then use get() in the accessor."
+      },
+      {
+        "level": 3,
+        "body": "A canonical solution wraps NonZeroU16 and exposes only intentional construction and read access.",
+        "solutionCode": "use std::num::NonZeroU16;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Port(NonZeroU16);\n\nimpl Port {\n    pub fn new(value: u16) -> Option<Self> {\n        NonZeroU16::new(value).map(Self)\n    }\n\n    pub fn value(&self) -> u16 {\n        self.0.get()\n    }\n}"
+      }
+    ],
+    "completionExplanation": "Using NonZeroU16 moves the non-zero rule into the type representation after construction. Downstream code can trust Port values and does not need to repeat the zero check.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "tuple_struct_fields",
+              "structName": "Port",
+              "requiredTypes": [
+                "NonZeroU16"
+              ]
+            },
+            {
+              "type": "impl_method",
+              "implFor": "Port",
+              "methodName": "new",
+              "requiredSignatureIncludes": [
+                "pub fn new",
+                "value: u16",
+                "Option<Self>"
+              ]
+            },
+            {
+              "type": "impl_method",
+              "implFor": "Port",
+              "methodName": "value",
+              "requiredSignatureIncludes": [
+                "pub fn value",
+                "&self",
+                "u16"
+              ]
+            },
+            {
+              "type": "source_includes",
+              "requiredSnippets": [
+                "NonZeroU16::new"
+              ],
+              "forbiddenSnippets": [
+                ".unwrap()",
+                ".expect(",
+                "panic!"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "port-direct-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "path": "compile_fail/port_direct_construction.rs",
+              "content": "use std::num::NonZeroU16;\nuse rust_daily_lesson::Port;\n\nfn main() {\n    let _ = Port(NonZeroU16::new(8080).unwrap());\n}\n"
+            }
+          ]
+        }
+      ]
+    }
   }
 }

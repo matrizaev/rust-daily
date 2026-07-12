@@ -38,4 +38,6 @@ validation:
   max_diagnostic_total_bytes: 8192
 
 api:
-  max_json_payload_bytes: 300000
+  # Upper bound allows JSON to escape every admitted input
+  # byte as \u00XX. Settings loading rejects smaller values.
+  max_json_payload_bytes: 1600000

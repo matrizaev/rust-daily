@@ -1,73 +1,66 @@
 {
-  "schemaVersion": 2,
   "id": "config-err-parse-port-005",
-  "arcId": "config-loader-errors",
-  "arcTitle": "Hierarchical configuration loader errors",
-  "order": 65,
-  "day": 5,
-  "arcLength": 6,
-  "title": "Derive ParseIntError conversion",
-  "conceptId": "config-err-parse-wrap",
-  "difficulty": "medium",
-  "estimatedMinutes": 8,
-  "scenario": "Parsing configuration values should keep lower-level parse details while returning the loader error type.",
-  "instructions": "Change InvalidPort to InvalidPort(#[from] ParseIntError), update kind, and implement parse_port(&str) -> Result<u16, ConfigLoadError> using ?. ",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "use thiserror::Error;\n\n#[derive(Debug, Error)]\npub enum ConfigLoadError {\n    #[error(\"missing APP_PORT\")]\n    MissingEnvironment,\n    #[error(\"invalid APP_PORT\")]\n    InvalidPort,\n    #[error(\"failed to read config file\")]\n    FileRead(#[from] std::io::Error),\n}\n\nimpl ConfigLoadError {\n    pub fn kind(&self) -> &'static str {\n        match self {\n            Self::MissingEnvironment => \"missing_environment\",\n            Self::InvalidPort => \"invalid_port\",\n            Self::FileRead(_) => \"file_read\",\n        }\n    }\n}\n\n// TODO: store ParseIntError and implement parse_port with ?.\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::{parse_port, ConfigLoadError};\n\n#[test]\nfn parses_valid_port() {\n    assert_eq!(parse_port(\"8080\").expect(\"port should parse\"), 8080);\n}\n\n#[test]\nfn classifies_invalid_port() {\n    let error = parse_port(\"eight\").expect_err(\"text is not a port\");\n\n    assert!(matches!(error, ConfigLoadError::InvalidPort(_)));\n    assert_eq!(error.kind(), \"invalid_port\");\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "ParseIntError is the concrete cause of InvalidPort."
-    },
-    {
-      "level": 2,
-      "body": "Derive From with #[from]."
-    },
-    {
-      "level": 3,
-      "body": "Ok(value.parse()?) keeps the success type explicit.",
-      "solutionCode": "use thiserror::Error;\n\n#[derive(Debug, Error)]\npub enum ConfigLoadError {\n    #[error(\"missing APP_PORT\")]\n    MissingEnvironment,\n    #[error(\"invalid APP_PORT\")]\n    InvalidPort(#[from] std::num::ParseIntError),\n    #[error(\"failed to read config file\")]\n    FileRead(#[from] std::io::Error),\n}\n\nimpl ConfigLoadError {\n    pub fn kind(&self) -> &'static str {\n        match self {\n            Self::MissingEnvironment => \"missing_environment\",\n            Self::InvalidPort(_) => \"invalid_port\",\n            Self::FileRead(_) => \"file_read\",\n        }\n    }\n}\n\npub fn parse_port(value: &str) -> Result<u16, ConfigLoadError> {\n    Ok(value.parse()?)\n}"
-    }
-  ],
-  "completionExplanation": "Port parsing now preserves the parser error and propagates it through an idiomatic derived conversion.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Change InvalidPort to InvalidPort(#[from] ParseIntError), update kind, and implement parse_port(&str) -> Result<u16, ConfigLoadError> using ?. ",
+    "starterCode": "use thiserror::Error;\n\n#[derive(Debug, Error)]\npub enum ConfigLoadError {\n    #[error(\"missing APP_PORT\")]\n    MissingEnvironment,\n    #[error(\"invalid APP_PORT\")]\n    InvalidPort,\n    #[error(\"failed to read config file\")]\n    FileRead(#[from] std::io::Error),\n}\n\nimpl ConfigLoadError {\n    pub fn kind(&self) -> &'static str {\n        match self {\n            Self::MissingEnvironment => \"missing_environment\",\n            Self::InvalidPort => \"invalid_port\",\n            Self::FileRead(_) => \"file_read\",\n        }\n    }\n}\n\n// TODO: store ParseIntError and implement parse_port with ?.\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "source_includes",
-            "requiredSnippets": [
-              "InvalidPort(#[from] std::num::ParseIntError)"
-            ]
-          },
-          {
-            "type": "function_signature",
-            "functionName": "parse_port",
-            "requiredSignatureIncludes": [
-              "fn parse_port(value: &str)",
-              "Result<u16, ConfigLoadError>"
-            ]
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "use thiserror::Error;\n\n#[derive(Debug, Error)]\npub enum ConfigLoadError {\n    #[error(\"missing APP_PORT\")]\n    MissingEnvironment,\n    #[error(\"invalid APP_PORT\")]\n    InvalidPort,\n    #[error(\"failed to read config file\")]\n    FileRead(#[from] std::io::Error),\n}\n\nimpl ConfigLoadError {\n    pub fn kind(&self) -> &'static str {\n        match self {\n            Self::MissingEnvironment => \"missing_environment\",\n            Self::InvalidPort => \"invalid_port\",\n            Self::FileRead(_) => \"file_read\",\n        }\n    }\n}\n\n// TODO: store ParseIntError and implement parse_port with ?.\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "advanced"
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{parse_port, ConfigLoadError};\n\n#[test]\nfn parses_valid_port() {\n    assert_eq!(parse_port(\"8080\").expect(\"port should parse\"), 8080);\n}\n\n#[test]\nfn classifies_invalid_port() {\n    let error = parse_port(\"eight\").expect_err(\"text is not a port\");\n\n    assert!(matches!(error, ConfigLoadError::InvalidPort(_)));\n    assert_eq!(error.kind(), \"invalid_port\");\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "ParseIntError is the concrete cause of InvalidPort."
+      },
+      {
+        "level": 2,
+        "body": "Derive From with #[from]."
+      },
+      {
+        "level": 3,
+        "body": "Ok(value.parse()?) keeps the success type explicit.",
+        "solutionCode": "use thiserror::Error;\n\n#[derive(Debug, Error)]\npub enum ConfigLoadError {\n    #[error(\"missing APP_PORT\")]\n    MissingEnvironment,\n    #[error(\"invalid APP_PORT\")]\n    InvalidPort(#[from] std::num::ParseIntError),\n    #[error(\"failed to read config file\")]\n    FileRead(#[from] std::io::Error),\n}\n\nimpl ConfigLoadError {\n    pub fn kind(&self) -> &'static str {\n        match self {\n            Self::MissingEnvironment => \"missing_environment\",\n            Self::InvalidPort(_) => \"invalid_port\",\n            Self::FileRead(_) => \"file_read\",\n        }\n    }\n}\n\npub fn parse_port(value: &str) -> Result<u16, ConfigLoadError> {\n    Ok(value.parse()?)\n}"
+      }
+    ],
+    "completionExplanation": "Port parsing now preserves the parser error and propagates it through an idiomatic derived conversion.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "source_includes",
+              "requiredSnippets": [
+                "InvalidPort(#[from] std::num::ParseIntError)"
+              ]
+            },
+            {
+              "type": "function_signature",
+              "functionName": "parse_port",
+              "requiredSignatureIncludes": [
+                "fn parse_port(value: &str)",
+                "Result<u16, ConfigLoadError>"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "advanced"
+        }
+      ]
+    }
   }
 }

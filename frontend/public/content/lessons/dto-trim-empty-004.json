@@ -1,103 +1,96 @@
 {
-  "schemaVersion": 2,
   "id": "dto-trim-empty-004",
-  "arcId": "dto-conversions",
-  "arcTitle": "Converting DTOs into domain commands",
-  "order": 52,
-  "day": 4,
-  "arcLength": 6,
-  "title": "Trim DTO fields before command creation",
-  "conceptId": "dto-trim-validation",
-  "difficulty": "medium",
-  "estimatedMinutes": 8,
-  "scenario": "Boundary strings often contain whitespace. Normalize only after checking the DTO field exists, then reject empty normalized values explicitly.",
-  "instructions": "Update TryFrom<RegisterUserDto> so it trims both strings and returns EmptyEmail or EmptyDisplayName when a trimmed field is empty.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "use serde::Deserialize;\n\n#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        Ok(Self {\n            email: value\n                .email\n                .ok_or(RegisterUserValidationError::MissingEmail)?,\n            display_name: value\n                .display_name\n                .ok_or(RegisterUserValidationError::MissingDisplayName)?,\n        })\n    }\n}\n\n// TODO: trim fields and reject empty values.\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::{RegisterUserCommand, RegisterUserDto, RegisterUserValidationError};\n\n#[test]\nfn trims_deserialized_fields_before_storing_command() {\n    let dto: RegisterUserDto = serde_json::from_str(\n        r#\"{\"email\":\"  ada@example.com  \",\"display_name\":\"  Ada  \"}\"#,\n    )\n    .expect(\"DTO JSON should deserialize\");\n\n    let command = RegisterUserCommand::try_from(dto).expect(\"DTO should be valid\");\n\n    assert_eq!(command.email(), \"ada@example.com\");\n    assert_eq!(command.display_name(), \"Ada\");\n}\n\n#[test]\nfn rejects_trimmed_empty_email() {\n    let dto = RegisterUserDto {\n        email: Some(\"   \".to_owned()),\n        display_name: Some(\"Ada\".to_owned()),\n    };\n\n    assert_eq!(\n        RegisterUserCommand::try_from(dto),\n        Err(RegisterUserValidationError::EmptyEmail)\n    );\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "Normalize at the boundary before constructing the command."
-    },
-    {
-      "level": 2,
-      "body": "Trim borrowed string slices first, then allocate only once for accepted values."
-    },
-    {
-      "level": 3,
-      "body": "Add EmptyEmail and EmptyDisplayName to the validation enum.",
-      "solutionCode": "use serde::Deserialize;\n\n#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n    EmptyEmail,\n    EmptyDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        let email = value\n            .email\n            .ok_or(RegisterUserValidationError::MissingEmail)?;\n        let display_name = value\n            .display_name\n            .ok_or(RegisterUserValidationError::MissingDisplayName)?;\n        let email = email.trim();\n        let display_name = display_name.trim();\n\n        if email.is_empty() {\n            return Err(RegisterUserValidationError::EmptyEmail);\n        }\n\n        if display_name.is_empty() {\n            return Err(RegisterUserValidationError::EmptyDisplayName);\n        }\n\n        Ok(Self {\n            email: email.to_owned(),\n            display_name: display_name.to_owned(),\n        })\n    }\n}"
-    }
-  ],
-  "completionExplanation": "The DTO conversion now performs boundary normalization without leaking whitespace-only values into the command.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Update TryFrom<RegisterUserDto> so it trims both strings and returns EmptyEmail or EmptyDisplayName when a trimmed field is empty.",
+    "starterCode": "use serde::Deserialize;\n\n#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        Ok(Self {\n            email: value\n                .email\n                .ok_or(RegisterUserValidationError::MissingEmail)?,\n            display_name: value\n                .display_name\n                .ok_or(RegisterUserValidationError::MissingDisplayName)?,\n        })\n    }\n}\n\n// TODO: trim fields and reject empty values.\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "enum_unit_variants",
-            "enumName": "RegisterUserValidationError",
-            "requiredVariants": [
-              "EmptyEmail",
-              "EmptyDisplayName"
-            ]
-          },
-          {
-            "type": "source_includes",
-            "requiredSnippets": [
-              "trim()",
-              "to_owned()"
-            ],
-            "forbiddenSnippets": [
-              "unwrap()"
-            ]
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "use serde::Deserialize;\n\n#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        Ok(Self {\n            email: value\n                .email\n                .ok_or(RegisterUserValidationError::MissingEmail)?,\n            display_name: value\n                .display_name\n                .ok_or(RegisterUserValidationError::MissingDisplayName)?,\n        })\n    }\n}\n\n// TODO: trim fields and reject empty values.\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "advanced"
-      },
-      {
-        "mode": "backend-compile-fail",
-        "timeoutMs": 10000,
-        "dependencySet": "advanced",
-        "cases": [
-          {
-            "name": "command-direct-fields",
-            "expectedDiagnostics": [
-              "private"
-            ],
-            "forbiddenDiagnostics": [
-              "has no field named"
-            ],
-            "path": "compile_fail/command_direct_fields.rs",
-            "content": "use rust_daily_lesson::RegisterUserCommand;\n\nfn main() {\n    let _ = RegisterUserCommand {\n        email: String::from(\"ada@example.com\"),\n        display_name: String::from(\"Ada\"),\n    };\n}\n"
-          },
-          {
-            "name": "command-serde-free",
-            "expectedDiagnostics": [
-              "Serialize"
-            ],
-            "path": "compile_fail/command_serde_free.rs",
-            "content": "use rust_daily_lesson::RegisterUserCommand;\n\nfn main() {\n    let command = RegisterUserCommand::new(\"ada@example.com\", \"Ada\");\n    let _ = serde_json::to_string(&command).unwrap();\n}\n"
-          }
-        ]
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{RegisterUserCommand, RegisterUserDto, RegisterUserValidationError};\n\n#[test]\nfn trims_deserialized_fields_before_storing_command() {\n    let dto: RegisterUserDto = serde_json::from_str(\n        r#\"{\"email\":\"  ada@example.com  \",\"display_name\":\"  Ada  \"}\"#,\n    )\n    .expect(\"DTO JSON should deserialize\");\n\n    let command = RegisterUserCommand::try_from(dto).expect(\"DTO should be valid\");\n\n    assert_eq!(command.email(), \"ada@example.com\");\n    assert_eq!(command.display_name(), \"Ada\");\n}\n\n#[test]\nfn rejects_trimmed_empty_email() {\n    let dto = RegisterUserDto {\n        email: Some(\"   \".to_owned()),\n        display_name: Some(\"Ada\".to_owned()),\n    };\n\n    assert_eq!(\n        RegisterUserCommand::try_from(dto),\n        Err(RegisterUserValidationError::EmptyEmail)\n    );\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Normalize at the boundary before constructing the command."
+      },
+      {
+        "level": 2,
+        "body": "Trim borrowed string slices first, then allocate only once for accepted values."
+      },
+      {
+        "level": 3,
+        "body": "Add EmptyEmail and EmptyDisplayName to the validation enum.",
+        "solutionCode": "use serde::Deserialize;\n\n#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]\npub struct RegisterUserDto {\n    pub email: Option<String>,\n    pub display_name: Option<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct RegisterUserCommand {\n    email: String,\n    display_name: String,\n}\n\nimpl RegisterUserCommand {\n    pub fn new(email: impl Into<String>, display_name: impl Into<String>) -> Self {\n        Self {\n            email: email.into(),\n            display_name: display_name.into(),\n        }\n    }\n\n    pub fn email(&self) -> &str {\n        &self.email\n    }\n\n    pub fn display_name(&self) -> &str {\n        &self.display_name\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RegisterUserValidationError {\n    MissingEmail,\n    MissingDisplayName,\n    EmptyEmail,\n    EmptyDisplayName,\n}\n\nimpl TryFrom<RegisterUserDto> for RegisterUserCommand {\n    type Error = RegisterUserValidationError;\n\n    fn try_from(value: RegisterUserDto) -> Result<Self, Self::Error> {\n        let email = value\n            .email\n            .ok_or(RegisterUserValidationError::MissingEmail)?;\n        let display_name = value\n            .display_name\n            .ok_or(RegisterUserValidationError::MissingDisplayName)?;\n        let email = email.trim();\n        let display_name = display_name.trim();\n\n        if email.is_empty() {\n            return Err(RegisterUserValidationError::EmptyEmail);\n        }\n\n        if display_name.is_empty() {\n            return Err(RegisterUserValidationError::EmptyDisplayName);\n        }\n\n        Ok(Self {\n            email: email.to_owned(),\n            display_name: display_name.to_owned(),\n        })\n    }\n}"
+      }
+    ],
+    "completionExplanation": "The DTO conversion now performs boundary normalization without leaking whitespace-only values into the command.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "enum_unit_variants",
+              "enumName": "RegisterUserValidationError",
+              "requiredVariants": [
+                "EmptyEmail",
+                "EmptyDisplayName"
+              ]
+            },
+            {
+              "type": "source_includes",
+              "requiredSnippets": [
+                "trim()",
+                "to_owned()"
+              ],
+              "forbiddenSnippets": [
+                "unwrap()"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "advanced"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "advanced",
+          "cases": [
+            {
+              "name": "command-direct-fields",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/command_direct_fields.rs",
+              "content": "use rust_daily_lesson::RegisterUserCommand;\n\nfn main() {\n    let _ = RegisterUserCommand {\n        email: String::from(\"ada@example.com\"),\n        display_name: String::from(\"Ada\"),\n    };\n}\n"
+            },
+            {
+              "name": "command-serde-free",
+              "expectedDiagnostics": [
+                "Serialize"
+              ],
+              "path": "compile_fail/command_serde_free.rs",
+              "content": "use rust_daily_lesson::RegisterUserCommand;\n\nfn main() {\n    let command = RegisterUserCommand::new(\"ada@example.com\", \"Ada\");\n    let _ = serde_json::to_string(&command).unwrap();\n}\n"
+            }
+          ]
+        }
+      ]
+    }
   }
 }

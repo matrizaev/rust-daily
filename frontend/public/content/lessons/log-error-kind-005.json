@@ -1,73 +1,66 @@
 {
-  "schemaVersion": 2,
   "id": "log-error-kind-005",
-  "arcId": "structured-request-logging",
-  "arcTitle": "Structured request logging",
-  "order": 83,
-  "day": 5,
-  "arcLength": 6,
-  "title": "Record typed error kinds as fields",
-  "conceptId": "log-error-kind",
-  "difficulty": "medium",
-  "estimatedMinutes": 8,
-  "scenario": "Logs should capture error category fields without relying on fragile message parsing.",
-  "instructions": "Define ErrorKind with a stable as_str mapping. Add log_request_error that emits request_id and error.kind as structured fields without logging a full secret-bearing error value.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "pub fn log_request_received(request_id: &str) {\n    tracing::info!(\n        event_name = \"request.received\",\n        request_id = %request_id,\n        \"request received\"\n    );\n}\n\npub fn log_request_started(\n    request_id: &str,\n    user_id: Option<&str>,\n    attempt: u32,\n) {\n    tracing::info!(\n        event_name = \"request.started\",\n        request_id = %request_id,\n        user_id = user_id.unwrap_or(\"anonymous\"),\n        attempt,\n        \"request processing started\"\n    );\n}\n\n#[derive(Debug, Clone, Copy)]\npub struct Secret<'a>(&'a str);\n\nimpl<'a> Secret<'a> {\n    pub fn new(value: &'a str) -> Self {\n        Self(value)\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.0.is_empty()\n    }\n}\n\nimpl std::fmt::Display for Secret<'_> {\n    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        formatter.write_str(\"[redacted]\")\n    }\n}\n\npub fn log_authentication_attempt(request_id: &str, secret: Secret<'_>) {\n    tracing::info!(\n        event_name = \"authentication.attempt\",\n        request_id = %request_id,\n        secret = %secret,\n        \"authentication attempted\"\n    );\n}\n\npub fn request_span(request_id: &str, path: &str) -> tracing::Span {\n    tracing::info_span!(\n        \"http.request\",\n        request_id = %request_id,\n        path = %path\n    )\n}\n\n// TODO: add ErrorKind and log_request_error.\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::{log_request_error, ErrorKind};\n\n#[test]\nfn error_kinds_have_stable_field_values() {\n    assert_eq!(ErrorKind::Validation.as_str(), \"validation\");\n    assert_eq!(ErrorKind::Repository.as_str(), \"repository\");\n    assert_eq!(ErrorKind::Timeout.as_str(), \"timeout\");\n    log_request_error(\"req-1\", ErrorKind::Validation);\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "Use a typed enum so call sites cannot invent arbitrary error kinds."
-    },
-    {
-      "level": 2,
-      "body": "Map variants to stable lowercase strings."
-    },
-    {
-      "level": 3,
-      "body": "Log the classification separately from the human message.",
-      "solutionCode": "pub fn log_request_received(request_id: &str) {\n    tracing::info!(\n        event_name = \"request.received\",\n        request_id = %request_id,\n        \"request received\"\n    );\n}\n\npub fn log_request_started(\n    request_id: &str,\n    user_id: Option<&str>,\n    attempt: u32,\n) {\n    tracing::info!(\n        event_name = \"request.started\",\n        request_id = %request_id,\n        user_id = user_id.unwrap_or(\"anonymous\"),\n        attempt,\n        \"request processing started\"\n    );\n}\n\n#[derive(Debug, Clone, Copy)]\npub struct Secret<'a>(&'a str);\n\nimpl<'a> Secret<'a> {\n    pub fn new(value: &'a str) -> Self {\n        Self(value)\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.0.is_empty()\n    }\n}\n\nimpl std::fmt::Display for Secret<'_> {\n    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        formatter.write_str(\"[redacted]\")\n    }\n}\n\npub fn log_authentication_attempt(request_id: &str, secret: Secret<'_>) {\n    tracing::info!(\n        event_name = \"authentication.attempt\",\n        request_id = %request_id,\n        secret = %secret,\n        \"authentication attempted\"\n    );\n}\n\npub fn request_span(request_id: &str, path: &str) -> tracing::Span {\n    tracing::info_span!(\n        \"http.request\",\n        request_id = %request_id,\n        path = %path\n    )\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ErrorKind {\n    Validation,\n    Repository,\n    Timeout,\n}\n\nimpl ErrorKind {\n    pub fn as_str(self) -> &'static str {\n        match self {\n            Self::Validation => \"validation\",\n            Self::Repository => \"repository\",\n            Self::Timeout => \"timeout\",\n        }\n    }\n}\n\npub fn log_request_error(request_id: &str, error_kind: ErrorKind) {\n    tracing::error!(\n        event_name = \"request.failed\",\n        request_id = %request_id,\n        error.kind = error_kind.as_str(),\n        \"request failed\"\n    );\n}"
-    }
-  ],
-  "completionExplanation": "Error telemetry now carries a stable machine-readable classification without dumping internal error details.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Define ErrorKind with a stable as_str mapping. Add log_request_error that emits request_id and error.kind as structured fields without logging a full secret-bearing error value.",
+    "starterCode": "pub fn log_request_received(request_id: &str) {\n    tracing::info!(\n        event_name = \"request.received\",\n        request_id = %request_id,\n        \"request received\"\n    );\n}\n\npub fn log_request_started(\n    request_id: &str,\n    user_id: Option<&str>,\n    attempt: u32,\n) {\n    tracing::info!(\n        event_name = \"request.started\",\n        request_id = %request_id,\n        user_id = user_id.unwrap_or(\"anonymous\"),\n        attempt,\n        \"request processing started\"\n    );\n}\n\n#[derive(Debug, Clone, Copy)]\npub struct Secret<'a>(&'a str);\n\nimpl<'a> Secret<'a> {\n    pub fn new(value: &'a str) -> Self {\n        Self(value)\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.0.is_empty()\n    }\n}\n\nimpl std::fmt::Display for Secret<'_> {\n    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        formatter.write_str(\"[redacted]\")\n    }\n}\n\npub fn log_authentication_attempt(request_id: &str, secret: Secret<'_>) {\n    tracing::info!(\n        event_name = \"authentication.attempt\",\n        request_id = %request_id,\n        secret = %secret,\n        \"authentication attempted\"\n    );\n}\n\npub fn request_span(request_id: &str, path: &str) -> tracing::Span {\n    tracing::info_span!(\n        \"http.request\",\n        request_id = %request_id,\n        path = %path\n    )\n}\n\n// TODO: add ErrorKind and log_request_error.\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "impl_method",
-            "implFor": "ErrorKind",
-            "methodName": "as_str",
-            "requiredSignatureIncludes": [
-              "fn as_str(self) -> &str"
-            ]
-          },
-          {
-            "type": "source_includes",
-            "requiredSnippets": [
-              "error.kind = error_kind.as_str()"
-            ]
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "pub fn log_request_received(request_id: &str) {\n    tracing::info!(\n        event_name = \"request.received\",\n        request_id = %request_id,\n        \"request received\"\n    );\n}\n\npub fn log_request_started(\n    request_id: &str,\n    user_id: Option<&str>,\n    attempt: u32,\n) {\n    tracing::info!(\n        event_name = \"request.started\",\n        request_id = %request_id,\n        user_id = user_id.unwrap_or(\"anonymous\"),\n        attempt,\n        \"request processing started\"\n    );\n}\n\n#[derive(Debug, Clone, Copy)]\npub struct Secret<'a>(&'a str);\n\nimpl<'a> Secret<'a> {\n    pub fn new(value: &'a str) -> Self {\n        Self(value)\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.0.is_empty()\n    }\n}\n\nimpl std::fmt::Display for Secret<'_> {\n    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        formatter.write_str(\"[redacted]\")\n    }\n}\n\npub fn log_authentication_attempt(request_id: &str, secret: Secret<'_>) {\n    tracing::info!(\n        event_name = \"authentication.attempt\",\n        request_id = %request_id,\n        secret = %secret,\n        \"authentication attempted\"\n    );\n}\n\npub fn request_span(request_id: &str, path: &str) -> tracing::Span {\n    tracing::info_span!(\n        \"http.request\",\n        request_id = %request_id,\n        path = %path\n    )\n}\n\n// TODO: add ErrorKind and log_request_error.\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "advanced"
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{log_request_error, ErrorKind};\n\n#[test]\nfn error_kinds_have_stable_field_values() {\n    assert_eq!(ErrorKind::Validation.as_str(), \"validation\");\n    assert_eq!(ErrorKind::Repository.as_str(), \"repository\");\n    assert_eq!(ErrorKind::Timeout.as_str(), \"timeout\");\n    log_request_error(\"req-1\", ErrorKind::Validation);\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Use a typed enum so call sites cannot invent arbitrary error kinds."
+      },
+      {
+        "level": 2,
+        "body": "Map variants to stable lowercase strings."
+      },
+      {
+        "level": 3,
+        "body": "Log the classification separately from the human message.",
+        "solutionCode": "pub fn log_request_received(request_id: &str) {\n    tracing::info!(\n        event_name = \"request.received\",\n        request_id = %request_id,\n        \"request received\"\n    );\n}\n\npub fn log_request_started(\n    request_id: &str,\n    user_id: Option<&str>,\n    attempt: u32,\n) {\n    tracing::info!(\n        event_name = \"request.started\",\n        request_id = %request_id,\n        user_id = user_id.unwrap_or(\"anonymous\"),\n        attempt,\n        \"request processing started\"\n    );\n}\n\n#[derive(Debug, Clone, Copy)]\npub struct Secret<'a>(&'a str);\n\nimpl<'a> Secret<'a> {\n    pub fn new(value: &'a str) -> Self {\n        Self(value)\n    }\n\n    pub fn is_empty(&self) -> bool {\n        self.0.is_empty()\n    }\n}\n\nimpl std::fmt::Display for Secret<'_> {\n    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        formatter.write_str(\"[redacted]\")\n    }\n}\n\npub fn log_authentication_attempt(request_id: &str, secret: Secret<'_>) {\n    tracing::info!(\n        event_name = \"authentication.attempt\",\n        request_id = %request_id,\n        secret = %secret,\n        \"authentication attempted\"\n    );\n}\n\npub fn request_span(request_id: &str, path: &str) -> tracing::Span {\n    tracing::info_span!(\n        \"http.request\",\n        request_id = %request_id,\n        path = %path\n    )\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ErrorKind {\n    Validation,\n    Repository,\n    Timeout,\n}\n\nimpl ErrorKind {\n    pub fn as_str(self) -> &'static str {\n        match self {\n            Self::Validation => \"validation\",\n            Self::Repository => \"repository\",\n            Self::Timeout => \"timeout\",\n        }\n    }\n}\n\npub fn log_request_error(request_id: &str, error_kind: ErrorKind) {\n    tracing::error!(\n        event_name = \"request.failed\",\n        request_id = %request_id,\n        error.kind = error_kind.as_str(),\n        \"request failed\"\n    );\n}"
+      }
+    ],
+    "completionExplanation": "Error telemetry now carries a stable machine-readable classification without dumping internal error details.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "impl_method",
+              "implFor": "ErrorKind",
+              "methodName": "as_str",
+              "requiredSignatureIncludes": [
+                "fn as_str(self) -> &str"
+              ]
+            },
+            {
+              "type": "source_includes",
+              "requiredSnippets": [
+                "error.kind = error_kind.as_str()"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "advanced"
+        }
+      ]
+    }
   }
 }

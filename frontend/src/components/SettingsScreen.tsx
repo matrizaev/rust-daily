@@ -30,7 +30,7 @@ type SettingsScreenProps = {
   settings: UserSettings;
   summary: ProgressSummaryData;
   onDeleteDrafts: () => number;
-  onDeleteProgress: () => void;
+  onDeleteProgress: () => boolean;
   onExportProgress: () => void;
   onImportProgress: (file: File) => Promise<ImportResult>;
   onReturnHome: () => void;
@@ -106,6 +106,14 @@ export function SettingsScreen({
 
   const handleImportClick = () => {
     importInputRef.current?.click();
+  };
+
+  const handleDeleteProgressClick = () => {
+    setStatus(
+      onDeleteProgress()
+        ? "Progress deleted."
+        : "Progress could not be deleted because browser storage is unavailable.",
+    );
   };
 
   const handleImportChange = async (
@@ -255,7 +263,7 @@ export function SettingsScreen({
             <button
               className="danger-button"
               type="button"
-              onClick={handleDeleteProgress}
+              onClick={handleDeleteProgressClick}
             >
               <Trash2 size={19} aria-hidden="true" />
               Delete progress

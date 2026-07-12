@@ -542,12 +542,21 @@ impl TryFrom<RawSettings> for Settings {
     type Error = SettingsError;
 
     fn try_from(raw: RawSettings) -> Result<Self, Self::Error> {
+        let validation: ValidationSettings = raw.validation.try_into()?;
+        let api: ApiSettings = raw.api.try_into()?;
+        if api.max_json_payload_bytes.get() < validation.limits.max_json_payload_bytes() {
+            return Err(SettingsError::Invalid {
+                field: ConfigField::ApiMaxJsonPayloadBytes,
+                reason: "must cover the worst-case JSON payload permitted by validation limits",
+            });
+        }
+
         Ok(Self {
             server: raw.server.try_into()?,
             frontend: raw.frontend.try_into()?,
             runner: raw.runner.try_into()?,
-            validation: raw.validation.try_into()?,
-            api: raw.api.try_into()?,
+            validation,
+            api,
         })
     }
 }
@@ -1113,7 +1122,7 @@ api:
             ("RUST_DAILY_MAX_FILES", "6"),
             ("RUST_DAILY_MAX_FILE_BYTES", "7000"),
             ("RUST_DAILY_MAX_TOTAL_BYTES", "8000"),
-            ("RUST_DAILY_MAX_JSON_PAYLOAD_BYTES", "9000"),
+            ("RUST_DAILY_MAX_JSON_PAYLOAD_BYTES", "70000"),
         ]);
         let root = tempdir().expect("temp config dir should be created");
         write_config(root.path(), "default.yaml", default_config());
@@ -1151,7 +1160,7 @@ api:
         assert_eq!(settings.validation.limits.max_files(), 6);
         assert_eq!(settings.validation.limits.max_file_bytes(), 7000);
         assert_eq!(settings.validation.limits.max_total_bytes(), 8000);
-        assert_eq!(settings.api.max_json_payload_bytes.get(), 9000);
+        assert_eq!(settings.api.max_json_payload_bytes.get(), 70000);
     }
 
     #[test]
@@ -1164,6 +1173,20 @@ api:
             load_settings_from_dir(root.path(), "local").expect_err("bad env number should fail");
 
         assert!(matches!(error, SettingsError::Load(_)));
+    }
+
+    #[test]
+    fn rejects_json_limit_below_validation_contract() {
+        let error = load_with_local_override("\napi:\n  max_json_payload_bytes: 1048576\n")
+            .expect_err("transport limit below the domain envelope should fail");
+
+        assert!(matches!(
+            error,
+            SettingsError::Invalid {
+                field: ConfigField::ApiMaxJsonPayloadBytes,
+                ..
+            }
+        ));
     }
 
     fn load_settings_from_dir_without_environment(
@@ -1264,7 +1287,7 @@ validation:
   max_diagnostic_snippet_bytes: 512
   max_diagnostic_total_bytes: 8192
 api:
-  max_json_payload_bytes: 300000
+  max_json_payload_bytes: 1600000
 "
     }
 }

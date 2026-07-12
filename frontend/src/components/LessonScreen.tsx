@@ -11,14 +11,16 @@ import {
 } from "../progress/progressSelectors";
 import {
   ensureLessonAttempt,
+  PROGRESS_STORAGE_EVENT,
   recordHintReveal,
   recordLessonCompletion,
   recordValidationAttempt,
+  type ProgressWriteResult,
 } from "../progress/progressStore";
 import type { ProgressStore } from "../types/progress";
 import {
   clearDraft,
-  loadDraft,
+  readDraft,
   saveDraft,
   type DraftRecord,
 } from "../storage/draftStore";
@@ -46,6 +48,7 @@ type DraftState = {
   code: string;
   filePath: string;
   lastSavedAt: string | null;
+  saveError: string | null;
 };
 
 const getPrimaryEditableFile = (lesson: Lesson) =>
@@ -59,6 +62,7 @@ const getStarterDraftState = (lesson: Lesson): DraftState => ({
   code: getPrimaryEditableFile(lesson).content,
   filePath: getPrimaryEditableFile(lesson).path,
   lastSavedAt: null,
+  saveError: null,
 });
 
 const draftRecordToState = (lesson: Lesson, draft: DraftRecord): DraftState => {
@@ -70,18 +74,29 @@ const draftRecordToState = (lesson: Lesson, draft: DraftRecord): DraftState => {
     code: draft.files[editableFile.path] ?? legacyCode,
     filePath: editableFile.path,
     lastSavedAt: draft.updatedAt,
+    saveError: null,
   };
 };
 
 const getDraftState = (lesson: Lesson): DraftState => {
-  const draft = loadDraft(lesson.id);
+  const result = readDraft(lesson.id);
 
-  return draft === null
+  if (!result.ok) {
+    return {
+      ...getStarterDraftState(lesson),
+      saveError: result.reason,
+    };
+  }
+
+  return result.record === null
     ? getStarterDraftState(lesson)
-    : draftRecordToState(lesson, draft);
+    : draftRecordToState(lesson, result.record);
 };
 
-const formatSavedAt = (savedAt: string | null) =>
+const formatSavedAt = (savedAt: string | null, saveError: string | null) =>
+  saveError
+    ? `Draft not saved locally: ${saveError}.`
+    :
   savedAt
     ? `Draft saved ${new Intl.DateTimeFormat(undefined, {
         hour: "numeric",
@@ -89,13 +104,23 @@ const formatSavedAt = (savedAt: string | null) =>
       }).format(new Date(savedAt))}`
     : "Draft will save locally";
 
+const draftPersistenceState = (
+  result: { ok: true; record?: DraftRecord | null } | { ok: false; reason: string },
+) => result.ok
+  ? { savedAt: result.record?.updatedAt ?? null, error: null }
+  : { savedAt: null, error: result.reason };
+
+const clearStarterDraft = (lessonId: string) =>
+  draftPersistenceState(clearDraft(lessonId));
+
+const saveChangedDraft = (lessonId: string, filePath: string, code: string) =>
+  draftPersistenceState(saveDraft(lessonId, code, filePath));
+
 const persistDraft = (lesson: Lesson, filePath: string, code: string) => {
   if (code === getPrimaryEditableFile(lesson).content) {
-    clearDraft(lesson.id);
-    return null;
+    return clearStarterDraft(lesson.id);
   }
-
-  return saveDraft(lesson.id, code, filePath)?.updatedAt ?? null;
+  return saveChangedDraft(lesson.id, filePath, code);
 };
 
 const idleValidationState: ValidationPanelState = {
@@ -182,6 +207,7 @@ const useLessonDraft = (lesson: Lesson) => {
   const [filePath, setFilePath] = useState(initialDraft.filePath);
   const [revealedHints, setRevealedHints] = useState(0);
   const [lastSavedAt, setLastSavedAt] = useState(initialDraft.lastSavedAt);
+  const [saveError, setSaveError] = useState<string | null>(initialDraft.saveError);
 
   useEffect(() => {
     const nextDraft = getDraftState(lesson);
@@ -189,12 +215,15 @@ const useLessonDraft = (lesson: Lesson) => {
     setCode(nextDraft.code);
     setFilePath(nextDraft.filePath);
     setLastSavedAt(nextDraft.lastSavedAt);
+    setSaveError(nextDraft.saveError);
     setRevealedHints(0);
   }, [lesson]);
 
   useEffect(() => {
     const saveTimer = window.setTimeout(() => {
-      setLastSavedAt(persistDraft(lesson, filePath, code));
+      const result = persistDraft(lesson, filePath, code);
+      setLastSavedAt(result.savedAt);
+      setSaveError(result.error);
     }, SAVE_DELAY_MS);
 
     return () => window.clearTimeout(saveTimer);
@@ -203,10 +232,11 @@ const useLessonDraft = (lesson: Lesson) => {
   const handleReset = useCallback(() => {
     const editableFile = getPrimaryEditableFile(lesson);
 
-    clearDraft(lesson.id);
+    const result = clearDraft(lesson.id);
     setCode(editableFile.content);
     setFilePath(editableFile.path);
     setLastSavedAt(null);
+    setSaveError(result.ok ? null : result.reason);
     setRevealedHints(0);
   }, [lesson]);
 
@@ -222,7 +252,7 @@ const useLessonDraft = (lesson: Lesson) => {
     code,
     filePath,
     revealedHints,
-    saveStatus: formatSavedAt(lastSavedAt),
+    saveStatus: formatSavedAt(lastSavedAt, saveError),
     setCode,
     handleReset,
     handleRevealHint,
@@ -394,7 +424,17 @@ export function LessonScreen(props: LessonScreenProps) {
     progress,
   } = props;
   const [completedNow, setCompletedNow] = useState(false);
+  const [progressStorageError, setProgressStorageError] = useState<string | null>(null);
   const completion = getLessonCompletion(progress, lesson.id);
+
+  useEffect(() => {
+    const handleStorageResult = (event: Event) => {
+      const result = (event as CustomEvent<ProgressWriteResult>).detail;
+      setProgressStorageError(result.ok ? null : result.reason);
+    };
+    window.addEventListener(PROGRESS_STORAGE_EVENT, handleStorageResult);
+    return () => window.removeEventListener(PROGRESS_STORAGE_EVENT, handleStorageResult);
+  }, []);
 
   useEffect(() => {
     ensureLessonAttempt(lesson.id);
@@ -468,7 +508,9 @@ export function LessonScreen(props: LessonScreenProps) {
 
           <WorkspaceFooter
             checkCopy={footerCheckCopy}
-            saveStatus={draft.saveStatus}
+            saveStatus={progressStorageError
+              ? `Progress not saved locally: ${progressStorageError}.`
+              : draft.saveStatus}
           />
           <ValidationPanel state={validation.state} />
           <CompletionPanel

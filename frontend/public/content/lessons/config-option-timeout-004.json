@@ -1,79 +1,72 @@
 {
-  "schemaVersion": 2,
   "id": "config-option-timeout-004",
-  "arcId": "config-service",
-  "arcTitle": "Configure a small service",
-  "order": 16,
-  "day": 4,
-  "arcLength": 6,
-  "title": "Model an optional timeout",
-  "conceptId": "option-modeling",
-  "difficulty": "easy",
-  "estimatedMinutes": 6,
-  "scenario": "Some deployments need a request timeout while others should inherit the platform default. The type should make that optionality explicit.",
-  "instructions": "Add timeout_seconds: Option<u64> to Config. Use None in Default.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n        }\n    }\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: add an optional timeout in seconds.\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::Config;\n\n#[test]\nfn timeout_is_explicitly_optional() {\n    let default_config = Config::default();\n    let configured = Config {\n        timeout_seconds: Some(30),\n        ..Config::default()\n    };\n\n    assert_eq!(default_config.timeout_seconds, None);\n    assert_eq!(configured.timeout_seconds, Some(30));\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "Option<T> represents a value that may be present or absent."
-    },
-    {
-      "level": 2,
-      "body": "A timeout expressed in seconds can be a u64."
-    },
-    {
-      "level": 3,
-      "body": "None is clearer than a magic value such as 0 when no timeout is configured.",
-      "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n    pub timeout_seconds: Option<u64>,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n            timeout_seconds: None,\n        }\n    }\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n}"
-    }
-  ],
-  "completionExplanation": "Option makes absence part of the type instead of encoding it with a sentinel value. Callers must handle both configured and not-configured cases.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Add timeout_seconds: Option<u64> to Config. Use None in Default.",
+    "starterCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n        }\n    }\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: add an optional timeout in seconds.\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "struct_fields",
-            "structName": "Config",
-            "requiredFields": [
-              {
-                "name": "timeout_seconds",
-                "typeIncludes": [
-                  "Option",
-                  "u64"
-                ]
-              }
-            ]
-          },
-          {
-            "type": "source_includes",
-            "requiredSnippets": [
-              "timeout_seconds",
-              "None"
-            ]
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n        }\n    }\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: add an optional timeout in seconds.\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "std"
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::Config;\n\n#[test]\nfn timeout_is_explicitly_optional() {\n    let default_config = Config::default();\n    let configured = Config {\n        timeout_seconds: Some(30),\n        ..Config::default()\n    };\n\n    assert_eq!(default_config.timeout_seconds, None);\n    assert_eq!(configured.timeout_seconds, Some(30));\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Option<T> represents a value that may be present or absent."
+      },
+      {
+        "level": 2,
+        "body": "A timeout expressed in seconds can be a u64."
+      },
+      {
+        "level": 3,
+        "body": "None is clearer than a magic value such as 0 when no timeout is configured.",
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n    pub timeout_seconds: Option<u64>,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n            timeout_seconds: None,\n        }\n    }\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n}"
+      }
+    ],
+    "completionExplanation": "Option makes absence part of the type instead of encoding it with a sentinel value. Callers must handle both configured and not-configured cases.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "struct_fields",
+              "structName": "Config",
+              "requiredFields": [
+                {
+                  "name": "timeout_seconds",
+                  "typeIncludes": [
+                    "Option",
+                    "u64"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "source_includes",
+              "requiredSnippets": [
+                "timeout_seconds",
+                "None"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std"
+        }
+      ]
+    }
   }
 }

@@ -1,77 +1,70 @@
 {
-  "schemaVersion": 2,
   "id": "log-entry-borrowed-001",
-  "arcId": "log-lines",
-  "arcTitle": "Inspect log lines",
-  "order": 4,
-  "day": 1,
-  "arcLength": 5,
-  "title": "Borrow fields in a log entry",
-  "conceptId": "borrowed-fields",
-  "difficulty": "medium",
-  "estimatedMinutes": 7,
-  "scenario": "A log viewer often points into existing log text instead of allocating new strings for every parsed line.",
-  "instructions": "Define LogEntry<'a> with borrowed level: &'a str and message: &'a str fields.",
-  "files": [
-    {
-      "path": "src/lib.rs",
-      "role": "editable",
-      "content": "// TODO: define LogEntry with borrowed fields.\n"
-    },
-    {
-      "path": "tests/public.rs",
-      "role": "test",
-      "content": "use rust_daily_lesson::LogEntry;\n\n#[test]\nfn log_entry_borrows_text() {\n    let entry = LogEntry {\n        level: \"INFO\",\n        message: \"started\",\n    };\n\n    assert_eq!(entry.level, \"INFO\");\n    assert_eq!(entry.message, \"started\");\n}\n"
-    }
-  ],
-  "hints": [
-    {
-      "level": 1,
-      "body": "Borrowed struct fields need a lifetime parameter on the struct."
-    },
-    {
-      "level": 2,
-      "body": "Both fields can borrow string slices from the original log line."
-    },
-    {
-      "level": 3,
-      "body": "Use &'a str for each borrowed text field.",
-      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}"
-    }
-  ],
-  "completionExplanation": "Borrowed fields let the entry view point into existing text. The lifetime parameter states that the entry cannot outlive the data it references.",
-  "validation": {
-    "mode": "all",
-    "validations": [
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "Define LogEntry<'a> with borrowed level: &'a str and message: &'a str fields.",
+    "starterCode": "// TODO: define LogEntry with borrowed fields.\n",
+    "files": [
       {
-        "mode": "structural",
-        "timeoutMs": 10000,
-        "checks": [
-          {
-            "type": "struct_fields",
-            "structName": "LogEntry",
-            "requiredFields": [
-              {
-                "name": "level",
-                "typeIncludes": [
-                  "&'a str"
-                ]
-              },
-              {
-                "name": "message",
-                "typeIncludes": [
-                  "&'a str"
-                ]
-              }
-            ]
-          }
-        ]
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "// TODO: define LogEntry with borrowed fields.\n"
       },
       {
-        "mode": "backend-cargo-test",
-        "timeoutMs": 10000,
-        "dependencySet": "std"
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::LogEntry;\n\n#[test]\nfn log_entry_borrows_text() {\n    let entry = LogEntry {\n        level: \"INFO\",\n        message: \"started\",\n    };\n\n    assert_eq!(entry.level, \"INFO\");\n    assert_eq!(entry.message, \"started\");\n}\n"
       }
-    ]
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Borrowed struct fields need a lifetime parameter on the struct."
+      },
+      {
+        "level": 2,
+        "body": "Both fields can borrow string slices from the original log line."
+      },
+      {
+        "level": 3,
+        "body": "Use &'a str for each borrowed text field.",
+        "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}"
+      }
+    ],
+    "completionExplanation": "Borrowed fields let the entry view point into existing text. The lifetime parameter states that the entry cannot outlive the data it references.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "struct_fields",
+              "structName": "LogEntry",
+              "requiredFields": [
+                {
+                  "name": "level",
+                  "typeIncludes": [
+                    "&'a str"
+                  ]
+                },
+                {
+                  "name": "message",
+                  "typeIncludes": [
+                    "&'a str"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std"
+        }
+      ]
+    }
   }
 }

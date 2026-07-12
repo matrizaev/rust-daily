@@ -1,8 +1,10 @@
 import { readFile, readdir } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import {
   isNumber,
   isRecord,
   isString,
+  lessonStarterCode,
   push,
   reportErrorsOrLog,
   validateHintObject,
@@ -16,6 +18,7 @@ const LESSONS_PATH = new URL("../src/content/lessons.json", import.meta.url);
 const LESSON_INDEX_PATH = new URL("../src/content/lessonIndex.json", import.meta.url);
 const LESSON_DETAILS_DIR = new URL("../public/content/lessons/", import.meta.url);
 const CONCEPTS_PATH = new URL("../src/content/concepts.json", import.meta.url);
+const CONTENT_REVISION_PATH = new URL("../src/content/contentRevision.json", import.meta.url);
 const MINIMUM_LESSON_COUNT = 30;
 const DIFFICULTIES = new Set(["easy", "medium", "advanced"]);
 const VALIDATION_MODES = new Set([
@@ -63,8 +66,8 @@ const LESSON_INDEX_FIELDS = [
   "scenario",
 ];
 const LESSON_DETAIL_FIELDS = [
-  ...LESSON_INDEX_FIELDS,
   "instructions",
+  "starterCode",
   "files",
   "hints",
   "completionExplanation",
@@ -733,21 +736,29 @@ const validateLessonIndexParity = (errors, lessons, lessonIndex) => {
   });
 };
 
+const hasMatchingDetailIdentity = (lesson, response) =>
+  isRecord(response) &&
+  response.id === lesson.id &&
+  response.schemaVersion === lesson.schemaVersion;
+
+const validateLessonDetailRecord = (errors, lesson, response) => {
+  if (!hasMatchingDetailIdentity(lesson, response)) {
+    push(errors, `${lesson.id} detail envelope has invalid identity.`);
+    return;
+  }
+  const detail = response.detail;
+  validateRequiredFields(errors, `Lesson detail ${lesson.id}`, detail, LESSON_DETAIL_FIELDS);
+  const expectedDetail = { ...lesson, starterCode: lessonStarterCode(lesson) };
+  const actualFields = pickFields(detail, LESSON_DETAIL_FIELDS);
+  const expectedFields = pickFields(expectedDetail, LESSON_DETAIL_FIELDS);
+  if (!jsonEqual(actualFields, expectedFields)) {
+    push(errors, `${lesson.id} detail file does not match lessons.json.`);
+  }
+};
+
 const validateLessonDetailParity = (errors, lessons, lessonDetails) => {
-  lessons.forEach((lesson) => {
-    const detail = lessonDetails[lesson.id];
-
-    validateRequiredFields(
-      errors,
-      `Lesson detail ${lesson.id}`,
-      detail,
-      LESSON_DETAIL_FIELDS,
-    );
-
-    if (!jsonEqual(pickFields(detail, LESSON_DETAIL_FIELDS), pickFields(lesson, LESSON_DETAIL_FIELDS))) {
-      push(errors, `${lesson.id} detail file does not match lessons.json.`);
-    }
-  });
+  lessons.forEach((lesson) =>
+    validateLessonDetailRecord(errors, lesson, lessonDetails[lesson.id]));
 };
 
 const validateLessonDetailFileSet = async (errors, lessons) => {
@@ -771,6 +782,17 @@ const validateRuntimeLessonContent = async (errors, lessons, lessonIndex) => {
   validateLessonDetailParity(errors, lessons, lessonDetails);
 };
 
+const validateGeneratedRevision = async (errors, lessons, concepts) => {
+  const contentRevision = await readJson(CONTENT_REVISION_PATH);
+  const expectedRevision = createHash("sha256")
+    .update(JSON.stringify({ concepts, lessons }))
+    .digest("hex")
+    .slice(0, 16);
+  if (!isRecord(contentRevision) || contentRevision.revision !== expectedRevision) {
+    push(errors, "Generated content revision does not match the lesson corpus.");
+  }
+};
+
 const validateContent = async (lessons, concepts, lessonIndex) => {
   const errors = [];
 
@@ -789,6 +811,7 @@ const validateContent = async (lessons, concepts, lessonIndex) => {
   validateConceptLinks(errors, lessons, concepts);
   validateArcs(errors, lessons);
   await validateRuntimeLessonContent(errors, lessons, lessonIndex);
+  await validateGeneratedRevision(errors, lessons, concepts);
 
   return errors;
 };

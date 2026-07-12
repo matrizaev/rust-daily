@@ -3,15 +3,33 @@ import type {
   AttemptStatus,
   ConceptProgress,
   ConceptState,
+  IsoTimestamp,
   LessonAttempt,
   LessonCompletion,
+  LocalDate,
+  NonNegativeInteger,
+  ProgressAttemptId,
+  ProgressConceptId,
+  ProgressLessonId,
   ProgressStore,
 } from "../types/progress";
 import { toLocalDate } from "./date";
 
 const PROGRESS_KEY = "rust-daily:v1:progress";
+export const PROGRESS_STORAGE_EVENT = "rust-daily:progress-storage";
 
-const nowIso = (now = new Date()) => now.toISOString();
+export type ProgressWriteResult =
+  | { ok: true }
+  | { ok: false; reason: "quota" | "unavailable" | "invalid" };
+
+export type ProgressReadResult =
+  | { ok: true; progress: ProgressStore }
+  | { ok: false; reason: "unavailable" | "invalid"; progress: ProgressStore };
+
+const nowIso = (now = new Date()) => now.toISOString() as IsoTimestamp;
+const progressLessonId = (value: string) => value as ProgressLessonId;
+const progressConceptId = (value: string) => value as ProgressConceptId;
+const nonNegativeInteger = (value: number) => value as NonNegativeInteger;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
@@ -22,8 +40,25 @@ const isString = (value: unknown): value is string =>
 const isNumber = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value);
 
-const isNullableString = (value: unknown): value is string | null =>
-  value === null || isString(value);
+const isNonNegativeInteger = (value: unknown): value is NonNegativeInteger =>
+  isNumber(value) && Number.isInteger(value) && value >= 0;
+
+const isIsoDate = (value: unknown): value is IsoTimestamp =>
+  isString(value) &&
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) &&
+  !Number.isNaN(Date.parse(value)) &&
+  new Date(value).toISOString() === value;
+
+const isLocalDate = (value: unknown): value is LocalDate => {
+  if (!isString(value) || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+  const [year, month, day] = value.split("-").map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  return parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month - 1 &&
+    parsed.getUTCDate() === day;
+};
 
 const isArrayOf = <T>(
   value: unknown,
@@ -34,11 +69,6 @@ const hasStringFields = (
   value: Record<string, unknown>,
   fields: string[],
 ) => fields.every((field) => isString(value[field]));
-
-const hasNumberFields = (
-  value: Record<string, unknown>,
-  fields: string[],
-) => fields.every((field) => isNumber(value[field]));
 
 const createProgressStore = (now = new Date()): ProgressStore => {
   const timestamp = nowIso(now);
@@ -57,7 +87,7 @@ const hasProgressVersion = (value: Record<string, unknown>) =>
   value.version === 1;
 
 const hasProgressTimestamps = (value: Record<string, unknown>) =>
-  hasStringFields(value, ["createdAt", "updatedAt"]);
+  isIsoDate(value.createdAt) && isIsoDate(value.updatedAt);
 
 const ATTEMPT_STATUSES = new Set<string>(["in_progress", "completed"]);
 const CONCEPT_STATES = new Set<string>([
@@ -74,14 +104,16 @@ const isAttemptStatus = (value: unknown): value is AttemptStatus =>
 
 const attemptValidators = [
   (value: Record<string, unknown>) =>
-    hasStringFields(value, ["id", "lessonId", "startedAt"]),
+    hasStringFields(value, ["id", "lessonId"]) && isIsoDate(value.startedAt),
   (value: Record<string, unknown>) =>
-    hasNumberFields(value, [
+    [
       "validationAttempts",
       "hintsRevealed",
       "durationSeconds",
-    ]),
-  (value: Record<string, unknown>) => isNullableString(value.completedAt),
+    ].every((field) => isNonNegativeInteger(value[field])),
+  (value: Record<string, unknown>) =>
+    (value.status === "in_progress" && value.completedAt === null) ||
+    (value.status === "completed" && isIsoDate(value.completedAt)),
   (value: Record<string, unknown>) => isAttemptStatus(value.status),
 ];
 
@@ -93,13 +125,13 @@ const isLessonAttempt = (value: unknown): value is LessonAttempt =>
 
 const isLessonCompletion = (value: unknown): value is LessonCompletion =>
   isRecord(value) &&
-  hasStringFields(value, [
-    "lessonId",
-    "conceptId",
-    "completedAt",
-    "localDate",
-  ]) &&
-  isNumber(value.timezoneOffsetMinutes);
+  hasStringFields(value, ["lessonId", "conceptId"]) &&
+  isIsoDate(value.completedAt) &&
+  isLocalDate(value.localDate) &&
+  isNumber(value.timezoneOffsetMinutes) &&
+  Number.isInteger(value.timezoneOffsetMinutes) &&
+  value.timezoneOffsetMinutes >= -14 * 60 &&
+  value.timezoneOffsetMinutes <= 14 * 60;
 
 const isConceptState = (value: unknown): value is ConceptState =>
   isString(value) && CONCEPT_STATES.has(value);
@@ -107,10 +139,10 @@ const isConceptState = (value: unknown): value is ConceptState =>
 const conceptProgressValidators = [
   (value: Record<string, unknown>) => hasStringFields(value, ["conceptId"]),
   (value: Record<string, unknown>) =>
-    hasNumberFields(value, ["completedLessons", "successfulReviews"]),
+    ["completedLessons", "successfulReviews"].every((field) => isNonNegativeInteger(value[field])),
   (value: Record<string, unknown>) => isConceptState(value.state),
-  (value: Record<string, unknown>) => isNullableString(value.lastPracticedAt),
-  (value: Record<string, unknown>) => isNullableString(value.nextReviewAt),
+  (value: Record<string, unknown>) => value.lastPracticedAt === null || isIsoDate(value.lastPracticedAt),
+  (value: Record<string, unknown>) => value.nextReviewAt === null || isIsoDate(value.nextReviewAt),
 ];
 
 const hasConceptProgressFields = (value: Record<string, unknown>) =>
@@ -139,27 +171,67 @@ const progressStoreValidators = [
 const hasProgressStoreFields = (value: Record<string, unknown>) =>
   progressStoreValidators.every((validator) => validator(value));
 
+const hasCrossRecordInvariants = (value: Record<string, unknown>) => {
+  const attempts = value.attempts as LessonAttempt[];
+  const completions = value.completions as LessonCompletion[];
+  const attemptLessonIds = new Set(attempts.map((attempt) => attempt.lessonId));
+  const completionLessonIds = new Set(completions.map((completion) => completion.lessonId));
+  const concepts = value.concepts as Record<string, ConceptProgress>;
+  return new Set(attempts.map((attempt) => attempt.id)).size === attempts.length &&
+    attemptLessonIds.size === attempts.length &&
+    completionLessonIds.size === completions.length &&
+    attempts.every((attempt) =>
+      attempt.status === "in_progress" || new Date(attempt.startedAt) <= new Date(attempt.completedAt)) &&
+    completions.every((completion) => attempts.some((attempt) =>
+      attempt.lessonId === completion.lessonId && attempt.status === "completed" && attempt.completedAt === completion.completedAt,
+    )) &&
+    Object.entries(concepts).every(([conceptId, concept]) => concept.conceptId === conceptId) &&
+    completions.every((completion) => concepts[completion.conceptId] !== undefined) &&
+    Object.values(concepts).every((concept) =>
+      concept.completedLessons === completions.filter((completion) => completion.conceptId === concept.conceptId).length);
+};
+
 export const isProgressStore = (value: unknown): value is ProgressStore =>
-  isRecord(value) && hasProgressStoreFields(value);
+  isRecord(value) && hasProgressStoreFields(value) && hasCrossRecordInvariants(value);
 
-export const loadProgress = () => {
+export const readProgress = (): ProgressReadResult => {
+  let raw: string | null;
   try {
-    const raw = window.localStorage.getItem(PROGRESS_KEY);
-    const parsed = raw ? (JSON.parse(raw) as unknown) : null;
-
-    return isProgressStore(parsed) ? parsed : createProgressStore();
+    raw = window.localStorage.getItem(PROGRESS_KEY);
   } catch {
-    return createProgressStore();
+    return { ok: false, reason: "unavailable", progress: createProgressStore() };
+  }
+  if (!raw) {
+    return { ok: true, progress: createProgressStore() };
+  }
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return isProgressStore(parsed)
+      ? { ok: true, progress: parsed }
+      : { ok: false, reason: "invalid", progress: createProgressStore() };
+  } catch {
+    return { ok: false, reason: "invalid", progress: createProgressStore() };
   }
 };
 
-const saveProgress = (progress: ProgressStore) => {
+export const loadProgress = () => readProgress().progress;
+
+const notifyProgressStorage = (result: ProgressWriteResult) => {
+  window.dispatchEvent(new CustomEvent(PROGRESS_STORAGE_EVENT, { detail: result }));
+  return result;
+};
+
+const saveProgress = (progress: ProgressStore): ProgressWriteResult => {
   try {
     window.localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
-    return true;
-  } catch {
-    // LocalStorage can be unavailable or full in restricted browser modes.
-    return false;
+    return notifyProgressStorage({ ok: true });
+  } catch (error) {
+    return notifyProgressStorage({
+      ok: false,
+      reason: error instanceof DOMException && error.name === "QuotaExceededError"
+        ? "quota"
+        : "unavailable",
+    });
   }
 };
 
@@ -169,16 +241,24 @@ export const replaceProgress = (progress: ProgressStore) =>
 export const resetProgress = () => {
   try {
     window.localStorage.removeItem(PROGRESS_KEY);
+    return notifyProgressStorage({ ok: true });
   } catch {
-    // LocalStorage can be unavailable in restricted browser modes.
+    return notifyProgressStorage({ ok: false, reason: "unavailable" });
   }
 };
 
 const updateProgress = (update: (progress: ProgressStore) => ProgressStore) => {
-  const next = update(loadProgress());
-  saveProgress(next);
+  const current = readProgress();
+  if (!current.ok) {
+    return {
+      ...notifyProgressStorage({ ok: false, reason: current.reason }),
+      progress: current.progress,
+    };
+  }
+  const next = update(current.progress);
+  const result = saveProgress(next);
 
-  return next;
+  return { ...result, progress: next };
 };
 
 const touch = (progress: ProgressStore, now: Date): ProgressStore => ({
@@ -187,17 +267,17 @@ const touch = (progress: ProgressStore, now: Date): ProgressStore => ({
 });
 
 const attemptId = (lessonId: string, now: Date) =>
-  `${lessonId}:${nowIso(now)}`;
+  `${lessonId}:${nowIso(now)}` as ProgressAttemptId;
 
 const createAttempt = (lessonId: string, now: Date) => ({
   id: attemptId(lessonId, now),
-  lessonId,
+  lessonId: lessonId as ProgressLessonId,
   startedAt: nowIso(now),
   completedAt: null,
   status: "in_progress" as const,
-  validationAttempts: 0,
-  hintsRevealed: 0,
-  durationSeconds: 0,
+  validationAttempts: nonNegativeInteger(0),
+  hintsRevealed: nonNegativeInteger(0),
+  durationSeconds: nonNegativeInteger(0),
 });
 
 const getAttemptIndex = (progress: ProgressStore, lessonId: string) =>
@@ -238,17 +318,17 @@ const updateAttempt = (
 const durationSeconds = (startedAt: string, completedAt: string) => {
   const durationMs = Date.parse(completedAt) - Date.parse(startedAt);
 
-  return Math.max(0, Math.round(durationMs / 1000));
+  return nonNegativeInteger(Math.max(0, Math.round(durationMs / 1000)));
 };
 
 const hasCompletion = (progress: ProgressStore, lessonId: string) =>
   progress.completions.some((completion) => completion.lessonId === lessonId);
 
 const initialConceptProgress = (conceptId: string): ConceptProgress => ({
-  conceptId,
+  conceptId: progressConceptId(conceptId),
   state: "introduced",
-  completedLessons: 0,
-  successfulReviews: 0,
+  completedLessons: nonNegativeInteger(0),
+  successfulReviews: nonNegativeInteger(0),
   lastPracticedAt: null,
   nextReviewAt: null,
 });
@@ -267,11 +347,11 @@ const conceptState = (
 const updateConceptProgress = (
   progress: ProgressStore,
   concept: Concept,
-  completedAt: string,
+  completedAt: IsoTimestamp,
 ) => {
   const current =
     progress.concepts[concept.id] ?? initialConceptProgress(concept.id);
-  const completedLessons = current.completedLessons + 1;
+  const completedLessons = nonNegativeInteger(current.completedLessons + 1);
 
   return {
     ...progress.concepts,
@@ -288,7 +368,7 @@ const updateConceptProgress = (
 const completeAttempt = (
   progress: ProgressStore,
   lessonId: string,
-  completedAt: string,
+  completedAt: IsoTimestamp,
 ) =>
   updateAttempt(progress, lessonId, (attempt) => ({
     ...attempt,
@@ -310,7 +390,7 @@ export const recordValidationAttempt = (lessonId: string, now = new Date()) =>
         lessonId,
         (attempt) => ({
           ...attempt,
-          validationAttempts: attempt.validationAttempts + 1,
+          validationAttempts: nonNegativeInteger(attempt.validationAttempts + 1),
         }),
       ),
       now,
@@ -329,7 +409,7 @@ export const recordHintReveal = (
         lessonId,
         (attempt) => ({
           ...attempt,
-          hintsRevealed: Math.max(attempt.hintsRevealed, hintsRevealed),
+          hintsRevealed: nonNegativeInteger(Math.max(attempt.hintsRevealed, hintsRevealed)),
         }),
       ),
       now,
@@ -342,7 +422,7 @@ export const recordLessonCompletion = (
   now = new Date(),
 ) => {
   let completedNow = false;
-  const progress = updateProgress((current) => {
+  const result = updateProgress((current) => {
     const withAttempt = ensureAttempt(current, lesson.id, now);
 
     if (hasCompletion(withAttempt, lesson.id) || !concept) {
@@ -359,8 +439,8 @@ export const recordLessonCompletion = (
         completions: [
           ...completed.completions,
           {
-            lessonId: lesson.id,
-            conceptId: lesson.conceptId,
+            lessonId: progressLessonId(lesson.id),
+            conceptId: progressConceptId(lesson.conceptId),
             completedAt,
             localDate: toLocalDate(now),
             timezoneOffsetMinutes: now.getTimezoneOffset(),
@@ -374,6 +454,7 @@ export const recordLessonCompletion = (
 
   return {
     completedNow,
-    progress,
+    progress: result.progress,
+    persistence: result.ok ? { ok: true as const } : result,
   };
 };
