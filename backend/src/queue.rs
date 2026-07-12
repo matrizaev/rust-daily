@@ -234,7 +234,9 @@ mod tests {
     use tokio_util::sync::CancellationToken;
     use uuid::Uuid;
 
-    use crate::config::{PodmanPath, RunnerImage, RunnerSettings, WorkspaceRoot};
+    use crate::config::{
+        ContainerCpus, CoreUlimit, PodmanPath, RunnerImage, RunnerSettings, WorkspaceRoot,
+    };
     use crate::model::{
         LearnerOutcome, RunDeadline, RunRequest, RunRequestValidation, RunStatus, ServiceFailure,
         SubmittedFile, ValidatedRunRequest, ValidationLimits,
@@ -340,6 +342,16 @@ mod tests {
                 .expect("tmpfs limit should be nonzero"),
             container_memory_bytes: NonZeroU64::new(256 * 1024 * 1024)
                 .expect("container memory should be nonzero"),
+            container_cpus: ContainerCpus::try_from(0.5)
+                .expect("container CPU limit should be valid"),
+            container_pids_limit: NonZeroU64::new(128)
+                .expect("container pids limit should be nonzero"),
+            tmp_tmpfs_bytes: NonZeroU64::new(64 * 1024 * 1024)
+                .expect("tmp tmpfs limit should be nonzero"),
+            process_headroom_bytes: NonZeroU64::new(64 * 1024 * 1024)
+                .expect("process headroom should be nonzero"),
+            core_ulimit: CoreUlimit::try_from("0:0".to_string())
+                .expect("core ulimit should be valid"),
             image: RunnerImage::try_from("rust-runner:test".to_string())
                 .expect("test image should be valid"),
             workspace_root: WorkspaceRoot::try_from(workspace_root)

@@ -1,5 +1,5 @@
 [package]
-name = "dependency_cache"
+name = "rust_daily_lesson"
 version = "0.1.0"
 edition = "2024"
 

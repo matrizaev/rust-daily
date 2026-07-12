@@ -8,41 +8,7 @@ use thiserror::Error;
 use tokio::fs;
 use uuid::Uuid;
 
-use crate::{
-    dependency_set::DependencySet,
-    model::{ValidatedCompileFailCase, ValidatedRunRequest},
-};
-
-const CARGO_TOML_PREFIX: &str = r#"[package]
-name = "rust_daily_lesson"
-version = "0.1.0"
-edition = "2024"
-
-[lib]
-path = "src/lib.rs"
-
-[dependencies]
-"#;
-
-const CARGO_PROFILE: &str = r#"
-[profile.test]
-debug = 0
-incremental = false
-"#;
-
-fn cargo_toml(dependency_set: DependencySet) -> String {
-    let mut manifest = String::from(CARGO_TOML_PREFIX);
-
-    for (name, spec) in dependency_set.dependencies() {
-        manifest.push_str(name);
-        manifest.push_str(" = ");
-        manifest.push_str(spec);
-        manifest.push('\n');
-    }
-
-    manifest.push_str(CARGO_PROFILE);
-    manifest
-}
+use crate::model::{ValidatedCompileFailCase, ValidatedRunRequest};
 
 #[derive(Debug, Error)]
 pub enum WorkspaceError {
@@ -93,7 +59,7 @@ pub async fn prepare_workspace(
             source,
         })?;
 
-    let manifest = cargo_toml(request.dependency_set());
+    let manifest = request.dependency_set().cargo_toml();
     write_file(temp_dir.path().join("Cargo.toml"), manifest.as_bytes()).await?;
 
     for (path, content) in request.files() {
@@ -154,7 +120,7 @@ mod tests {
 
     use tempfile::tempdir;
 
-    use super::{cargo_toml, prepare_workspace, write_compile_fail_case};
+    use super::{prepare_workspace, write_compile_fail_case};
     use crate::{
         dependency_set::DependencySet,
         model::{
@@ -325,14 +291,14 @@ mod tests {
 
     #[test]
     fn cargo_toml_keeps_std_dependency_free() {
-        let manifest = cargo_toml(DependencySet::Std);
+        let manifest = DependencySet::Std.cargo_toml();
 
         assert!(!manifest.contains("serde ="));
         assert!(!manifest.contains("actix-web ="));
     }
 
     #[tokio::test]
-    async fn prepare_workspace_writes_advanced_dependencies() {
+    async fn prepare_workspace_writes_advanced_cache_manifest() {
         let root = tempdir().expect("temp root should be created");
         let workspace = prepare_workspace(uuid::Uuid::new_v4(), &advanced_request(), root.path())
             .await
@@ -340,6 +306,7 @@ mod tests {
         let manifest = std::fs::read_to_string(workspace.path().join("Cargo.toml"))
             .expect("manifest should be readable");
 
+        assert_eq!(manifest, DependencySet::Advanced.cargo_toml());
         assert!(manifest.contains(r#"serde = { version = "1", features = ["derive"] }"#));
         assert!(manifest.contains(r#"actix-web = { version = "4", default-features = false }"#));
         assert!(manifest.contains(

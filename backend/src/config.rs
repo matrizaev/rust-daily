@@ -45,6 +45,11 @@ pub struct RunnerSettings {
     pub max_process_output_bytes: NonZeroUsize,
     pub workspace_tmpfs_bytes: NonZeroU64,
     pub container_memory_bytes: NonZeroU64,
+    pub container_cpus: ContainerCpus,
+    pub container_pids_limit: NonZeroU64,
+    pub tmp_tmpfs_bytes: NonZeroU64,
+    pub process_headroom_bytes: NonZeroU64,
+    pub core_ulimit: CoreUlimit,
     pub image: RunnerImage,
     pub workspace_root: WorkspaceRoot,
     pub podman_path: PodmanPath,
@@ -92,6 +97,11 @@ struct RawRunnerSettings {
     max_process_output_bytes: usize,
     workspace_tmpfs_bytes: u64,
     container_memory_bytes: u64,
+    container_cpus: f64,
+    container_pids_limit: u64,
+    tmp_tmpfs_bytes: u64,
+    process_headroom_bytes: u64,
+    core_ulimit: String,
     image: String,
     workspace_root: PathBuf,
     podman_path: PathBuf,
@@ -143,6 +153,11 @@ pub enum ConfigField {
     RunnerMaxProcessOutputBytes,
     RunnerWorkspaceTmpfsBytes,
     RunnerContainerMemoryBytes,
+    RunnerContainerCpus,
+    RunnerContainerPidsLimit,
+    RunnerTmpTmpfsBytes,
+    RunnerProcessHeadroomBytes,
+    RunnerCoreUlimit,
     RunnerImage,
     RunnerWorkspaceRoot,
     RunnerPodmanPath,
@@ -172,6 +187,11 @@ impl std::fmt::Display for ConfigField {
             Self::RunnerMaxProcessOutputBytes => "runner.max_process_output_bytes",
             Self::RunnerWorkspaceTmpfsBytes => "runner.workspace_tmpfs_bytes",
             Self::RunnerContainerMemoryBytes => "runner.container_memory_bytes",
+            Self::RunnerContainerCpus => "runner.container_cpus",
+            Self::RunnerContainerPidsLimit => "runner.container_pids_limit",
+            Self::RunnerTmpTmpfsBytes => "runner.tmp_tmpfs_bytes",
+            Self::RunnerProcessHeadroomBytes => "runner.process_headroom_bytes",
+            Self::RunnerCoreUlimit => "runner.core_ulimit",
             Self::RunnerImage => "runner.image",
             Self::RunnerWorkspaceRoot => "runner.workspace_root",
             Self::RunnerPodmanPath => "runner.podman_path",
@@ -262,6 +282,61 @@ impl TryFrom<String> for RunnerImage {
             return Err(SettingsError::Invalid {
                 field: ConfigField::RunnerImage,
                 reason: "must be an image reference without leading options or control characters",
+            });
+        }
+
+        Ok(Self(value.to_string()))
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ContainerCpus(f64);
+
+impl ContainerCpus {
+    pub fn as_podman_arg(&self) -> String {
+        self.0.to_string()
+    }
+}
+
+impl TryFrom<f64> for ContainerCpus {
+    type Error = SettingsError;
+
+    fn try_from(value: f64) -> Result<Self, Self::Error> {
+        if !value.is_finite() || value <= 0.0 {
+            return Err(SettingsError::Invalid {
+                field: ConfigField::RunnerContainerCpus,
+                reason: "must be a positive finite number",
+            });
+        }
+
+        Ok(Self(value))
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CoreUlimit(String);
+
+impl CoreUlimit {
+    pub fn as_podman_arg(&self) -> String {
+        format!("core={}", self.0)
+    }
+}
+
+impl TryFrom<String> for CoreUlimit {
+    type Error = SettingsError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let value = value.trim();
+        if value.is_empty() {
+            return Err(SettingsError::Empty {
+                field: ConfigField::RunnerCoreUlimit,
+            });
+        }
+
+        if value.starts_with('-') || value.chars().any(|character| character.is_control()) {
+            return Err(SettingsError::Invalid {
+                field: ConfigField::RunnerCoreUlimit,
+                reason: "must be a ulimit value without leading options or control characters",
             });
         }
 
@@ -603,17 +678,25 @@ impl TryFrom<RawRunnerSettings> for RunnerSettings {
             ConfigField::RunnerContainerMemoryBytes,
             raw.container_memory_bytes,
         )?;
-        const TMP_TMPFS_BYTES: u64 = 64 * 1024 * 1024;
-        const MIN_PROCESS_HEADROOM_BYTES: u64 = 64 * 1024 * 1024;
+        let container_cpus = ContainerCpus::try_from(raw.container_cpus)?;
+        let container_pids_limit = nonzero_u64(
+            ConfigField::RunnerContainerPidsLimit,
+            raw.container_pids_limit,
+        )?;
+        let tmp_tmpfs_bytes = nonzero_u64(ConfigField::RunnerTmpTmpfsBytes, raw.tmp_tmpfs_bytes)?;
+        let process_headroom_bytes = nonzero_u64(
+            ConfigField::RunnerProcessHeadroomBytes,
+            raw.process_headroom_bytes,
+        )?;
         if workspace_tmpfs_bytes
             .get()
-            .saturating_add(TMP_TMPFS_BYTES)
-            .saturating_add(MIN_PROCESS_HEADROOM_BYTES)
+            .saturating_add(tmp_tmpfs_bytes.get())
+            .saturating_add(process_headroom_bytes.get())
             > container_memory_bytes.get()
         {
             return Err(SettingsError::Invalid {
                 field: ConfigField::RunnerWorkspaceTmpfsBytes,
-                reason: "plus the 64 MiB /tmp tmpfs and 64 MiB process headroom must fit in runner.container_memory_bytes",
+                reason: "plus runner.tmp_tmpfs_bytes and runner.process_headroom_bytes must fit in runner.container_memory_bytes",
             });
         }
         Ok(Self {
@@ -625,6 +708,11 @@ impl TryFrom<RawRunnerSettings> for RunnerSettings {
             max_process_output_bytes,
             workspace_tmpfs_bytes,
             container_memory_bytes,
+            container_cpus,
+            container_pids_limit,
+            tmp_tmpfs_bytes,
+            process_headroom_bytes,
+            core_ulimit: CoreUlimit::try_from(raw.core_ulimit)?,
             image: RunnerImage::try_from(raw.image)?,
             workspace_root: WorkspaceRoot::try_from(raw.workspace_root)?,
             podman_path: PodmanPath::try_from(raw.podman_path)?,
@@ -725,6 +813,11 @@ server:
   cors_origin: http://localhost:5173
 runner:
   workers: 3
+  container_cpus: 0.75
+  container_pids_limit: 64
+  tmp_tmpfs_bytes: 33554432
+  process_headroom_bytes: 33554432
+  core_ulimit: '1:2'
 ",
         );
 
@@ -745,6 +838,11 @@ runner:
         assert_eq!(settings.runner.workers.get(), 3);
         assert_eq!(settings.runner.queue_capacity.get(), 20);
         assert_eq!(settings.runner.podman_path.as_path(), Path::new("podman"));
+        assert_eq!(settings.runner.container_cpus.as_podman_arg(), "0.75");
+        assert_eq!(settings.runner.container_pids_limit.get(), 64);
+        assert_eq!(settings.runner.tmp_tmpfs_bytes.get(), 33_554_432);
+        assert_eq!(settings.runner.process_headroom_bytes.get(), 33_554_432);
+        assert_eq!(settings.runner.core_ulimit.as_podman_arg(), "core=1:2");
         assert_eq!(settings.validation.limits.max_files(), 8);
     }
 
@@ -817,6 +915,25 @@ runner:
     }
 
     #[test]
+    fn rejects_non_positive_container_cpus() {
+        let error = load_with_local_override(
+            "
+runner:
+  container_cpus: 0
+",
+        )
+        .expect_err("non-positive CPU limit should fail");
+
+        assert!(matches!(
+            error,
+            SettingsError::Invalid {
+                field: ConfigField::RunnerContainerCpus,
+                ..
+            }
+        ));
+    }
+
+    #[test]
     fn rejects_total_limit_below_file_limit() {
         let root = tempdir().expect("temp config dir should be created");
         write_config(root.path(), "default.yaml", default_config());
@@ -861,6 +978,17 @@ validation:
                 ConfigField::RunnerContainerMemoryBytes,
                 "runner.container_memory_bytes",
             ),
+            (ConfigField::RunnerContainerCpus, "runner.container_cpus"),
+            (
+                ConfigField::RunnerContainerPidsLimit,
+                "runner.container_pids_limit",
+            ),
+            (ConfigField::RunnerTmpTmpfsBytes, "runner.tmp_tmpfs_bytes"),
+            (
+                ConfigField::RunnerProcessHeadroomBytes,
+                "runner.process_headroom_bytes",
+            ),
+            (ConfigField::RunnerCoreUlimit, "runner.core_ulimit"),
             (ConfigField::RunnerImage, "runner.image"),
             (ConfigField::RunnerWorkspaceRoot, "runner.workspace_root"),
             (ConfigField::RunnerPodmanPath, "runner.podman_path"),
@@ -939,6 +1067,13 @@ runner:
             ),
             (
                 "
+runner:
+  core_ulimit: ''
+",
+                ConfigField::RunnerCoreUlimit,
+            ),
+            (
+                "
 frontend:
   dist: ''
 ",
@@ -980,6 +1115,27 @@ runner:
   max_output_bytes: 0
 ",
                 ConfigField::RunnerMaxOutputBytes,
+            ),
+            (
+                "
+runner:
+  container_pids_limit: 0
+",
+                ConfigField::RunnerContainerPidsLimit,
+            ),
+            (
+                "
+runner:
+  tmp_tmpfs_bytes: 0
+",
+                ConfigField::RunnerTmpTmpfsBytes,
+            ),
+            (
+                "
+runner:
+  process_headroom_bytes: 0
+",
+                ConfigField::RunnerProcessHeadroomBytes,
             ),
             (
                 "
@@ -1184,6 +1340,11 @@ runner:
   max_process_output_bytes: 4194304
   workspace_tmpfs_bytes: 134217728
   container_memory_bytes: 268435456
+  container_cpus: 0.5
+  container_pids_limit: 128
+  tmp_tmpfs_bytes: 67108864
+  process_headroom_bytes: 67108864
+  core_ulimit: '0:0'
   image: rust-runner:1.95
   workspace_root: /tmp/rust-daily-runs
   podman_path: podman

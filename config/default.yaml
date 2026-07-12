@@ -17,6 +17,11 @@ runner:
   # each 256 MiB container. Advanced cache uses an image-seeded volume.
   workspace_tmpfs_bytes: 134217728
   container_memory_bytes: 268435456
+  container_cpus: 0.5
+  container_pids_limit: 128
+  tmp_tmpfs_bytes: 67108864
+  process_headroom_bytes: 67108864
+  core_ulimit: "0:0"
   image: rust-runner:1.95
   workspace_root: /tmp/rust-daily-runs
   podman_path: podman

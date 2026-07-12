@@ -303,12 +303,12 @@ Backend settings are loaded in this order:
 
 Configuration controls the typed bind address and CORS origin, static frontend
 path, queue size, worker count, runner and cleanup deadlines, response and raw
-process output limits, container memory, workspace tmpfs size, image,
-workspace root, path and diagnostic limits, and request size
-limits. Typed configuration rejects empty, zero-valued, inconsistent, or unsafe
-settings before startup. Resource limits remain fixed through systemd and
-Podman settings; the backend does not dynamically inspect live host cgroups or
-filesystem capacity as a startup preflight.
+process output limits, container memory, CPU, pids, `/tmp` tmpfs, workspace
+tmpfs, process headroom, core ulimit, image, workspace root, path and diagnostic
+limits, and request size limits. Typed configuration rejects empty, zero-valued,
+inconsistent, or unsafe settings before startup. Resource limits remain fixed
+through systemd and Podman settings; the backend does not dynamically inspect
+live host cgroups or filesystem capacity as a startup preflight.
 
 Local development runs Vite and Actix on separate origins. Production uses one
 origin, so the frontend posts to `/run`; Actix CORS middleware still pins the

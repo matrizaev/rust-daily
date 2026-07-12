@@ -391,6 +391,11 @@ Default server limits are:
 | Combined raw process stdout and stderr | 4,194,304 bytes |
 | Runner workspace tmpfs | 134,217,728 bytes |
 | Runner container memory | 268,435,456 bytes |
+| Runner container CPUs | 0.5 |
+| Runner pids limit | 128 |
+| Runner `/tmp` tmpfs | 67,108,864 bytes |
+| Runner process headroom | 67,108,864 bytes |
+| Runner core ulimit | 0:0 |
 | Path | 240 bytes |
 | Path component | 120 bytes |
 | Expected plus forbidden diagnostic snippets per compile-fail case | 16 |

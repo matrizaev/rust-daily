@@ -1,33 +1,21 @@
 use serde::{Deserialize, Serialize};
 
-pub type CargoDependency = (&'static str, &'static str);
+const ADVANCED_CARGO_TOML: &str = include_str!("../../docker/dependency-cache/Cargo.toml");
 
-const STD_DEPENDENCIES: &[CargoDependency] = &[];
-const ADVANCED_DEPENDENCIES: &[CargoDependency] = &[
-    ("serde", r#"{ version = "1", features = ["derive"] }"#),
-    ("serde_json", r#""1""#),
-    ("thiserror", r#""2""#),
-    ("anyhow", r#""1""#),
-    (
-        "tokio",
-        r#"{ version = "1", features = ["macros", "rt", "sync", "time"] }"#,
-    ),
-    ("tracing", r#""0.1""#),
-    (
-        "tracing-subscriber",
-        r#"{ version = "0.3", features = ["fmt"] }"#,
-    ),
-    (
-        "actix-web",
-        r#"{ version = "4", default-features = false }"#,
-    ),
-    ("actix-rt", r#""2""#),
-    ("http", r#""1""#),
-    (
-        "proptest",
-        r#"{ version = "1", default-features = false, features = ["std"] }"#,
-    ),
-];
+const STD_CARGO_TOML: &str = r#"[package]
+name = "rust_daily_lesson"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+
+[profile.test]
+debug = 0
+incremental = false
+"#;
 
 #[derive(Debug, Clone, Copy, Default, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case")]
@@ -38,10 +26,10 @@ pub enum DependencySet {
 }
 
 impl DependencySet {
-    pub fn dependencies(self) -> &'static [CargoDependency] {
+    pub fn cargo_toml(self) -> &'static str {
         match self {
-            Self::Std => STD_DEPENDENCIES,
-            Self::Advanced => ADVANCED_DEPENDENCIES,
+            Self::Std => STD_CARGO_TOML,
+            Self::Advanced => ADVANCED_CARGO_TOML,
         }
     }
 
@@ -117,22 +105,22 @@ mod tests {
         include_str!("../../docker/dependency-cache/Cargo.toml");
 
     #[test]
-    fn advanced_dependencies_match_runner_cache_manifest() {
-        let expected = DependencySet::Advanced
-            .dependencies()
-            .iter()
-            .map(|(name, spec)| format!("{name} = {spec}"))
-            .collect::<Vec<_>>();
-
+    fn advanced_dependency_set_uses_runner_cache_manifest() {
         assert_eq!(
-            manifest_section_lines(DOCKER_DEPENDENCY_CACHE_MANIFEST, "[dependencies]"),
-            expected
+            DependencySet::Advanced.cargo_toml(),
+            DOCKER_DEPENDENCY_CACHE_MANIFEST
+        );
+        assert!(
+            DependencySet::Advanced
+                .cargo_toml()
+                .contains(r#"name = "rust_daily_lesson""#)
         );
     }
 
     #[test]
     fn std_dependency_set_uses_plain_cargo_commands() {
-        assert!(DependencySet::Std.dependencies().is_empty());
+        assert!(!DependencySet::Std.cargo_toml().contains("serde ="));
+        assert!(!DependencySet::Std.cargo_toml().contains("actix-web ="));
 
         let test = DependencySet::Std.test_command();
         assert_eq!(test.program(), "cargo");
@@ -160,17 +148,5 @@ mod tests {
         let check_test = DependencySet::Advanced.check_test_command("case_name");
         assert_eq!(check_test.program(), "run-advanced-lesson-cargo");
         assert_eq!(check_test.args(), ["check", "--test", "case_name"]);
-    }
-
-    fn manifest_section_lines(manifest: &str, section: &str) -> Vec<String> {
-        manifest
-            .lines()
-            .skip_while(|line| line.trim() != section)
-            .skip(1)
-            .take_while(|line| !line.starts_with('['))
-            .map(str::trim)
-            .filter(|line| !line.is_empty())
-            .map(str::to_string)
-            .collect()
     }
 }

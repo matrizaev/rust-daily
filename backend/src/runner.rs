@@ -263,21 +263,24 @@ fn start_container_command_spec(
         .arg(config.container_memory_bytes.get().to_string())
         .args(["--memory-swap"])
         .arg(config.container_memory_bytes.get().to_string())
+        .args(["--cpus"])
+        .arg(config.container_cpus.as_podman_arg())
+        .args(["--pids-limit"])
+        .arg(config.container_pids_limit.get().to_string())
+        .args(["--ulimit"])
+        .arg(config.core_ulimit.as_podman_arg())
         .args([
-            "--cpus",
-            "0.5",
-            "--pids-limit",
-            "128",
-            "--ulimit",
-            "core=0:0",
             "--read-only",
             "--http-proxy=false",
             "--log-driver",
             "none",
             "--tmpfs",
-            "/tmp:rw,noexec,nosuid,nodev,size=64m",
-            "--tmpfs",
         ])
+        .arg(format!(
+            "/tmp:rw,noexec,nosuid,nodev,size={}",
+            config.tmp_tmpfs_bytes.get()
+        ))
+        .args(["--tmpfs"])
         .arg(workspace_tmpfs);
     if dependency_set == DependencySet::Advanced {
         // An anonymous volume is seeded from the image's precompiled target
@@ -1076,7 +1079,9 @@ mod tests {
         find_boolean_field, log_output, run_with_executor, timeout_io_error,
     };
     use crate::{
-        config::{PodmanPath, RunnerImage, RunnerSettings, WorkspaceRoot},
+        config::{
+            ContainerCpus, CoreUlimit, PodmanPath, RunnerImage, RunnerSettings, WorkspaceRoot,
+        },
         dependency_set::DependencySet,
         model::{
             RunDeadline, RunRequest, RunRequestValidation, RunStatus, SubmittedCompileFailCase,
@@ -1225,6 +1230,16 @@ mod tests {
                 .expect("tmpfs limit should be nonzero"),
             container_memory_bytes: NonZeroU64::new(256 * 1024 * 1024)
                 .expect("container memory should be nonzero"),
+            container_cpus: ContainerCpus::try_from(0.5)
+                .expect("container CPU limit should be valid"),
+            container_pids_limit: NonZeroU64::new(128)
+                .expect("container pids limit should be nonzero"),
+            tmp_tmpfs_bytes: NonZeroU64::new(64 * 1024 * 1024)
+                .expect("tmp tmpfs limit should be nonzero"),
+            process_headroom_bytes: NonZeroU64::new(64 * 1024 * 1024)
+                .expect("process headroom should be nonzero"),
+            core_ulimit: CoreUlimit::try_from("0:0".to_string())
+                .expect("core ulimit should be valid"),
             image: RunnerImage::try_from("rust-runner:test".to_string())
                 .expect("test image should be valid"),
             workspace_root: WorkspaceRoot::try_from(workspace_root)
@@ -1316,8 +1331,23 @@ mod tests {
 
         let start = args(&specs[0]);
         assert!(has_pair(&start, "--network", "none"));
+        assert!(has_pair(&start, "--memory", "268435456"));
+        assert!(has_pair(&start, "--memory-swap", "268435456"));
+        assert!(has_pair(&start, "--cpus", "0.5"));
+        assert!(has_pair(&start, "--pids-limit", "128"));
+        assert!(has_pair(&start, "--ulimit", "core=0:0"));
         assert!(has_pair(&start, "--log-driver", "none"));
         assert!(has_pair(&start, "--user", "0:0"));
+        assert!(has_pair(
+            &start,
+            "--tmpfs",
+            "/tmp:rw,noexec,nosuid,nodev,size=67108864"
+        ));
+        assert!(has_pair(
+            &start,
+            "--tmpfs",
+            "/workspace:rw,exec,nosuid,nodev,size=1048576"
+        ));
         assert!(start.contains(&"--read-only".to_string()));
         assert!(start.contains(&"--http-proxy=false".to_string()));
         assert!(start.contains(&"no-new-privileges".to_string()));

@@ -119,10 +119,11 @@ Production sets `runner.podman_path` to `/usr/bin/podman`, so runner execution
 does not depend on service `PATH`. Runner invocations pass
 `--cgroup-manager cgroupfs` because the service does not have a systemd user
 session.
-Resource limits are fixed in this service unit and runner config: `MemoryMax=1G`
-for backend plus Podman overhead, `CPUQuota=200%`, `TasksMax=512`, 256 MiB per
-runner container, and 128 MiB per container `/workspace` tmpfs. The backend does
-not perform exact live cgroup or filesystem-capacity matching at startup.
+Resource limits are static configuration, not live host probes: the service unit
+sets `MemoryMax=1G`, `CPUQuota=200%`, and `TasksMax=512`; `config/default.yaml`
+sets per-runner memory, CPU, pids, `/tmp` tmpfs, `/workspace` tmpfs, process
+headroom, and core ulimit values. The backend does not perform exact live cgroup
+or filesystem-capacity matching at startup.
 
 Useful service commands:
 
