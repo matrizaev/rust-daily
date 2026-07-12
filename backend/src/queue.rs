@@ -325,6 +325,13 @@ mod tests {
             max_process_output_bytes: nonzero(4096),
             workspace_tmpfs_bytes: NonZeroU64::new(1024 * 1024)
                 .expect("tmpfs limit should be nonzero"),
+            container_memory_bytes: NonZeroU64::new(256 * 1024 * 1024)
+                .expect("container memory should be nonzero"),
+            service_memory_max_bytes: NonZeroU64::new(1024 * 1024 * 1024)
+                .expect("service memory should be nonzero"),
+            workspace_root_budget_bytes: NonZeroU64::new(2 * 1024 * 1024 * 1024)
+                .expect("workspace budget should be nonzero"),
+            enforce_host_resource_limits: false,
             image: RunnerImage::try_from("rust-runner:test".to_string())
                 .expect("test image should be valid"),
             workspace_root: WorkspaceRoot::try_from(workspace_root)

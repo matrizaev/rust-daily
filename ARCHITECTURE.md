@@ -286,8 +286,10 @@ Cargo runs with `--offline`. The `std` set has no external dependencies. The
 tracing, thiserror, Actix, and proptest.
 
 Advanced dependencies and compiled artifacts are cached in the runner image.
-At runtime, the cached target directory is copied into the writable lesson
-workspace before advanced Cargo commands run. The dependency declarations in
+At runtime, advanced runs receive a disposable anonymous volume seeded from the
+image cache. Cargo writes there without copying the cache into `/workspace`
+tmpfs; backend cleanup removes the volume with its container. Standard runs do
+not mount or seed this cache. The dependency declarations in
 `backend/src/dependency_set.rs`, `docker/rust-runner.Dockerfile`, the runner
 wrapper scripts, and the solution test harness must remain synchronized.
 
@@ -301,9 +303,11 @@ Backend settings are loaded in this order:
 
 Configuration controls the typed bind address and CORS origin, static frontend
 path, queue size, worker count, runner and cleanup deadlines, response and raw
-process output limits, workspace tmpfs size, image, workspace root, path and
-diagnostic limits, and request size limits. Typed configuration rejects empty,
-zero-valued, inconsistent, or unsafe settings before startup.
+process output limits, container memory, workspace tmpfs size, host resource
+budgets, image, workspace root, path and diagnostic limits, and request size
+limits. Typed configuration rejects empty, zero-valued, inconsistent, or unsafe
+settings before startup. Production also checks configured service memory and
+workspace budgets against live cgroup and filesystem limits.
 
 Local development runs Vite and Actix on separate origins. Production uses one
 origin, so the frontend posts to `/run`; Actix CORS middleware still pins the

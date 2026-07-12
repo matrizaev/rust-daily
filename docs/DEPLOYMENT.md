@@ -96,13 +96,18 @@ Production runner workspaces use `/var/www12/rust-daily-runs`. The systemd unit
 mounts this path as a private tmpfs with `size=2G` and `nr_inodes=200000`, which
 bounds disk and inode abuse from writable `/workspace` container mounts. The
 tmpfs path is intentionally not listed in `ReadWritePaths`, because a bind mount
-there would cover the tmpfs with the host directory. If the advanced dependency
-cache grows enough to hit this cap, tune `TemporaryFileSystem` and
-`config/prod.yaml` together.
+there would cover the tmpfs with the host directory. Keep this size aligned with
+`runner.workspace_root_budget_bytes`. Production startup reads filesystem
+capacity and fails if the values differ.
 
 The backend mounts each prepared workspace read-only at `/input`. The managed
 container copies it into a size-bounded `/workspace` tmpfs before executing
-Cargo, so untrusted writes do not reach the host workspace.
+Cargo, so untrusted writes do not reach the host workspace. Advanced runs mount
+an anonymous volume at `/opt/rust-daily-target`; Podman seeds it from the image's
+precompiled cache. Backend cleanup passes `podman rm --volumes`, so the volume is
+removed with the container. Standard runs do not create this volume. The cache
+is therefore not copied into the memory-accounted workspace tmpfs and cannot
+accumulate as orphaned runner volumes.
 
 The service also enables `PrivateTmp`, `ProtectSystem=strict`, `ProtectHome`,
 narrow `ReadWritePaths`, `LimitCORE=0`, `MemoryMax=1G`, `MemorySwapMax=0`,
@@ -116,6 +121,13 @@ Production sets `runner.podman_path` to `/usr/bin/podman`, so runner execution
 does not depend on service `PATH`. Runner invocations pass
 `--cgroup-manager cgroupfs` because the service does not have a systemd user
 session.
+With `runner.enforce_host_resource_limits` enabled by `config/prod.yaml`, startup
+requires the live cgroup `memory.max` to match
+`runner.service_memory_max_bytes` and the workspace filesystem capacity to match
+`runner.workspace_root_budget_bytes`. Configuration reserves one
+container-sized memory slot for backend and Podman overhead in addition to all
+workers. It also reserves 64 MiB process headroom after each `/workspace` and
+`/tmp` tmpfs allocation.
 
 Useful service commands:
 

@@ -1,10 +1,8 @@
 #!/bin/sh
 set -eu
 
-target_dir=/workspace/target
-
-if [ ! -d "$target_dir" ]; then
-    cp -a /opt/rust-daily-target "$target_dir"
-fi
-
-exec env CARGO_TARGET_DIR="$target_dir" cargo "$@"
+# `/opt/rust-daily-target` is mounted as a fresh Podman volume for each run.
+# Podman seeds an empty volume from the image, so Cargo can update its target
+# directory without copying the dependency cache into the memory-accounted
+# learner workspace tmpfs.
+exec env CARGO_TARGET_DIR=/opt/rust-daily-target cargo "$@"

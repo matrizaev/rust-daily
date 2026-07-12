@@ -13,8 +13,8 @@ use crate::{
 };
 
 pub async fn run(settings: Settings) -> io::Result<()> {
-    initialize_runtime(&settings.runner).await?;
     tokio::fs::create_dir_all(settings.runner.workspace_root.as_path()).await?;
+    initialize_runtime(&settings.runner).await?;
     build_server(settings)?.await
 }
 

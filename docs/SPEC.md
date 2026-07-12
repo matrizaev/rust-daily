@@ -389,7 +389,10 @@ Default server limits are:
 | Execution timeout | 10 seconds |
 | Combined output | 65,536 bytes |
 | Combined raw process stdout and stderr | 4,194,304 bytes |
-| Runner workspace tmpfs | 536,870,912 bytes |
+| Runner workspace tmpfs | 134,217,728 bytes |
+| Runner container memory | 268,435,456 bytes |
+| Production service memory | 1,073,741,824 bytes |
+| Production workspace filesystem | 2,147,483,648 bytes |
 | Path | 240 bytes |
 | Path component | 120 bytes |
 | Expected plus forbidden diagnostic snippets per compile-fail case | 16 |

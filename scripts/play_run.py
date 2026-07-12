@@ -16,6 +16,19 @@ fn answer_is_42() {
 }
 """
 
+ADVANCED_SOURCE = """pub fn compact_json() -> String {
+    serde_json::json!({"ok": true}).to_string()
+}
+"""
+
+ADVANCED_TEST = """use rust_daily_lesson::compact_json;
+
+#[test]
+fn serde_json_works() {
+    assert_eq!(compact_json(), "{\\"ok\\":true}");
+}
+"""
+
 SOURCES = {
     "pass": "pub fn answer() -> u64 { 42 }\n",
     "fail": "pub fn answer() -> u64 { 41 }\n",
@@ -98,6 +111,7 @@ EXPECTED_STATUSES = {
     "compile-fail-pass": "passed",
     "compile-fail-unexpected-pass": "failed",
     "compile-fail-wrong-diagnostic": "failed",
+    "advanced-pass": "passed",
 }
 
 
@@ -134,6 +148,14 @@ def build_compile_fail_payload(
 
 
 def payload_for_case(case: str) -> dict[str, object]:
+    if case == "advanced-pass":
+        return {
+            "dependencySet": "advanced",
+            "files": [
+                {"path": "src/lib.rs", "content": ADVANCED_SOURCE},
+                {"path": "tests/lesson.rs", "content": ADVANCED_TEST},
+            ],
+        }
     if case == "multi-file-pass":
         return MULTI_FILE_PAYLOAD
     if case == "compile-fail-pass":

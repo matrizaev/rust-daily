@@ -1,0 +1,17 @@
+name: Advanced runner smoke
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  podman-advanced-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.95.0
+      - name: Build runner image
+        run: make runner-image
+      - name: Exercise cached serde_json under production limits
+        run: make smoke-advanced-runner

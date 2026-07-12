@@ -10,7 +10,7 @@ SMOKE_CASE ?= pass
 BACKEND_COVERAGE_THRESHOLD ?= 80
 BACKEND_COVERAGE_EXCLUDE_FILES := src/main.rs src/server.rs src/static_files.rs src/observability.rs
 
-.PHONY: format lint test coverage coverage-backend coverage-frontend runner-image smoke-runner dev-full
+.PHONY: format lint test coverage coverage-backend coverage-frontend runner-image smoke-runner smoke-advanced-runner dev-full
 
 format:
 	cargo fmt --manifest-path backend/Cargo.toml --all
@@ -34,6 +34,9 @@ runner-image:
 
 smoke-runner:
 	python3 scripts/play_run.py --url $(SMOKE_URL) --case $(SMOKE_CASE)
+
+smoke-advanced-runner:
+	bash docker/smoke-advanced-runner.sh $(RUNNER_IMAGE)
 
 dev-full: runner-image
 	@set -euo pipefail; \
