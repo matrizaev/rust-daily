@@ -45,9 +45,6 @@ pub struct RunnerSettings {
     pub max_process_output_bytes: NonZeroUsize,
     pub workspace_tmpfs_bytes: NonZeroU64,
     pub container_memory_bytes: NonZeroU64,
-    pub service_memory_max_bytes: NonZeroU64,
-    pub workspace_root_budget_bytes: NonZeroU64,
-    pub enforce_host_resource_limits: bool,
     pub image: RunnerImage,
     pub workspace_root: WorkspaceRoot,
     pub podman_path: PodmanPath,
@@ -95,10 +92,6 @@ struct RawRunnerSettings {
     max_process_output_bytes: usize,
     workspace_tmpfs_bytes: u64,
     container_memory_bytes: u64,
-    service_memory_max_bytes: u64,
-    workspace_root_budget_bytes: u64,
-    #[serde(default)]
-    enforce_host_resource_limits: bool,
     image: String,
     workspace_root: PathBuf,
     podman_path: PathBuf,
@@ -150,8 +143,6 @@ pub enum ConfigField {
     RunnerMaxProcessOutputBytes,
     RunnerWorkspaceTmpfsBytes,
     RunnerContainerMemoryBytes,
-    RunnerServiceMemoryMaxBytes,
-    RunnerWorkspaceRootBudgetBytes,
     RunnerImage,
     RunnerWorkspaceRoot,
     RunnerPodmanPath,
@@ -181,8 +172,6 @@ impl std::fmt::Display for ConfigField {
             Self::RunnerMaxProcessOutputBytes => "runner.max_process_output_bytes",
             Self::RunnerWorkspaceTmpfsBytes => "runner.workspace_tmpfs_bytes",
             Self::RunnerContainerMemoryBytes => "runner.container_memory_bytes",
-            Self::RunnerServiceMemoryMaxBytes => "runner.service_memory_max_bytes",
-            Self::RunnerWorkspaceRootBudgetBytes => "runner.workspace_root_budget_bytes",
             Self::RunnerImage => "runner.image",
             Self::RunnerWorkspaceRoot => "runner.workspace_root",
             Self::RunnerPodmanPath => "runner.podman_path",
@@ -477,12 +466,6 @@ fn apply_legacy_environment_overrides(
     if let Some(value) = env_number("RUST_DAILY_CONTAINER_MEMORY_BYTES")? {
         builder = builder.set_override("runner.container_memory_bytes", value)?;
     }
-    if let Some(value) = env_number("RUST_DAILY_SERVICE_MEMORY_MAX_BYTES")? {
-        builder = builder.set_override("runner.service_memory_max_bytes", value)?;
-    }
-    if let Some(value) = env_number("RUST_DAILY_WORKSPACE_ROOT_BUDGET_BYTES")? {
-        builder = builder.set_override("runner.workspace_root_budget_bytes", value)?;
-    }
     if let Some(value) = env_string("RUST_DAILY_RUNNER_IMAGE") {
         builder = builder.set_override("runner.image", value)?;
     }
@@ -620,14 +603,6 @@ impl TryFrom<RawRunnerSettings> for RunnerSettings {
             ConfigField::RunnerContainerMemoryBytes,
             raw.container_memory_bytes,
         )?;
-        let service_memory_max_bytes = nonzero_u64(
-            ConfigField::RunnerServiceMemoryMaxBytes,
-            raw.service_memory_max_bytes,
-        )?;
-        let workspace_root_budget_bytes = nonzero_u64(
-            ConfigField::RunnerWorkspaceRootBudgetBytes,
-            raw.workspace_root_budget_bytes,
-        )?;
         const TMP_TMPFS_BYTES: u64 = 64 * 1024 * 1024;
         const MIN_PROCESS_HEADROOM_BYTES: u64 = 64 * 1024 * 1024;
         if workspace_tmpfs_bytes
@@ -641,25 +616,6 @@ impl TryFrom<RawRunnerSettings> for RunnerSettings {
                 reason: "plus the 64 MiB /tmp tmpfs and 64 MiB process headroom must fit in runner.container_memory_bytes",
             });
         }
-        if (workers.get() as u64)
-            .saturating_add(1)
-            .saturating_mul(container_memory_bytes.get())
-            > service_memory_max_bytes.get()
-        {
-            return Err(SettingsError::Invalid {
-                field: ConfigField::RunnerServiceMemoryMaxBytes,
-                reason: "must cover all runner containers plus one container-sized service headroom",
-            });
-        }
-        if (workers.get() as u64).saturating_mul(workspace_tmpfs_bytes.get())
-            > workspace_root_budget_bytes.get()
-        {
-            return Err(SettingsError::Invalid {
-                field: ConfigField::RunnerWorkspaceRootBudgetBytes,
-                reason: "must cover runner.workers multiplied by runner.workspace_tmpfs_bytes",
-            });
-        }
-
         Ok(Self {
             queue_capacity,
             workers,
@@ -669,9 +625,6 @@ impl TryFrom<RawRunnerSettings> for RunnerSettings {
             max_process_output_bytes,
             workspace_tmpfs_bytes,
             container_memory_bytes,
-            service_memory_max_bytes,
-            workspace_root_budget_bytes,
-            enforce_host_resource_limits: raw.enforce_host_resource_limits,
             image: RunnerImage::try_from(raw.image)?,
             workspace_root: WorkspaceRoot::try_from(raw.workspace_root)?,
             podman_path: PodmanPath::try_from(raw.podman_path)?,
@@ -772,7 +725,6 @@ server:
   cors_origin: http://localhost:5173
 runner:
   workers: 3
-  enforce_host_resource_limits: true
 ",
         );
 
@@ -791,7 +743,6 @@ runner:
         );
         assert_eq!(settings.frontend.dist.as_path(), Path::new("frontend/dist"));
         assert_eq!(settings.runner.workers.get(), 3);
-        assert!(settings.runner.enforce_host_resource_limits);
         assert_eq!(settings.runner.queue_capacity.get(), 20);
         assert_eq!(settings.runner.podman_path.as_path(), Path::new("podman"));
         assert_eq!(settings.validation.limits.max_files(), 8);
@@ -866,31 +817,6 @@ runner:
     }
 
     #[test]
-    fn rejects_worker_memory_budget_above_service_limit() {
-        let root = tempdir().expect("temp config dir should be created");
-        write_config(root.path(), "default.yaml", default_config());
-        write_config(
-            root.path(),
-            "local.yaml",
-            "
-runner:
-  workers: 4
-",
-        );
-
-        let error = load_settings_from_dir_without_environment(root.path(), "local")
-            .expect_err("worker memory plus service headroom overcommit should fail");
-
-        assert!(matches!(
-            error,
-            SettingsError::Invalid {
-                field: ConfigField::RunnerServiceMemoryMaxBytes,
-                ..
-            }
-        ));
-    }
-
-    #[test]
     fn rejects_total_limit_below_file_limit() {
         let root = tempdir().expect("temp config dir should be created");
         write_config(root.path(), "default.yaml", default_config());
@@ -934,14 +860,6 @@ validation:
             (
                 ConfigField::RunnerContainerMemoryBytes,
                 "runner.container_memory_bytes",
-            ),
-            (
-                ConfigField::RunnerServiceMemoryMaxBytes,
-                "runner.service_memory_max_bytes",
-            ),
-            (
-                ConfigField::RunnerWorkspaceRootBudgetBytes,
-                "runner.workspace_root_budget_bytes",
             ),
             (ConfigField::RunnerImage, "runner.image"),
             (ConfigField::RunnerWorkspaceRoot, "runner.workspace_root"),
@@ -1113,7 +1031,6 @@ api:
             ("RUST_DAILY_FRONTEND_DIST", "dist/prod"),
             ("RUST_DAILY_QUEUE_CAPACITY", "7"),
             ("RUST_DAILY_WORKERS", "4"),
-            ("RUST_DAILY_SERVICE_MEMORY_MAX_BYTES", "2147483648"),
             ("RUST_DAILY_TIMEOUT_SECS", "9"),
             ("RUST_DAILY_MAX_OUTPUT_BYTES", "12345"),
             ("RUST_DAILY_RUNNER_IMAGE", "runner:test"),
@@ -1142,10 +1059,6 @@ api:
         assert_eq!(settings.frontend.dist.as_path(), Path::new("dist/prod"));
         assert_eq!(settings.runner.queue_capacity.get(), 7);
         assert_eq!(settings.runner.workers.get(), 4);
-        assert_eq!(
-            settings.runner.service_memory_max_bytes.get(),
-            2 * 1024 * 1024 * 1024
-        );
         assert_eq!(settings.runner.timeout.as_secs(), 9);
         assert_eq!(settings.runner.max_output_bytes.get(), 12345);
         assert_eq!(settings.runner.image.as_str(), "runner:test");
@@ -1271,9 +1184,6 @@ runner:
   max_process_output_bytes: 4194304
   workspace_tmpfs_bytes: 134217728
   container_memory_bytes: 268435456
-  service_memory_max_bytes: 1073741824
-  workspace_root_budget_bytes: 2147483648
-  enforce_host_resource_limits: false
   image: rust-runner:1.95
   workspace_root: /tmp/rust-daily-runs
   podman_path: podman

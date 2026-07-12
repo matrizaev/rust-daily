@@ -1,6 +1,6 @@
 use std::{
     ffi::{OsStr, OsString},
-    fs, io,
+    io,
     path::{Path, PathBuf},
     process::{ExitStatus, Output, Stdio},
     sync::Arc,
@@ -393,8 +393,6 @@ fn duration_seconds_ceil(duration: std::time::Duration) -> u64 {
 }
 
 pub async fn initialize_runtime(config: &RunnerSettings) -> Result<(), io::Error> {
-    validate_host_resource_limits(config)?;
-
     if ["CONTAINER_HOST", "CONTAINER_CONNECTION"]
         .iter()
         .any(|name| std::env::var_os(name).is_some())
@@ -424,73 +422,6 @@ pub async fn initialize_runtime(config: &RunnerSettings) -> Result<(), io::Error
     ensure_control_success("find configured runner image", &output)?;
 
     reap_stale_containers(config).await
-}
-
-fn validate_host_resource_limits(config: &RunnerSettings) -> Result<(), io::Error> {
-    if !config.enforce_host_resource_limits {
-        return Ok(());
-    }
-
-    let actual_memory_max = current_cgroup_memory_max()?;
-    let workspace = rustix::fs::statvfs(config.workspace_root.as_path())
-        .map_err(|error| io::Error::from_raw_os_error(error.raw_os_error()))?;
-    let actual_workspace_budget = workspace.f_blocks.saturating_mul(workspace.f_frsize);
-
-    validate_measured_resource_limits(config, actual_memory_max, actual_workspace_budget)
-}
-
-fn validate_measured_resource_limits(
-    config: &RunnerSettings,
-    actual_memory_max: Option<u64>,
-    actual_workspace_budget: u64,
-) -> Result<(), io::Error> {
-    let expected_memory_max = config.service_memory_max_bytes.get();
-    if actual_memory_max != Some(expected_memory_max) {
-        let actual = actual_memory_max.map_or_else(|| "max".to_string(), |value| value.to_string());
-        return Err(io::Error::other(format!(
-            "host cgroup memory.max is {actual}, expected {expected_memory_max} from runner.service_memory_max_bytes"
-        )));
-    }
-
-    let expected_workspace_budget = config.workspace_root_budget_bytes.get();
-    if actual_workspace_budget != expected_workspace_budget {
-        return Err(io::Error::other(format!(
-            "workspace filesystem capacity is {actual_workspace_budget}, expected {expected_workspace_budget} from runner.workspace_root_budget_bytes"
-        )));
-    }
-
-    Ok(())
-}
-
-fn current_cgroup_memory_max() -> Result<Option<u64>, io::Error> {
-    let cgroup = fs::read_to_string("/proc/self/cgroup")?;
-    let relative_path = cgroup_v2_path(&cgroup)
-        .ok_or_else(|| io::Error::other("cgroup v2 entry missing from /proc/self/cgroup"))?;
-    let memory_max_path = Path::new("/sys/fs/cgroup")
-        .join(relative_path.trim_start_matches('/'))
-        .join("memory.max");
-    let value = fs::read_to_string(&memory_max_path)?;
-    let value = value.trim();
-    if value == "max" {
-        return Ok(None);
-    }
-
-    value.parse::<u64>().map(Some).map_err(|error| {
-        io::Error::other(format!(
-            "invalid cgroup memory limit in {}: {error}",
-            memory_max_path.display()
-        ))
-    })
-}
-
-fn cgroup_v2_path(contents: &str) -> Option<&str> {
-    contents.lines().find_map(|line| {
-        let mut fields = line.splitn(3, ':');
-        let hierarchy = fields.next()?;
-        let controllers = fields.next()?;
-        let path = fields.next()?;
-        (hierarchy == "0" && controllers.is_empty()).then_some(path)
-    })
 }
 
 async fn reap_stale_containers(config: &RunnerSettings) -> Result<(), io::Error> {
@@ -1141,9 +1072,8 @@ mod tests {
     use uuid::Uuid;
 
     use super::{
-        ProcessCommandSpec, ProcessExecutor, cgroup_v2_path, collect_limited_stream,
-        ensure_control_success, find_boolean_field, log_output, run_with_executor,
-        timeout_io_error, validate_measured_resource_limits,
+        ProcessCommandSpec, ProcessExecutor, collect_limited_stream, ensure_control_success,
+        find_boolean_field, log_output, run_with_executor, timeout_io_error,
     };
     use crate::{
         config::{PodmanPath, RunnerImage, RunnerSettings, WorkspaceRoot},
@@ -1295,11 +1225,6 @@ mod tests {
                 .expect("tmpfs limit should be nonzero"),
             container_memory_bytes: NonZeroU64::new(256 * 1024 * 1024)
                 .expect("container memory should be nonzero"),
-            service_memory_max_bytes: NonZeroU64::new(1024 * 1024 * 1024)
-                .expect("service memory should be nonzero"),
-            workspace_root_budget_bytes: NonZeroU64::new(2 * 1024 * 1024 * 1024)
-                .expect("workspace budget should be nonzero"),
-            enforce_host_resource_limits: false,
             image: RunnerImage::try_from("rust-runner:test".to_string())
                 .expect("test image should be valid"),
             workspace_root: WorkspaceRoot::try_from(workspace_root)
@@ -1319,43 +1244,6 @@ mod tests {
     fn has_pair(args: &[String], first: &str, second: &str) -> bool {
         args.windows(2)
             .any(|pair| pair[0] == first && pair[1] == second)
-    }
-
-    #[test]
-    fn cgroup_v2_path_ignores_legacy_entries() {
-        let cgroup = "7:cpu:/legacy\n0::/system.slice/rust-daily.service\n";
-
-        assert_eq!(
-            cgroup_v2_path(cgroup),
-            Some("/system.slice/rust-daily.service")
-        );
-    }
-
-    #[test]
-    fn measured_resource_limits_must_match_production_configuration() {
-        let root = tempfile::tempdir().expect("test root should be created");
-        let config = runner_settings(root.path().join("runs"));
-        let expected_memory = config.service_memory_max_bytes.get();
-        let expected_workspace = config.workspace_root_budget_bytes.get();
-
-        validate_measured_resource_limits(&config, Some(expected_memory), expected_workspace)
-            .expect("matching resource limits should pass");
-        assert!(
-            validate_measured_resource_limits(&config, None, expected_workspace)
-                .expect_err("unlimited cgroup memory should fail enforcement")
-                .to_string()
-                .contains("memory.max")
-        );
-        assert!(
-            validate_measured_resource_limits(
-                &config,
-                Some(expected_memory),
-                expected_workspace / 2,
-            )
-            .expect_err("workspace capacity drift should fail enforcement")
-            .to_string()
-            .contains("workspace filesystem capacity")
-        );
     }
 
     #[tokio::test]

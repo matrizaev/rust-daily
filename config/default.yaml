@@ -17,12 +17,6 @@ runner:
   # each 256 MiB container. Advanced cache uses an image-seeded volume.
   workspace_tmpfs_bytes: 134217728
   container_memory_bytes: 268435456
-  # Production startup verifies these against live cgroup and filesystem
-  # limits. MemoryMax also reserves one container-sized slot for service
-  # and Podman overhead.
-  service_memory_max_bytes: 1073741824
-  workspace_root_budget_bytes: 2147483648
-  enforce_host_resource_limits: false
   image: rust-runner:1.95
   workspace_root: /tmp/rust-daily-runs
   podman_path: podman

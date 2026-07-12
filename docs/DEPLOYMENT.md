@@ -96,9 +96,7 @@ Production runner workspaces use `/var/www12/rust-daily-runs`. The systemd unit
 mounts this path as a private tmpfs with `size=2G` and `nr_inodes=200000`, which
 bounds disk and inode abuse from writable `/workspace` container mounts. The
 tmpfs path is intentionally not listed in `ReadWritePaths`, because a bind mount
-there would cover the tmpfs with the host directory. Keep this size aligned with
-`runner.workspace_root_budget_bytes`. Production startup reads filesystem
-capacity and fails if the values differ.
+there would cover the tmpfs with the host directory.
 
 The backend mounts each prepared workspace read-only at `/input`. The managed
 container copies it into a size-bounded `/workspace` tmpfs before executing
@@ -121,13 +119,10 @@ Production sets `runner.podman_path` to `/usr/bin/podman`, so runner execution
 does not depend on service `PATH`. Runner invocations pass
 `--cgroup-manager cgroupfs` because the service does not have a systemd user
 session.
-With `runner.enforce_host_resource_limits` enabled by `config/prod.yaml`, startup
-requires the live cgroup `memory.max` to match
-`runner.service_memory_max_bytes` and the workspace filesystem capacity to match
-`runner.workspace_root_budget_bytes`. Configuration reserves one
-container-sized memory slot for backend and Podman overhead in addition to all
-workers. It also reserves 64 MiB process headroom after each `/workspace` and
-`/tmp` tmpfs allocation.
+Resource limits are fixed in this service unit and runner config: `MemoryMax=1G`
+for backend plus Podman overhead, `CPUQuota=200%`, `TasksMax=512`, 256 MiB per
+runner container, and 128 MiB per container `/workspace` tmpfs. The backend does
+not perform exact live cgroup or filesystem-capacity matching at startup.
 
 Useful service commands:
 
