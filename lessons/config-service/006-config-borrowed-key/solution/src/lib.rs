@@ -42,9 +42,6 @@ impl Config {
     }
 }
 
-pub fn get_setting<'a>(settings: &'a [(String, String)], key: &str) -> Option<&'a str> {
-    settings
-        .iter()
-        .find(|(name, _value)| name.as_str() == key)
-        .map(|(_name, value)| value.as_str())
+pub fn first_valid_config(configs: &[Config]) -> Option<&Config> {
+    configs.iter().find(|config| config.validate().is_ok())
 }

@@ -42,12 +42,9 @@ impl Config {
     }
 }
 
-pub fn get_setting(settings: &[(String, String)], key: String) -> Option<String> {
-    settings
-        .iter()
-        .find(|(name, _value)| name == &key)
-        .map(|(_name, value)| value.clone())
+pub fn first_valid_config(configs: Vec<Config>) -> Option<Config> {
+    configs.into_iter().find(|config| config.validate().is_ok())
 }
 
 // Continue from the previous lesson.
-// TODO: borrow key and return a borrowed setting value.
+// TODO: borrow the candidate slice and return a borrowed Config.

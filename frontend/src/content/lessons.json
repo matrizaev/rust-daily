@@ -1897,40 +1897,40 @@
     "order": 26,
     "day": 6,
     "arcLength": 6,
-    "title": "Borrow setting keys",
+    "title": "Borrow config candidates",
     "conceptId": "borrowing-api",
     "difficulty": "medium",
     "estimatedMinutes": 7,
-    "scenario": "A lookup helper should not take ownership of a key just to compare it with stored names.",
-    "instructions": "Keep the Config, ConfigError, and validate behavior from earlier lessons. Change get_setting so key is borrowed as &str and the returned value is borrowed from settings as Option<&str>.",
+    "scenario": "Service startup has several candidate configs, such as environment, file, and defaults. The selector should find the first valid one without consuming the candidate list.",
+    "instructions": "Keep the Config, ConfigError, and validate behavior from earlier lessons. Change first_valid_config so it takes configs: &[Config] and returns Option<&Config> borrowed from the candidate slice.",
     "files": [
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n    pub timeout_seconds: Option<u64>,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n            timeout_seconds: None,\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ConfigError {\n    EmptyServiceUrl,\n    ZeroConnections,\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n\n    pub fn validate(&self) -> Result<(), ConfigError> {\n        if self.service_url.is_empty() {\n            return Err(ConfigError::EmptyServiceUrl);\n        }\n\n        if self.max_connections == 0 {\n            return Err(ConfigError::ZeroConnections);\n        }\n\n        Ok(())\n    }\n}\n\npub fn get_setting(settings: &[(String, String)], key: String) -> Option<String> {\n    settings\n        .iter()\n        .find(|(name, _value)| name == &key)\n        .map(|(_name, value)| value.clone())\n}\n\n// Continue from the previous lesson.\n// TODO: borrow key and return a borrowed setting value.\n"
+        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n    pub timeout_seconds: Option<u64>,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n            timeout_seconds: None,\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ConfigError {\n    EmptyServiceUrl,\n    ZeroConnections,\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n\n    pub fn validate(&self) -> Result<(), ConfigError> {\n        if self.service_url.is_empty() {\n            return Err(ConfigError::EmptyServiceUrl);\n        }\n\n        if self.max_connections == 0 {\n            return Err(ConfigError::ZeroConnections);\n        }\n\n        Ok(())\n    }\n}\n\npub fn first_valid_config(configs: Vec<Config>) -> Option<Config> {\n    configs.into_iter().find(|config| config.validate().is_ok())\n}\n\n// Continue from the previous lesson.\n// TODO: borrow the candidate slice and return a borrowed Config.\n"
       },
       {
         "path": "tests/public.rs",
         "role": "test",
-        "content": "use rust_daily_lesson::{get_setting, Config, ConfigError};\n\n#[test]\nfn config_keeps_previous_arc_fields_and_validation() {\n    let config = Config {\n        service_url: \"https://api.example.com\".to_owned(),\n        max_connections: 8,\n        use_tls: true,\n        timeout_seconds: Some(30),\n    };\n\n    assert!(config.use_tls);\n    assert_eq!(config.timeout_seconds, Some(30));\n    assert_eq!(config.validate(), Ok(()));\n\n    let invalid = Config {\n        service_url: String::new(),\n        max_connections: 8,\n        use_tls: true,\n        timeout_seconds: Some(30),\n    };\n\n    assert_eq!(invalid.validate(), Err(ConfigError::EmptyServiceUrl));\n}\n\n#[test]\nfn lookup_borrows_key_and_value() {\n    let settings = vec![\n        (\"host\".to_owned(), \"localhost\".to_owned()),\n        (\"port\".to_owned(), \"8080\".to_owned()),\n    ];\n\n    assert_eq!(get_setting(&settings, \"host\"), Some(\"localhost\"));\n    assert_eq!(get_setting(&settings, \"missing\"), None);\n}\n"
+        "content": "use rust_daily_lesson::{first_valid_config, Config, ConfigError};\n\n#[test]\nfn config_keeps_previous_arc_fields_and_validation() {\n    let config = Config {\n        service_url: \"https://api.example.com\".to_owned(),\n        max_connections: 8,\n        use_tls: true,\n        timeout_seconds: Some(30),\n    };\n\n    assert!(config.use_tls);\n    assert_eq!(config.timeout_seconds, Some(30));\n    assert_eq!(config.validate(), Ok(()));\n\n    let invalid = Config {\n        service_url: String::new(),\n        max_connections: 8,\n        use_tls: true,\n        timeout_seconds: Some(30),\n    };\n\n    assert_eq!(invalid.validate(), Err(ConfigError::EmptyServiceUrl));\n}\n\n#[test]\nfn selects_first_valid_config_without_consuming_candidates() {\n    let configs = vec![\n        Config {\n            service_url: String::new(),\n            max_connections: 8,\n            use_tls: true,\n            timeout_seconds: Some(30),\n        },\n        Config {\n            service_url: \"https://admin.example.com\".to_owned(),\n            max_connections: 4,\n            use_tls: true,\n            timeout_seconds: Some(15),\n        },\n    ];\n\n    let found = first_valid_config(&configs).expect(\"valid config should be found\");\n\n    assert!(std::ptr::eq(found, &configs[1]));\n    assert_eq!(found.max_connections, 4);\n    assert_eq!(found.timeout_seconds, Some(15));\n    assert_eq!(configs.len(), 2);\n}\n\n#[test]\nfn returns_none_when_no_candidate_is_valid() {\n    let configs = vec![\n        Config {\n            service_url: String::new(),\n            max_connections: 8,\n            use_tls: true,\n            timeout_seconds: Some(30),\n        },\n        Config {\n            service_url: \"https://admin.example.com\".to_owned(),\n            max_connections: 0,\n            use_tls: true,\n            timeout_seconds: Some(15),\n        },\n    ];\n\n    assert_eq!(first_valid_config(&configs), None);\n}\n"
       }
     ],
     "hints": [
       {
         "level": 1,
-        "body": "The function only needs to read key, not store it."
+        "body": "The function only needs to read candidate configs and call validate on each one."
       },
       {
         "level": 2,
-        "body": "Returning &str can borrow from the String already inside settings."
+        "body": "Returning &Config lets startup keep ownership of all candidates while the caller inspects the selected one."
       },
       {
         "level": 3,
-        "body": "as_str converts a String reference into a string slice.",
-        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n    pub timeout_seconds: Option<u64>,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n            timeout_seconds: None,\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ConfigError {\n    EmptyServiceUrl,\n    ZeroConnections,\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n\n    pub fn validate(&self) -> Result<(), ConfigError> {\n        if self.service_url.is_empty() {\n            return Err(ConfigError::EmptyServiceUrl);\n        }\n\n        if self.max_connections == 0 {\n            return Err(ConfigError::ZeroConnections);\n        }\n\n        Ok(())\n    }\n}\n\npub fn get_setting<'a>(settings: &'a [(String, String)], key: &str) -> Option<&'a str> {\n    settings\n        .iter()\n        .find(|(name, _value)| name.as_str() == key)\n        .map(|(_name, value)| value.as_str())\n}"
+        "body": "iter().find(...) can return the borrowed Config from the slice.",
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Config {\n    pub service_url: String,\n    pub max_connections: usize,\n    pub use_tls: bool,\n    pub timeout_seconds: Option<u64>,\n}\n\nimpl Default for Config {\n    fn default() -> Self {\n        Self {\n            service_url: \"http://localhost:8080\".to_owned(),\n            max_connections: 32,\n            use_tls: false,\n            timeout_seconds: None,\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ConfigError {\n    EmptyServiceUrl,\n    ZeroConnections,\n}\n\nimpl Config {\n    pub fn with_service_url(mut self, service_url: impl Into<String>) -> Self {\n        self.service_url = service_url.into();\n        self\n    }\n\n    pub fn validate(&self) -> Result<(), ConfigError> {\n        if self.service_url.is_empty() {\n            return Err(ConfigError::EmptyServiceUrl);\n        }\n\n        if self.max_connections == 0 {\n            return Err(ConfigError::ZeroConnections);\n        }\n\n        Ok(())\n    }\n}\n\npub fn first_valid_config(configs: &[Config]) -> Option<&Config> {\n    configs.iter().find(|config| config.validate().is_ok())\n}"
       }
     ],
-    "completionExplanation": "Borrowing keeps the lookup API lightweight. The caller keeps its key, and the returned value can point into the existing settings data.",
+    "completionExplanation": "Borrowing keeps startup selection lightweight. The caller keeps ownership of every Config candidate, and the selected Config is a reference into the existing slice.",
     "validation": {
       "mode": "all",
       "validations": [
@@ -1987,20 +1987,21 @@
             },
             {
               "type": "function_signature",
-              "functionName": "get_setting",
+              "functionName": "first_valid_config",
               "requiredSignatureIncludes": [
-                "key: &str",
-                "Option<&str>"
+                "configs: &[Config]",
+                "Option<&Config>"
               ]
             },
             {
               "type": "source_includes",
               "requiredSnippets": [
-                "as_str"
+                "validate().is_ok()"
               ],
               "forbiddenSnippets": [
-                "key: String",
-                "Option<String>"
+                "configs: Vec<Config>",
+                "Option<Config>",
+                "configs.into_iter()"
               ]
             }
           ]

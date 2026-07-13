@@ -357,11 +357,11 @@
     "order": 26,
     "day": 6,
     "arcLength": 6,
-    "title": "Borrow setting keys",
+    "title": "Borrow config candidates",
     "conceptId": "borrowing-api",
     "difficulty": "medium",
     "estimatedMinutes": 7,
-    "scenario": "A lookup helper should not take ownership of a key just to compare it with stored names."
+    "scenario": "Service startup has several candidate configs, such as environment, file, and defaults. The selector should find the first valid one without consuming the candidate list."
   },
   {
     "schemaVersion": 2,
