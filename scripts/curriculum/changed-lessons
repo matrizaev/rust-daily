@@ -1,19 +1,21 @@
 #!/usr/bin/env node
-import { join } from "node:path";
 import {
   DEFAULT_BASE,
   LESSONS_ROOT,
+  captureCommand,
   changedFilesFromGit,
-  findLessonDirs,
+  readJson,
   readLessonRecords,
-  repoRelativePath,
   uniqueSorted,
 } from "./lib/repo.mjs";
+import { join } from "node:path";
 
 const usage = () => `Usage:
   scripts/curriculum/changed-lessons [--base origin/main] [--format text|json]
 
-Prints changed lesson directories relative to the repository root.
+Prints changed source lesson directories relative to the repository root.
+Tooling-only changes do not expand to the full corpus; callers that need
+tooling coverage should run script tests or a focused lesson smoke separately.
 `;
 
 const parseArgs = (argv) => {
@@ -64,14 +66,6 @@ const arcIdFromChangedFile = (file) => {
   return match ? match[1] : null;
 };
 
-const scriptChangeRequiresFullCorpus = (file) =>
-  file.startsWith("scripts/curriculum/") ||
-  file.startsWith("frontend/scripts/curriculum/") ||
-  file === "scripts/test-lesson-solutions.sh";
-
-const metadataChangeRequiresFullCorpus = (file) =>
-  file === "lessons/arcs.json" || file === "lessons/concepts.json";
-
 const generatedContentOnly = (file) =>
   file.startsWith("frontend/src/content/") ||
   file.startsWith("frontend/public/content/lessons/");
@@ -88,10 +82,113 @@ const lessonRelPathsByArc = (records) => {
   return byArc;
 };
 
-const changedLessonPaths = async (files) => {
+const recordsByLessonId = (records) =>
+  new Map(records.map((record) => [record.lesson.id, record.relPath]));
+
+const recordsById = (records) =>
+  new Map(records.map((record) => [record.id, record]));
+
+const readJsonAtBase = (base, file) => {
+  const result = captureCommand("git", ["show", `${base}:${file}`]);
+
+  if (result.status !== 0) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(result.stdout);
+  } catch {
+    return null;
+  }
+};
+
+const recordChanged = (left, right) =>
+  JSON.stringify(left ?? null) !== JSON.stringify(right ?? null);
+
+const changedRecordIds = (baseRecords, currentRecords) => {
+  if (!Array.isArray(baseRecords) || !Array.isArray(currentRecords)) {
+    return null;
+  }
+
+  const baseById = recordsById(baseRecords);
+  const currentById = recordsById(currentRecords);
+  const ids = uniqueSorted([...baseById.keys(), ...currentById.keys()]);
+
+  return ids.filter((id) => recordChanged(baseById.get(id), currentById.get(id)));
+};
+
+const addArcLessons = (changed, byArc, arcIds) => {
+  arcIds.forEach((arcId) => {
+    (byArc.get(arcId) ?? []).forEach((path) => changed.add(path));
+  });
+};
+
+const addConceptLessons = (changed, baseConcepts, currentConcepts, conceptIds, byLessonId) => {
+  const baseById = recordsById(baseConcepts);
+  const currentById = recordsById(currentConcepts);
+
+  conceptIds.forEach((conceptId) => {
+    [
+      ...(baseById.get(conceptId)?.lessonIds ?? []),
+      ...(currentById.get(conceptId)?.lessonIds ?? []),
+    ].forEach((lessonId) => {
+      const lessonPath = byLessonId.get(lessonId);
+
+      if (lessonPath) {
+        changed.add(lessonPath);
+      }
+    });
+  });
+};
+
+const addChangedArcMetadataLessons = async (changed, base, byArc, allLessonPaths) => {
+  const baseArcs = readJsonAtBase(base, "lessons/arcs.json");
+  const currentArcs = await readJson(join(LESSONS_ROOT, "arcs.json"));
+  const arcIds = changedRecordIds(baseArcs, currentArcs);
+
+  if (!arcIds) {
+    allLessonPaths.forEach((path) => changed.add(path));
+    return;
+  }
+
+  addArcLessons(changed, byArc, arcIds);
+};
+
+const addChangedConceptMetadataLessons = async (changed, base, byLessonId, allLessonPaths) => {
+  const baseConcepts = readJsonAtBase(base, "lessons/concepts.json");
+  const currentConcepts = await readJson(join(LESSONS_ROOT, "concepts.json"));
+  const conceptIds = changedRecordIds(baseConcepts, currentConcepts);
+
+  if (!conceptIds) {
+    allLessonPaths.forEach((path) => changed.add(path));
+    return;
+  }
+
+  addConceptLessons(changed, baseConcepts, currentConcepts, conceptIds, byLessonId);
+};
+
+const addMetadataChangedLessons = async ({
+  allLessonPaths,
+  base,
+  byArc,
+  byLessonId,
+  changed,
+  file,
+}) => {
+  if (file === "lessons/arcs.json") {
+    await addChangedArcMetadataLessons(changed, base, byArc, allLessonPaths);
+  }
+
+  if (file === "lessons/concepts.json") {
+    await addChangedConceptMetadataLessons(changed, base, byLessonId, allLessonPaths);
+  }
+};
+
+const changedLessonPaths = async (files, base) => {
   const records = await readLessonRecords();
   const allLessonPaths = records.map((record) => record.relPath);
   const byArc = lessonRelPathsByArc(records);
+  const byLessonId = recordsByLessonId(records);
   const changed = new Set();
 
   for (const file of files) {
@@ -99,8 +196,15 @@ const changedLessonPaths = async (files) => {
       continue;
     }
 
-    if (scriptChangeRequiresFullCorpus(file) || metadataChangeRequiresFullCorpus(file)) {
-      allLessonPaths.forEach((path) => changed.add(path));
+    if (file === "lessons/arcs.json" || file === "lessons/concepts.json") {
+      await addMetadataChangedLessons({
+        allLessonPaths,
+        base,
+        byArc,
+        byLessonId,
+        changed,
+        file,
+      });
       continue;
     }
 
@@ -111,9 +215,7 @@ const changedLessonPaths = async (files) => {
     }
 
     const arcId = arcIdFromChangedFile(file);
-    if (arcId && join(LESSONS_ROOT, arcId) !== LESSONS_ROOT) {
-      (byArc.get(arcId) ?? []).forEach((path) => changed.add(path));
-    }
+    (byArc.get(arcId) ?? []).forEach((path) => changed.add(path));
   }
 
   return uniqueSorted([...changed]);
@@ -136,7 +238,7 @@ const main = async () => {
 
   try {
     const files = changedFilesFromGit(options.base);
-    const lessons = await changedLessonPaths(files);
+    const lessons = await changedLessonPaths(files, options.base);
 
     if (options.format === "json") {
       console.log(JSON.stringify({ base: options.base, lessons }, null, 2));
@@ -150,4 +252,3 @@ const main = async () => {
 };
 
 await main();
-

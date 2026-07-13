@@ -1281,21 +1281,30 @@ const lessonProjectSource = async (lessonJsonPath, lesson) => {
   ].join("\n\n");
 };
 
-const validateInstructionApiAlignment = async (errors, lessonJsonPath, lesson) => {
-  if (!isString(lesson.instructions) || hasAuthorPlaceholder(lesson.instructions)) {
-    return;
+const shouldSkipInstructionApiAlignment = (lesson) =>
+  !isString(lesson.instructions) || hasAuthorPlaceholder(lesson.instructions);
+
+const instructionsReferenceKnownApi = (instructions, symbols) =>
+  symbols.some((symbol) => instructions.includes(symbol));
+
+const instructionsHaveKnownWorkShape = (instructions, symbols) =>
+  symbols.length === 0 ||
+  instructionsReferenceKnownApi(instructions, symbols) ||
+  instructionsNameWorkShape(instructions);
+
+const needsInstructionApiAlignmentError = async (lessonJsonPath, lesson) => {
+  if (shouldSkipInstructionApiAlignment(lesson)) {
+    return false;
   }
 
   const source = await lessonProjectSource(lessonJsonPath, lesson);
   const symbols = publicSymbolsFromSource(source);
 
-  if (symbols.length === 0) {
-    return;
-  }
+  return !instructionsHaveKnownWorkShape(lesson.instructions, symbols);
+};
 
-  const namesKnownApi = symbols.some((symbol) => lesson.instructions.includes(symbol));
-
-  if (!namesKnownApi && !instructionsNameWorkShape(lesson.instructions)) {
+const validateInstructionApiAlignment = async (errors, lessonJsonPath, lesson) => {
+  if (await needsInstructionApiAlignmentError(lessonJsonPath, lesson)) {
     push(
       errors,
       `${lesson.id} instructions must name at least one public API/type/function from the starter or expected solution.`,
@@ -1863,34 +1872,59 @@ const domainTypesFromSource = (source) => {
   return [...names];
 };
 
+const createRawBoundaryState = () => ({
+  previousDomainNames: new Set(),
+  previousLessonId: null,
+});
+
+const rawBoundaryContext = async (state, lessonRecord) => ({
+  domainNames: [...state.previousDomainNames],
+  editableSolution: await readSolution(lessonRecord.lessonJsonPath, lessonRecord.lesson),
+  notes: await readAuthorNotes(lessonRecord.lessonJsonPath, lessonRecord.lesson),
+});
+
+const omitsExistingDomainNames = (domainNames, source) =>
+  !domainNames.some((name) => source.includes(name));
+
+const shouldReportRawBoundaryDetour = ({ domainNames, editableSolution, notes }) =>
+  [
+    domainNames.length > 0,
+    RAW_KEY_VALUE_COLLECTION_PATTERN.test(editableSolution),
+    omitsExistingDomainNames(domainNames, editableSolution),
+    !notes.includes(RAW_BOUNDARY_NOTE),
+  ].every(Boolean);
+
+const reportRawBoundaryDetour = (errors, state, lessonRecord, context) => {
+  if (!shouldReportRawBoundaryDetour(context)) {
+    return;
+  }
+
+  push(
+    errors,
+    `${lessonRecord.lesson.id} uses raw key/value collection after ${state.previousLessonId} introduced domain type ${context.domainNames[0]}; use domain types or add ${RAW_BOUNDARY_NOTE} to notes.`,
+  );
+};
+
+const rememberDomainTypes = async (state, lessonRecord) => {
+  const snapshot = await solutionSnapshotSource(lessonRecord.lessonJsonPath, lessonRecord.lesson);
+
+  domainTypesFromSource(snapshot).forEach((name) => state.previousDomainNames.add(name));
+  state.previousLessonId =
+    state.previousDomainNames.size > 0 ? lessonRecord.lesson.id : state.previousLessonId;
+};
+
+const validateRawBoundaryLesson = async (errors, state, lessonRecord) => {
+  const context = await rawBoundaryContext(state, lessonRecord);
+
+  reportRawBoundaryDetour(errors, state, lessonRecord, context);
+  await rememberDomainTypes(state, lessonRecord);
+};
+
 const validateRawBoundaryDetours = async (errors, ordered) => {
-  const previousDomainNames = new Set();
-  let previousLessonId = null;
+  const state = createRawBoundaryState();
 
   for (const lessonRecord of ordered) {
-    const editableSolution = await readSolution(lessonRecord.lessonJsonPath, lessonRecord.lesson);
-    const notes = await readAuthorNotes(lessonRecord.lessonJsonPath, lessonRecord.lesson);
-    const domainNames = [...previousDomainNames];
-
-    if (
-      domainNames.length > 0 &&
-      RAW_KEY_VALUE_COLLECTION_PATTERN.test(editableSolution) &&
-      !domainNames.some((name) => editableSolution.includes(name)) &&
-      !notes.includes(RAW_BOUNDARY_NOTE)
-    ) {
-      push(
-        errors,
-        `${lessonRecord.lesson.id} uses raw key/value collection after ${previousLessonId} introduced domain type ${domainNames[0]}; use domain types or add ${RAW_BOUNDARY_NOTE} to notes.`,
-      );
-    }
-
-    domainTypesFromSource(
-      await solutionSnapshotSource(lessonRecord.lessonJsonPath, lessonRecord.lesson),
-    ).forEach((name) => previousDomainNames.add(name));
-
-    if (previousDomainNames.size > 0) {
-      previousLessonId = lessonRecord.lesson.id;
-    }
+    await validateRawBoundaryLesson(errors, state, lessonRecord);
   }
 };
 

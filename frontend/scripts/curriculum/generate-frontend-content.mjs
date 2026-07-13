@@ -403,20 +403,34 @@ Options:
   --help    Show this help.
 `;
 
+const ARG_HANDLERS = new Map([
+  ["--check", (options) => {
+    options.check = true;
+  }],
+  ["--help", (options) => {
+    options.help = true;
+  }],
+  ["-h", (options) => {
+    options.help = true;
+  }],
+]);
+
+const parseArg = (options, errors, arg) => {
+  const handler = ARG_HANDLERS.get(arg);
+
+  if (handler) {
+    handler(options);
+    return;
+  }
+
+  errors.push(`Unknown argument ${arg}.`);
+};
+
 const parseArgs = (argv) => {
   const options = { check: false };
   const errors = [];
 
-  for (const arg of argv) {
-    if (arg === "--check") {
-      options.check = true;
-    } else if (arg === "--help" || arg === "-h") {
-      options.help = true;
-    } else {
-      errors.push(`Unknown argument ${arg}.`);
-    }
-  }
-
+  argv.forEach((arg) => parseArg(options, errors, arg));
   return { options, errors };
 };
 
