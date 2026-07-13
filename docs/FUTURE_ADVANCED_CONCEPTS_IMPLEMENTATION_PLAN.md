@@ -27,9 +27,12 @@ Project snapshot validation with one editable artifact is now part of the
 product contract. Backend compile-fail validation is also implemented for
 single-crate snapshots. Future infrastructure should build on those models
 rather than adding multi-file editing. The authoring scaffolder is also
-implemented: `cd frontend && npm run content:scaffold-lesson -- ...` creates
+implemented: `scripts/curriculum/scaffold-lesson ...` creates
 lesson skeletons with optional compile-fail cases, advanced presets,
-arc/concept registration, and read-only continuity copies.
+arc/concept registration, read-only continuity copies, and root
+`scripts/curriculum/scaffold-lesson` wrappers. The root authoring harness also
+provides `scripts/curriculum/author-check`, changed lesson detection, generated
+parity checks, and parallel changed-solution runs.
 
 ## Target
 
@@ -39,8 +42,8 @@ The complete curriculum should contain:
 - roughly 75-90 cumulative arcs;
 - mostly 5-8 lessons per arc;
 - one primary concept per lesson;
-- increasingly realistic multi-file project snapshots, and later multi-crate
-  runner modes, with one editable artifact per lesson;
+- increasingly realistic multi-file single-crate project snapshots, with one
+  editable artifact per lesson;
 - deterministic behavioral validation for every automatable task;
 - periodic capstones where judgment matters more than applying one named
   pattern.
@@ -66,9 +69,9 @@ one editable artifact even when validation compiles a larger project.
 - The editable artifact may eventually be Rust, `Cargo.toml`, SQL, or another
   supported text format, but there is still only one.
 
-Runner and content infrastructure therefore support multi-file projects, not
-multi-file editing. Future runner modes should extend the same rule to
-manifests, workspaces, migrations, and other artifact types.
+Runner and content infrastructure therefore support multi-file single-crate
+projects, not multi-file editing. Future runner modes should extend the same
+rule to manifests, migrations, and other single-crate artifact types.
 
 ## Authoring Guardrails
 
@@ -86,6 +89,11 @@ should confirm one concept per lesson, task text matching the starter exactly,
 idiomatic reference code, previous solutions as readonly context when needed,
 and no claim that one exercise teaches universally perfect Rust.
 
+The authoring harness hardening plan is maintained in
+[AUTHORING_HARNESS_FEATURE_SPEC.md](AUTHORING_HARNESS_FEATURE_SPEC.md). Finish
+that work before authoring throughput depends on the harness for hundreds of
+new lessons.
+
 ## Curriculum Roadmap
 
 | Lessons | Phase | Main outcome |
@@ -94,7 +102,7 @@ and no claim that one exercise teaches universally perfect Rust.
 | 151-210 | Async Rust and concurrency | Structure cancellable concurrent work with explicit state and backpressure |
 | 211-270 | Testing and reliability | Test public contracts across crates, compile failures, properties, and failure boundaries |
 | 271-330 | Persistence and service integration | Compose Actix, SQLx, configuration, serialization, and observability cleanly |
-| 331-390 | Crate design and macros | Evolve stable library APIs, workspaces, features, and justified macros |
+| 331-390 | Crate design and macros | Evolve stable library APIs, modules, features, and justified macros |
 | 391-450 | Performance and unsafe boundaries | Optimize from evidence and encapsulate systems-level invariants |
 | 451-500 | Integration capstones | Refactor and complete larger systems while preserving behavior and boundaries |
 
@@ -226,19 +234,16 @@ Candidate arcs:
 - sealed traits and extension points;
 - `#[non_exhaustive]` and forward-compatible enums;
 - semver-compatible versus breaking API changes;
-- Cargo workspaces and package boundaries;
+- crate API boundaries without requiring Cargo workspace exercises;
 - feature flags without combinatorial API fragmentation;
 - optional dependencies and minimal default features;
 - declarative macros that remove real repetition;
 - macro hygiene, fragments, repetition, and diagnostics;
-- procedural derives using `syn` and `quote`;
 - compile-pass and compile-fail macro tests;
 - choosing a function, trait, derive, or macro based on the problem.
 
 Infrastructure needed:
 
-- an `advanced-macro` dependency set;
-- multi-crate workspaces with a `proc-macro` crate and consumer crate;
 - `trybuild` or equivalent diagnostic tests;
 - feature-matrix validation for selected combinations.
 
@@ -301,11 +306,10 @@ Add capabilities only when a planned arc requires them:
 
 | Capability | Required for |
 | --- | --- |
-| Multi-crate workspace generation | External API tests and procedural macros |
-| Trybuild-style compile-pass/compile-fail suites | Procedural macro diagnostics |
+| External-style integration test layouts | Public API tests from outside the crate module tree |
+| Trybuild-style compile-pass/compile-fail suites | Stable API and trait-bound diagnostics |
 | `advanced-db` with SQLx and SQLite | Persistence arcs |
 | `advanced-perf` with Criterion | Measurement and optimization arcs |
-| `advanced-macro` with `syn`, `quote`, `proc-macro2`, and `trybuild` | Procedural macro arcs |
 | Feature-matrix runs | Crate feature design |
 | Author-only Miri checks | Unsafe lesson review |
 
@@ -369,11 +373,11 @@ Every future arc must:
 
 1. Author lessons 91-150 around advanced ownership and API design.
 2. Expand async/concurrency validation and author lessons 151-210.
-3. Add workspace test modes and author lessons 211-270.
+3. Add richer single-crate integration test modes and author lessons 211-270.
 4. Add `advanced-db` and author lessons 271-330.
-5. Add multi-crate macro support and author lessons 331-390.
+5. Add single-crate macro and feature validation support for lessons 331-390.
 6. Add benchmark and unsafe authoring checks for lessons 391-450.
-7. Build capstone workspace support and complete lessons 451-500.
+7. Build capstone snapshot support and complete lessons 451-500.
 
 This order makes each infrastructure investment pay for a full curriculum
 phase and delays the most expensive runner modes until their prerequisites are

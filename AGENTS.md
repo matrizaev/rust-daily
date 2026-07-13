@@ -32,6 +32,10 @@ coverage output, and `*.tsbuildinfo`.
 - `cd frontend && npm run build`: type-check and build the frontend.
 - `cd frontend && npm run test`: run frontend Vitest tests.
 - `cd frontend && npm run preview`: serve the built frontend locally.
+- `scripts/curriculum/author-check`: run the normal local authoring gate.
+- `scripts/curriculum/validate-source`: validate canonical lesson sources.
+- `scripts/curriculum/generate --check`: verify generated content parity without writes.
+- `scripts/curriculum/check-generated`: run generated parity, refs, and runtime content checks.
 - `scripts/test-lesson-solutions.sh lessons`: run all authored lesson solutions.
 
 ## Lesson Authoring Rules
@@ -51,11 +55,15 @@ ad hoc structures.
 For lesson changes, run:
 
 ```text
-cd frontend && npm run content:validate-source
-cd frontend && npm run content:generate
-cd frontend && npm run content:check-refs && npm run content:check
+scripts/curriculum/validate-source
+scripts/curriculum/generate
+scripts/curriculum/check-generated
 scripts/test-lesson-solutions.sh lessons/<affected-arc-or-lesson>
 ```
+
+For quick changed-work feedback, use `scripts/curriculum/author-check`; it
+validates source, checks generated parity, checks generated content, and runs
+changed lesson solutions against `origin/main`.
 
 If source validation or scaffolding scripts changed, also run:
 

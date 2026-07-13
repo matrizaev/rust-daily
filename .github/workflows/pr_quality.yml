@@ -1,0 +1,106 @@
+name: PR Quality
+
+on:
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.95.0
+        with:
+          components: rustfmt, clippy
+      - name: Format
+        run: cargo fmt --manifest-path backend/Cargo.toml --all --check
+      - name: Lint
+        run: make lint
+      - name: Test
+        run: make test
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Test
+        run: npm run test
+      - name: Fallow dupes
+        run: yes | npx fallow dupes
+      - name: Fallow dead code
+        run: yes | npx fallow dead-code
+      - name: Fallow health
+        run: yes | npx fallow health
+
+  content:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: dtolnay/rust-toolchain@1.95.0
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Validate source lessons
+        run: scripts/curriculum/validate-source
+      - name: Check generated parity
+        run: scripts/curriculum/generate --check
+      - name: Check generated content
+        run: scripts/curriculum/check-generated
+      - name: Test changed lesson solutions
+        env:
+          LESSON_SOLUTIONS_CARGO_OFFLINE: "false"
+        run: scripts/test-lesson-solutions.sh --changed --jobs 4 --base origin/main
+
+  curriculum-scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Detect curriculum script changes
+        id: changes
+        run: |
+          if git diff --name-only origin/main -- \
+            frontend/scripts/curriculum scripts/curriculum scripts/test-lesson-solutions.sh \
+            | grep -q .; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Source validator tests
+        if: steps.changes.outputs.changed == 'true'
+        working-directory: frontend
+        run: npm run content:validate-source:test
+      - name: Scaffolder tests
+        if: steps.changes.outputs.changed == 'true'
+        working-directory: frontend
+        run: npm run content:scaffold-lesson:test

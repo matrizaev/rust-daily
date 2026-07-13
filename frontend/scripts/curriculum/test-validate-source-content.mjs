@@ -20,6 +20,22 @@ const lessonTwoSolution = `pub fn next() -> &'static str {
 }
 `;
 
+const configDomainSolution = `pub struct Config {
+    pub port: u16,
+}
+
+pub fn greet() -> &'static str {
+    "hi"
+}
+`;
+
+const rawTupleDetourSolution = `pub fn next(pairs: &[(&str, &str)]) -> Option<&str> {
+    pairs
+        .iter()
+        .find_map(|(key, value)| (*key == "port").then_some(*value))
+}
+`;
+
 const publicTest = `#[test]
 fn public_contract_exists() {
     assert!(true);
@@ -50,7 +66,7 @@ const baseLesson = ({
   conceptId,
   difficulty: "medium",
   estimatedMinutes: 5,
-  scenario: "Fixture scenario.",
+  scenario: "Fixture service scenario.",
   instructions,
   files,
   hints: [
@@ -205,6 +221,16 @@ const cloneState = (state) => ({
   files: new Map(state.files),
 });
 
+const applyRawTupleDetourFixture = (state) => {
+  state.files.set("fixture-arc/001-greet/starter/src/lib.rs", configDomainSolution);
+  state.files.set("fixture-arc/001-greet/solution/src/lib.rs", configDomainSolution);
+  state.files.set("fixture-arc/002-next/starter/src/lib.rs", configDomainSolution);
+  state.files.set("fixture-arc/002-next/starter/src/next.rs", rawTupleDetourSolution);
+  state.files.set("fixture-arc/002-next/solution/src/next.rs", rawTupleDetourSolution);
+  state.lessons[0].lesson.hints[2].solutionCode = configDomainSolution;
+  state.lessons[1].lesson.hints[2].solutionCode = rawTupleDetourSolution;
+};
+
 const writeText = async (root, relativePath, content) => {
   const path = join(root, relativePath);
 
@@ -307,6 +333,31 @@ const cases = [
   {
     name: "valid fixture passes",
     expectPass: true,
+  },
+  {
+    name: "contrived scenario fails",
+    expectPass: false,
+    expectedOutput: "fixture-001 scenario must describe plausible project work",
+    mutate: (state) => {
+      state.lessons[0].lesson.scenario = "Practice this syntax in isolation.";
+    },
+  },
+  {
+    name: "raw tuple detour after domain type fails",
+    expectPass: false,
+    expectedOutput: "fixture-002 uses raw key/value collection after fixture-001 introduced domain type Config",
+    mutate: applyRawTupleDetourFixture,
+  },
+  {
+    name: "intentional raw boundary note passes",
+    expectPass: true,
+    mutate: (state) => {
+      applyRawTupleDetourFixture(state);
+      state.files.set(
+        "fixture-arc/002-next/notes.md",
+        `${notes}\nIntentional raw boundary: this lesson models adapter input before conversion.\n`,
+      );
+    },
   },
   {
     name: "zero editable files fail",

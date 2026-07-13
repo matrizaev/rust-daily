@@ -128,9 +128,9 @@ Every lesson in the arc must pass these checks.
 For lesson or arc changes, run the standard content pipeline:
 
 ```text
-cd frontend && npm run content:validate-source
-cd frontend && npm run content:generate
-cd frontend && npm run content:check-refs && npm run content:check
+scripts/curriculum/validate-source
+scripts/curriculum/generate
+scripts/curriculum/check-generated
 ```
 
 For affected lessons, run solution tests from the repository root:
@@ -138,6 +138,9 @@ For affected lessons, run solution tests from the repository root:
 ```text
 scripts/test-lesson-solutions.sh lessons/<arc>
 ```
+
+For normal changed-work validation, `scripts/curriculum/author-check` runs the
+source, generated-content, and changed-solution gates against `origin/main`.
 
 If scaffolder or source-validation behavior changed, also run:
 

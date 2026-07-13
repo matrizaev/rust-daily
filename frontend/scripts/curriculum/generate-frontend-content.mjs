@@ -1,6 +1,7 @@
-import { mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { basename, dirname, join } from "node:path";
+import { pathToFileURL } from "node:url";
 import {
   FRONTEND_CONCEPTS_PATH,
   FRONTEND_CONTENT_REVISION_PATH,
@@ -204,6 +205,96 @@ const writeLessonDetails = async (directory, lessons) =>
     ),
   );
 
+const collectFiles = async (root, prefix = "") => {
+  if (!(await pathExists(root))) {
+    return [];
+  }
+
+  const entries = await readdir(root, { withFileTypes: true });
+  const childFiles = await Promise.all(
+    entries.map((entry) => {
+      const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
+      const fullPath = join(root, entry.name);
+
+      return entry.isDirectory()
+        ? collectFiles(fullPath, relativePath)
+        : [relativePath];
+    }),
+  );
+
+  return childFiles.flat().sort();
+};
+
+const fileContentsEqual = async (left, right) => {
+  try {
+    const [leftContent, rightContent] = await Promise.all([
+      readFile(left, "utf8"),
+      readFile(right, "utf8"),
+    ]);
+
+    return leftContent === rightContent;
+  } catch {
+    return false;
+  }
+};
+
+const compareGeneratedFile = async (staged, target, label) => {
+  if (!(await pathExists(target))) {
+    return [`Generated ${label} is missing.`];
+  }
+
+  return (await fileContentsEqual(staged, target))
+    ? []
+    : [`Generated ${label} is out of sync.`];
+};
+
+const compareGeneratedDirectory = async (staged, target, label) => {
+  const [stagedFiles, targetFiles] = await Promise.all([
+    collectFiles(staged),
+    collectFiles(target),
+  ]);
+  const errors = [];
+  const stagedSet = new Set(stagedFiles);
+  const targetSet = new Set(targetFiles);
+
+  stagedFiles
+    .filter((path) => !targetSet.has(path))
+    .forEach((path) => errors.push(`Generated ${label}/${path} is missing.`));
+  targetFiles
+    .filter((path) => !stagedSet.has(path))
+    .forEach((path) => errors.push(`Generated ${label}/${path} has no source.`));
+
+  for (const path of stagedFiles.filter((item) => targetSet.has(item))) {
+    if (!(await fileContentsEqual(join(staged, path), join(target, path)))) {
+      errors.push(`Generated ${label}/${path} is out of sync.`);
+    }
+  }
+
+  return errors;
+};
+
+const compareGeneratedCorpus = async ({
+  stagedLessons,
+  stagedIndex,
+  stagedConcepts,
+  stagedRevision,
+  stagedDetails,
+}) => [
+  ...(await compareGeneratedFile(stagedLessons, FRONTEND_LESSONS_PATH, "lessons.json")),
+  ...(await compareGeneratedFile(stagedIndex, FRONTEND_LESSON_INDEX_PATH, "lessonIndex.json")),
+  ...(await compareGeneratedFile(stagedConcepts, FRONTEND_CONCEPTS_PATH, "concepts.json")),
+  ...(await compareGeneratedFile(
+    stagedRevision,
+    FRONTEND_CONTENT_REVISION_PATH,
+    "contentRevision.json",
+  )),
+  ...(await compareGeneratedDirectory(
+    stagedDetails,
+    FRONTEND_LESSON_DETAILS_DIR,
+    "lesson details",
+  )),
+];
+
 const moveStagedTarget = async ({ staged, target }, moved) => {
   const backup = `${target}.${process.pid}.bak`;
   if (await pathExists(target)) {
@@ -239,7 +330,7 @@ const replaceGeneratedCorpus = async (stagedTargets) => {
   await removeBackups(moved);
 };
 
-const main = async () => {
+export const generateFrontendContent = async ({ check = false } = {}) => {
   const validation = await validateSourceContent({ report: false });
   if (validation.errors.length > 0) {
     throw new Error(`Refusing to generate invalid source content (${validation.errors.join("; ")}).`);
@@ -269,6 +360,27 @@ const main = async () => {
       writeJson(stagedRevision, { revision: contentRevision }),
       writeLessonDetails(stagedDetails, lessons),
     ]);
+
+    if (check) {
+      const errors = await compareGeneratedCorpus({
+        stagedLessons,
+        stagedIndex,
+        stagedConcepts,
+        stagedRevision,
+        stagedDetails,
+      });
+
+      if (errors.length > 0) {
+        console.error(`Generated content is out of sync with source with ${errors.length} issue(s):`);
+        errors.forEach((error) => console.error(`- ${error}`));
+        process.exitCode = 1;
+        return;
+      }
+
+      console.log(`Generated content is current: ${lessons.length} lessons and ${concepts.length} concepts.`);
+      return;
+    }
+
     await replaceGeneratedCorpus([
       { staged: stagedLessons, target: FRONTEND_LESSONS_PATH },
       { staged: stagedIndex, target: FRONTEND_LESSON_INDEX_PATH },
@@ -283,4 +395,49 @@ const main = async () => {
   console.log(`Generated ${lessons.length} lessons and ${concepts.length} concepts.`);
 };
 
-await main();
+const usage = () => `Usage:
+  node frontend/scripts/curriculum/generate-frontend-content.mjs [--check]
+
+Options:
+  --check   Compare generated output without writing files.
+  --help    Show this help.
+`;
+
+const parseArgs = (argv) => {
+  const options = { check: false };
+  const errors = [];
+
+  for (const arg of argv) {
+    if (arg === "--check") {
+      options.check = true;
+    } else if (arg === "--help" || arg === "-h") {
+      options.help = true;
+    } else {
+      errors.push(`Unknown argument ${arg}.`);
+    }
+  }
+
+  return { options, errors };
+};
+
+const main = async () => {
+  const { options, errors } = parseArgs(process.argv.slice(2));
+
+  if (options.help) {
+    console.log(usage());
+    return;
+  }
+
+  if (errors.length > 0) {
+    errors.forEach((error) => console.error(error));
+    console.error(usage());
+    process.exitCode = 64;
+    return;
+  }
+
+  await generateFrontendContent(options);
+};
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main();
+}

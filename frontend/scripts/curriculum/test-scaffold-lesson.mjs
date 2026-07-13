@@ -381,6 +381,23 @@ const testForceOverwriteProtection = () =>
     );
   });
 
+const testDryRunWritesNothing = () =>
+  withRoot(async (root) => {
+    const presetId = "advanced-owned-api";
+    const result = await runScaffold(root, [
+      ...scaffoldArgs(presetId),
+      "--dry-run",
+    ]);
+
+    assert(result.code === 0, `--dry-run failed:\n${result.output}`);
+    assertIncludes(result.output, "Dry run lesson scaffold:", "dry-run output");
+    assertIncludes(result.output, "Files to create:", "dry-run output");
+    assert(
+      !(await pathExists(lessonDir(root, presetId))),
+      "--dry-run should not write lesson directory",
+    );
+  });
+
 const cases = [
   ["list presets", testListPresets],
   ["help", testHelp],
@@ -388,6 +405,7 @@ const cases = [
   ["dependency mismatch writes nothing", testDependencyMismatchNoWrite],
   ...PRESET_IDS.map((presetId) => [`preset ${presetId}`, () => testPreset(presetId)]),
   ["force overwrite protection", testForceOverwriteProtection],
+  ["dry run writes nothing", testDryRunWritesNothing],
 ];
 
 for (const [name, run] of cases) {

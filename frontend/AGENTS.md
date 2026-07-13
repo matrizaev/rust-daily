@@ -85,16 +85,21 @@ yes | npx fallow health
 For content or lesson changes, also run:
 
 ```text
-npm run content:validate-source
-npm run content:generate
-npm run content:check-refs
-npm run content:check
+../scripts/curriculum/validate-source
+../scripts/curriculum/generate
+../scripts/curriculum/check-generated
 ```
 
 Then run affected lesson solution tests from the repository root:
 
 ```text
 scripts/test-lesson-solutions.sh lessons/<affected-arc-or-lesson>
+```
+
+For the normal changed-work authoring gate, run from the repository root:
+
+```text
+scripts/curriculum/author-check
 ```
 
 For script changes under `frontend/scripts/curriculum/`, include the relevant

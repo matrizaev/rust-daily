@@ -1124,6 +1124,190 @@ const instructionsMissEditablePath = (lesson, path) => {
   return !lesson.instructions.includes(path);
 };
 
+const AUTHOR_PLACEHOLDER = "TODO(author):";
+const REAL_WORLD_CONTEXT_TERMS = [
+  "config",
+  "configuration",
+  "request",
+  "response",
+  "service",
+  "repository",
+  "adapter",
+  "parser",
+  "log",
+  "logs",
+  "logging",
+  "event",
+  "events",
+  "command",
+  "inventory",
+  "user",
+  "money",
+  "email",
+  "host",
+  "hosts",
+  "port",
+  "ports",
+  "retry",
+  "timeout",
+  "validation",
+  "persistence",
+  "boundary",
+  "business",
+  "domain",
+  "dto",
+  "api",
+  "database",
+  "http",
+  "ui",
+  "collection",
+  "wrapper",
+  "dashboard",
+  "address",
+  "system",
+  "amount",
+  "currency",
+  "order",
+  "codebase",
+  "loader",
+  "line",
+  "failure",
+  "failures",
+  "error",
+  "errors",
+  "classification",
+  "application",
+  "caller",
+  "callers",
+  "network",
+  "endpoint",
+  "form",
+  "forms",
+  "price",
+  "prices",
+  "decimal",
+  "builder",
+  "default",
+  "field",
+  "fields",
+  "operator",
+  "operators",
+  "case",
+  "cases",
+  "formatting",
+  "behavior",
+  "doc",
+  "example",
+  "usage",
+  "input",
+  "inputs",
+  "test",
+  "fixture",
+];
+
+const hasAuthorPlaceholder = (value) =>
+  typeof value === "string" && value.includes(AUTHOR_PLACEHOLDER);
+
+const textIncludesWord = (text, word) =>
+  new RegExp(`\\b${escapeRegExp(word)}\\b`, "i").test(text);
+
+const validateScenarioRealWorldFit = (errors, lesson) => {
+  if (!isString(lesson.scenario) || hasAuthorPlaceholder(lesson.scenario)) {
+    return;
+  }
+
+  const hasContext = REAL_WORLD_CONTEXT_TERMS.some((term) =>
+    textIncludesWord(lesson.scenario, term),
+  );
+
+  if (!hasContext) {
+    push(
+      errors,
+      `${lesson.id} scenario must describe plausible project work; include a concrete service, boundary, data, validation, or test context.`,
+    );
+  }
+};
+
+const publicSymbolsFromSource = (source) => {
+  const symbols = new Set();
+  const declarationPattern = /\bpub\s+(?:async\s+)?(?:struct|enum|trait|fn)\s+([A-Za-z_][A-Za-z0-9_]*)/g;
+  const domainIdentifierPattern = /\b[A-Z][A-Za-z0-9_]+\b/g;
+  let match = declarationPattern.exec(source);
+
+  while (match) {
+    symbols.add(match[1]);
+    match = declarationPattern.exec(source);
+  }
+
+  match = domainIdentifierPattern.exec(source);
+
+  while (match) {
+    symbols.add(match[0]);
+    match = domainIdentifierPattern.exec(source);
+  }
+
+  return [...symbols];
+};
+
+const INSTRUCTION_ALIGNMENT_TERMS = [
+  "assert",
+  "check",
+  "constructor",
+  "derive",
+  "field",
+  "function",
+  "impl",
+  "match",
+  "method",
+  "module",
+  "test",
+  "trait",
+  "variant",
+];
+
+const instructionsNameWorkShape = (instructions) =>
+  INSTRUCTION_ALIGNMENT_TERMS.some((term) => textIncludesWord(instructions, term));
+
+const lessonProjectSource = async (lessonJsonPath, lesson) => {
+  const fileSources = await Promise.all(
+    (lesson.files ?? [])
+      .filter((file) => file.role !== "test")
+      .map((file) => readLessonFileSource(lessonJsonPath, file)),
+  );
+
+  return [
+    ...fileSources,
+    await readSolution(lessonJsonPath, lesson),
+  ].join("\n\n");
+};
+
+const validateInstructionApiAlignment = async (errors, lessonJsonPath, lesson) => {
+  if (!isString(lesson.instructions) || hasAuthorPlaceholder(lesson.instructions)) {
+    return;
+  }
+
+  const source = await lessonProjectSource(lessonJsonPath, lesson);
+  const symbols = publicSymbolsFromSource(source);
+
+  if (symbols.length === 0) {
+    return;
+  }
+
+  const namesKnownApi = symbols.some((symbol) => lesson.instructions.includes(symbol));
+
+  if (!namesKnownApi && !instructionsNameWorkShape(lesson.instructions)) {
+    push(
+      errors,
+      `${lesson.id} instructions must name at least one public API/type/function from the starter or expected solution.`,
+    );
+  }
+};
+
+const validateRealWorldFit = async (errors, lessonJsonPath, lesson) => {
+  validateScenarioRealWorldFit(errors, lesson);
+  await validateInstructionApiAlignment(errors, lessonJsonPath, lesson);
+};
+
 const solutionSourcePath = (lesson) =>
   isRecord(lesson.author) && isString(lesson.author.solutionPath) && editablePath(lesson)
     ? `${lesson.author.solutionPath}/${editablePath(lesson)}`
@@ -1133,6 +1317,14 @@ const readSolution = async (lessonJsonPath, lesson) => {
   const sourcePath = solutionSourcePath(lesson);
 
   return sourcePath ? await readLessonSource(lessonJsonPath, sourcePath) : "";
+};
+
+const readAuthorNotes = async (lessonJsonPath, lesson) => {
+  if (!isRecord(lesson.author) || !isString(lesson.author.notesPath)) {
+    return "";
+  }
+
+  return readLessonSource(lessonJsonPath, lesson.author.notesPath);
 };
 
 const lessonFileByPath = (lesson, path) =>
@@ -1650,6 +1842,56 @@ const validateCumulativeArcLessons = async (errors, arcLessons) => {
       validateSolutionSatisfiesStructuralChecks(errors, lesson, ordered.slice(0, index + 1)),
     ),
   );
+
+  await validateRawBoundaryDetours(errors, ordered);
+};
+
+const DOMAIN_TYPE_PATTERN = /\b(?:pub\s+)?(?:struct|enum)\s+([A-Z][A-Za-z0-9_]*)\b/g;
+const RAW_KEY_VALUE_COLLECTION_PATTERN =
+  /\b(?:HashMap|BTreeMap)\s*<\s*String\s*,\s*String\b|\bVec\s*<\s*\(\s*(?:&str|String)\s*,\s*(?:&str|String)\s*\)|&?\s*\[\s*\(\s*(?:&str|String)\s*,\s*(?:&str|String)\s*\)\s*\]/;
+const RAW_BOUNDARY_NOTE = "Intentional raw boundary:";
+
+const domainTypesFromSource = (source) => {
+  const names = new Set();
+  let match = DOMAIN_TYPE_PATTERN.exec(source);
+
+  while (match) {
+    names.add(match[1]);
+    match = DOMAIN_TYPE_PATTERN.exec(source);
+  }
+
+  return [...names];
+};
+
+const validateRawBoundaryDetours = async (errors, ordered) => {
+  const previousDomainNames = new Set();
+  let previousLessonId = null;
+
+  for (const lessonRecord of ordered) {
+    const editableSolution = await readSolution(lessonRecord.lessonJsonPath, lessonRecord.lesson);
+    const notes = await readAuthorNotes(lessonRecord.lessonJsonPath, lessonRecord.lesson);
+    const domainNames = [...previousDomainNames];
+
+    if (
+      domainNames.length > 0 &&
+      RAW_KEY_VALUE_COLLECTION_PATTERN.test(editableSolution) &&
+      !domainNames.some((name) => editableSolution.includes(name)) &&
+      !notes.includes(RAW_BOUNDARY_NOTE)
+    ) {
+      push(
+        errors,
+        `${lessonRecord.lesson.id} uses raw key/value collection after ${previousLessonId} introduced domain type ${domainNames[0]}; use domain types or add ${RAW_BOUNDARY_NOTE} to notes.`,
+      );
+    }
+
+    domainTypesFromSource(
+      await solutionSnapshotSource(lessonRecord.lessonJsonPath, lessonRecord.lesson),
+    ).forEach((name) => previousDomainNames.add(name));
+
+    if (previousDomainNames.size > 0) {
+      previousLessonId = lessonRecord.lesson.id;
+    }
+  }
 };
 
 const validateCumulativeLessons = async (errors, lessonRecords) => {
@@ -1685,6 +1927,7 @@ const validateLesson = async (errors, lessonJsonPath, conceptIds) => {
 
   await validateFiles(errors, lessonJsonPath, lesson);
   validateInstructionsNameEditablePath(errors, lesson);
+  await validateRealWorldFit(errors, lessonJsonPath, lesson);
   await validateValidation(errors, lessonJsonPath, lesson);
   validateHints(errors, lesson);
   await validateAuthor(errors, lessonJsonPath, lesson);

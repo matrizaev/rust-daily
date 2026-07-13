@@ -3,39 +3,104 @@ set -euo pipefail
 
 usage() {
   cat <<'USAGE'
-Usage: scripts/test-lesson-solutions.sh [arc-or-lesson-path]
+Usage: scripts/test-lesson-solutions.sh [options] [arc-or-lesson-path]
 
-Runs each lesson solution against its public tests in a temporary Cargo crate.
+Runs lesson solutions against public tests in temporary Cargo crates.
+
+Options:
+  --changed          Run lessons changed against --base.
+  --base <ref>       Base ref for --changed. Default: origin/main.
+  --jobs <n>         Number of lessons to run in parallel. Default: 1.
+  --list             List selected lesson directories and exit.
+  --format text|json Output text or JSON. Default: text.
+  -h, --help         Show this help.
 
 Examples:
   scripts/test-lesson-solutions.sh parse-user
   scripts/test-lesson-solutions.sh lessons/parse-user/004-source-parse-int
   scripts/test-lesson-solutions.sh lessons
+  scripts/test-lesson-solutions.sh --changed --jobs 4
 USAGE
 }
 
-if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
-  usage
-  exit 0
-fi
-
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-target="${1:-lessons}"
+base="origin/main"
+changed=false
+list_only=false
+format="text"
+jobs_count=1
+target="lessons"
+target_provided=false
 
-case "$target" in
-  /*) target_path="$target" ;;
-  lessons|lessons/*) target_path="$repo_root/$target" ;;
-  *) target_path="$repo_root/lessons/$target" ;;
-esac
-
-if [[ ! -d "$target_path" ]]; then
-  echo "No such lesson target: $target" >&2
+die_usage() {
+  echo "$1" >&2
   usage >&2
   exit 64
+}
+
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --changed)
+      changed=true
+      shift
+      ;;
+    --base)
+      [[ "${2:-}" != "" && "${2:-}" != --* ]] || die_usage "--base requires a value."
+      base="$2"
+      shift 2
+      ;;
+    --jobs)
+      [[ "${2:-}" =~ ^[1-9][0-9]*$ ]] || die_usage "--jobs requires a positive integer."
+      jobs_count="$2"
+      shift 2
+      ;;
+    --list)
+      list_only=true
+      shift
+      ;;
+    --format)
+      [[ "${2:-}" == "text" || "${2:-}" == "json" ]] || die_usage "--format must be text or json."
+      format="$2"
+      shift 2
+      ;;
+    --*)
+      die_usage "Unknown option $1."
+      ;;
+    *)
+      if [[ "$target_provided" == true ]]; then
+        die_usage "Unexpected positional argument $1."
+      fi
+      target="$1"
+      target_provided=true
+      shift
+      ;;
+  esac
+done
+
+if [[ "$changed" == true && "$target_provided" == true ]]; then
+  die_usage "--changed cannot be combined with a positional target."
 fi
 
 tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/lesson-solution-check-XXXXXX")"
 trap 'rm -rf "$tmp_dir"' EXIT
+cargo_network_flags=()
+if [[ "${LESSON_SOLUTIONS_CARGO_OFFLINE:-true}" != "false" ]]; then
+  cargo_network_flags+=(--offline)
+fi
+
+target_path_for() {
+  local value="$1"
+
+  case "$value" in
+    /*) printf '%s\n' "$value" ;;
+    lessons|lessons/*) printf '%s\n' "$repo_root/$value" ;;
+    *) printf '%s\n' "$repo_root/lessons/$value" ;;
+  esac
+}
 
 dependency_set_for_lesson() {
   node -e '
@@ -138,6 +203,7 @@ run_compile_fail_cases() {
   local lesson_dir="$1"
   local crate_dir="$2"
   local rel_path="$3"
+  local cargo_target_dir="$4"
   local manifest_path="$crate_dir/compile-fail-cases.tsv"
 
   prepare_compile_fail_cases "$lesson_dir" "$crate_dir" "$manifest_path"
@@ -149,8 +215,8 @@ run_compile_fail_cases() {
   while IFS=$'\t' read -r target_name case_name expected_b64 forbidden_b64; do
     set +e
     output="$(
-      CARGO_TARGET_DIR="$tmp_dir/target" \
-        cargo check --manifest-path "$crate_dir/Cargo.toml" --offline --test "$target_name" --message-format=json 2>&1
+      CARGO_TARGET_DIR="$cargo_target_dir" \
+        cargo check --manifest-path "$crate_dir/Cargo.toml" "${cargo_network_flags[@]}" --test "$target_name" --message-format=json 2>&1
     )"
     status=$?
     set -e
@@ -201,30 +267,21 @@ incremental = false
 TOML
 }
 
-lesson_dirs=()
+safe_rel_name() {
+  printf '%s\n' "${1//\//__}"
+}
 
-if [[ -f "$target_path/lesson.json" ]]; then
-  lesson_dirs+=("$target_path")
-else
-  while IFS= read -r -d '' lesson_json; do
-    lesson_dir="${lesson_json%/lesson.json}"
-    if [[ -d "$lesson_dir/starter" && -d "$lesson_dir/tests" ]]; then
-      lesson_dirs+=("$lesson_dir")
-    fi
-  done < <(
-    find "$target_path" -type f -name lesson.json -print0 |
-      sort -z
-  )
-fi
+run_lesson() {
+  local lesson_dir="$1"
+  local rel_path="${lesson_dir#"$repo_root"/}"
+  local safe_name
+  safe_name="$(safe_rel_name "$rel_path")"
+  local crate_dir="$tmp_dir/crates/$safe_name"
+  local cargo_target_dir="$tmp_dir/targets/$safe_name"
+  local dependency_set
+  local editable_path
+  local solution_file
 
-if [[ "${#lesson_dirs[@]}" -eq 0 ]]; then
-  echo "No lesson solution/test pairs found under: $target_path" >&2
-  exit 65
-fi
-
-for lesson_dir in "${lesson_dirs[@]}"; do
-  rel_path="${lesson_dir#"$repo_root"/}"
-  crate_dir="$tmp_dir/${rel_path//\//__}"
   dependency_set="$(dependency_set_for_lesson "$lesson_dir/lesson.json")"
   editable_path="$(editable_path_for_lesson "$lesson_dir/lesson.json")"
   solution_file="$lesson_dir/solution/$editable_path"
@@ -242,8 +299,217 @@ for lesson_dir in "${lesson_dirs[@]}"; do
   mkdir -p "$crate_dir/tests"
   cp -R "$lesson_dir/tests/." "$crate_dir/tests/"
 
-  CARGO_TARGET_DIR="$tmp_dir/target" \
-    cargo test --manifest-path "$crate_dir/Cargo.toml" --offline --quiet
-  run_compile_fail_cases "$lesson_dir" "$crate_dir" "$rel_path"
+  CARGO_TARGET_DIR="$cargo_target_dir" \
+    cargo test --manifest-path "$crate_dir/Cargo.toml" "${cargo_network_flags[@]}" --quiet
+  run_compile_fail_cases "$lesson_dir" "$crate_dir" "$rel_path" "$cargo_target_dir"
   printf 'passed %s\n' "$rel_path"
+}
+
+resolve_lesson_dirs_for_target() {
+  local value="$1"
+  local target_path
+  target_path="$(target_path_for "$value")"
+
+  if [[ ! -d "$target_path" ]]; then
+    echo "No such lesson target: $value" >&2
+    usage >&2
+    exit 64
+  fi
+
+  if [[ -f "$target_path/lesson.json" ]]; then
+    printf '%s\0' "$target_path"
+    return
+  fi
+
+  while IFS= read -r -d '' lesson_json; do
+    lesson_dir="${lesson_json%/lesson.json}"
+    if [[ -d "$lesson_dir/starter" && -d "$lesson_dir/tests" ]]; then
+      printf '%s\0' "$lesson_dir"
+    fi
+  done < <(
+    find "$target_path" -type f -name lesson.json -print0 |
+      sort -z
+  )
+}
+
+resolve_changed_lesson_dirs() {
+  while IFS= read -r rel_path; do
+    [[ -n "$rel_path" ]] || continue
+    if [[ -d "$repo_root/$rel_path" ]]; then
+      printf '%s\0' "$repo_root/$rel_path"
+    fi
+  done < <("$repo_root/scripts/curriculum/changed-lessons" --base "$base")
+}
+
+lesson_dirs=()
+if [[ "$changed" == true ]]; then
+  while IFS= read -r -d '' lesson_dir; do
+    lesson_dirs+=("$lesson_dir")
+  done < <(resolve_changed_lesson_dirs)
+else
+  while IFS= read -r -d '' lesson_dir; do
+    lesson_dirs+=("$lesson_dir")
+  done < <(resolve_lesson_dirs_for_target "$target")
+fi
+
+if [[ "${#lesson_dirs[@]}" -eq 0 ]]; then
+  if [[ "$changed" == true ]]; then
+    if [[ "$format" == "json" ]]; then
+      node -e 'console.log(JSON.stringify({ base: process.argv[1], target: "changed", jobs: Number(process.argv[2]), lessons: [], summary: { passed: 0, failed: 0, durationMs: 0 } }, null, 2))' "$base" "$jobs_count"
+    else
+      echo "No changed lesson solution/test pairs found."
+    fi
+    exit 0
+  fi
+
+  echo "No lesson solution/test pairs found under: $(target_path_for "$target")" >&2
+  exit 65
+fi
+
+if [[ "$list_only" == true ]]; then
+  for lesson_dir in "${lesson_dirs[@]}"; do
+    printf '%s\n' "${lesson_dir#"$repo_root"/}"
+  done
+  exit 0
+fi
+
+if [[ "$format" == "text" ]]; then
+  printf 'Running %d lesson solution check(s) with %d job(s); logs are buffered per lesson.\n' \
+    "${#lesson_dirs[@]}" "$jobs_count"
+fi
+
+mkdir -p "$tmp_dir/logs" "$tmp_dir/status" "$tmp_dir/meta" "$tmp_dir/crates" "$tmp_dir/targets"
+started_ms="$(date +%s%3N)"
+
+write_meta() {
+  local lesson_dir="$1"
+  local safe_name="$2"
+  local started="$3"
+  local status="$4"
+  local duration_ms="$5"
+  local rel_path="${lesson_dir#"$repo_root"/}"
+  local dependency_set="unknown"
+
+  if [[ -f "$lesson_dir/lesson.json" ]]; then
+    dependency_set="$(dependency_set_for_lesson "$lesson_dir/lesson.json")"
+  fi
+
+  printf '%s\t%s\t%s\t%s\t%s\n' "$rel_path" "$dependency_set" "$status" "$duration_ms" "$started" > "$tmp_dir/meta/$safe_name.tsv"
+}
+
+run_lesson_job() {
+  local lesson_dir="$1"
+  local rel_path="${lesson_dir#"$repo_root"/}"
+  local safe_name
+  safe_name="$(safe_rel_name "$rel_path")"
+  local lesson_started_ms
+  lesson_started_ms="$(date +%s%3N)"
+
+  set +e
+  run_lesson "$lesson_dir" > "$tmp_dir/logs/$safe_name.log" 2>&1
+  local status=$?
+  set -e
+
+  local lesson_finished_ms
+  lesson_finished_ms="$(date +%s%3N)"
+  local duration_ms=$((lesson_finished_ms - lesson_started_ms))
+
+  echo "$status" > "$tmp_dir/status/$safe_name.status"
+  write_meta "$lesson_dir" "$safe_name" "$lesson_started_ms" "$status" "$duration_ms"
+}
+
+throttle_jobs() {
+  while [[ "$(jobs -rp | wc -l)" -ge "$jobs_count" ]]; do
+    sleep 0.2
+  done
+}
+
+for lesson_dir in "${lesson_dirs[@]}"; do
+  throttle_jobs
+  run_lesson_job "$lesson_dir" &
 done
+
+set +e
+wait
+set -e
+
+finished_ms="$(date +%s%3N)"
+duration_ms=$((finished_ms - started_ms))
+failed=0
+passed=0
+first_failure=""
+
+for lesson_dir in "${lesson_dirs[@]}"; do
+  rel_path="${lesson_dir#"$repo_root"/}"
+  safe_name="$(safe_rel_name "$rel_path")"
+  status="$(cat "$tmp_dir/status/$safe_name.status")"
+
+  if [[ "$status" -eq 0 ]]; then
+    passed=$((passed + 1))
+  else
+    failed=$((failed + 1))
+    if [[ -z "$first_failure" ]]; then
+      first_failure="$safe_name"
+    fi
+  fi
+done
+
+if [[ "$format" == "json" ]]; then
+  node -e '
+const fs = require("fs");
+const path = require("path");
+const [base, target, jobs, duration, metaDir, logDir] = process.argv.slice(1);
+const lessons = fs.readdirSync(metaDir)
+  .filter((file) => file.endsWith(".tsv"))
+  .sort()
+  .map((file) => {
+    const [lessonPath, dependencySet, statusCode, durationMs] = fs
+      .readFileSync(path.join(metaDir, file), "utf8")
+      .trim()
+      .split("\t");
+    const status = statusCode === "0" ? "passed" : "failed";
+    const log = fs.readFileSync(path.join(logDir, file.replace(/\.tsv$/, ".log")), "utf8");
+    return {
+      path: lessonPath,
+      status,
+      dependencySet,
+      durationMs: Number(durationMs),
+      ...(status === "failed" ? { log } : {}),
+    };
+  });
+const passed = lessons.filter((lesson) => lesson.status === "passed").length;
+const failed = lessons.length - passed;
+console.log(JSON.stringify({
+  base,
+  target,
+  jobs: Number(jobs),
+  lessons,
+  summary: {
+    passed,
+    failed,
+    durationMs: Number(duration),
+  },
+}, null, 2));
+' "$base" "$([[ "$changed" == true ]] && printf 'changed' || printf '%s' "$target")" "$jobs_count" "$duration_ms" "$tmp_dir/meta" "$tmp_dir/logs"
+else
+  for lesson_dir in "${lesson_dirs[@]}"; do
+    rel_path="${lesson_dir#"$repo_root"/}"
+    safe_name="$(safe_rel_name "$rel_path")"
+    status="$(cat "$tmp_dir/status/$safe_name.status")"
+
+    if [[ "$status" -eq 0 ]]; then
+      cat "$tmp_dir/logs/$safe_name.log"
+    fi
+  done
+
+  if [[ "$failed" -gt 0 ]]; then
+    echo "First failing lesson log:" >&2
+    cat "$tmp_dir/logs/$first_failure.log" >&2
+  fi
+
+  printf 'Lesson solution checks: %d passed, %d failed in %d ms.\n' "$passed" "$failed" "$duration_ms"
+fi
+
+if [[ "$failed" -gt 0 ]]; then
+  exit 1
+fi

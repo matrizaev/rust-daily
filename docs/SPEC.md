@@ -94,9 +94,9 @@ manual implementation is appropriate only when its behavior is the lesson.
 
 ### 4.3 One Editable Artifact
 
-A lesson may compile a realistic multi-file project snapshot, but exactly one
-artifact is editable during that lesson. Multi-crate workspaces are a future
-runner mode, not part of the current implementation.
+A lesson may compile a realistic multi-file single-crate project snapshot, but
+exactly one artifact is editable during that lesson. Multi-crate workspaces are
+not supported.
 
 - All other source, manifest, migration, fixture, and test files are supplied
   as read-only context.
@@ -535,17 +535,19 @@ duplication, dead-code, and health checks; and all lesson reference solutions.
 ## 13. Current Exclusions
 
 Editing more than one artifact in a lesson is a permanent product non-goal.
+Multi-crate runner transport is also out of scope; future lessons may add
+single-crate artifact types, but not Cargo workspace exercises.
 
 The current implementation does not include:
 
 - user accounts or cloud synchronization;
 - hidden or server-owned grading tests;
 - browser-based Rust compilation;
-- multi-crate runner transport;
 - adaptive review scheduling;
 - notifications or analytics;
-- databases, migrations, benchmarks, procedural macro workspaces,
-  trybuild-style macro diagnostics, FFI, or dedicated unsafe validation;
+- databases, migrations, benchmarks, trybuild-style diagnostics, FFI, or
+  dedicated unsafe validation;
 - large multi-module capstone workspaces.
 
 These are deliberate future increments, not implied current capabilities.
+Multi-crate and procedural-macro workspace support remain out of scope.
