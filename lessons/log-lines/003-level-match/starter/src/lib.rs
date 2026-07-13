@@ -11,4 +11,4 @@ pub struct LogView<'a> {
 
 // Continue from the previous lesson.
 // TODO: add the supported log levels.
-// TODO: map Info to 1, Warn to 2, and Error to 3.
+// TODO: map Info, Warn, and Error to alert queue priority values.

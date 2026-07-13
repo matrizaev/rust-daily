@@ -974,18 +974,18 @@
     "conceptId": "pattern-matching",
     "difficulty": "easy",
     "estimatedMinutes": 6,
-    "scenario": "The viewer needs a stable severity number for each known log level.",
-    "instructions": "Keep the borrowed log entry and view code, then add LogLevel variants Info, Warn, and Error. Implement severity with a match on level.",
+    "scenario": "An operations view sorts alert rows by log level, keeping routine info below warnings and errors.",
+    "instructions": "Keep the borrowed log entry and view code, then add LogLevel variants Info, Warn, and Error. Implement alert_priority with a match on level.",
     "files": [
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n// Continue from the previous lesson.\n// TODO: add the supported log levels.\n// TODO: map Info to 1, Warn to 2, and Error to 3.\n"
+        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n// Continue from the previous lesson.\n// TODO: add the supported log levels.\n// TODO: map Info, Warn, and Error to alert queue priority values.\n"
       },
       {
         "path": "tests/public.rs",
         "role": "test",
-        "content": "use rust_daily_lesson::{severity, LogLevel};\n\n#[test]\nfn maps_log_levels_to_severity() {\n    assert_eq!(severity(LogLevel::Info), 1);\n    assert_eq!(severity(LogLevel::Warn), 2);\n    assert_eq!(severity(LogLevel::Error), 3);\n}\n"
+        "content": "use rust_daily_lesson::{alert_priority, LogLevel};\n\n#[test]\nfn maps_log_levels_to_alert_priority() {\n    assert_eq!(alert_priority(LogLevel::Info), 0);\n    assert_eq!(alert_priority(LogLevel::Warn), 1);\n    assert_eq!(alert_priority(LogLevel::Error), 2);\n}\n"
       }
     ],
     "hints": [
@@ -995,15 +995,15 @@
       },
       {
         "level": 2,
-        "body": "The severity function should return a small integer for each variant."
+        "body": "The alert_priority function should return 0 for Info, 1 for Warn, and 2 for Error."
       },
       {
         "level": 3,
         "body": "A match expression is clearer than string comparisons for typed log levels.",
-        "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn severity(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 1,\n        LogLevel::Warn => 2,\n        LogLevel::Error => 3,\n    }\n}"
+        "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn alert_priority(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 0,\n        LogLevel::Warn => 1,\n        LogLevel::Error => 2,\n    }\n}\n"
       }
     ],
-    "completionExplanation": "Pattern matching keeps the mapping exhaustive and visible. Adding a new log level later will naturally point maintainers at this decision.",
+    "completionExplanation": "Pattern matching keeps the alert queue policy exhaustive and visible. Adding a new log level later will naturally point maintainers at this decision.",
     "validation": {
       "mode": "all",
       "validations": [
@@ -1023,6 +1023,7 @@
             {
               "type": "source_includes",
               "requiredSnippets": [
+                "pub fn alert_priority",
                 "match level"
               ]
             }
@@ -1187,22 +1188,22 @@
     "order": 17,
     "day": 4,
     "arcLength": 6,
-    "title": "Choose clarity over clever chains",
+    "title": "Make restock alerts scan-friendly",
     "conceptId": "iterator-judgment",
     "difficulty": "medium",
     "estimatedMinutes": 8,
-    "scenario": "Iterator chains are powerful, but a dense chain can hide business rules. This helper should be easy to scan.",
-    "instructions": "Refactor the existing reorder_notes helper into a clearer shape. Use a small loop and named intermediate values so the inventory priority rule is obvious.",
+    "scenario": "Inventory operators need a short list of normalized restock alerts before a purchasing review. A dense iterator chain hides which notes are actionable.",
+    "instructions": "Refactor the existing priority_restock_notes helper into a clearer shape. Use a small loop and named intermediate values so the restock alert rule is obvious.",
     "files": [
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Item {\n    pub sku: String,\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\npub fn available_names(items: &[Item]) -> Vec<&str> {\n    items\n        .iter()\n        .filter_map(|item| {\n            if item.quantity > item.reserved {\n                Some(item.name.as_str())\n            } else {\n                None\n            }\n        })\n        .collect()\n}\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    items.iter().fold(0, |total, item| total + item.quantity)\n}\n\npub fn reorder_notes(notes: &[String]) -> Vec<String> {\n    notes\n        .iter()\n        .map(|note| note.trim().to_lowercase())\n        .filter(|note| !note.is_empty())\n        .filter(|note| note.contains(\"urgent\") || note.contains(\"stock\"))\n        .collect()\n}\n\n// Continue from the previous lesson.\n// TODO: refactor reorder_notes so the inventory priority rule is easy to scan.\n"
+        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Item {\n    pub sku: String,\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\npub fn available_names(items: &[Item]) -> Vec<&str> {\n    items\n        .iter()\n        .filter_map(|item| {\n            if item.quantity > item.reserved {\n                Some(item.name.as_str())\n            } else {\n                None\n            }\n        })\n        .collect()\n}\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    items.iter().fold(0, |total, item| total + item.quantity)\n}\n\npub fn priority_restock_notes(notes: &[String]) -> Vec<String> {\n    notes\n        .iter()\n        .map(|note| note.trim().to_lowercase())\n        .filter(|note| !note.is_empty())\n        .filter(|note| note.contains(\"urgent\") || note.contains(\"stock\"))\n        .collect()\n}\n\n// Continue from the previous lesson.\n// TODO: refactor priority_restock_notes so the restock alert rule is easy to scan.\n"
       },
       {
         "path": "tests/public.rs",
         "role": "test",
-        "content": "use rust_daily_lesson::reorder_notes;\n\n#[test]\nfn keeps_inventory_notes_in_normalized_order() {\n    let notes = vec![\n        \"  URGENT restock batteries \".to_owned(),\n        \"\".to_owned(),\n        \"general reminder\".to_owned(),\n        \"low STOCK on cables\".to_owned(),\n    ];\n\n    assert_eq!(\n        reorder_notes(&notes),\n        vec![\n            \"urgent restock batteries\".to_owned(),\n            \"low stock on cables\".to_owned(),\n        ]\n    );\n}\n"
+        "content": "use rust_daily_lesson::priority_restock_notes;\n\n#[test]\nfn keeps_restock_alert_notes_in_normalized_order() {\n    let notes = vec![\n        \"  URGENT restock batteries \".to_owned(),\n        \"\".to_owned(),\n        \"general reminder\".to_owned(),\n        \"low STOCK on cables\".to_owned(),\n    ];\n\n    assert_eq!(\n        priority_restock_notes(&notes),\n        vec![\n            \"urgent restock batteries\".to_owned(),\n            \"low stock on cables\".to_owned(),\n        ]\n    );\n}\n"
       }
     ],
     "hints": [
@@ -1212,15 +1213,15 @@
       },
       {
         "level": 2,
-        "body": "Name a boolean such as is_inventory_note if that makes the rule clearer."
+        "body": "Name booleans such as mentions_urgent, mentions_stock, and is_restock_alert if that makes the rule clearer."
       },
       {
         "level": 3,
         "body": "A loop is idiomatic when each step deserves a name.",
-        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Item {\n    pub sku: String,\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\npub fn available_names(items: &[Item]) -> Vec<&str> {\n    items\n        .iter()\n        .filter_map(|item| {\n            if item.quantity > item.reserved {\n                Some(item.name.as_str())\n            } else {\n                None\n            }\n        })\n        .collect()\n}\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    items.iter().fold(0, |total, item| total + item.quantity)\n}\n\npub fn reorder_notes(notes: &[String]) -> Vec<String> {\n    let mut relevant_notes = Vec::new();\n\n    for note in notes {\n        let normalized = note.trim().to_lowercase();\n        if normalized.is_empty() {\n            continue;\n        }\n\n        let is_inventory_note = normalized.contains(\"urgent\") || normalized.contains(\"stock\");\n        if is_inventory_note {\n            relevant_notes.push(normalized);\n        }\n    }\n\n    relevant_notes\n}"
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Item {\n    pub sku: String,\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\npub fn available_names(items: &[Item]) -> Vec<&str> {\n    items\n        .iter()\n        .filter_map(|item| {\n            if item.quantity > item.reserved {\n                Some(item.name.as_str())\n            } else {\n                None\n            }\n        })\n        .collect()\n}\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    items.iter().fold(0, |total, item| total + item.quantity)\n}\n\npub fn priority_restock_notes(notes: &[String]) -> Vec<String> {\n    let mut priority_notes = Vec::new();\n\n    for note in notes {\n        let normalized = note.trim().to_lowercase();\n        if normalized.is_empty() {\n            continue;\n        }\n\n        let mentions_urgent = normalized.contains(\"urgent\");\n        let mentions_stock = normalized.contains(\"stock\");\n        let is_restock_alert = mentions_urgent || mentions_stock;\n\n        if is_restock_alert {\n            priority_notes.push(normalized);\n        }\n    }\n\n    priority_notes\n}\n"
       }
     ],
-    "completionExplanation": "Idiomatic Rust values clarity over using an iterator chain everywhere. The best shape is the one that makes the business rule easiest to verify.",
+    "completionExplanation": "Idiomatic Rust values clarity over using an iterator chain everywhere. The best shape is the one that makes the inventory rule easiest to verify during a review.",
     "validation": {
       "mode": "all",
       "validations": [
@@ -1230,7 +1231,7 @@
           "checks": [
             {
               "type": "function_signature",
-              "functionName": "reorder_notes",
+              "functionName": "priority_restock_notes",
               "requiredSignatureIncludes": [
                 "Vec<String>"
               ]
@@ -1239,7 +1240,9 @@
               "type": "source_includes",
               "requiredSnippets": [
                 "for note in notes",
-                "is_inventory_note"
+                "mentions_urgent",
+                "mentions_stock",
+                "is_restock_alert"
               ],
               "forbiddenSnippets": [
                 ".map(|note|",
@@ -1274,7 +1277,7 @@
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn severity(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 1,\n        LogLevel::Warn => 2,\n        LogLevel::Error => 3,\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: import Cow and define LogMessage with text that can be borrowed or owned.\n"
+        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn alert_priority(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 0,\n        LogLevel::Warn => 1,\n        LogLevel::Error => 2,\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: import Cow and define LogMessage with text that can be borrowed or owned.\n"
       },
       {
         "path": "tests/public.rs",
@@ -1294,7 +1297,7 @@
       {
         "level": 3,
         "body": "This is useful when most data can be borrowed but a few cases need ownership.",
-        "solutionCode": "use std::borrow::Cow;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn severity(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 1,\n        LogLevel::Warn => 2,\n        LogLevel::Error => 3,\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogMessage<'a> {\n    pub text: Cow<'a, str>,\n}"
+        "solutionCode": "use std::borrow::Cow;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn alert_priority(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 0,\n        LogLevel::Warn => 1,\n        LogLevel::Error => 2,\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogMessage<'a> {\n    pub text: Cow<'a, str>,\n}\n"
       }
     ],
     "completionExplanation": "Cow lets the API accept borrowed text by default while still supporting owned normalized messages. It avoids unnecessary allocation without giving up flexibility.",
@@ -1689,7 +1692,7 @@
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Item {\n    pub sku: String,\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\npub fn available_names(items: &[Item]) -> Vec<&str> {\n    items\n        .iter()\n        .filter_map(|item| {\n            if item.quantity > item.reserved {\n                Some(item.name.as_str())\n            } else {\n                None\n            }\n        })\n        .collect()\n}\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    items.iter().fold(0, |total, item| total + item.quantity)\n}\n\npub fn reorder_notes(notes: &[String]) -> Vec<String> {\n    let mut relevant_notes = Vec::new();\n\n    for note in notes {\n        let normalized = note.trim().to_lowercase();\n        if normalized.is_empty() {\n            continue;\n        }\n\n        let is_inventory_note = normalized.contains(\"urgent\") || normalized.contains(\"stock\");\n        if is_inventory_note {\n            relevant_notes.push(normalized);\n        }\n    }\n\n    relevant_notes\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Inventory {\n    items: Vec<Item>,\n}\n\nimpl Inventory {\n    pub fn new(items: Vec<Item>) -> Self {\n        Self { items }\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: implement IntoIterator for Inventory.\n"
+        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Item {\n    pub sku: String,\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\npub fn available_names(items: &[Item]) -> Vec<&str> {\n    items\n        .iter()\n        .filter_map(|item| {\n            if item.quantity > item.reserved {\n                Some(item.name.as_str())\n            } else {\n                None\n            }\n        })\n        .collect()\n}\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    items.iter().fold(0, |total, item| total + item.quantity)\n}\n\npub fn priority_restock_notes(notes: &[String]) -> Vec<String> {\n    let mut priority_notes = Vec::new();\n\n    for note in notes {\n        let normalized = note.trim().to_lowercase();\n        if normalized.is_empty() {\n            continue;\n        }\n\n        let mentions_urgent = normalized.contains(\"urgent\");\n        let mentions_stock = normalized.contains(\"stock\");\n        let is_restock_alert = mentions_urgent || mentions_stock;\n\n        if is_restock_alert {\n            priority_notes.push(normalized);\n        }\n    }\n\n    priority_notes\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Inventory {\n    items: Vec<Item>,\n}\n\nimpl Inventory {\n    pub fn new(items: Vec<Item>) -> Self {\n        Self { items }\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: implement IntoIterator for Inventory.\n"
       },
       {
         "path": "tests/public.rs",
@@ -1709,7 +1712,7 @@
       {
         "level": 3,
         "body": "The associated IntoIter type can reuse std::vec::IntoIter<Item>.",
-        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Item {\n    pub sku: String,\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\npub fn available_names(items: &[Item]) -> Vec<&str> {\n    items\n        .iter()\n        .filter_map(|item| {\n            if item.quantity > item.reserved {\n                Some(item.name.as_str())\n            } else {\n                None\n            }\n        })\n        .collect()\n}\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    items.iter().fold(0, |total, item| total + item.quantity)\n}\n\npub fn reorder_notes(notes: &[String]) -> Vec<String> {\n    let mut relevant_notes = Vec::new();\n\n    for note in notes {\n        let normalized = note.trim().to_lowercase();\n        if normalized.is_empty() {\n            continue;\n        }\n\n        let is_inventory_note = normalized.contains(\"urgent\") || normalized.contains(\"stock\");\n        if is_inventory_note {\n            relevant_notes.push(normalized);\n        }\n    }\n\n    relevant_notes\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Inventory {\n    items: Vec<Item>,\n}\n\nimpl Inventory {\n    pub fn new(items: Vec<Item>) -> Self {\n        Self { items }\n    }\n}\n\nimpl IntoIterator for Inventory {\n    type Item = Item;\n    type IntoIter = std::vec::IntoIter<Item>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.items.into_iter()\n    }\n}"
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Item {\n    pub sku: String,\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\npub fn available_names(items: &[Item]) -> Vec<&str> {\n    items\n        .iter()\n        .filter_map(|item| {\n            if item.quantity > item.reserved {\n                Some(item.name.as_str())\n            } else {\n                None\n            }\n        })\n        .collect()\n}\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    items.iter().fold(0, |total, item| total + item.quantity)\n}\n\npub fn priority_restock_notes(notes: &[String]) -> Vec<String> {\n    let mut priority_notes = Vec::new();\n\n    for note in notes {\n        let normalized = note.trim().to_lowercase();\n        if normalized.is_empty() {\n            continue;\n        }\n\n        let mentions_urgent = normalized.contains(\"urgent\");\n        let mentions_stock = normalized.contains(\"stock\");\n        let is_restock_alert = mentions_urgent || mentions_stock;\n\n        if is_restock_alert {\n            priority_notes.push(normalized);\n        }\n    }\n\n    priority_notes\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Inventory {\n    items: Vec<Item>,\n}\n\nimpl Inventory {\n    pub fn new(items: Vec<Item>) -> Self {\n        Self { items }\n    }\n}\n\nimpl IntoIterator for Inventory {\n    type Item = Item;\n    type IntoIter = std::vec::IntoIter<Item>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.items.into_iter()\n    }\n}\n"
       }
     ],
     "completionExplanation": "IntoIterator lets Inventory participate in for loops and iterator adapters without exposing its internal field as public API.",
@@ -1760,7 +1763,7 @@
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "use std::borrow::Cow;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn severity(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 1,\n        LogLevel::Warn => 2,\n        LogLevel::Error => 3,\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogMessage<'a> {\n    pub text: Cow<'a, str>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct AlertEntry<'a> {\n    pub level: LogLevel,\n    pub message: LogMessage<'a>,\n}\n\npub fn alert_messages<'a>(entries: &'a [AlertEntry<'a>]) -> Vec<&'a str> {\n    entries\n        .iter()\n        .filter_map(|entry| match entry.level {\n            LogLevel::Warn | LogLevel::Error => Some(entry.message.text.as_ref()),\n            LogLevel::Info => None,\n        })\n        .collect()\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    fn entry(level: LogLevel, message: &'static str) -> AlertEntry<'static> {\n        AlertEntry {\n            level,\n            message: LogMessage {\n                text: message.into(),\n            },\n        }\n    }\n\n    #[test]\n    fn keeps_warning_and_error_messages() {\n        // TODO: assert that warning and error messages are returned in order.\n        todo!()\n    }\n\n    #[test]\n    fn skips_info_messages() {\n        // TODO: assert that info messages are not returned.\n        todo!()\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: fill in the two focused alert filter checks above.\n"
+        "content": "use std::borrow::Cow;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn alert_priority(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 0,\n        LogLevel::Warn => 1,\n        LogLevel::Error => 2,\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogMessage<'a> {\n    pub text: Cow<'a, str>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct AlertEntry<'a> {\n    pub level: LogLevel,\n    pub message: LogMessage<'a>,\n}\n\npub fn alert_messages<'a>(entries: &'a [AlertEntry<'a>]) -> Vec<&'a str> {\n    entries\n        .iter()\n        .filter_map(|entry| match entry.level {\n            LogLevel::Warn | LogLevel::Error => Some(entry.message.text.as_ref()),\n            LogLevel::Info => None,\n        })\n        .collect()\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    fn entry(level: LogLevel, message: &'static str) -> AlertEntry<'static> {\n        AlertEntry {\n            level,\n            message: LogMessage {\n                text: message.into(),\n            },\n        }\n    }\n\n    #[test]\n    fn keeps_warning_and_error_messages() {\n        // TODO: assert that warning and error messages are returned in order.\n        todo!()\n    }\n\n    #[test]\n    fn skips_info_messages() {\n        // TODO: assert that info messages are not returned.\n        todo!()\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: fill in the two focused alert filter checks above.\n"
       },
       {
         "path": "tests/public.rs",
@@ -1780,7 +1783,7 @@
       {
         "level": 3,
         "body": "The second test should make the Info exclusion explicit.",
-        "solutionCode": "use std::borrow::Cow;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn severity(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 1,\n        LogLevel::Warn => 2,\n        LogLevel::Error => 3,\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogMessage<'a> {\n    pub text: Cow<'a, str>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct AlertEntry<'a> {\n    pub level: LogLevel,\n    pub message: LogMessage<'a>,\n}\n\npub fn alert_messages<'a>(entries: &'a [AlertEntry<'a>]) -> Vec<&'a str> {\n    entries\n        .iter()\n        .filter_map(|entry| match entry.level {\n            LogLevel::Warn | LogLevel::Error => Some(entry.message.text.as_ref()),\n            LogLevel::Info => None,\n        })\n        .collect()\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    fn entry(level: LogLevel, message: &'static str) -> AlertEntry<'static> {\n        AlertEntry {\n            level,\n            message: LogMessage {\n                text: message.into(),\n            },\n        }\n    }\n\n    #[test]\n    fn keeps_warning_and_error_messages() {\n        let entries = [\n            entry(LogLevel::Warn, \"slow response\"),\n            entry(LogLevel::Error, \"write failed\"),\n        ];\n\n        assert_eq!(\n            alert_messages(&entries),\n            vec![\"slow response\", \"write failed\"]\n        );\n    }\n\n    #[test]\n    fn skips_info_messages() {\n        let entries = [\n            entry(LogLevel::Info, \"started\"),\n            entry(LogLevel::Warn, \"slow response\"),\n        ];\n\n        assert_eq!(alert_messages(&entries), vec![\"slow response\"]);\n    }\n}"
+        "solutionCode": "use std::borrow::Cow;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn alert_priority(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 0,\n        LogLevel::Warn => 1,\n        LogLevel::Error => 2,\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogMessage<'a> {\n    pub text: Cow<'a, str>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct AlertEntry<'a> {\n    pub level: LogLevel,\n    pub message: LogMessage<'a>,\n}\n\npub fn alert_messages<'a>(entries: &'a [AlertEntry<'a>]) -> Vec<&'a str> {\n    entries\n        .iter()\n        .filter_map(|entry| match entry.level {\n            LogLevel::Warn | LogLevel::Error => Some(entry.message.text.as_ref()),\n            LogLevel::Info => None,\n        })\n        .collect()\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    fn entry(level: LogLevel, message: &'static str) -> AlertEntry<'static> {\n        AlertEntry {\n            level,\n            message: LogMessage {\n                text: message.into(),\n            },\n        }\n    }\n\n    #[test]\n    fn keeps_warning_and_error_messages() {\n        let entries = [\n            entry(LogLevel::Warn, \"slow response\"),\n            entry(LogLevel::Error, \"write failed\"),\n        ];\n\n        assert_eq!(\n            alert_messages(&entries),\n            vec![\"slow response\", \"write failed\"]\n        );\n    }\n\n    #[test]\n    fn skips_info_messages() {\n        let entries = [\n            entry(LogLevel::Info, \"started\"),\n            entry(LogLevel::Warn, \"slow response\"),\n        ];\n\n        assert_eq!(alert_messages(&entries), vec![\"slow response\"]);\n    }\n}\n"
       }
     ],
     "completionExplanation": "Focused behavior checks document the alert filtering contract. They make the important inclusion and exclusion rules visible for the next reader.",
@@ -2032,7 +2035,7 @@
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Item {\n    pub sku: String,\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\npub fn available_names(items: &[Item]) -> Vec<&str> {\n    items\n        .iter()\n        .filter_map(|item| {\n            if item.quantity > item.reserved {\n                Some(item.name.as_str())\n            } else {\n                None\n            }\n        })\n        .collect()\n}\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    items.iter().fold(0, |total, item| total + item.quantity)\n}\n\npub fn reorder_notes(notes: &[String]) -> Vec<String> {\n    let mut relevant_notes = Vec::new();\n\n    for note in notes {\n        let normalized = note.trim().to_lowercase();\n        if normalized.is_empty() {\n            continue;\n        }\n\n        let is_inventory_note = normalized.contains(\"urgent\") || normalized.contains(\"stock\");\n        if is_inventory_note {\n            relevant_notes.push(normalized);\n        }\n    }\n\n    relevant_notes\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Inventory {\n    items: Vec<Item>,\n}\n\nimpl Inventory {\n    pub fn new(items: Vec<Item>) -> Self {\n        Self { items }\n    }\n}\n\nimpl IntoIterator for Inventory {\n    type Item = Item;\n    type IntoIter = std::vec::IntoIter<Item>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.items.into_iter()\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: sort by borrowed item names without cloning.\n"
+        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Item {\n    pub sku: String,\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\npub fn available_names(items: &[Item]) -> Vec<&str> {\n    items\n        .iter()\n        .filter_map(|item| {\n            if item.quantity > item.reserved {\n                Some(item.name.as_str())\n            } else {\n                None\n            }\n        })\n        .collect()\n}\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    items.iter().fold(0, |total, item| total + item.quantity)\n}\n\npub fn priority_restock_notes(notes: &[String]) -> Vec<String> {\n    let mut priority_notes = Vec::new();\n\n    for note in notes {\n        let normalized = note.trim().to_lowercase();\n        if normalized.is_empty() {\n            continue;\n        }\n\n        let mentions_urgent = normalized.contains(\"urgent\");\n        let mentions_stock = normalized.contains(\"stock\");\n        let is_restock_alert = mentions_urgent || mentions_stock;\n\n        if is_restock_alert {\n            priority_notes.push(normalized);\n        }\n    }\n\n    priority_notes\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Inventory {\n    items: Vec<Item>,\n}\n\nimpl Inventory {\n    pub fn new(items: Vec<Item>) -> Self {\n        Self { items }\n    }\n}\n\nimpl IntoIterator for Inventory {\n    type Item = Item;\n    type IntoIter = std::vec::IntoIter<Item>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.items.into_iter()\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: sort by borrowed item names without cloning.\n"
       },
       {
         "path": "tests/public.rs",
@@ -2052,7 +2055,7 @@
       {
         "level": 3,
         "body": "The comparison closure receives two item references: left and right.",
-        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Item {\n    pub sku: String,\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\npub fn available_names(items: &[Item]) -> Vec<&str> {\n    items\n        .iter()\n        .filter_map(|item| {\n            if item.quantity > item.reserved {\n                Some(item.name.as_str())\n            } else {\n                None\n            }\n        })\n        .collect()\n}\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    items.iter().fold(0, |total, item| total + item.quantity)\n}\n\npub fn reorder_notes(notes: &[String]) -> Vec<String> {\n    let mut relevant_notes = Vec::new();\n\n    for note in notes {\n        let normalized = note.trim().to_lowercase();\n        if normalized.is_empty() {\n            continue;\n        }\n\n        let is_inventory_note = normalized.contains(\"urgent\") || normalized.contains(\"stock\");\n        if is_inventory_note {\n            relevant_notes.push(normalized);\n        }\n    }\n\n    relevant_notes\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Inventory {\n    items: Vec<Item>,\n}\n\nimpl Inventory {\n    pub fn new(items: Vec<Item>) -> Self {\n        Self { items }\n    }\n}\n\nimpl IntoIterator for Inventory {\n    type Item = Item;\n    type IntoIter = std::vec::IntoIter<Item>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.items.into_iter()\n    }\n}\n\npub fn sort_by_name(items: &mut [Item]) {\n    items.sort_by(|left, right| left.name.cmp(&right.name));\n}"
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Item {\n    pub sku: String,\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\npub fn available_names(items: &[Item]) -> Vec<&str> {\n    items\n        .iter()\n        .filter_map(|item| {\n            if item.quantity > item.reserved {\n                Some(item.name.as_str())\n            } else {\n                None\n            }\n        })\n        .collect()\n}\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    items.iter().fold(0, |total, item| total + item.quantity)\n}\n\npub fn priority_restock_notes(notes: &[String]) -> Vec<String> {\n    let mut priority_notes = Vec::new();\n\n    for note in notes {\n        let normalized = note.trim().to_lowercase();\n        if normalized.is_empty() {\n            continue;\n        }\n\n        let mentions_urgent = normalized.contains(\"urgent\");\n        let mentions_stock = normalized.contains(\"stock\");\n        let is_restock_alert = mentions_urgent || mentions_stock;\n\n        if is_restock_alert {\n            priority_notes.push(normalized);\n        }\n    }\n\n    priority_notes\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Inventory {\n    items: Vec<Item>,\n}\n\nimpl Inventory {\n    pub fn new(items: Vec<Item>) -> Self {\n        Self { items }\n    }\n}\n\nimpl IntoIterator for Inventory {\n    type Item = Item;\n    type IntoIter = std::vec::IntoIter<Item>;\n\n    fn into_iter(self) -> Self::IntoIter {\n        self.items.into_iter()\n    }\n}\n\npub fn sort_by_name(items: &mut [Item]) {\n    items.sort_by(|left, right| left.name.cmp(&right.name));\n}\n"
       }
     ],
     "completionExplanation": "Sorting by borrowed comparison keeps the ordering rule close to the sort call without cloning every String. That is usually the better API choice when the key is already stored in each item.",
@@ -2976,18 +2979,18 @@
     "conceptId": "currency-enum",
     "difficulty": "easy",
     "estimatedMinutes": 5,
-    "scenario": "The payment gateway is expanding. We need to support British Pounds (GBP) in our Currency representation.",
-    "instructions": "Add Gbp to the Currency enum.",
+    "scenario": "The payment gateway is expanding to GBP, and adapter code needs a stable ISO currency code without matching on raw strings in every caller.",
+    "instructions": "Add Gbp to the Currency enum and implement Currency::code(self) -> &'static str for USD, EUR, and GBP.",
     "files": [
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\n// Continue from the previous lesson.\n// TODO: Add British Pounds (Gbp)\n"
+        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\n// Continue from the previous lesson.\n// TODO: Add British Pounds (Gbp) and expose stable ISO currency codes.\n"
       },
       {
         "path": "tests/public.rs",
         "role": "test",
-        "content": "use rust_daily_lesson::Currency;\n\n#[test]\nfn currency_variants() {\n    assert_ne!(Currency::Usd, Currency::Eur);\n    assert_ne!(Currency::Eur, Currency::Gbp);\n}\n"
+        "content": "use rust_daily_lesson::Currency;\n\n#[test]\nfn currency_variants() {\n    assert_ne!(Currency::Usd, Currency::Eur);\n    assert_ne!(Currency::Eur, Currency::Gbp);\n}\n\n#[test]\nfn currency_codes_are_stable_iso_values() {\n    assert_eq!(Currency::Usd.code(), \"USD\");\n    assert_eq!(Currency::Eur.code(), \"EUR\");\n    assert_eq!(Currency::Gbp.code(), \"GBP\");\n}\n"
       }
     ],
     "hints": [
@@ -2997,15 +3000,15 @@
       },
       {
         "level": 2,
-        "body": "Add Gbp as a variant to the Currency enum."
+        "body": "Add Gbp as a variant to the Currency enum, then match on self in code."
       },
       {
         "level": 3,
-        "body": "A canonical solution adds Gbp to the enum.",
-        "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}"
+        "body": "A canonical solution adds Gbp and centralizes the ISO text mapping.",
+        "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\nimpl Currency {\n    pub fn code(self) -> &'static str {\n        match self {\n            Self::Usd => \"USD\",\n            Self::Eur => \"EUR\",\n            Self::Gbp => \"GBP\",\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n"
       }
     ],
-    "completionExplanation": "Updating the enum extends the supported domain concepts without altering the rest of the type structure.",
+    "completionExplanation": "Updating the enum and code method extends the supported domain concept while keeping external ISO text mapping centralized.",
     "validation": {
       "mode": "all",
       "validations": [
@@ -3020,6 +3023,15 @@
                 "Usd",
                 "Eur",
                 "Gbp"
+              ]
+            },
+            {
+              "type": "source_includes",
+              "requiredSnippets": [
+                "pub fn code",
+                "\"USD\"",
+                "\"EUR\"",
+                "\"GBP\""
               ]
             }
           ]
@@ -3068,7 +3080,7 @@
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\n// Continue from the previous lesson.\n// TODO: Implement new, amount, and currency methods.\n"
+        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\nimpl Currency {\n    pub fn code(self) -> &'static str {\n        match self {\n            Self::Usd => \"USD\",\n            Self::Eur => \"EUR\",\n            Self::Gbp => \"GBP\",\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\n// Continue from the previous lesson.\n// TODO: Implement new, amount, and currency methods.\n"
       },
       {
         "path": "tests/public.rs",
@@ -3088,7 +3100,7 @@
       {
         "level": 3,
         "body": "A canonical solution keeps the fields private and exposes a narrow public API.",
-        "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\nimpl Money {\n    pub fn new(amount: u64, currency: Currency) -> Self {\n        Self { amount, currency }\n    }\n\n    pub fn amount(&self) -> u64 {\n        self.amount\n    }\n\n    pub fn currency(&self) -> Currency {\n        self.currency\n    }\n}"
+        "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\nimpl Currency {\n    pub fn code(self) -> &'static str {\n        match self {\n            Self::Usd => \"USD\",\n            Self::Eur => \"EUR\",\n            Self::Gbp => \"GBP\",\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\nimpl Money {\n    pub fn new(amount: u64, currency: Currency) -> Self {\n        Self { amount, currency }\n    }\n\n    pub fn amount(&self) -> u64 {\n        self.amount\n    }\n\n    pub fn currency(&self) -> Currency {\n        self.currency\n    }\n}\n"
       }
     ],
     "completionExplanation": "A constructor and read-only accessors give callers the operations they need while keeping the representation under the type's control. That makes later validation and checked operations possible without changing every call site.",
@@ -3176,7 +3188,7 @@
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\nimpl Money {\n    pub fn new(amount: u64, currency: Currency) -> Self {\n        Self { amount, currency }\n    }\n\n    pub fn amount(&self) -> u64 {\n        self.amount\n    }\n\n    pub fn currency(&self) -> Currency {\n        self.currency\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: Implement checked_add without panicking.\n"
+        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\nimpl Currency {\n    pub fn code(self) -> &'static str {\n        match self {\n            Self::Usd => \"USD\",\n            Self::Eur => \"EUR\",\n            Self::Gbp => \"GBP\",\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\nimpl Money {\n    pub fn new(amount: u64, currency: Currency) -> Self {\n        Self { amount, currency }\n    }\n\n    pub fn amount(&self) -> u64 {\n        self.amount\n    }\n\n    pub fn currency(&self) -> Currency {\n        self.currency\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: Implement checked_add without panicking.\n"
       },
       {
         "path": "tests/public.rs",
@@ -3196,7 +3208,7 @@
       {
         "level": 3,
         "body": "A canonical solution returns programmatic errors for both domain and arithmetic failures.",
-        "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\nimpl Money {\n    pub fn new(amount: u64, currency: Currency) -> Self {\n        Self { amount, currency }\n    }\n\n    pub fn amount(&self) -> u64 {\n        self.amount\n    }\n\n    pub fn currency(&self) -> Currency {\n        self.currency\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum MoneyAddError {\n    CurrencyMismatch { left: Currency, right: Currency },\n    AmountOverflow,\n}\n\nimpl Money {\n    pub fn checked_add(self, rhs: Self) -> Result<Self, MoneyAddError> {\n        if self.currency != rhs.currency {\n            return Err(MoneyAddError::CurrencyMismatch {\n                left: self.currency,\n                right: rhs.currency,\n            });\n        }\n\n        let amount = self\n            .amount\n            .checked_add(rhs.amount)\n            .ok_or(MoneyAddError::AmountOverflow)?;\n\n        Ok(Self {\n            amount,\n            currency: self.currency,\n        })\n    }\n}"
+        "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\nimpl Currency {\n    pub fn code(self) -> &'static str {\n        match self {\n            Self::Usd => \"USD\",\n            Self::Eur => \"EUR\",\n            Self::Gbp => \"GBP\",\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\nimpl Money {\n    pub fn new(amount: u64, currency: Currency) -> Self {\n        Self { amount, currency }\n    }\n\n    pub fn amount(&self) -> u64 {\n        self.amount\n    }\n\n    pub fn currency(&self) -> Currency {\n        self.currency\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum MoneyAddError {\n    CurrencyMismatch { left: Currency, right: Currency },\n    AmountOverflow,\n}\n\nimpl Money {\n    pub fn checked_add(self, rhs: Self) -> Result<Self, MoneyAddError> {\n        if self.currency != rhs.currency {\n            return Err(MoneyAddError::CurrencyMismatch {\n                left: self.currency,\n                right: rhs.currency,\n            });\n        }\n\n        let amount = self\n            .amount\n            .checked_add(rhs.amount)\n            .ok_or(MoneyAddError::AmountOverflow)?;\n\n        Ok(Self {\n            amount,\n            currency: self.currency,\n        })\n    }\n}\n"
       }
     ],
     "completionExplanation": "Fallible domain operations should make failure visible in the type signature. A Result keeps currency mismatches and overflow recoverable and testable, while avoiding panics in library code.",
@@ -3283,7 +3295,7 @@
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\nimpl Money {\n    pub fn new(amount: u64, currency: Currency) -> Self {\n        Self { amount, currency }\n    }\n\n    pub fn amount(&self) -> u64 {\n        self.amount\n    }\n\n    pub fn currency(&self) -> Currency {\n        self.currency\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum MoneyAddError {\n    CurrencyMismatch { left: Currency, right: Currency },\n    AmountOverflow,\n}\n\nimpl Money {\n    pub fn checked_add(self, rhs: Self) -> Result<Self, MoneyAddError> {\n        if self.currency != rhs.currency {\n            return Err(MoneyAddError::CurrencyMismatch {\n                left: self.currency,\n                right: rhs.currency,\n            });\n        }\n\n        let amount = self\n            .amount\n            .checked_add(rhs.amount)\n            .ok_or(MoneyAddError::AmountOverflow)?;\n\n        Ok(Self {\n            amount,\n            currency: self.currency,\n        })\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: Implement TryFrom<&str> for Money with USD currency.\n"
+        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\nimpl Currency {\n    pub fn code(self) -> &'static str {\n        match self {\n            Self::Usd => \"USD\",\n            Self::Eur => \"EUR\",\n            Self::Gbp => \"GBP\",\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\nimpl Money {\n    pub fn new(amount: u64, currency: Currency) -> Self {\n        Self { amount, currency }\n    }\n\n    pub fn amount(&self) -> u64 {\n        self.amount\n    }\n\n    pub fn currency(&self) -> Currency {\n        self.currency\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum MoneyAddError {\n    CurrencyMismatch { left: Currency, right: Currency },\n    AmountOverflow,\n}\n\nimpl Money {\n    pub fn checked_add(self, rhs: Self) -> Result<Self, MoneyAddError> {\n        if self.currency != rhs.currency {\n            return Err(MoneyAddError::CurrencyMismatch {\n                left: self.currency,\n                right: rhs.currency,\n            });\n        }\n\n        let amount = self\n            .amount\n            .checked_add(rhs.amount)\n            .ok_or(MoneyAddError::AmountOverflow)?;\n\n        Ok(Self {\n            amount,\n            currency: self.currency,\n        })\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: Implement TryFrom<&str> for Money with USD currency.\n"
       },
       {
         "path": "tests/public.rs",
@@ -3303,7 +3315,7 @@
       {
         "level": 3,
         "body": "A canonical solution parses text without floats and preserves every expected failure as a typed error.",
-        "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\nimpl Money {\n    pub fn new(amount: u64, currency: Currency) -> Self {\n        Self { amount, currency }\n    }\n\n    pub fn amount(&self) -> u64 {\n        self.amount\n    }\n\n    pub fn currency(&self) -> Currency {\n        self.currency\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum MoneyAddError {\n    CurrencyMismatch { left: Currency, right: Currency },\n    AmountOverflow,\n}\n\nimpl Money {\n    pub fn checked_add(self, rhs: Self) -> Result<Self, MoneyAddError> {\n        if self.currency != rhs.currency {\n            return Err(MoneyAddError::CurrencyMismatch {\n                left: self.currency,\n                right: rhs.currency,\n            });\n        }\n\n        let amount = self\n            .amount\n            .checked_add(rhs.amount)\n            .ok_or(MoneyAddError::AmountOverflow)?;\n\n        Ok(Self {\n            amount,\n            currency: self.currency,\n        })\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum MoneyParseError {\n    Empty,\n    InvalidDigits,\n    TooManyDecimalPlaces,\n    AmountOverflow,\n}\n\nimpl TryFrom<&str> for Money {\n    type Error = MoneyParseError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        if value.is_empty() {\n            return Err(MoneyParseError::Empty);\n        }\n\n        let (major_text, minor_text) = match value.split_once('.') {\n            Some((major_text, minor_text)) => (major_text, Some(minor_text)),\n            None => (value, None),\n        };\n\n        if major_text.is_empty() {\n            return Err(MoneyParseError::InvalidDigits);\n        }\n\n        let major = major_text\n            .parse::<u64>()\n            .map_err(|_| MoneyParseError::InvalidDigits)?;\n        let minor = match minor_text {\n            None => 0,\n            Some(text) if text.is_empty() => return Err(MoneyParseError::InvalidDigits),\n            Some(text) if text.len() > 2 => {\n                return Err(MoneyParseError::TooManyDecimalPlaces);\n            }\n            Some(text) => {\n                let parsed = text\n                    .parse::<u64>()\n                    .map_err(|_| MoneyParseError::InvalidDigits)?;\n\n                if text.len() == 1 {\n                    parsed\n                        .checked_mul(10)\n                        .ok_or(MoneyParseError::AmountOverflow)?\n                } else {\n                    parsed\n                }\n            }\n        };\n        let amount = major\n            .checked_mul(100)\n            .and_then(|major_minor_units| major_minor_units.checked_add(minor))\n            .ok_or(MoneyParseError::AmountOverflow)?;\n\n        Ok(Self::new(amount, Currency::Usd))\n    }\n}"
+        "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\nimpl Currency {\n    pub fn code(self) -> &'static str {\n        match self {\n            Self::Usd => \"USD\",\n            Self::Eur => \"EUR\",\n            Self::Gbp => \"GBP\",\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\nimpl Money {\n    pub fn new(amount: u64, currency: Currency) -> Self {\n        Self { amount, currency }\n    }\n\n    pub fn amount(&self) -> u64 {\n        self.amount\n    }\n\n    pub fn currency(&self) -> Currency {\n        self.currency\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum MoneyAddError {\n    CurrencyMismatch { left: Currency, right: Currency },\n    AmountOverflow,\n}\n\nimpl Money {\n    pub fn checked_add(self, rhs: Self) -> Result<Self, MoneyAddError> {\n        if self.currency != rhs.currency {\n            return Err(MoneyAddError::CurrencyMismatch {\n                left: self.currency,\n                right: rhs.currency,\n            });\n        }\n\n        let amount = self\n            .amount\n            .checked_add(rhs.amount)\n            .ok_or(MoneyAddError::AmountOverflow)?;\n\n        Ok(Self {\n            amount,\n            currency: self.currency,\n        })\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum MoneyParseError {\n    Empty,\n    InvalidDigits,\n    TooManyDecimalPlaces,\n    AmountOverflow,\n}\n\nimpl TryFrom<&str> for Money {\n    type Error = MoneyParseError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        if value.is_empty() {\n            return Err(MoneyParseError::Empty);\n        }\n\n        let (major_text, minor_text) = match value.split_once('.') {\n            Some((major_text, minor_text)) => (major_text, Some(minor_text)),\n            None => (value, None),\n        };\n\n        if major_text.is_empty() {\n            return Err(MoneyParseError::InvalidDigits);\n        }\n\n        let major = major_text\n            .parse::<u64>()\n            .map_err(|_| MoneyParseError::InvalidDigits)?;\n        let minor = match minor_text {\n            None => 0,\n            Some(text) if text.is_empty() => return Err(MoneyParseError::InvalidDigits),\n            Some(text) if text.len() > 2 => {\n                return Err(MoneyParseError::TooManyDecimalPlaces);\n            }\n            Some(text) => {\n                let parsed = text\n                    .parse::<u64>()\n                    .map_err(|_| MoneyParseError::InvalidDigits)?;\n\n                if text.len() == 1 {\n                    parsed\n                        .checked_mul(10)\n                        .ok_or(MoneyParseError::AmountOverflow)?\n                } else {\n                    parsed\n                }\n            }\n        };\n        let amount = major\n            .checked_mul(100)\n            .and_then(|major_minor_units| major_minor_units.checked_add(minor))\n            .ok_or(MoneyParseError::AmountOverflow)?;\n\n        Ok(Self::new(amount, Currency::Usd))\n    }\n}\n"
       }
     ],
     "completionExplanation": "Parsing money through TryFrom gives callers a standard fallible conversion API. Using integer minor units and checked arithmetic avoids floating-point rounding, overflow surprises, and panics.",
@@ -3387,7 +3399,7 @@
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\nimpl Money {\n    pub fn new(amount: u64, currency: Currency) -> Self {\n        Self { amount, currency }\n    }\n\n    pub fn amount(&self) -> u64 {\n        self.amount\n    }\n\n    pub fn currency(&self) -> Currency {\n        self.currency\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum MoneyAddError {\n    CurrencyMismatch { left: Currency, right: Currency },\n    AmountOverflow,\n}\n\nimpl Money {\n    pub fn checked_add(self, rhs: Self) -> Result<Self, MoneyAddError> {\n        if self.currency != rhs.currency {\n            return Err(MoneyAddError::CurrencyMismatch {\n                left: self.currency,\n                right: rhs.currency,\n            });\n        }\n\n        let amount = self\n            .amount\n            .checked_add(rhs.amount)\n            .ok_or(MoneyAddError::AmountOverflow)?;\n\n        Ok(Self {\n            amount,\n            currency: self.currency,\n        })\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum MoneyParseError {\n    Empty,\n    InvalidDigits,\n    TooManyDecimalPlaces,\n    AmountOverflow,\n}\n\nimpl TryFrom<&str> for Money {\n    type Error = MoneyParseError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        if value.is_empty() {\n            return Err(MoneyParseError::Empty);\n        }\n\n        let (major_text, minor_text) = match value.split_once('.') {\n            Some((major_text, minor_text)) => (major_text, Some(minor_text)),\n            None => (value, None),\n        };\n\n        if major_text.is_empty() {\n            return Err(MoneyParseError::InvalidDigits);\n        }\n\n        let major = major_text\n            .parse::<u64>()\n            .map_err(|_| MoneyParseError::InvalidDigits)?;\n        let minor = match minor_text {\n            None => 0,\n            Some(text) if text.is_empty() => return Err(MoneyParseError::InvalidDigits),\n            Some(text) if text.len() > 2 => {\n                return Err(MoneyParseError::TooManyDecimalPlaces);\n            }\n            Some(text) => {\n                let parsed = text\n                    .parse::<u64>()\n                    .map_err(|_| MoneyParseError::InvalidDigits)?;\n\n                if text.len() == 1 {\n                    parsed\n                        .checked_mul(10)\n                        .ok_or(MoneyParseError::AmountOverflow)?\n                } else {\n                    parsed\n                }\n            }\n        };\n        let amount = major\n            .checked_mul(100)\n            .and_then(|major_minor_units| major_minor_units.checked_add(minor))\n            .ok_or(MoneyParseError::AmountOverflow)?;\n\n        Ok(Self::new(amount, Currency::Usd))\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: Implement std::fmt::Display for Money.\n"
+        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\nimpl Currency {\n    pub fn code(self) -> &'static str {\n        match self {\n            Self::Usd => \"USD\",\n            Self::Eur => \"EUR\",\n            Self::Gbp => \"GBP\",\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\nimpl Money {\n    pub fn new(amount: u64, currency: Currency) -> Self {\n        Self { amount, currency }\n    }\n\n    pub fn amount(&self) -> u64 {\n        self.amount\n    }\n\n    pub fn currency(&self) -> Currency {\n        self.currency\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum MoneyAddError {\n    CurrencyMismatch { left: Currency, right: Currency },\n    AmountOverflow,\n}\n\nimpl Money {\n    pub fn checked_add(self, rhs: Self) -> Result<Self, MoneyAddError> {\n        if self.currency != rhs.currency {\n            return Err(MoneyAddError::CurrencyMismatch {\n                left: self.currency,\n                right: rhs.currency,\n            });\n        }\n\n        let amount = self\n            .amount\n            .checked_add(rhs.amount)\n            .ok_or(MoneyAddError::AmountOverflow)?;\n\n        Ok(Self {\n            amount,\n            currency: self.currency,\n        })\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum MoneyParseError {\n    Empty,\n    InvalidDigits,\n    TooManyDecimalPlaces,\n    AmountOverflow,\n}\n\nimpl TryFrom<&str> for Money {\n    type Error = MoneyParseError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        if value.is_empty() {\n            return Err(MoneyParseError::Empty);\n        }\n\n        let (major_text, minor_text) = match value.split_once('.') {\n            Some((major_text, minor_text)) => (major_text, Some(minor_text)),\n            None => (value, None),\n        };\n\n        if major_text.is_empty() {\n            return Err(MoneyParseError::InvalidDigits);\n        }\n\n        let major = major_text\n            .parse::<u64>()\n            .map_err(|_| MoneyParseError::InvalidDigits)?;\n        let minor = match minor_text {\n            None => 0,\n            Some(text) if text.is_empty() => return Err(MoneyParseError::InvalidDigits),\n            Some(text) if text.len() > 2 => {\n                return Err(MoneyParseError::TooManyDecimalPlaces);\n            }\n            Some(text) => {\n                let parsed = text\n                    .parse::<u64>()\n                    .map_err(|_| MoneyParseError::InvalidDigits)?;\n\n                if text.len() == 1 {\n                    parsed\n                        .checked_mul(10)\n                        .ok_or(MoneyParseError::AmountOverflow)?\n                } else {\n                    parsed\n                }\n            }\n        };\n        let amount = major\n            .checked_mul(100)\n            .and_then(|major_minor_units| major_minor_units.checked_add(minor))\n            .ok_or(MoneyParseError::AmountOverflow)?;\n\n        Ok(Self::new(amount, Currency::Usd))\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: Implement std::fmt::Display for Money.\n"
       },
       {
         "path": "tests/public.rs",
@@ -3407,7 +3419,7 @@
       {
         "level": 3,
         "body": "A canonical solution formats all supported currencies through the Display trait.",
-        "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\nimpl Money {\n    pub fn new(amount: u64, currency: Currency) -> Self {\n        Self { amount, currency }\n    }\n\n    pub fn amount(&self) -> u64 {\n        self.amount\n    }\n\n    pub fn currency(&self) -> Currency {\n        self.currency\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum MoneyAddError {\n    CurrencyMismatch { left: Currency, right: Currency },\n    AmountOverflow,\n}\n\nimpl Money {\n    pub fn checked_add(self, rhs: Self) -> Result<Self, MoneyAddError> {\n        if self.currency != rhs.currency {\n            return Err(MoneyAddError::CurrencyMismatch {\n                left: self.currency,\n                right: rhs.currency,\n            });\n        }\n\n        let amount = self\n            .amount\n            .checked_add(rhs.amount)\n            .ok_or(MoneyAddError::AmountOverflow)?;\n\n        Ok(Self {\n            amount,\n            currency: self.currency,\n        })\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum MoneyParseError {\n    Empty,\n    InvalidDigits,\n    TooManyDecimalPlaces,\n    AmountOverflow,\n}\n\nimpl TryFrom<&str> for Money {\n    type Error = MoneyParseError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        if value.is_empty() {\n            return Err(MoneyParseError::Empty);\n        }\n\n        let (major_text, minor_text) = match value.split_once('.') {\n            Some((major_text, minor_text)) => (major_text, Some(minor_text)),\n            None => (value, None),\n        };\n\n        if major_text.is_empty() {\n            return Err(MoneyParseError::InvalidDigits);\n        }\n\n        let major = major_text\n            .parse::<u64>()\n            .map_err(|_| MoneyParseError::InvalidDigits)?;\n        let minor = match minor_text {\n            None => 0,\n            Some(text) if text.is_empty() => return Err(MoneyParseError::InvalidDigits),\n            Some(text) if text.len() > 2 => {\n                return Err(MoneyParseError::TooManyDecimalPlaces);\n            }\n            Some(text) => {\n                let parsed = text\n                    .parse::<u64>()\n                    .map_err(|_| MoneyParseError::InvalidDigits)?;\n\n                if text.len() == 1 {\n                    parsed\n                        .checked_mul(10)\n                        .ok_or(MoneyParseError::AmountOverflow)?\n                } else {\n                    parsed\n                }\n            }\n        };\n        let amount = major\n            .checked_mul(100)\n            .and_then(|major_minor_units| major_minor_units.checked_add(minor))\n            .ok_or(MoneyParseError::AmountOverflow)?;\n\n        Ok(Self::new(amount, Currency::Usd))\n    }\n}\n\nimpl std::fmt::Display for Money {\n    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        let symbol = match self.currency {\n            Currency::Usd => \"$\",\n            Currency::Eur => \"€\",\n            Currency::Gbp => \"£\",\n        };\n        let major = self.amount / 100;\n        let minor = self.amount % 100;\n\n        write!(f, \"{symbol}{major}.{minor:02}\")\n    }\n}"
+        "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\nimpl Currency {\n    pub fn code(self) -> &'static str {\n        match self {\n            Self::Usd => \"USD\",\n            Self::Eur => \"EUR\",\n            Self::Gbp => \"GBP\",\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\nimpl Money {\n    pub fn new(amount: u64, currency: Currency) -> Self {\n        Self { amount, currency }\n    }\n\n    pub fn amount(&self) -> u64 {\n        self.amount\n    }\n\n    pub fn currency(&self) -> Currency {\n        self.currency\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum MoneyAddError {\n    CurrencyMismatch { left: Currency, right: Currency },\n    AmountOverflow,\n}\n\nimpl Money {\n    pub fn checked_add(self, rhs: Self) -> Result<Self, MoneyAddError> {\n        if self.currency != rhs.currency {\n            return Err(MoneyAddError::CurrencyMismatch {\n                left: self.currency,\n                right: rhs.currency,\n            });\n        }\n\n        let amount = self\n            .amount\n            .checked_add(rhs.amount)\n            .ok_or(MoneyAddError::AmountOverflow)?;\n\n        Ok(Self {\n            amount,\n            currency: self.currency,\n        })\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum MoneyParseError {\n    Empty,\n    InvalidDigits,\n    TooManyDecimalPlaces,\n    AmountOverflow,\n}\n\nimpl TryFrom<&str> for Money {\n    type Error = MoneyParseError;\n\n    fn try_from(value: &str) -> Result<Self, Self::Error> {\n        if value.is_empty() {\n            return Err(MoneyParseError::Empty);\n        }\n\n        let (major_text, minor_text) = match value.split_once('.') {\n            Some((major_text, minor_text)) => (major_text, Some(minor_text)),\n            None => (value, None),\n        };\n\n        if major_text.is_empty() {\n            return Err(MoneyParseError::InvalidDigits);\n        }\n\n        let major = major_text\n            .parse::<u64>()\n            .map_err(|_| MoneyParseError::InvalidDigits)?;\n        let minor = match minor_text {\n            None => 0,\n            Some(text) if text.is_empty() => return Err(MoneyParseError::InvalidDigits),\n            Some(text) if text.len() > 2 => {\n                return Err(MoneyParseError::TooManyDecimalPlaces);\n            }\n            Some(text) => {\n                let parsed = text\n                    .parse::<u64>()\n                    .map_err(|_| MoneyParseError::InvalidDigits)?;\n\n                if text.len() == 1 {\n                    parsed\n                        .checked_mul(10)\n                        .ok_or(MoneyParseError::AmountOverflow)?\n                } else {\n                    parsed\n                }\n            }\n        };\n        let amount = major\n            .checked_mul(100)\n            .and_then(|major_minor_units| major_minor_units.checked_add(minor))\n            .ok_or(MoneyParseError::AmountOverflow)?;\n\n        Ok(Self::new(amount, Currency::Usd))\n    }\n}\n\nimpl std::fmt::Display for Money {\n    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        let symbol = match self.currency {\n            Currency::Usd => \"$\",\n            Currency::Eur => \"€\",\n            Currency::Gbp => \"£\",\n        };\n        let major = self.amount / 100;\n        let minor = self.amount % 100;\n\n        write!(f, \"{symbol}{major}.{minor:02}\")\n    }\n}\n"
       }
     ],
     "completionExplanation": "Display provides the standard formatting API while the value object keeps its representation private. Matching every supported currency also prevents enum additions from being silently ignored.",
@@ -6574,7 +6586,7 @@
     "conceptId": "log-event-struct",
     "difficulty": "easy",
     "estimatedMinutes": 6,
-    "scenario": "Structured logging starts with events that have names and levels instead of ad-hoc strings.",
+    "scenario": "A request gateway needs queryable tracing events so support can filter production logs by request id instead of searching ad-hoc strings.",
     "instructions": "Implement log_request_received(request_id: &str) with tracing::info!. Record event_name = \"request.received\" and request_id as structured fields instead of formatting them into the message.",
     "files": [
       {
@@ -6585,7 +6597,7 @@
       {
         "path": "tests/public.rs",
         "role": "test",
-        "content": "use rust_daily_lesson::log_request_received;\n\n#[test]\nfn structured_event_function_is_callable_without_subscriber() {\n    log_request_received(\"req-1\");\n}\n"
+        "content": "use std::sync::{Arc, Mutex};\n\nuse rust_daily_lesson::log_request_received;\nuse tracing::{\n    field::{Field, Visit},\n    Event, Subscriber,\n};\nuse tracing_subscriber::{\n    layer::{Context, Layer},\n    prelude::*,\n    Registry,\n};\n\n#[derive(Debug, Default, PartialEq, Eq)]\nstruct CapturedFields {\n    event_name: Option<String>,\n    request_id: Option<String>,\n}\n\n#[derive(Default)]\nstruct FieldVisitor {\n    captured: CapturedFields,\n}\n\nimpl FieldVisitor {\n    fn record(&mut self, name: &str, value: String) {\n        match name {\n            \"event_name\" => self.captured.event_name = Some(value),\n            \"request_id\" => self.captured.request_id = Some(value),\n            _ => {}\n        }\n    }\n}\n\nimpl Visit for FieldVisitor {\n    fn record_str(&mut self, field: &Field, value: &str) {\n        self.record(field.name(), value.to_owned());\n    }\n\n    fn record_debug(&mut self, field: &Field, value: &dyn std::fmt::Debug) {\n        self.record(field.name(), format!(\"{value:?}\").trim_matches('\"').to_owned());\n    }\n}\n\n#[derive(Clone)]\nstruct CaptureLayer {\n    captured: Arc<Mutex<Vec<CapturedFields>>>,\n}\n\nimpl<S> Layer<S> for CaptureLayer\nwhere\n    S: Subscriber,\n{\n    fn on_event(&self, event: &Event<'_>, _context: Context<'_, S>) {\n        let mut visitor = FieldVisitor::default();\n        event.record(&mut visitor);\n        self.captured.lock().unwrap().push(visitor.captured);\n    }\n}\n\n#[test]\nfn emits_structured_request_fields() {\n    let captured = Arc::new(Mutex::new(Vec::new()));\n    let subscriber = Registry::default().with(CaptureLayer {\n        captured: Arc::clone(&captured),\n    });\n\n    tracing::subscriber::with_default(subscriber, || {\n        log_request_received(\"req-1\");\n    });\n\n    let events = captured.lock().unwrap();\n    assert_eq!(events.len(), 1);\n    assert_eq!(events[0].event_name.as_deref(), Some(\"request.received\"));\n    assert_eq!(events[0].request_id.as_deref(), Some(\"req-1\"));\n}\n"
       }
     ],
     "hints": [
@@ -6603,7 +6615,7 @@
         "solutionCode": "pub fn log_request_received(request_id: &str) {\n    tracing::info!(\n        event_name = \"request.received\",\n        request_id = %request_id,\n        \"request received\"\n    );\n}"
       }
     ],
-    "completionExplanation": "The first event uses real tracing metadata instead of a custom log-record struct or interpolated string.",
+    "completionExplanation": "The event now uses real tracing metadata instead of a custom log-record struct or interpolated string, and the test captures the emitted fields through a subscriber.",
     "validation": {
       "mode": "all",
       "validations": [
@@ -6984,8 +6996,8 @@
     "conceptId": "percentage-newtype",
     "difficulty": "easy",
     "estimatedMinutes": 6,
-    "scenario": "A percentage should not be represented as any arbitrary integer throughout the codebase.",
-    "instructions": "Define Percentage, PercentageError, value, and TryFrom<u16>. Accept values from 0 through 100 and reject larger values without panicking.",
+    "scenario": "Pricing discounts and rollout allocations both accept percentages from outside the service. They should not flow through the codebase as arbitrary integers.",
+    "instructions": "Define Percentage, PercentageError, value, and TryFrom<u16>. Accept values from 0 through 100 for policy inputs and reject larger values without panicking.",
     "files": [
       {
         "path": "src/lib.rs",
@@ -7013,7 +7025,7 @@
         "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}"
       }
     ],
-    "completionExplanation": "Percentage establishes a compact invariant that can be tested with examples and generated inputs.",
+    "completionExplanation": "Percentage establishes a compact policy invariant that can be reused by pricing, rollout, and validation code.",
     "validation": {
       "mode": "all",
       "validations": [
@@ -7070,7 +7082,7 @@
     "conceptId": "percentage-valid-table-tests",
     "difficulty": "medium",
     "estimatedMinutes": 8,
-    "scenario": "Several valid boundary cases should be easy to scan. A table-driven test keeps inputs and expected values together.",
+    "scenario": "A discount policy has meaningful boundary cases: no discount, a common midpoint, and the maximum allowed percentage. Reviewers should see those examples together.",
     "instructions": "Add a #[cfg(test)] module with one test that loops over valid input/expected pairs for 0, 50, and 100.",
     "files": [
       {
@@ -7099,7 +7111,7 @@
         "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn accepts_valid_percentages() {\n        let cases = [(0, 0), (50, 50), (100, 100)];\n\n        for (input, expected) in cases {\n            assert_eq!(\n                Percentage::try_from(input).map(Percentage::value),\n                Ok(expected)\n            );\n        }\n    }\n}"
       }
     ],
-    "completionExplanation": "One readable test now covers several named points in the valid input partition.",
+    "completionExplanation": "One readable test now covers the important accepted points in the percentage policy.",
     "validation": {
       "mode": "all",
       "validations": [
@@ -7151,7 +7163,7 @@
     "conceptId": "percentage-invalid-table-tests",
     "difficulty": "medium",
     "estimatedMinutes": 8,
-    "scenario": "Invalid cases deserve precise tests too. Table-driven tests make it clear which inputs should fail.",
+    "scenario": "Bad dashboard or API input should be rejected before it can create impossible discount or rollout settings. The rejection examples need to be as visible as accepted examples.",
     "instructions": "Keep the valid table test. Add a second test that loops over several values above 100 and checks PercentageError::OutOfRange.",
     "files": [
       {
@@ -7180,7 +7192,7 @@
         "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn accepts_valid_percentages() {\n        let cases = [(0, 0), (50, 50), (100, 100)];\n\n        for (input, expected) in cases {\n            assert_eq!(\n                Percentage::try_from(input).map(Percentage::value),\n                Ok(expected)\n            );\n        }\n    }\n\n    #[test]\n    fn rejects_invalid_percentages() {\n        for input in [101, 150, 1_000] {\n            assert_eq!(Percentage::try_from(input), Err(PercentageError::OutOfRange));\n        }\n    }\n}"
       }
     ],
-    "completionExplanation": "The example suite now documents both accepted and rejected input partitions.",
+    "completionExplanation": "The example suite now documents both accepted and rejected policy inputs.",
     "validation": {
       "mode": "all",
       "validations": [
@@ -7232,7 +7244,7 @@
     "conceptId": "percentage-display-tests",
     "difficulty": "easy",
     "estimatedMinutes": 7,
-    "scenario": "Formatting is public behavior. A small table keeps display expectations obvious.",
+    "scenario": "Admin screens and audit messages render percentage values for humans. Formatting is public behavior, not a throwaway detail.",
     "instructions": "Implement Display for Percentage and add a table-driven test for 0%, 50%, and 100%, preserving the existing range tests.",
     "files": [
       {
@@ -7261,7 +7273,7 @@
         "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}\n\nimpl std::fmt::Display for Percentage {\n    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        write!(formatter, \"{}%\", self.0)\n    }\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn accepts_valid_percentages() {\n        for (input, expected) in [(0, 0), (50, 50), (100, 100)] {\n            assert_eq!(Percentage::try_from(input).map(Percentage::value), Ok(expected));\n        }\n    }\n\n    #[test]\n    fn rejects_invalid_percentages() {\n        for input in [101, 150, 1_000] {\n            assert_eq!(Percentage::try_from(input), Err(PercentageError::OutOfRange));\n        }\n    }\n\n    #[test]\n    fn formats_percentages() {\n        for (input, expected) in [(0, \"0%\"), (50, \"50%\"), (100, \"100%\")] {\n            let percentage = Percentage::try_from(input).expect(\"case is in range\");\n            assert_eq!(percentage.to_string(), expected);\n        }\n    }\n}"
       }
     ],
-    "completionExplanation": "Display behavior is covered by the same compact table style as validation behavior.",
+    "completionExplanation": "Display behavior is covered by the same compact table style as validation behavior, so UI and audit text stay predictable.",
     "validation": {
       "mode": "all",
       "validations": [
@@ -7311,7 +7323,7 @@
     "conceptId": "percentage-doc-example",
     "difficulty": "easy",
     "estimatedMinutes": 7,
-    "scenario": "A doc example should show normal usage and handle fallible APIs without unwrap or expect.",
+    "scenario": "Other teams will copy the public percentage API into pricing and rollout code. The docs should show fallible construction without teaching unwrap as normal usage.",
     "instructions": "Add a rustdoc example above Percentage. Show a successful TryFrom call using ? and assert the value without using unwrap.",
     "files": [
       {
@@ -7340,7 +7352,7 @@
         "solutionCode": "/// A bounded percentage from 0 through 100.\n///\n/// ```\n/// use rust_daily_lesson::Percentage;\n///\n/// let percentage = Percentage::try_from(75)?;\n/// assert_eq!(percentage.value(), 75);\n/// # Ok::<(), rust_daily_lesson::PercentageError>(())\n/// ```\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}\n\nimpl std::fmt::Display for Percentage {\n    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        write!(formatter, \"{}%\", self.0)\n    }\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn accepts_valid_percentages() {\n        for (input, expected) in [(0, 0), (50, 50), (100, 100)] {\n            assert_eq!(Percentage::try_from(input).map(Percentage::value), Ok(expected));\n        }\n    }\n\n    #[test]\n    fn rejects_invalid_percentages() {\n        for input in [101, 150, 1_000] {\n            assert_eq!(Percentage::try_from(input), Err(PercentageError::OutOfRange));\n        }\n    }\n\n    #[test]\n    fn formats_percentages() {\n        for (input, expected) in [(0, \"0%\"), (50, \"50%\"), (100, \"100%\")] {\n            let percentage = Percentage::try_from(input).expect(\"case is in range\");\n            assert_eq!(percentage.to_string(), expected);\n        }\n    }\n}"
       }
     ],
-    "completionExplanation": "The public documentation now demonstrates fallible construction with an executable, idiomatic Result example.",
+    "completionExplanation": "The public documentation now demonstrates fallible construction with an executable Result example that callers can copy into policy code.",
     "validation": {
       "mode": "all",
       "validations": [
@@ -7392,7 +7404,7 @@
     "conceptId": "percentage-named-test-cases",
     "difficulty": "medium",
     "estimatedMinutes": 8,
-    "scenario": "Named cases make failing table-driven tests easier to diagnose and easier for humans to scan.",
+    "scenario": "When a percentage boundary breaks, maintainers need to know whether the failure came from zero, maximum, or out-of-range policy input. Named examples and generated ranges make that diagnosis faster.",
     "instructions": "Replace repeated table boilerplate with a small macro_rules! helper that keeps case names visible. Add proptest properties covering every value in 0..=100 and every value above 100.",
     "files": [
       {
@@ -7421,7 +7433,7 @@
         "solutionCode": "/// A bounded percentage from 0 through 100.\n///\n/// ```\n/// use rust_daily_lesson::Percentage;\n///\n/// let percentage = Percentage::try_from(75)?;\n/// assert_eq!(percentage.value(), 75);\n/// # Ok::<(), rust_daily_lesson::PercentageError>(())\n/// ```\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}\n\nimpl std::fmt::Display for Percentage {\n    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        write!(formatter, \"{}%\", self.0)\n    }\n}\n\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n    use proptest::prelude::*;\n\n    macro_rules! percentage_cases {\n        ($test_name:ident, { $($name:ident: $input:expr => $expected:expr),+ $(,)? }) => {\n            #[test]\n            fn $test_name() {\n                let cases = [$( (stringify!($name), $input, $expected), )+];\n\n                for (name, input, expected) in cases {\n                    let actual = Percentage::try_from(input).map(Percentage::value);\n                    assert_eq!(actual, expected, \"case failed: {name}\");\n                }\n            }\n        };\n    }\n\n    percentage_cases!(named_examples, {\n        zero: 0 => Ok(0),\n        middle: 50 => Ok(50),\n        maximum: 100 => Ok(100),\n        too_large: 101 => Err(PercentageError::OutOfRange),\n    });\n\n    proptest! {\n        #[test]\n        fn accepts_every_value_in_range(input in 0u16..=100) {\n            let percentage = Percentage::try_from(input).expect(\"generated value is in range\");\n            prop_assert_eq!(percentage.value(), input as u8);\n        }\n\n        #[test]\n        fn rejects_every_value_above_range(input in 101u16..=u16::MAX) {\n            prop_assert_eq!(\n                Percentage::try_from(input),\n                Err(PercentageError::OutOfRange)\n            );\n        }\n    }\n}"
       }
     ],
-    "completionExplanation": "The final test suite combines readable named examples, executable documentation, and generated invariant coverage without hiding domain behavior behind macro complexity.",
+    "completionExplanation": "The final test suite combines readable named examples, executable documentation, and generated invariant coverage without hiding the percentage policy behind macro complexity.",
     "validation": {
       "mode": "all",
       "validations": [

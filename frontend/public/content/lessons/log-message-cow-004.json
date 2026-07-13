@@ -3,12 +3,12 @@
   "schemaVersion": 2,
   "detail": {
     "instructions": "Keep the existing log view and level code, then define LogMessage<'a> with text: Cow<'a, str>. Import Cow from std::borrow.",
-    "starterCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn severity(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 1,\n        LogLevel::Warn => 2,\n        LogLevel::Error => 3,\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: import Cow and define LogMessage with text that can be borrowed or owned.\n",
+    "starterCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn alert_priority(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 0,\n        LogLevel::Warn => 1,\n        LogLevel::Error => 2,\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: import Cow and define LogMessage with text that can be borrowed or owned.\n",
     "files": [
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn severity(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 1,\n        LogLevel::Warn => 2,\n        LogLevel::Error => 3,\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: import Cow and define LogMessage with text that can be borrowed or owned.\n"
+        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn alert_priority(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 0,\n        LogLevel::Warn => 1,\n        LogLevel::Error => 2,\n    }\n}\n\n// Continue from the previous lesson.\n// TODO: import Cow and define LogMessage with text that can be borrowed or owned.\n"
       },
       {
         "path": "tests/public.rs",
@@ -28,7 +28,7 @@
       {
         "level": 3,
         "body": "This is useful when most data can be borrowed but a few cases need ownership.",
-        "solutionCode": "use std::borrow::Cow;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn severity(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 1,\n        LogLevel::Warn => 2,\n        LogLevel::Error => 3,\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogMessage<'a> {\n    pub text: Cow<'a, str>,\n}"
+        "solutionCode": "use std::borrow::Cow;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogEntry<'a> {\n    pub level: &'a str,\n    pub message: &'a str,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct LogView<'a> {\n    pub entries: &'a [LogEntry<'a>],\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LogLevel {\n    Info,\n    Warn,\n    Error,\n}\n\npub fn alert_priority(level: LogLevel) -> u8 {\n    match level {\n        LogLevel::Info => 0,\n        LogLevel::Warn => 1,\n        LogLevel::Error => 2,\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct LogMessage<'a> {\n    pub text: Cow<'a, str>,\n}\n"
       }
     ],
     "completionExplanation": "Cow lets the API accept borrowed text by default while still supporting owned normalized messages. It avoids unnecessary allocation without giving up flexibility.",

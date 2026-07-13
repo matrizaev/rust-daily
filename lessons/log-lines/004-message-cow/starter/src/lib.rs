@@ -16,11 +16,11 @@ pub enum LogLevel {
     Error,
 }
 
-pub fn severity(level: LogLevel) -> u8 {
+pub fn alert_priority(level: LogLevel) -> u8 {
     match level {
-        LogLevel::Info => 1,
-        LogLevel::Warn => 2,
-        LogLevel::Error => 3,
+        LogLevel::Info => 0,
+        LogLevel::Warn => 1,
+        LogLevel::Error => 2,
     }
 }
 

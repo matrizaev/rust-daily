@@ -193,7 +193,7 @@
     "conceptId": "pattern-matching",
     "difficulty": "easy",
     "estimatedMinutes": 6,
-    "scenario": "The viewer needs a stable severity number for each known log level."
+    "scenario": "An operations view sorts alert rows by log level, keeping routine info below warnings and errors."
   },
   {
     "schemaVersion": 2,
@@ -231,11 +231,11 @@
     "order": 17,
     "day": 4,
     "arcLength": 6,
-    "title": "Choose clarity over clever chains",
+    "title": "Make restock alerts scan-friendly",
     "conceptId": "iterator-judgment",
     "difficulty": "medium",
     "estimatedMinutes": 8,
-    "scenario": "Iterator chains are powerful, but a dense chain can hide business rules. This helper should be easy to scan."
+    "scenario": "Inventory operators need a short list of normalized restock alerts before a purchasing review. A dense iterator chain hides which notes are actionable."
   },
   {
     "schemaVersion": 2,
@@ -529,7 +529,7 @@
     "conceptId": "currency-enum",
     "difficulty": "easy",
     "estimatedMinutes": 5,
-    "scenario": "The payment gateway is expanding. We need to support British Pounds (GBP) in our Currency representation."
+    "scenario": "The payment gateway is expanding to GBP, and adapter code needs a stable ISO currency code without matching on raw strings in every caller."
   },
   {
     "schemaVersion": 2,
@@ -1103,7 +1103,7 @@
     "conceptId": "log-event-struct",
     "difficulty": "easy",
     "estimatedMinutes": 6,
-    "scenario": "Structured logging starts with events that have names and levels instead of ad-hoc strings."
+    "scenario": "A request gateway needs queryable tracing events so support can filter production logs by request id instead of searching ad-hoc strings."
   },
   {
     "schemaVersion": 2,
@@ -1187,7 +1187,7 @@
     "conceptId": "percentage-newtype",
     "difficulty": "easy",
     "estimatedMinutes": 6,
-    "scenario": "A percentage should not be represented as any arbitrary integer throughout the codebase."
+    "scenario": "Pricing discounts and rollout allocations both accept percentages from outside the service. They should not flow through the codebase as arbitrary integers."
   },
   {
     "schemaVersion": 2,
@@ -1201,7 +1201,7 @@
     "conceptId": "percentage-valid-table-tests",
     "difficulty": "medium",
     "estimatedMinutes": 8,
-    "scenario": "Several valid boundary cases should be easy to scan. A table-driven test keeps inputs and expected values together."
+    "scenario": "A discount policy has meaningful boundary cases: no discount, a common midpoint, and the maximum allowed percentage. Reviewers should see those examples together."
   },
   {
     "schemaVersion": 2,
@@ -1215,7 +1215,7 @@
     "conceptId": "percentage-invalid-table-tests",
     "difficulty": "medium",
     "estimatedMinutes": 8,
-    "scenario": "Invalid cases deserve precise tests too. Table-driven tests make it clear which inputs should fail."
+    "scenario": "Bad dashboard or API input should be rejected before it can create impossible discount or rollout settings. The rejection examples need to be as visible as accepted examples."
   },
   {
     "schemaVersion": 2,
@@ -1229,7 +1229,7 @@
     "conceptId": "percentage-display-tests",
     "difficulty": "easy",
     "estimatedMinutes": 7,
-    "scenario": "Formatting is public behavior. A small table keeps display expectations obvious."
+    "scenario": "Admin screens and audit messages render percentage values for humans. Formatting is public behavior, not a throwaway detail."
   },
   {
     "schemaVersion": 2,
@@ -1243,7 +1243,7 @@
     "conceptId": "percentage-doc-example",
     "difficulty": "easy",
     "estimatedMinutes": 7,
-    "scenario": "A doc example should show normal usage and handle fallible APIs without unwrap or expect."
+    "scenario": "Other teams will copy the public percentage API into pricing and rollout code. The docs should show fallible construction without teaching unwrap as normal usage."
   },
   {
     "schemaVersion": 2,
@@ -1257,6 +1257,6 @@
     "conceptId": "percentage-named-test-cases",
     "difficulty": "medium",
     "estimatedMinutes": 8,
-    "scenario": "Named cases make failing table-driven tests easier to diagnose and easier for humans to scan."
+    "scenario": "When a percentage boundary breaks, maintainers need to know whether the failure came from zero, maximum, or out-of-range policy input. Named examples and generated ranges make that diagnosis faster."
   }
 ]

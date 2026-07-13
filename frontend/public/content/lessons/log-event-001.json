@@ -13,7 +13,7 @@
       {
         "path": "tests/public.rs",
         "role": "test",
-        "content": "use rust_daily_lesson::log_request_received;\n\n#[test]\nfn structured_event_function_is_callable_without_subscriber() {\n    log_request_received(\"req-1\");\n}\n"
+        "content": "use std::sync::{Arc, Mutex};\n\nuse rust_daily_lesson::log_request_received;\nuse tracing::{\n    field::{Field, Visit},\n    Event, Subscriber,\n};\nuse tracing_subscriber::{\n    layer::{Context, Layer},\n    prelude::*,\n    Registry,\n};\n\n#[derive(Debug, Default, PartialEq, Eq)]\nstruct CapturedFields {\n    event_name: Option<String>,\n    request_id: Option<String>,\n}\n\n#[derive(Default)]\nstruct FieldVisitor {\n    captured: CapturedFields,\n}\n\nimpl FieldVisitor {\n    fn record(&mut self, name: &str, value: String) {\n        match name {\n            \"event_name\" => self.captured.event_name = Some(value),\n            \"request_id\" => self.captured.request_id = Some(value),\n            _ => {}\n        }\n    }\n}\n\nimpl Visit for FieldVisitor {\n    fn record_str(&mut self, field: &Field, value: &str) {\n        self.record(field.name(), value.to_owned());\n    }\n\n    fn record_debug(&mut self, field: &Field, value: &dyn std::fmt::Debug) {\n        self.record(field.name(), format!(\"{value:?}\").trim_matches('\"').to_owned());\n    }\n}\n\n#[derive(Clone)]\nstruct CaptureLayer {\n    captured: Arc<Mutex<Vec<CapturedFields>>>,\n}\n\nimpl<S> Layer<S> for CaptureLayer\nwhere\n    S: Subscriber,\n{\n    fn on_event(&self, event: &Event<'_>, _context: Context<'_, S>) {\n        let mut visitor = FieldVisitor::default();\n        event.record(&mut visitor);\n        self.captured.lock().unwrap().push(visitor.captured);\n    }\n}\n\n#[test]\nfn emits_structured_request_fields() {\n    let captured = Arc::new(Mutex::new(Vec::new()));\n    let subscriber = Registry::default().with(CaptureLayer {\n        captured: Arc::clone(&captured),\n    });\n\n    tracing::subscriber::with_default(subscriber, || {\n        log_request_received(\"req-1\");\n    });\n\n    let events = captured.lock().unwrap();\n    assert_eq!(events.len(), 1);\n    assert_eq!(events[0].event_name.as_deref(), Some(\"request.received\"));\n    assert_eq!(events[0].request_id.as_deref(), Some(\"req-1\"));\n}\n"
       }
     ],
     "hints": [
@@ -31,7 +31,7 @@
         "solutionCode": "pub fn log_request_received(request_id: &str) {\n    tracing::info!(\n        event_name = \"request.received\",\n        request_id = %request_id,\n        \"request received\"\n    );\n}"
       }
     ],
-    "completionExplanation": "The first event uses real tracing metadata instead of a custom log-record struct or interpolated string.",
+    "completionExplanation": "The event now uses real tracing metadata instead of a custom log-record struct or interpolated string, and the test captures the emitted fields through a subscriber.",
     "validation": {
       "mode": "all",
       "validations": [

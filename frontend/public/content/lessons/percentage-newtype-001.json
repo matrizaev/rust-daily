@@ -2,7 +2,7 @@
   "id": "percentage-newtype-001",
   "schemaVersion": 2,
   "detail": {
-    "instructions": "Define Percentage, PercentageError, value, and TryFrom<u16>. Accept values from 0 through 100 and reject larger values without panicking.",
+    "instructions": "Define Percentage, PercentageError, value, and TryFrom<u16>. Accept values from 0 through 100 for policy inputs and reject larger values without panicking.",
     "starterCode": "// TODO: define Percentage and its range invariant.\n",
     "files": [
       {
@@ -31,7 +31,7 @@
         "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Percentage(u8);\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PercentageError {\n    OutOfRange,\n}\n\nimpl Percentage {\n    pub fn value(self) -> u8 {\n        self.0\n    }\n}\n\nimpl TryFrom<u16> for Percentage {\n    type Error = PercentageError;\n\n    fn try_from(value: u16) -> Result<Self, Self::Error> {\n        if value > 100 {\n            return Err(PercentageError::OutOfRange);\n        }\n\n        Ok(Self(value as u8))\n    }\n}"
       }
     ],
-    "completionExplanation": "Percentage establishes a compact invariant that can be tested with examples and generated inputs.",
+    "completionExplanation": "Percentage establishes a compact policy invariant that can be reused by pricing, rollout, and validation code.",
     "validation": {
       "mode": "all",
       "validations": [

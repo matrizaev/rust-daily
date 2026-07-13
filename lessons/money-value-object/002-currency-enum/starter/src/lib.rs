@@ -11,4 +11,4 @@ pub struct Money {
 }
 
 // Continue from the previous lesson.
-// TODO: Add British Pounds (Gbp)
+// TODO: Add British Pounds (Gbp) and expose stable ISO currency codes.
