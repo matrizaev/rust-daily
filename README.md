@@ -81,33 +81,34 @@ make test
 make coverage
 
 cd frontend
-npm run content:validate-source
 npm run content:validate-source:test
-npm run content:generate
-npm run content:check-refs
-npm run content:check
 npm run build
 yes | npx fallow dupes
 yes | npx fallow dead-code
 yes | npx fallow health
+
+cd ..
+scripts/curriculum/validate-source
+scripts/curriculum/generate --check
+scripts/curriculum/check-generated
 ```
 
 Lesson reference solutions can be checked with:
 
 ```bash
 scripts/test-lesson-solutions.sh lessons
+scripts/test-lesson-solutions.sh --changed --jobs 4
 ```
 
-`content:check-refs` independently checks canonical arc references and verifies
-that generated lessons and concepts match their sources.
+`scripts/curriculum/check-generated` checks generated parity, canonical arc
+references, and runtime content shape.
 
 ## Author Lessons
 
 Create a new source lesson skeleton with:
 
 ```bash
-cd frontend
-npm run content:scaffold-lesson -- \
+scripts/curriculum/scaffold-lesson \
   --arc advanced-ownership \
   --lesson 091-borrowed-config-view \
   --title "Borrowed config views" \
@@ -126,7 +127,7 @@ npm run content:scaffold-lesson -- \
 The scaffolder enforces sequential lesson order, exactly one editable artifact,
 safe runner paths, optional compile-fail cases, and read-only continuity copies
 from the previous lesson's solution snapshot. Replace every `TODO(author)`
-placeholder, then run the normal content generation and lesson solution checks.
+placeholder, then run `scripts/curriculum/author-check`.
 
 With the backend running, smoke-test the real HTTP, queue, Podman, and Cargo
 path:

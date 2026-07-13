@@ -1,0 +1,254 @@
+#!/usr/bin/env node
+import {
+  DEFAULT_BASE,
+  LESSONS_ROOT,
+  captureCommand,
+  changedFilesFromGit,
+  readJson,
+  readLessonRecords,
+  uniqueSorted,
+} from "./lib/repo.mjs";
+import { join } from "node:path";
+
+const usage = () => `Usage:
+  scripts/curriculum/changed-lessons [--base origin/main] [--format text|json]
+
+Prints changed source lesson directories relative to the repository root.
+Tooling-only changes do not expand to the full corpus; callers that need
+tooling coverage should run script tests or a focused lesson smoke separately.
+`;
+
+const parseArgs = (argv) => {
+  const options = {
+    base: DEFAULT_BASE,
+    format: "text",
+  };
+  const errors = [];
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+
+    if (arg === "--base") {
+      const value = argv[index + 1];
+      if (!value || value.startsWith("--")) {
+        errors.push("--base requires a value.");
+      } else {
+        options.base = value;
+        index += 1;
+      }
+    } else if (arg === "--format") {
+      const value = argv[index + 1];
+      if (!["text", "json"].includes(value)) {
+        errors.push("--format must be text or json.");
+      } else {
+        options.format = value;
+        index += 1;
+      }
+    } else if (arg === "--help" || arg === "-h") {
+      options.help = true;
+    } else {
+      errors.push(`Unknown argument ${arg}.`);
+    }
+  }
+
+  return { options, errors };
+};
+
+const lessonDirFromChangedFile = (file) => {
+  const match = /^lessons\/([^/]+)\/(\d{3}-[^/]+)(?:\/|$)/.exec(file);
+
+  return match ? `lessons/${match[1]}/${match[2]}` : null;
+};
+
+const arcIdFromChangedFile = (file) => {
+  const match = /^lessons\/([^/]+)\//.exec(file);
+
+  return match ? match[1] : null;
+};
+
+const generatedContentOnly = (file) =>
+  file.startsWith("frontend/src/content/") ||
+  file.startsWith("frontend/public/content/lessons/");
+
+const lessonRelPathsByArc = (records) => {
+  const byArc = new Map();
+
+  records.forEach((record) => {
+    const paths = byArc.get(record.lesson.arcId) ?? [];
+    paths.push(record.relPath);
+    byArc.set(record.lesson.arcId, paths);
+  });
+
+  return byArc;
+};
+
+const recordsByLessonId = (records) =>
+  new Map(records.map((record) => [record.lesson.id, record.relPath]));
+
+const recordsById = (records) =>
+  new Map(records.map((record) => [record.id, record]));
+
+const readJsonAtBase = (base, file) => {
+  const result = captureCommand("git", ["show", `${base}:${file}`]);
+
+  if (result.status !== 0) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(result.stdout);
+  } catch {
+    return null;
+  }
+};
+
+const recordChanged = (left, right) =>
+  JSON.stringify(left ?? null) !== JSON.stringify(right ?? null);
+
+const changedRecordIds = (baseRecords, currentRecords) => {
+  if (!Array.isArray(baseRecords) || !Array.isArray(currentRecords)) {
+    return null;
+  }
+
+  const baseById = recordsById(baseRecords);
+  const currentById = recordsById(currentRecords);
+  const ids = uniqueSorted([...baseById.keys(), ...currentById.keys()]);
+
+  return ids.filter((id) => recordChanged(baseById.get(id), currentById.get(id)));
+};
+
+const addArcLessons = (changed, byArc, arcIds) => {
+  arcIds.forEach((arcId) => {
+    (byArc.get(arcId) ?? []).forEach((path) => changed.add(path));
+  });
+};
+
+const addConceptLessons = (changed, baseConcepts, currentConcepts, conceptIds, byLessonId) => {
+  const baseById = recordsById(baseConcepts);
+  const currentById = recordsById(currentConcepts);
+
+  conceptIds.forEach((conceptId) => {
+    [
+      ...(baseById.get(conceptId)?.lessonIds ?? []),
+      ...(currentById.get(conceptId)?.lessonIds ?? []),
+    ].forEach((lessonId) => {
+      const lessonPath = byLessonId.get(lessonId);
+
+      if (lessonPath) {
+        changed.add(lessonPath);
+      }
+    });
+  });
+};
+
+const addChangedArcMetadataLessons = async (changed, base, byArc, allLessonPaths) => {
+  const baseArcs = readJsonAtBase(base, "lessons/arcs.json");
+  const currentArcs = await readJson(join(LESSONS_ROOT, "arcs.json"));
+  const arcIds = changedRecordIds(baseArcs, currentArcs);
+
+  if (!arcIds) {
+    allLessonPaths.forEach((path) => changed.add(path));
+    return;
+  }
+
+  addArcLessons(changed, byArc, arcIds);
+};
+
+const addChangedConceptMetadataLessons = async (changed, base, byLessonId, allLessonPaths) => {
+  const baseConcepts = readJsonAtBase(base, "lessons/concepts.json");
+  const currentConcepts = await readJson(join(LESSONS_ROOT, "concepts.json"));
+  const conceptIds = changedRecordIds(baseConcepts, currentConcepts);
+
+  if (!conceptIds) {
+    allLessonPaths.forEach((path) => changed.add(path));
+    return;
+  }
+
+  addConceptLessons(changed, baseConcepts, currentConcepts, conceptIds, byLessonId);
+};
+
+const addMetadataChangedLessons = async ({
+  allLessonPaths,
+  base,
+  byArc,
+  byLessonId,
+  changed,
+  file,
+}) => {
+  if (file === "lessons/arcs.json") {
+    await addChangedArcMetadataLessons(changed, base, byArc, allLessonPaths);
+  }
+
+  if (file === "lessons/concepts.json") {
+    await addChangedConceptMetadataLessons(changed, base, byLessonId, allLessonPaths);
+  }
+};
+
+const changedLessonPaths = async (files, base) => {
+  const records = await readLessonRecords();
+  const allLessonPaths = records.map((record) => record.relPath);
+  const byArc = lessonRelPathsByArc(records);
+  const byLessonId = recordsByLessonId(records);
+  const changed = new Set();
+
+  for (const file of files) {
+    if (generatedContentOnly(file)) {
+      continue;
+    }
+
+    if (file === "lessons/arcs.json" || file === "lessons/concepts.json") {
+      await addMetadataChangedLessons({
+        allLessonPaths,
+        base,
+        byArc,
+        byLessonId,
+        changed,
+        file,
+      });
+      continue;
+    }
+
+    const lessonDir = lessonDirFromChangedFile(file);
+    if (lessonDir) {
+      changed.add(lessonDir);
+      continue;
+    }
+
+    const arcId = arcIdFromChangedFile(file);
+    (byArc.get(arcId) ?? []).forEach((path) => changed.add(path));
+  }
+
+  return uniqueSorted([...changed]);
+};
+
+const main = async () => {
+  const { options, errors } = parseArgs(process.argv.slice(2));
+
+  if (options.help) {
+    console.log(usage());
+    return;
+  }
+
+  if (errors.length > 0) {
+    errors.forEach((error) => console.error(error));
+    console.error(usage());
+    process.exitCode = 64;
+    return;
+  }
+
+  try {
+    const files = changedFilesFromGit(options.base);
+    const lessons = await changedLessonPaths(files, options.base);
+
+    if (options.format === "json") {
+      console.log(JSON.stringify({ base: options.base, lessons }, null, 2));
+    } else {
+      lessons.forEach((lesson) => console.log(lesson));
+    }
+  } catch (error) {
+    console.error(error.message);
+    process.exitCode = 1;
+  }
+};
+
+await main();

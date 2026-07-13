@@ -37,6 +37,7 @@ const BOOLEAN_FLAGS = new Set([
   "--register-arc",
   "--register-concept",
   "--force",
+  "--dry-run",
   "--help",
   "--list-presets",
 ]);
@@ -68,6 +69,7 @@ const emptyOptions = () => ({
   registerArc: false,
   registerConcept: false,
   force: false,
+  dryRun: false,
 });
 
 const flagToBooleanKey = (flag) =>
@@ -147,7 +149,7 @@ const parseArgs = (argv) => {
 };
 
 const usageText = () => `Usage:
-  npm run content:scaffold-lesson -- --arc <arc-id> --lesson <nnn-slug> \\
+  scripts/curriculum/scaffold-lesson --arc <arc-id> --lesson <nnn-slug> \\
     --title <title> --concept <concept-id> --difficulty <easy|medium|advanced> \\
     --editable <src/file.rs> [--dependency-set <std|advanced>] [options]
 
@@ -165,6 +167,7 @@ Common options:
   --estimated-minutes <minutes>
   --arc-length <count>
   --force
+  --dry-run
 
 Discovery:
   --help
@@ -174,7 +177,7 @@ Presets:
 ${formatPresetList()}
 
 Example:
-  npm run content:scaffold-lesson -- --preset advanced-borrowed-api \\
+  scripts/curriculum/scaffold-lesson --preset advanced-borrowed-api \\
     --arc borrowed-views --lesson 091-config-view --title "Borrowed config view" \\
     --concept borrowed-config-view --difficulty advanced --editable src/lib.rs \\
     --register-arc --arc-title "Borrowed Views" --arc-pillar ownership \\
@@ -988,10 +991,37 @@ const printSuccess = (options, writes) => {
   console.log(sourceWrites.join("\n"));
   console.log("\nNext:");
   console.log("1. Replace every TODO(author) placeholder.");
-  console.log("2. cd frontend && npm run content:validate-source");
-  console.log("3. cd frontend && npm run content:generate");
-  console.log("4. cd frontend && npm run content:check-refs && npm run content:check");
+  console.log("2. scripts/curriculum/validate-source");
+  console.log("3. scripts/curriculum/generate");
+  console.log("4. scripts/curriculum/check-generated");
   console.log(`5. scripts/test-lesson-solutions.sh lessons/${options.arc}/${options.lesson}`);
+};
+
+const printDryRun = (options, lessonJson, writes) => {
+  const sourceWrites = writes.filter((write) => write.kind !== "json");
+  const metadataWrites = writes.filter((write) => write.kind === "json");
+  const copyWrites = writes.filter((write) => write.kind === "copy");
+
+  console.log("Dry run lesson scaffold:");
+  if (options.preset) {
+    console.log(`Preset: ${options.preset}`);
+  }
+  console.log(`Lesson: ${lessonJson.id}`);
+  console.log(`Arc/day/order: ${lessonJson.arcId} day ${lessonJson.day}, order ${lessonJson.order}`);
+  console.log("Files to create:");
+  sourceWrites.forEach((write) => console.log(`- ${repoRelativePath(write.path)}`));
+  if (copyWrites.length > 0) {
+    console.log("Copied continuity sources:");
+    copyWrites.forEach((write) =>
+      console.log(`- ${repoRelativePath(write.source)} -> ${repoRelativePath(write.path)}`));
+  }
+  console.log("Metadata updates:");
+  metadataWrites.forEach((write) => console.log(`- ${repoRelativePath(write.path)}`));
+  console.log("Validation commands:");
+  console.log("- scripts/curriculum/validate-source");
+  console.log("- scripts/curriculum/generate --check");
+  console.log("- scripts/curriculum/check-generated");
+  console.log(`- scripts/test-lesson-solutions.sh lessons/${options.arc}/${options.lesson}`);
 };
 
 const reportAndExit = (errors) => {
@@ -1021,10 +1051,15 @@ const reportIfErrors = (errors) => {
 };
 
 const writeScaffold = async (options) => {
-  const { writes } = await buildWritePlan(options);
+  const { lessonJson, writes } = await buildWritePlan(options);
   const writeErrors = await validateWritePlan(writes, options.force);
 
   reportIfErrors(writeErrors);
+
+  if (options.dryRun) {
+    printDryRun(options, lessonJson, writes);
+    return;
+  }
 
   await executeWritePlan(writes);
   printSuccess(options, writes);

@@ -1,0 +1,146 @@
+#!/usr/bin/env node
+import { join } from "node:path";
+import {
+  DEFAULT_BASE,
+  REPO_ROOT,
+  exitFromResult,
+  runCommand,
+} from "./lib/repo.mjs";
+
+const usage = () => `Usage:
+  scripts/curriculum/author-check [options]
+
+Options:
+  --base <ref>       Git base for changed lesson detection. Default: origin/main.
+  --jobs <n>         Solution-test parallelism.
+  --all-lessons      Test the whole lesson corpus.
+  --skip-solutions   Skip lesson solution tests.
+  --format text|json Output text or JSON. Default: text.
+`;
+
+const parseArgs = (argv) => {
+  const options = {
+    base: DEFAULT_BASE,
+    jobs: String(Math.max(1, Math.min(4, Math.floor((process.availableParallelism?.() ?? 2) / 2) || 1))),
+    allLessons: false,
+    skipSolutions: false,
+    format: "text",
+  };
+  const errors = [];
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+
+    if (arg === "--base" || arg === "--jobs" || arg === "--format") {
+      const value = argv[index + 1];
+      if (!value || value.startsWith("--")) {
+        errors.push(`${arg} requires a value.`);
+      } else if (arg === "--base") {
+        options.base = value;
+        index += 1;
+      } else if (arg === "--jobs") {
+        if (!/^[1-9][0-9]*$/.test(value)) {
+          errors.push("--jobs must be a positive integer.");
+        }
+        options.jobs = value;
+        index += 1;
+      } else if (["text", "json"].includes(value)) {
+        options.format = value;
+        index += 1;
+      } else {
+        errors.push("--format must be text or json.");
+      }
+    } else if (arg === "--all-lessons") {
+      options.allLessons = true;
+    } else if (arg === "--skip-solutions") {
+      options.skipSolutions = true;
+    } else if (arg === "--help" || arg === "-h") {
+      options.help = true;
+    } else {
+      errors.push(`Unknown argument ${arg}.`);
+    }
+  }
+
+  return { options, errors };
+};
+
+const stepsForOptions = (options) => {
+  const steps = [
+    ["source", process.execPath, [join("scripts", "curriculum", "validate-source")]],
+    ["generate-check", process.execPath, [join("scripts", "curriculum", "generate"), "--check"]],
+    ["generated-content", process.execPath, [join("scripts", "curriculum", "check-generated")]],
+  ];
+
+  if (!options.skipSolutions) {
+    const solutionArgs = options.allLessons
+      ? ["lessons", "--jobs", options.jobs]
+      : ["--changed", "--base", options.base, "--jobs", options.jobs];
+
+    if (options.format === "json") {
+      solutionArgs.push("--format", "json");
+    }
+
+    steps.push(["solutions", join("scripts", "test-lesson-solutions.sh"), solutionArgs]);
+  }
+
+  return steps;
+};
+
+const runTextStep = ([label, command, args]) => {
+  console.log(`==> ${label}`);
+  const result = runCommand(command, args);
+  const status = exitFromResult(result);
+
+  if (status !== 0) {
+    process.exit(status);
+  }
+};
+
+const runJsonStep = ([label, command, args]) => {
+  const result = runCommand(command, args, { stdio: ["ignore", "pipe", "pipe"] });
+
+  return {
+    label,
+    command: [command, ...args].join(" "),
+    status: exitFromResult(result),
+    stdout: result.stdout?.toString() ?? "",
+    stderr: result.stderr?.toString() ?? "",
+  };
+};
+
+const main = () => {
+  const { options, errors } = parseArgs(process.argv.slice(2));
+
+  if (options.help) {
+    console.log(usage());
+    return;
+  }
+
+  if (errors.length > 0) {
+    errors.forEach((error) => console.error(error));
+    console.error(usage());
+    process.exitCode = 64;
+    return;
+  }
+
+  const steps = stepsForOptions(options);
+
+  if (options.format === "json") {
+    const results = steps.map(runJsonStep);
+    const failed = results.find((result) => result.status !== 0);
+
+    console.log(JSON.stringify({ base: options.base, results }, null, 2));
+    process.exitCode = failed ? failed.status : 0;
+    return;
+  }
+
+  for (const step of steps) {
+    runTextStep(step);
+  }
+
+  console.log("Author check passed.");
+};
+
+process.chdir(REPO_ROOT);
+main();
+

@@ -1,0 +1,124 @@
+#!/usr/bin/env node
+import { join } from "node:path";
+import {
+  DEFAULT_BASE,
+  exitFromResult,
+  runCommand,
+} from "./lib/repo.mjs";
+
+const usage = () => `Usage:
+  scripts/curriculum/review [lessons/<arc-or-lesson>] [options]
+
+Options:
+  --base <ref>       Git base for changed fallback. Default: origin/main.
+  --jobs <n>         Solution-test parallelism. Default: 1.
+  --skip-solutions   Skip solution checks.
+  --format text|json Output text or JSON. Default: text.
+`;
+
+const parseArgs = (argv) => {
+  const options = {
+    base: DEFAULT_BASE,
+    jobs: "1",
+    format: "text",
+    skipSolutions: false,
+    target: null,
+  };
+  const errors = [];
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+
+    if (arg === "--base" || arg === "--jobs" || arg === "--format") {
+      const value = argv[index + 1];
+      if (!value || value.startsWith("--")) {
+        errors.push(`${arg} requires a value.`);
+      } else if (arg === "--format" && !["text", "json"].includes(value)) {
+        errors.push("--format must be text or json.");
+      } else {
+        options[arg.slice(2)] = value;
+        index += 1;
+      }
+    } else if (arg === "--skip-solutions") {
+      options.skipSolutions = true;
+    } else if (arg === "--help" || arg === "-h") {
+      options.help = true;
+    } else if (!options.target) {
+      options.target = arg;
+    } else {
+      errors.push(`Unexpected argument ${arg}.`);
+    }
+  }
+
+  return { options, errors };
+};
+
+const stepsForOptions = (options) => {
+  const steps = [
+    ["source", process.execPath, [join("scripts", "curriculum", "validate-source")]],
+    ["generated", process.execPath, [join("scripts", "curriculum", "check-generated")]],
+  ];
+
+  if (!options.skipSolutions) {
+    const args = options.target
+      ? [options.target, "--jobs", options.jobs]
+      : ["--changed", "--base", options.base, "--jobs", options.jobs];
+    if (options.format === "json") {
+      args.push("--format", "json");
+    }
+    steps.push(["solutions", join("scripts", "test-lesson-solutions.sh"), args]);
+  }
+
+  return steps;
+};
+
+const runStep = ([label, command, args], format) => {
+  const result = runCommand(command, args, {
+    stdio: format === "json" ? ["ignore", "pipe", "pipe"] : "inherit",
+  });
+
+  return {
+    label,
+    status: exitFromResult(result),
+    stdout: result.stdout?.toString() ?? "",
+    stderr: result.stderr?.toString() ?? "",
+  };
+};
+
+const main = () => {
+  const { options, errors } = parseArgs(process.argv.slice(2));
+
+  if (options.help) {
+    console.log(usage());
+    return;
+  }
+
+  if (errors.length > 0) {
+    errors.forEach((error) => console.error(error));
+    console.error(usage());
+    process.exitCode = 64;
+    return;
+  }
+
+  if (options.format !== "json") {
+    console.log("Review checklist:");
+    console.log("- concept focus");
+    console.log("- real-world fit");
+    console.log("- starter/task alignment");
+    console.log("- validation alignment");
+    console.log("- solution quality");
+    console.log("- continuity");
+  }
+
+  const results = stepsForOptions(options).map((step) => runStep(step, options.format));
+  const failed = results.find((result) => result.status !== 0);
+
+  if (options.format === "json") {
+    console.log(JSON.stringify({ target: options.target, results }, null, 2));
+  }
+
+  process.exitCode = failed ? failed.status : 0;
+};
+
+main();
+

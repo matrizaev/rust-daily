@@ -1,0 +1,15 @@
+#!/usr/bin/env node
+import { join } from "node:path";
+import {
+  exitFromResult,
+  FRONTEND_DIR,
+  runCommand,
+} from "./lib/repo.mjs";
+
+const result = runCommand(
+  process.execPath,
+  [join(FRONTEND_DIR, "scripts/curriculum/generate-frontend-content.mjs"), ...process.argv.slice(2)],
+);
+
+process.exit(exitFromResult(result));
+

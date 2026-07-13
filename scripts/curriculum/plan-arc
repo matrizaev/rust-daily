@@ -1,0 +1,166 @@
+#!/usr/bin/env node
+import { join } from "node:path";
+import {
+  LESSONS_ROOT,
+  readJson,
+  readLessonRecords,
+  writeJson,
+} from "./lib/repo.mjs";
+
+const ARC_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+const usage = () => `Usage:
+  scripts/curriculum/plan-arc --arc <arc-id> --title <title> --lessons <count> [--write]
+
+Options:
+  --pillar <name>        Arc pillar when writing.
+  --description <text>   Arc description when writing.
+  --write                Append the arc to lessons/arcs.json.
+  --format text|json     Output text or JSON. Default: text.
+`;
+
+const parseArgs = (argv) => {
+  const options = { format: "text", write: false };
+  const errors = [];
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+
+    if (["--arc", "--title", "--lessons", "--pillar", "--description", "--format"].includes(arg)) {
+      const value = argv[index + 1];
+      if (!value || value.startsWith("--")) {
+        errors.push(`${arg} requires a value.`);
+      } else {
+        options[arg.slice(2).replace(/-([a-z])/g, (_match, letter) => letter.toUpperCase())] = value;
+        index += 1;
+      }
+    } else if (arg === "--write") {
+      options.write = true;
+    } else if (arg === "--help" || arg === "-h") {
+      options.help = true;
+    } else {
+      errors.push(`Unknown argument ${arg}.`);
+    }
+  }
+
+  return { options, errors };
+};
+
+const validate = (options, arcs, errors) => {
+  if (!ARC_ID_PATTERN.test(options.arc ?? "")) {
+    errors.push("--arc must be lowercase words separated by hyphens.");
+  }
+  if (!options.title || options.title.trim().length === 0) {
+    errors.push("--title is required.");
+  }
+  if (!/^[1-9][0-9]*$/.test(options.lessons ?? "")) {
+    errors.push("--lessons must be a positive integer.");
+  }
+  if (options.format && !["text", "json"].includes(options.format)) {
+    errors.push("--format must be text or json.");
+  }
+  if (arcs.some((arc) => arc.id === options.arc)) {
+    errors.push(`${options.arc} already exists in lessons/arcs.json.`);
+  }
+  if (options.write && (!options.pillar || !options.description)) {
+    errors.push("--write requires --pillar and --description.");
+  }
+};
+
+const planFromState = (options, arcs, lessons) => {
+  const orderStart = lessons.reduce(
+    (max, record) => Math.max(max, record.lesson.order ?? 0),
+    0,
+  ) + 1;
+  const lessonCount = Number.parseInt(options.lessons, 10);
+  const previousArc = arcs
+    .filter((arc) => Number.isFinite(arc.orderStart) && arc.orderStart < orderStart)
+    .sort((left, right) => right.orderStart - left.orderStart)
+    .at(0) ?? null;
+  const slots = Array.from({ length: lessonCount }, (_item, index) => ({
+    order: orderStart + index,
+    day: index + 1,
+    lesson: `${String(orderStart + index).padStart(3, "0")}-todo-slug`,
+  }));
+
+  return {
+    id: options.arc,
+    title: options.title,
+    pillar: options.pillar ?? "TODO",
+    description: options.description ?? "TODO",
+    orderStart,
+    targetLessonCount: lessonCount,
+    previousArc,
+    slots,
+  };
+};
+
+const printTextPlan = (plan) => {
+  console.log(`${plan.id}: ${plan.title}`);
+  console.log(`orderStart: ${plan.orderStart}`);
+  console.log(`targetLessonCount: ${plan.targetLessonCount}`);
+  if (plan.previousArc) {
+    console.log(`previousArc: ${plan.previousArc.id}`);
+  }
+  console.log("slots:");
+  plan.slots.forEach((slot) => {
+    console.log(`- ${slot.lesson} day ${slot.day} order ${slot.order}`);
+  });
+  console.log("review:");
+  console.log("- real-world scenario is project-shaped");
+  console.log("- each lesson teaches one concept");
+  console.log("- continuity keeps prior domain types unless notes explain reset");
+};
+
+const main = async () => {
+  const { options, errors } = parseArgs(process.argv.slice(2));
+
+  if (options.help) {
+    console.log(usage());
+    return;
+  }
+
+  const [arcs, lessons] = await Promise.all([
+    readJson(join(LESSONS_ROOT, "arcs.json")),
+    readLessonRecords(),
+  ]);
+
+  validate(options, arcs, errors);
+
+  if (errors.length > 0) {
+    errors.forEach((error) => console.error(error));
+    console.error(usage());
+    process.exitCode = 64;
+    return;
+  }
+
+  const plan = planFromState(options, arcs, lessons);
+
+  if (options.write) {
+    await writeJson(
+      join(LESSONS_ROOT, "arcs.json"),
+      [
+        ...arcs,
+        {
+          id: plan.id,
+          title: plan.title,
+          pillar: plan.pillar,
+          orderStart: plan.orderStart,
+          targetLessonCount: plan.targetLessonCount,
+          description: plan.description,
+        },
+      ].sort((left, right) => (left.orderStart ?? 0) - (right.orderStart ?? 0)),
+    );
+  }
+
+  if (options.format === "json") {
+    console.log(JSON.stringify({ ...plan, wrote: options.write }, null, 2));
+  } else {
+    printTextPlan(plan);
+    if (options.write) {
+      console.log("wrote lessons/arcs.json");
+    }
+  }
+};
+
+await main();

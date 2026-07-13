@@ -1,0 +1,73 @@
+#!/usr/bin/env node
+import { join } from "node:path";
+import {
+  DEFAULT_BASE,
+  exitFromResult,
+  runCommand,
+} from "./lib/repo.mjs";
+
+const usage = () => `Usage:
+  scripts/curriculum/validate-changed [--base origin/main]
+
+Runs source validation and generated parity for work changed against the base.
+`;
+
+const parseArgs = (argv) => {
+  const options = { base: DEFAULT_BASE };
+  const errors = [];
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+
+    if (arg === "--base") {
+      const value = argv[index + 1];
+      if (!value || value.startsWith("--")) {
+        errors.push("--base requires a value.");
+      } else {
+        options.base = value;
+        index += 1;
+      }
+    } else if (arg === "--help" || arg === "-h") {
+      options.help = true;
+    } else {
+      errors.push(`Unknown argument ${arg}.`);
+    }
+  }
+
+  return { options, errors };
+};
+
+const runStep = (label, command, args) => {
+  console.log(`==> ${label}`);
+  const result = runCommand(command, args);
+  const status = exitFromResult(result);
+
+  if (status !== 0) {
+    process.exit(status);
+  }
+};
+
+const { options, errors } = parseArgs(process.argv.slice(2));
+
+if (options.help) {
+  console.log(usage());
+  process.exit(0);
+}
+
+if (errors.length > 0) {
+  errors.forEach((error) => console.error(error));
+  console.error(usage());
+  process.exit(64);
+}
+
+runStep("Changed lessons", process.execPath, [
+  join("scripts", "curriculum", "changed-lessons"),
+  "--base",
+  options.base,
+]);
+runStep("Source validation", process.execPath, [join("scripts", "curriculum", "validate-source")]);
+runStep("Generated parity", process.execPath, [
+  join("scripts", "curriculum", "generate"),
+  "--check",
+]);
+
