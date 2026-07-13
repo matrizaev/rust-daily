@@ -2,18 +2,18 @@
   "id": "inventory-clear-loop-004",
   "schemaVersion": 2,
   "detail": {
-    "instructions": "Refactor the existing reorder_notes helper into a clearer shape. Use a small loop and named intermediate values so the inventory priority rule is obvious.",
-    "starterCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Item {\n    pub sku: String,\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\npub fn available_names(items: &[Item]) -> Vec<&str> {\n    items\n        .iter()\n        .filter_map(|item| {\n            if item.quantity > item.reserved {\n                Some(item.name.as_str())\n            } else {\n                None\n            }\n        })\n        .collect()\n}\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    items.iter().fold(0, |total, item| total + item.quantity)\n}\n\npub fn reorder_notes(notes: &[String]) -> Vec<String> {\n    notes\n        .iter()\n        .map(|note| note.trim().to_lowercase())\n        .filter(|note| !note.is_empty())\n        .filter(|note| note.contains(\"urgent\") || note.contains(\"stock\"))\n        .collect()\n}\n\n// Continue from the previous lesson.\n// TODO: refactor reorder_notes so the inventory priority rule is easy to scan.\n",
+    "instructions": "Refactor the existing priority_restock_notes helper into a clearer shape. Use a small loop and named intermediate values so the restock alert rule is obvious.",
+    "starterCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Item {\n    pub sku: String,\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\npub fn available_names(items: &[Item]) -> Vec<&str> {\n    items\n        .iter()\n        .filter_map(|item| {\n            if item.quantity > item.reserved {\n                Some(item.name.as_str())\n            } else {\n                None\n            }\n        })\n        .collect()\n}\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    items.iter().fold(0, |total, item| total + item.quantity)\n}\n\npub fn priority_restock_notes(notes: &[String]) -> Vec<String> {\n    notes\n        .iter()\n        .map(|note| note.trim().to_lowercase())\n        .filter(|note| !note.is_empty())\n        .filter(|note| note.contains(\"urgent\") || note.contains(\"stock\"))\n        .collect()\n}\n\n// Continue from the previous lesson.\n// TODO: refactor priority_restock_notes so the restock alert rule is easy to scan.\n",
     "files": [
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Item {\n    pub sku: String,\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\npub fn available_names(items: &[Item]) -> Vec<&str> {\n    items\n        .iter()\n        .filter_map(|item| {\n            if item.quantity > item.reserved {\n                Some(item.name.as_str())\n            } else {\n                None\n            }\n        })\n        .collect()\n}\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    items.iter().fold(0, |total, item| total + item.quantity)\n}\n\npub fn reorder_notes(notes: &[String]) -> Vec<String> {\n    notes\n        .iter()\n        .map(|note| note.trim().to_lowercase())\n        .filter(|note| !note.is_empty())\n        .filter(|note| note.contains(\"urgent\") || note.contains(\"stock\"))\n        .collect()\n}\n\n// Continue from the previous lesson.\n// TODO: refactor reorder_notes so the inventory priority rule is easy to scan.\n"
+        "content": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Item {\n    pub sku: String,\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\npub fn available_names(items: &[Item]) -> Vec<&str> {\n    items\n        .iter()\n        .filter_map(|item| {\n            if item.quantity > item.reserved {\n                Some(item.name.as_str())\n            } else {\n                None\n            }\n        })\n        .collect()\n}\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    items.iter().fold(0, |total, item| total + item.quantity)\n}\n\npub fn priority_restock_notes(notes: &[String]) -> Vec<String> {\n    notes\n        .iter()\n        .map(|note| note.trim().to_lowercase())\n        .filter(|note| !note.is_empty())\n        .filter(|note| note.contains(\"urgent\") || note.contains(\"stock\"))\n        .collect()\n}\n\n// Continue from the previous lesson.\n// TODO: refactor priority_restock_notes so the restock alert rule is easy to scan.\n"
       },
       {
         "path": "tests/public.rs",
         "role": "test",
-        "content": "use rust_daily_lesson::reorder_notes;\n\n#[test]\nfn keeps_inventory_notes_in_normalized_order() {\n    let notes = vec![\n        \"  URGENT restock batteries \".to_owned(),\n        \"\".to_owned(),\n        \"general reminder\".to_owned(),\n        \"low STOCK on cables\".to_owned(),\n    ];\n\n    assert_eq!(\n        reorder_notes(&notes),\n        vec![\n            \"urgent restock batteries\".to_owned(),\n            \"low stock on cables\".to_owned(),\n        ]\n    );\n}\n"
+        "content": "use rust_daily_lesson::priority_restock_notes;\n\n#[test]\nfn keeps_restock_alert_notes_in_normalized_order() {\n    let notes = vec![\n        \"  URGENT restock batteries \".to_owned(),\n        \"\".to_owned(),\n        \"general reminder\".to_owned(),\n        \"low STOCK on cables\".to_owned(),\n    ];\n\n    assert_eq!(\n        priority_restock_notes(&notes),\n        vec![\n            \"urgent restock batteries\".to_owned(),\n            \"low stock on cables\".to_owned(),\n        ]\n    );\n}\n"
       }
     ],
     "hints": [
@@ -23,15 +23,15 @@
       },
       {
         "level": 2,
-        "body": "Name a boolean such as is_inventory_note if that makes the rule clearer."
+        "body": "Name booleans such as mentions_urgent, mentions_stock, and is_restock_alert if that makes the rule clearer."
       },
       {
         "level": 3,
         "body": "A loop is idiomatic when each step deserves a name.",
-        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Item {\n    pub sku: String,\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\npub fn available_names(items: &[Item]) -> Vec<&str> {\n    items\n        .iter()\n        .filter_map(|item| {\n            if item.quantity > item.reserved {\n                Some(item.name.as_str())\n            } else {\n                None\n            }\n        })\n        .collect()\n}\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    items.iter().fold(0, |total, item| total + item.quantity)\n}\n\npub fn reorder_notes(notes: &[String]) -> Vec<String> {\n    let mut relevant_notes = Vec::new();\n\n    for note in notes {\n        let normalized = note.trim().to_lowercase();\n        if normalized.is_empty() {\n            continue;\n        }\n\n        let is_inventory_note = normalized.contains(\"urgent\") || normalized.contains(\"stock\");\n        if is_inventory_note {\n            relevant_notes.push(normalized);\n        }\n    }\n\n    relevant_notes\n}"
+        "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Item {\n    pub sku: String,\n    pub name: String,\n    pub quantity: u32,\n    pub reserved: u32,\n}\n\npub fn available_names(items: &[Item]) -> Vec<&str> {\n    items\n        .iter()\n        .filter_map(|item| {\n            if item.quantity > item.reserved {\n                Some(item.name.as_str())\n            } else {\n                None\n            }\n        })\n        .collect()\n}\n\npub fn total_quantity(items: &[Item]) -> u32 {\n    items.iter().fold(0, |total, item| total + item.quantity)\n}\n\npub fn priority_restock_notes(notes: &[String]) -> Vec<String> {\n    let mut priority_notes = Vec::new();\n\n    for note in notes {\n        let normalized = note.trim().to_lowercase();\n        if normalized.is_empty() {\n            continue;\n        }\n\n        let mentions_urgent = normalized.contains(\"urgent\");\n        let mentions_stock = normalized.contains(\"stock\");\n        let is_restock_alert = mentions_urgent || mentions_stock;\n\n        if is_restock_alert {\n            priority_notes.push(normalized);\n        }\n    }\n\n    priority_notes\n}\n"
       }
     ],
-    "completionExplanation": "Idiomatic Rust values clarity over using an iterator chain everywhere. The best shape is the one that makes the business rule easiest to verify.",
+    "completionExplanation": "Idiomatic Rust values clarity over using an iterator chain everywhere. The best shape is the one that makes the inventory rule easiest to verify during a review.",
     "validation": {
       "mode": "all",
       "validations": [
@@ -41,7 +41,7 @@
           "checks": [
             {
               "type": "function_signature",
-              "functionName": "reorder_notes",
+              "functionName": "priority_restock_notes",
               "requiredSignatureIncludes": [
                 "Vec<String>"
               ]
@@ -50,7 +50,9 @@
               "type": "source_includes",
               "requiredSnippets": [
                 "for note in notes",
-                "is_inventory_note"
+                "mentions_urgent",
+                "mentions_stock",
+                "is_restock_alert"
               ],
               "forbiddenSnippets": [
                 ".map(|note|",

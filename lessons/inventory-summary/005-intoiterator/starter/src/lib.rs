@@ -23,8 +23,8 @@ pub fn total_quantity(items: &[Item]) -> u32 {
     items.iter().fold(0, |total, item| total + item.quantity)
 }
 
-pub fn reorder_notes(notes: &[String]) -> Vec<String> {
-    let mut relevant_notes = Vec::new();
+pub fn priority_restock_notes(notes: &[String]) -> Vec<String> {
+    let mut priority_notes = Vec::new();
 
     for note in notes {
         let normalized = note.trim().to_lowercase();
@@ -32,13 +32,16 @@ pub fn reorder_notes(notes: &[String]) -> Vec<String> {
             continue;
         }
 
-        let is_inventory_note = normalized.contains("urgent") || normalized.contains("stock");
-        if is_inventory_note {
-            relevant_notes.push(normalized);
+        let mentions_urgent = normalized.contains("urgent");
+        let mentions_stock = normalized.contains("stock");
+        let is_restock_alert = mentions_urgent || mentions_stock;
+
+        if is_restock_alert {
+            priority_notes.push(normalized);
         }
     }
 
-    relevant_notes
+    priority_notes
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

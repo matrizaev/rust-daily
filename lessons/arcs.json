@@ -117,6 +117,6 @@
     "pillar": "testing",
     "orderStart": 85,
     "targetLessonCount": 6,
-    "description": "Use table-driven tests and executable docs to document bounded domain values."
+    "description": "Use table-driven tests, executable docs, and properties to protect bounded domain values used by pricing and rollout policy."
   }
 ]

@@ -3,12 +3,12 @@
   "schemaVersion": 2,
   "detail": {
     "instructions": "Expose Money::new(amount: u64, currency: Currency) -> Self and accessor methods amount(&self) -> u64 and currency(&self) -> Currency.",
-    "starterCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\n// Continue from the previous lesson.\n// TODO: Implement new, amount, and currency methods.\n",
+    "starterCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\nimpl Currency {\n    pub fn code(self) -> &'static str {\n        match self {\n            Self::Usd => \"USD\",\n            Self::Eur => \"EUR\",\n            Self::Gbp => \"GBP\",\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\n// Continue from the previous lesson.\n// TODO: Implement new, amount, and currency methods.\n",
     "files": [
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\n// Continue from the previous lesson.\n// TODO: Implement new, amount, and currency methods.\n"
+        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\nimpl Currency {\n    pub fn code(self) -> &'static str {\n        match self {\n            Self::Usd => \"USD\",\n            Self::Eur => \"EUR\",\n            Self::Gbp => \"GBP\",\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\n// Continue from the previous lesson.\n// TODO: Implement new, amount, and currency methods.\n"
       },
       {
         "path": "tests/public.rs",
@@ -28,7 +28,7 @@
       {
         "level": 3,
         "body": "A canonical solution keeps the fields private and exposes a narrow public API.",
-        "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\nimpl Money {\n    pub fn new(amount: u64, currency: Currency) -> Self {\n        Self { amount, currency }\n    }\n\n    pub fn amount(&self) -> u64 {\n        self.amount\n    }\n\n    pub fn currency(&self) -> Currency {\n        self.currency\n    }\n}"
+        "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\nimpl Currency {\n    pub fn code(self) -> &'static str {\n        match self {\n            Self::Usd => \"USD\",\n            Self::Eur => \"EUR\",\n            Self::Gbp => \"GBP\",\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\nimpl Money {\n    pub fn new(amount: u64, currency: Currency) -> Self {\n        Self { amount, currency }\n    }\n\n    pub fn amount(&self) -> u64 {\n        self.amount\n    }\n\n    pub fn currency(&self) -> Currency {\n        self.currency\n    }\n}\n"
       }
     ],
     "completionExplanation": "A constructor and read-only accessors give callers the operations they need while keeping the representation under the type's control. That makes later validation and checked operations possible without changing every call site.",

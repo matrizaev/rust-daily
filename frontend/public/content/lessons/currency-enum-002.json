@@ -2,18 +2,18 @@
   "id": "currency-enum-002",
   "schemaVersion": 2,
   "detail": {
-    "instructions": "Add Gbp to the Currency enum.",
-    "starterCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\n// Continue from the previous lesson.\n// TODO: Add British Pounds (Gbp)\n",
+    "instructions": "Add Gbp to the Currency enum and implement Currency::code(self) -> &'static str for USD, EUR, and GBP.",
+    "starterCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\n// Continue from the previous lesson.\n// TODO: Add British Pounds (Gbp) and expose stable ISO currency codes.\n",
     "files": [
       {
         "path": "src/lib.rs",
         "role": "editable",
-        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\n// Continue from the previous lesson.\n// TODO: Add British Pounds (Gbp)\n"
+        "content": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n\n// Continue from the previous lesson.\n// TODO: Add British Pounds (Gbp) and expose stable ISO currency codes.\n"
       },
       {
         "path": "tests/public.rs",
         "role": "test",
-        "content": "use rust_daily_lesson::Currency;\n\n#[test]\nfn currency_variants() {\n    assert_ne!(Currency::Usd, Currency::Eur);\n    assert_ne!(Currency::Eur, Currency::Gbp);\n}\n"
+        "content": "use rust_daily_lesson::Currency;\n\n#[test]\nfn currency_variants() {\n    assert_ne!(Currency::Usd, Currency::Eur);\n    assert_ne!(Currency::Eur, Currency::Gbp);\n}\n\n#[test]\nfn currency_codes_are_stable_iso_values() {\n    assert_eq!(Currency::Usd.code(), \"USD\");\n    assert_eq!(Currency::Eur.code(), \"EUR\");\n    assert_eq!(Currency::Gbp.code(), \"GBP\");\n}\n"
       }
     ],
     "hints": [
@@ -23,15 +23,15 @@
       },
       {
         "level": 2,
-        "body": "Add Gbp as a variant to the Currency enum."
+        "body": "Add Gbp as a variant to the Currency enum, then match on self in code."
       },
       {
         "level": 3,
-        "body": "A canonical solution adds Gbp to the enum.",
-        "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}"
+        "body": "A canonical solution adds Gbp and centralizes the ISO text mapping.",
+        "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\nimpl Currency {\n    pub fn code(self) -> &'static str {\n        match self {\n            Self::Usd => \"USD\",\n            Self::Eur => \"EUR\",\n            Self::Gbp => \"GBP\",\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n"
       }
     ],
-    "completionExplanation": "Updating the enum extends the supported domain concepts without altering the rest of the type structure.",
+    "completionExplanation": "Updating the enum and code method extends the supported domain concept while keeping external ISO text mapping centralized.",
     "validation": {
       "mode": "all",
       "validations": [
@@ -46,6 +46,15 @@
                 "Usd",
                 "Eur",
                 "Gbp"
+              ]
+            },
+            {
+              "type": "source_includes",
+              "requiredSnippets": [
+                "pub fn code",
+                "\"USD\"",
+                "\"EUR\"",
+                "\"GBP\""
               ]
             }
           ]

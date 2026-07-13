@@ -23,7 +23,7 @@ pub fn total_quantity(items: &[Item]) -> u32 {
     items.iter().fold(0, |total, item| total + item.quantity)
 }
 
-pub fn reorder_notes(notes: &[String]) -> Vec<String> {
+pub fn priority_restock_notes(notes: &[String]) -> Vec<String> {
     notes
         .iter()
         .map(|note| note.trim().to_lowercase())
@@ -33,4 +33,4 @@ pub fn reorder_notes(notes: &[String]) -> Vec<String> {
 }
 
 // Continue from the previous lesson.
-// TODO: refactor reorder_notes so the inventory priority rule is easy to scan.
+// TODO: refactor priority_restock_notes so the restock alert rule is easy to scan.

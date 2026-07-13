@@ -10,8 +10,8 @@
   "conceptId": "currency-enum",
   "difficulty": "easy",
   "estimatedMinutes": 5,
-  "scenario": "The payment gateway is expanding. We need to support British Pounds (GBP) in our Currency representation.",
-  "instructions": "Add Gbp to the Currency enum.",
+  "scenario": "The payment gateway is expanding to GBP, and adapter code needs a stable ISO currency code without matching on raw strings in every caller.",
+  "instructions": "Add Gbp to the Currency enum and implement Currency::code(self) -> &'static str for USD, EUR, and GBP.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -31,15 +31,15 @@
     },
     {
       "level": 2,
-      "body": "Add Gbp as a variant to the Currency enum."
+      "body": "Add Gbp as a variant to the Currency enum, then match on self in code."
     },
     {
       "level": 3,
-      "body": "A canonical solution adds Gbp to the enum.",
-      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}"
+      "body": "A canonical solution adds Gbp and centralizes the ISO text mapping.",
+      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Currency {\n    Usd,\n    Eur,\n    Gbp,\n}\n\nimpl Currency {\n    pub fn code(self) -> &'static str {\n        match self {\n            Self::Usd => \"USD\",\n            Self::Eur => \"EUR\",\n            Self::Gbp => \"GBP\",\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Money {\n    amount: u64,\n    currency: Currency,\n}\n"
     }
   ],
-  "completionExplanation": "Updating the enum extends the supported domain concepts without altering the rest of the type structure.",
+  "completionExplanation": "Updating the enum and code method extends the supported domain concept while keeping external ISO text mapping centralized.",
   "validation": {
     "mode": "all",
     "validations": [
@@ -54,6 +54,15 @@
               "Usd",
               "Eur",
               "Gbp"
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "pub fn code",
+              "\"USD\"",
+              "\"EUR\"",
+              "\"GBP\""
             ]
           }
         ]

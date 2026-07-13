@@ -10,7 +10,7 @@
   "conceptId": "log-event-struct",
   "difficulty": "easy",
   "estimatedMinutes": 6,
-  "scenario": "Structured logging starts with events that have names and levels instead of ad-hoc strings.",
+  "scenario": "A request gateway needs queryable tracing events so support can filter production logs by request id instead of searching ad-hoc strings.",
   "instructions": "Implement log_request_received(request_id: &str) with tracing::info!. Record event_name = \"request.received\" and request_id as structured fields instead of formatting them into the message.",
   "files": [
     {
@@ -39,7 +39,7 @@
       "solutionCode": "pub fn log_request_received(request_id: &str) {\n    tracing::info!(\n        event_name = \"request.received\",\n        request_id = %request_id,\n        \"request received\"\n    );\n}"
     }
   ],
-  "completionExplanation": "The first event uses real tracing metadata instead of a custom log-record struct or interpolated string.",
+  "completionExplanation": "The event now uses real tracing metadata instead of a custom log-record struct or interpolated string, and the test captures the emitted fields through a subscriber.",
   "validation": {
     "mode": "all",
     "validations": [
