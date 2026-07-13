@@ -26,6 +26,8 @@ Before reviewing individual lessons, confirm the arc:
 
 - has a clear final API, module, service, or behavior slice;
 - extends existing curriculum instead of repackaging lessons 1-90;
+- builds toward work a Rust engineer could plausibly encounter in a real
+  project, even when examples are intentionally small;
 - has 5-8 focused lessons unless there is a specific reason to differ;
 - keeps one active codebase that evolves lesson by lesson;
 - preserves earlier public behavior unless the lesson explicitly teaches a
@@ -48,6 +50,22 @@ Every lesson in the arc must pass these checks.
   concept.
 - Supporting syntax or libraries do not become a second hidden lesson.
 - The concept ID and concept description match the task.
+
+### Real-World Fit
+
+- The lesson mimics a plausible project situation such as validation,
+  conversion, parsing, configuration, service boundaries, persistence,
+  collection handling, request/response mapping, or error propagation.
+- The task does not introduce contrived data shapes, helper APIs, or toy
+  workflows solely to demonstrate syntax.
+- New types and functions fit the arc's existing domain model. If a domain type
+  already exists, the lesson should use it instead of switching to ad hoc tuples,
+  strings, maps, or placeholder records.
+- Simplifications are acceptable, but names, ownership choices, and behavior
+  should still resemble production Rust. Author notes should call out any
+  deliberate simplification.
+- Tests exercise behavior that matters in the stated scenario, not only the
+  mechanical presence of a language feature.
 
 ### Starter And Task Alignment
 
@@ -99,6 +117,8 @@ Every lesson in the arc must pass these checks.
 ### Tone And Scope
 
 - The task describes a concrete engineering situation.
+- Reject lessons whose scenario is a thin wrapper around a language feature or
+  whose domain object exists only to make the check pass.
 - Claims are scoped: "for this API" or "in this boundary" instead of "always".
 - The lesson avoids folklore and preference claims that tests cannot support.
 - Author notes record tradeoffs, validation risks, and likely wrong solutions.
@@ -137,6 +157,11 @@ Outcome: approve | revise | reject
 Concept focus:
 - [ ] one primary concept per lesson
 - [ ] concepts extend existing coverage
+
+Real-world fit:
+- [ ] scenario reflects plausible project work
+- [ ] no contrived data shapes or throwaway helper APIs
+- [ ] new code fits the arc's existing domain model
 
 Task and starter:
 - [ ] instructions match starter exactly
