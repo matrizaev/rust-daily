@@ -1,35 +1,15 @@
 import { ArrowLeft, Settings } from "lucide-react";
-import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy } from "react";
 import CompletionPanel from "./CompletionPanel";
 import HintPanel from "./HintPanel";
 import LessonActions from "./LessonActions";
-import ValidationPanel, {
-  type ValidationPanelState,
-} from "./ValidationPanel";
-import {
-  getLessonCompletion,
-} from "../progress/progressSelectors";
-import {
-  ensureLessonAttempt,
-  PROGRESS_STORAGE_EVENT,
-  recordHintReveal,
-  recordLessonCompletion,
-  recordValidationAttempt,
-  type ProgressWriteResult,
-} from "../progress/progressStore";
+import ValidationPanel from "./ValidationPanel";
+import { useLessonDraft } from "./lesson/useLessonDraft";
+import { useLessonProgress } from "./lesson/useLessonProgress";
+import { useLessonValidation } from "./lesson/useLessonValidation";
 import type { ProgressStore } from "../types/progress";
-import {
-  clearDraft,
-  readDraft,
-  saveDraft,
-  type DraftRecord,
-} from "../storage/draftStore";
 import type { Concept, Lesson } from "../types/lesson";
-import type { LessonValidation, ValidationResult } from "../types/validation";
-import { runValidation } from "../validation/validationClient";
 
-const SAVE_DELAY_MS = 450;
-const DEFAULT_EDITABLE_PATH = "src/lib.rs";
 const loadCodeEditor = () =>
   import("./CodeEditor").then(({ CodeEditor }) => ({ default: CodeEditor }));
 const CodeEditor = lazy(loadCodeEditor);
@@ -44,110 +24,6 @@ type LessonScreenProps = {
   onReturnHome: () => void;
 };
 
-type DraftState = {
-  code: string;
-  filePath: string;
-  lastSavedAt: string | null;
-  saveError: string | null;
-};
-
-const getPrimaryEditableFile = (lesson: Lesson) =>
-  lesson.files.find((file) => file.role === "editable") ?? {
-    path: DEFAULT_EDITABLE_PATH,
-    role: "editable" as const,
-    content: lesson.starterCode,
-  };
-
-const getStarterDraftState = (lesson: Lesson): DraftState => ({
-  code: getPrimaryEditableFile(lesson).content,
-  filePath: getPrimaryEditableFile(lesson).path,
-  lastSavedAt: null,
-  saveError: null,
-});
-
-const draftRecordToState = (lesson: Lesson, draft: DraftRecord): DraftState => {
-  const editableFile = getPrimaryEditableFile(lesson);
-  const legacyCode =
-    editableFile.path === DEFAULT_EDITABLE_PATH ? draft.code : editableFile.content;
-
-  return {
-    code: draft.files[editableFile.path] ?? legacyCode,
-    filePath: editableFile.path,
-    lastSavedAt: draft.updatedAt,
-    saveError: null,
-  };
-};
-
-const getDraftState = (lesson: Lesson): DraftState => {
-  const result = readDraft(lesson.id);
-
-  if (!result.ok) {
-    return {
-      ...getStarterDraftState(lesson),
-      saveError: result.reason,
-    };
-  }
-
-  return result.record === null
-    ? getStarterDraftState(lesson)
-    : draftRecordToState(lesson, result.record);
-};
-
-const formatSavedAt = (savedAt: string | null, saveError: string | null) =>
-  saveError
-    ? `Draft not saved locally: ${saveError}.`
-    :
-  savedAt
-    ? `Draft saved ${new Intl.DateTimeFormat(undefined, {
-        hour: "numeric",
-        minute: "2-digit",
-      }).format(new Date(savedAt))}`
-    : "Draft will save locally";
-
-const draftPersistenceState = (
-  result: { ok: true; record?: DraftRecord | null } | { ok: false; reason: string },
-) => result.ok
-  ? { savedAt: result.record?.updatedAt ?? null, error: null }
-  : { savedAt: null, error: result.reason };
-
-const clearStarterDraft = (lessonId: string) =>
-  draftPersistenceState(clearDraft(lessonId));
-
-const saveChangedDraft = (lessonId: string, filePath: string, code: string) =>
-  draftPersistenceState(saveDraft(lessonId, code, filePath));
-
-const persistDraft = (lesson: Lesson, filePath: string, code: string) => {
-  if (code === getPrimaryEditableFile(lesson).content) {
-    return clearStarterDraft(lesson.id);
-  }
-  return saveChangedDraft(lesson.id, filePath, code);
-};
-
-const idleValidationState: ValidationPanelState = {
-  kind: "idle",
-};
-
-const runningValidationState: ValidationPanelState = {
-  kind: "running",
-};
-
-const resultState = (
-  result: ValidationResult,
-  stale: boolean,
-): ValidationPanelState => ({
-  kind: "result",
-  result,
-  stale,
-});
-
-const unsupportedResult = (): ValidationResult => ({
-  status: "unsupported",
-  durationMs: 0,
-  summary: "This lesson cannot be checked in the browser yet.",
-  diagnostics: "",
-  failures: [],
-});
-
 const getFooterCheckCopy = () =>
   "Checks run locally in your browser and on the configured Rust runner.";
 
@@ -156,176 +32,6 @@ const EditorLoadingFallback = () => (
     <p>Loading editor…</p>
   </div>
 );
-
-const shouldCompleteLesson = (result: ValidationResult) =>
-  result.status === "passed" || result.status === "self_check";
-
-const buildValidationRequest = (
-  lesson: Lesson,
-  validation: LessonValidation,
-  code: string,
-  filePath: string,
-) => ({
-  lessonId: lesson.id,
-  validation,
-  editablePath: filePath,
-  files: Object.fromEntries(
-    lesson.files.map((file) => [
-      file.path,
-      file.path === filePath ? code : file.content,
-    ]),
-  ),
-});
-
-const shouldMarkStale = (
-  state: ValidationPanelState,
-  checkedCode: string | null,
-  code: string,
-) => {
-  return (
-    state.kind === "result" &&
-    !state.stale &&
-    checkedCode !== null &&
-    checkedCode !== code
-  );
-};
-
-const staleStateForCodeChange = (
-  state: ValidationPanelState,
-  checkedCode: string | null,
-  code: string,
-) => {
-  return shouldMarkStale(state, checkedCode, code) && state.kind === "result"
-    ? resultState(state.result, true)
-    : state;
-};
-
-const useLessonDraft = (lesson: Lesson) => {
-  const initialDraft = useMemo(() => getDraftState(lesson), [lesson]);
-
-  const [code, setCode] = useState(initialDraft.code);
-  const [filePath, setFilePath] = useState(initialDraft.filePath);
-  const [revealedHints, setRevealedHints] = useState(0);
-  const [lastSavedAt, setLastSavedAt] = useState(initialDraft.lastSavedAt);
-  const [saveError, setSaveError] = useState<string | null>(initialDraft.saveError);
-
-  useEffect(() => {
-    const nextDraft = getDraftState(lesson);
-
-    setCode(nextDraft.code);
-    setFilePath(nextDraft.filePath);
-    setLastSavedAt(nextDraft.lastSavedAt);
-    setSaveError(nextDraft.saveError);
-    setRevealedHints(0);
-  }, [lesson]);
-
-  useEffect(() => {
-    const saveTimer = window.setTimeout(() => {
-      const result = persistDraft(lesson, filePath, code);
-      setLastSavedAt(result.savedAt);
-      setSaveError(result.error);
-    }, SAVE_DELAY_MS);
-
-    return () => window.clearTimeout(saveTimer);
-  }, [code, filePath, lesson]);
-
-  const handleReset = useCallback(() => {
-    const editableFile = getPrimaryEditableFile(lesson);
-
-    const result = clearDraft(lesson.id);
-    setCode(editableFile.content);
-    setFilePath(editableFile.path);
-    setLastSavedAt(null);
-    setSaveError(result.ok ? null : result.reason);
-    setRevealedHints(0);
-  }, [lesson]);
-
-  const handleRevealHint = useCallback(() => {
-    setRevealedHints((current) => {
-      const next = Math.min(current + 1, lesson.hints.length);
-
-      return next;
-    });
-  }, [lesson.hints.length]);
-
-  return {
-    code,
-    filePath,
-    revealedHints,
-    saveStatus: formatSavedAt(lastSavedAt, saveError),
-    setCode,
-    handleReset,
-    handleRevealHint,
-  };
-};
-
-const useValidationRunner = (
-  lesson: Lesson,
-  concept: Concept | null,
-  code: string,
-  filePath: string,
-  onProgressChange: () => void,
-  onCompleteNow: () => void,
-) => {
-  const [state, setState] = useState<ValidationPanelState>(idleValidationState);
-  const [checkedCode, setCheckedCode] = useState<string | null>(null);
-  const codeRef = useRef(code);
-
-  useEffect(() => {
-    codeRef.current = code;
-  }, [code]);
-
-  useEffect(() => {
-    setState(idleValidationState);
-    setCheckedCode(null);
-  }, [lesson.id]);
-
-  useEffect(() => {
-    setState((current) =>
-      staleStateForCodeChange(current, checkedCode, code),
-    );
-  }, [checkedCode, code]);
-
-  const handleCheck = useCallback(async () => {
-    const { validation } = lesson;
-    const requestCode = codeRef.current;
-
-    recordValidationAttempt(lesson.id);
-    onProgressChange();
-
-    if (!validation) {
-      setState(resultState(unsupportedResult(), false));
-      setCheckedCode(requestCode);
-      return;
-    }
-
-    setState(runningValidationState);
-
-    const result = await runValidation(
-      buildValidationRequest(lesson, validation, requestCode, filePath),
-    );
-
-    setCheckedCode(requestCode);
-    setState(resultState(result, codeRef.current !== requestCode));
-
-    if (shouldCompleteLesson(result)) {
-      const completion = recordLessonCompletion(lesson, concept);
-
-      if (completion.completedNow) {
-        onCompleteNow();
-      }
-
-      onProgressChange();
-    }
-  }, [concept, filePath, lesson, onCompleteNow, onProgressChange]);
-
-  return {
-    canCheck: Boolean(lesson.validation),
-    handleCheck,
-    isChecking: state.kind === "running",
-    state,
-  };
-};
 
 type LessonTopbarProps = Pick<
   LessonScreenProps,
@@ -424,46 +130,21 @@ export function LessonScreen(props: LessonScreenProps) {
     onReturnHome,
     progress,
   } = props;
-  const [completedNow, setCompletedNow] = useState(false);
-  const [progressStorageError, setProgressStorageError] = useState<string | null>(null);
-  const completion = getLessonCompletion(progress, lesson.id);
-
-  useEffect(() => {
-    const handleStorageResult = (event: Event) => {
-      const result = (event as CustomEvent<ProgressWriteResult>).detail;
-      setProgressStorageError(result.ok ? null : result.reason);
-    };
-    window.addEventListener(PROGRESS_STORAGE_EVENT, handleStorageResult);
-    return () => window.removeEventListener(PROGRESS_STORAGE_EVENT, handleStorageResult);
-  }, []);
-
-  useEffect(() => {
-    ensureLessonAttempt(lesson.id);
-    onProgressChange();
-    setCompletedNow(false);
-  }, [lesson.id, onProgressChange]);
-
-  const handleCompleteNow = useCallback(() => {
-    setCompletedNow(true);
-  }, []);
-
   const draft = useLessonDraft(lesson);
-
-  useEffect(() => {
-    if (draft.revealedHints > 0) {
-      recordHintReveal(lesson.id, draft.revealedHints);
-      onProgressChange();
-    }
-  }, [draft.revealedHints, lesson.id, onProgressChange]);
-
-  const validation = useValidationRunner(
-    lesson,
+  const lessonProgress = useLessonProgress({
     concept,
-    draft.code,
-    draft.filePath,
+    lesson,
     onProgressChange,
-    handleCompleteNow,
-  );
+    progress,
+    revealedHints: draft.revealedHints,
+  });
+  const validation = useLessonValidation({
+    code: draft.code,
+    filePath: draft.filePath,
+    lesson,
+    onPassedValidation: lessonProgress.recordCompletion,
+    onValidationAttempt: lessonProgress.recordValidation,
+  });
 
   const footerCheckCopy = getFooterCheckCopy();
   const checkStatus =
@@ -509,14 +190,14 @@ export function LessonScreen(props: LessonScreenProps) {
 
           <WorkspaceFooter
             checkCopy={footerCheckCopy}
-            saveStatus={progressStorageError
-              ? `Progress not saved locally: ${progressStorageError}.`
+            saveStatus={lessonProgress.progressStorageError
+              ? `Progress not saved locally: ${lessonProgress.progressStorageError}.`
               : draft.saveStatus}
           />
           <ValidationPanel state={validation.state} />
           <CompletionPanel
-            completedNow={completedNow}
-            completion={completion}
+            completedNow={lessonProgress.completedNow}
+            completion={lessonProgress.completion}
             lesson={lesson}
             onReturnHome={onReturnHome}
           />

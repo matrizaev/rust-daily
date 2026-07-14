@@ -86,10 +86,10 @@ jobs:
             sudo install -d -m 0755 '$DEPLOY_RUNNER_WORKSPACE_ROOT'; \
             rm -rf '$DEPLOY_DIR/docker'; \
             mv '$DEPLOY_DIR/docker.tmp' '$DEPLOY_DIR/docker'; \
-            actual_runner_hash=\$(sudo -H -u www-data12 env HOME=/var/www12 XDG_CONFIG_HOME=/var/www12/.config XDG_DATA_HOME=/var/www12/.local/share podman image inspect '$RUNNER_IMAGE' --format '{{ index .Labels \"org.opencontainers.image.source-hash\" }}' 2>/dev/null || true); \
+            actual_runner_hash=\$(sudo -H -u www-data12 /usr/bin/env HOME=/var/www12 XDG_CONFIG_HOME=/var/www12/.config XDG_DATA_HOME=/var/www12/.local/share podman image inspect '$RUNNER_IMAGE' --format '{{ index .Labels \"org.opencontainers.image.source-hash\" }}' 2>/dev/null || true); \
             if [ \"\$actual_runner_hash\" != '$runner_source_hash' ]; then \
-              sudo -H -u www-data12 env HOME=/var/www12 XDG_CONFIG_HOME=/var/www12/.config XDG_DATA_HOME=/var/www12/.local/share podman build --build-arg VCS_REF='$GITHUB_SHA' --build-arg RUNNER_SOURCE_HASH='$runner_source_hash' -f '$DEPLOY_DIR/docker/rust-runner.Dockerfile' -t '$RUNNER_IMAGE' '$DEPLOY_DIR'; \
-              actual_runner_hash=\$(sudo -H -u www-data12 env HOME=/var/www12 XDG_CONFIG_HOME=/var/www12/.config XDG_DATA_HOME=/var/www12/.local/share podman image inspect '$RUNNER_IMAGE' --format '{{ index .Labels \"org.opencontainers.image.source-hash\" }}'); \
+              sudo -H -u www-data12 /usr/bin/env HOME=/var/www12 XDG_CONFIG_HOME=/var/www12/.config XDG_DATA_HOME=/var/www12/.local/share podman build --build-arg VCS_REF='$GITHUB_SHA' --build-arg RUNNER_SOURCE_HASH='$runner_source_hash' -f '$DEPLOY_DIR/docker/rust-runner.Dockerfile' -t '$RUNNER_IMAGE' '$DEPLOY_DIR'; \
+              actual_runner_hash=\$(sudo -H -u www-data12 /usr/bin/env HOME=/var/www12 XDG_CONFIG_HOME=/var/www12/.config XDG_DATA_HOME=/var/www12/.local/share podman image inspect '$RUNNER_IMAGE' --format '{{ index .Labels \"org.opencontainers.image.source-hash\" }}'); \
             fi; \
             test \"\$actual_runner_hash\" = '$runner_source_hash'; \
             sudo systemctl daemon-reload; \

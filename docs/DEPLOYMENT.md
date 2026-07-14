@@ -55,6 +55,33 @@ Runtime user:    www-data12
 Runtime group:   www-data
 ```
 
+The deploy user also needs this sudoers allowlist at `/etc/sudoers.d/cicd`;
+validate edits with `visudo -cf /etc/sudoers.d/cicd` before rerunning deploys:
+
+```sudoers
+Cmnd_Alias RUST_DAILY_DEPLOY_ROOT = \
+  /usr/bin/install -m 0644 /tmp/cloudflare-real-ip.conf /etc/nginx/cloudflare-real-ip.conf, \
+  /usr/bin/install -m 0644 /tmp/borrowquest.qzz.io.conf /etc/nginx/sites-available/borrowquest.qzz.io.conf, \
+  /usr/bin/ln -sfn /etc/nginx/sites-available/borrowquest.qzz.io.conf /etc/nginx/sites-enabled/borrowquest.qzz.io.conf, \
+  /usr/bin/install -m 0644 /tmp/rust-daily-backend.service /etc/systemd/system/rust-daily-backend.service, \
+  /usr/bin/install -d -o www-data12 -g www-data -m 0700 /var/www12/.cache /var/www12/.config /var/www12/.local/share, \
+  /usr/bin/install -d -m 0755 /var/www12/rust-daily-runs, \
+  /usr/bin/systemctl daemon-reload, \
+  /usr/bin/systemctl stop rust-daily-backend.service, \
+  /usr/bin/systemctl start rust-daily-backend.service, \
+  /usr/bin/systemctl is-active --quiet rust-daily-backend.service, \
+  /usr/bin/journalctl -u rust-daily-backend.service -n 200 --no-pager, \
+  /usr/sbin/nginx -t, \
+  /usr/bin/systemctl reload nginx
+
+Cmnd_Alias RUST_DAILY_DEPLOY_PODMAN = \
+  /usr/bin/env HOME=/var/www12 XDG_CONFIG_HOME=/var/www12/.config XDG_DATA_HOME=/var/www12/.local/share podman image inspect rust-runner\:1.95 --format *, \
+  /usr/bin/env HOME=/var/www12 XDG_CONFIG_HOME=/var/www12/.config XDG_DATA_HOME=/var/www12/.local/share podman build --build-arg VCS_REF=* --build-arg RUNNER_SOURCE_HASH=* -f /var/www12/html/docker/rust-runner.Dockerfile -t rust-runner\:1.95 /var/www12/html
+
+cicd ALL=(root) NOPASSWD: RUST_DAILY_DEPLOY_ROOT
+cicd ALL=(www-data12) NOPASSWD: RUST_DAILY_DEPLOY_PODMAN
+```
+
 The deployment workflow rebuilds the Podman runner image before backend restart
 when the installed `rust-runner:1.95` image lacks the expected source-hash label
 or has a different one. Rebuilds are therefore automatic when Rust, lesson
