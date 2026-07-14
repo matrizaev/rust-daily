@@ -1,3 +1,8 @@
+//! Restricted Podman runner for validated lesson snapshots.
+//!
+//! This module owns container lifecycle, runtime preflight checks, Cargo
+//! execution, output limits, deadline handling, and cleanup for untrusted Rust.
+
 use std::{
     ffi::{OsStr, OsString},
     io,
@@ -85,12 +90,14 @@ impl ProcessExecutor for TokioProcessExecutor {
     }
 }
 
+/// Queue-compatible runner implementation backed by rootless Podman.
 #[derive(Clone)]
 pub struct PodmanLessonRunner {
     config: Arc<RunnerSettings>,
 }
 
 impl PodmanLessonRunner {
+    /// Creates a runner that shares validated runner settings.
     pub fn new(config: Arc<RunnerSettings>) -> Self {
         Self { config }
     }
@@ -108,18 +115,28 @@ impl crate::queue::LessonRunner for PodmanLessonRunner {
     }
 }
 
+/// Internal runner failures that should not be reported as learner mistakes.
 #[derive(Debug, Error)]
 pub enum RunnerError {
+    /// Workspace preparation failed before Podman execution.
     #[error(transparent)]
     Workspace(#[from] WorkspaceError),
+    /// Podman or process IO failed.
     #[error("failed to execute Podman runner: {0}")]
     Podman(#[from] io::Error),
+    /// Podman or the container runtime exited with an infrastructure failure.
     #[error("Podman or container runtime failed with exit code {code:?}")]
-    ContainerRuntime { code: Option<i32> },
+    ContainerRuntime {
+        /// Process exit code, when one was available.
+        code: Option<i32>,
+    },
+    /// rustc reported an internal compiler error.
     #[error("rustc reported an internal compiler error")]
     InternalCompiler,
+    /// Raw runner output exceeded configured capture limits.
     #[error("runner process output exceeded the configured limit")]
     OutputLimitExceeded,
+    /// The caller cancelled the run.
     #[error("runner execution was cancelled")]
     Cancelled,
 }
@@ -395,6 +412,7 @@ fn duration_seconds_ceil(duration: std::time::Duration) -> u64 {
         .saturating_add(u64::from(duration.subsec_nanos() > 0))
 }
 
+/// Verifies local Podman prerequisites and removes stale managed containers.
 pub async fn initialize_runtime(config: &RunnerSettings) -> Result<(), io::Error> {
     if ["CONTAINER_HOST", "CONTAINER_CONNECTION"]
         .iter()
@@ -486,6 +504,7 @@ fn find_boolean_field(value: &serde_json::Value, field: &str) -> Option<bool> {
     }
 }
 
+/// Runs one validated request in a managed Podman container.
 pub async fn run(
     job_id: Uuid,
     request: ValidatedRunRequest,

@@ -1,6 +1,7 @@
 import type { ProgressStore } from "../types/progress";
 import { getCurrentStreak, hasCompletionToday } from "./date";
 
+/** Compact progress summary displayed on the home screen. */
 export type ProgressSummary = {
   currentStreak: number;
   completedToday: boolean;
@@ -16,6 +17,7 @@ const getConceptsIntroducedCount = (progress: ProgressStore) =>
     (concept) => concept.completedLessons > 0,
   ).length;
 
+/** Builds the home-screen progress summary from the stored progress state. */
 export const getProgressSummary = (
   progress: ProgressStore,
 ): ProgressSummary => ({
@@ -25,6 +27,7 @@ export const getProgressSummary = (
   conceptsIntroduced: getConceptsIntroducedCount(progress),
 });
 
+/** Finds a lesson completion record, or `null` when the lesson is incomplete. */
 export const getLessonCompletion = (
   progress: ProgressStore,
   lessonId: string,

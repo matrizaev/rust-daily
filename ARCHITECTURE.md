@@ -333,9 +333,10 @@ Pushes to `main` trigger the VPS workflow in
 copies them with configuration and runner assets, installs the systemd and
 Nginx configuration, and restarts the service.
 
-The workflow does not build the Podman runner image. That image is rebuilt
-deliberately under the production service account when the Rust version,
-dependency sets, Dockerfile, or runner entrypoint changes.
+The workflow rebuilds the Podman runner image under the production service
+account when the installed `rust-runner:1.95` image is missing or its
+source-hash label differs from the deployed Dockerfile, dependency cache, or
+runner entrypoints.
 
 The live deployment is [borrowquest.qzz.io](https://borrowquest.qzz.io/).
 Operational details are in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).

@@ -67,6 +67,7 @@ const normalizeLesson = (lesson: RawLesson, index: number): Lesson => {
 const normalizeLessons = (lessons: RawLesson[]) =>
   lessons.map((lesson, index) => normalizeLesson(lesson, index));
 
+/** Fills legacy index defaults while preserving generated lesson metadata. */
 export const normalizeLessonIndex = (lessons: LessonIndexEntry[]) =>
   lessons.map((lesson, index) => ({
     ...lesson,

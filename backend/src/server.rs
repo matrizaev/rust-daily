@@ -1,3 +1,5 @@
+//! Actix server construction and startup.
+
 use std::{io, sync::Arc};
 
 use actix_web::{App, HttpServer, dev::Server, middleware::Condition, web};
@@ -12,12 +14,14 @@ use crate::{
     static_files::frontend_files,
 };
 
+/// Initializes runner prerequisites and serves the configured Actix server.
 pub async fn run(settings: Settings) -> io::Result<()> {
     tokio::fs::create_dir_all(settings.runner.workspace_root.as_path()).await?;
     initialize_runtime(&settings.runner).await?;
     build_server(settings)?.await
 }
 
+/// Builds the Actix server without awaiting it.
 pub fn build_server(settings: Settings) -> io::Result<Server> {
     let bind_address = settings.server.bind_address.to_string();
     let runner_settings = Arc::new(settings.runner.clone());

@@ -30,11 +30,14 @@ const mergeLessonDetail = (
   starterCode: detail.starterCode,
 });
 
+/** Looks up lightweight lesson metadata by ID. */
 export const getLessonById = (lessonId: string) =>
   lessonIndex.find((lesson) => lesson.id === lessonId) ?? null;
 
+/** Returns the normalized lesson index used for navigation. */
 export const getLessonIndex = () => lessonIndex;
 
+/** Combines index metadata with lazily loaded lesson detail. */
 export const mergeLesson = (
   lesson: LessonIndexEntry,
   detail: LessonDetail,
@@ -61,6 +64,7 @@ const loadLessonDetail = async (lessonId: string) => {
   return detail;
 };
 
+/** Loads a complete lesson record, returning `null` for an unknown ID. */
 export const loadLesson = async (lessonId: string) => {
   const lesson = getLessonById(lessonId);
 
@@ -71,6 +75,7 @@ export const loadLesson = async (lessonId: string) => {
   return mergeLessonDetail(lesson, await loadLessonDetail(lessonId));
 };
 
+/** Starts a best-effort lesson detail fetch for a likely future route. */
 export const prefetchLessonDetail = (lessonId: string) => {
   if (lessonDetailCache.has(lessonId)) {
     return;

@@ -33,7 +33,8 @@ The workflow:
 5. Copies the backend, `config/`, `docker/`, and `frontend/dist/`.
 6. Installs the systemd unit and Nginx vhost.
 7. Swaps the uploaded files into place.
-8. Starts Actix, validates Nginx configuration, and reloads Nginx.
+8. Starts Actix, validates Nginx configuration, reloads Nginx, and verifies the
+   service plus local `GET /healthz` and `GET /`.
 
 Required GitHub repository secrets:
 
@@ -169,9 +170,10 @@ sudo -H -u www-data12 podman image inspect \
 ```
 
 The image caches all `advanced` lesson crates and their compiled test
-artifacts. The runtime copies that cache into each writable lesson workspace
-and runs Cargo offline. Its `org.opencontainers.image.source-hash` label must
-match the hash of the runner Dockerfile, test script, and dependency-cache
+artifacts under `/opt/rust-daily-target`. Each advanced run mounts a disposable
+anonymous volume at that path, which Podman seeds from the image before Cargo
+runs offline. Its `org.opencontainers.image.source-hash` label must match the
+hash of the runner Dockerfile, test script, and dependency-cache
 manifest/source files; deployment rebuilds the image on mismatch before
 restarting the backend.
 

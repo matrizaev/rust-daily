@@ -8,6 +8,7 @@ import {
 import type { ReactNode } from "react";
 import type { ValidationResult, ValidationStatus } from "../types/validation";
 
+/** Validation panel state derived from the current lesson check lifecycle. */
 export type ValidationPanelState =
   | {
       kind: "idle";

@@ -1,3 +1,5 @@
+//! Cargo manifests and commands for supported lesson dependency sets.
+
 use serde::{Deserialize, Serialize};
 
 const ADVANCED_CARGO_TOML: &str = include_str!("../../docker/dependency-cache/Cargo.toml");
@@ -17,15 +19,19 @@ debug = 0
 incremental = false
 "#;
 
+/// Dependency surface available to a lesson run.
 #[derive(Debug, Clone, Copy, Default, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 pub enum DependencySet {
+    /// Standard library only.
     #[default]
     Std,
+    /// Curated ecosystem crates cached in the runner image.
     Advanced,
 }
 
 impl DependencySet {
+    /// Returns the backend-owned `Cargo.toml` for the dependency set.
     pub fn cargo_toml(self) -> &'static str {
         match self {
             Self::Std => STD_CARGO_TOML,
@@ -33,6 +39,7 @@ impl DependencySet {
         }
     }
 
+    /// Returns the command used for normal `cargo test` validation.
     pub fn test_command(self) -> CargoTestCommand {
         match self {
             Self::Std => CargoTestCommand {
@@ -46,6 +53,7 @@ impl DependencySet {
         }
     }
 
+    /// Returns the command used to check the library before compile-fail cases.
     pub fn check_lib_command(self) -> CargoTestCommand {
         match self {
             Self::Std => CargoTestCommand {
@@ -59,6 +67,7 @@ impl DependencySet {
         }
     }
 
+    /// Returns the command used to check one generated compile-fail test target.
     pub fn check_test_command(self, test_name: &str) -> CargoTestCommand {
         match self {
             Self::Std => CargoTestCommand {
@@ -81,6 +90,7 @@ impl DependencySet {
     }
 }
 
+/// Program and arguments for one Cargo validation command.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct CargoTestCommand {
     program: &'static str,
@@ -88,10 +98,12 @@ pub struct CargoTestCommand {
 }
 
 impl CargoTestCommand {
+    /// Command executable name inside the runner environment.
     pub fn program(&self) -> &'static str {
         self.program
     }
 
+    /// Command arguments passed after the executable name.
     pub fn args(&self) -> &[String] {
         &self.args
     }

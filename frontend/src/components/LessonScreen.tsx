@@ -413,6 +413,7 @@ const ReadonlyFilesPanel = ({ lesson }: { lesson: Lesson }) => {
   );
 };
 
+/** Main lesson workspace with editor, context files, hints, and validation. */
 export function LessonScreen(props: LessonScreenProps) {
   const {
     concept,

@@ -1,7 +1,10 @@
+/** User-selected theme behavior. */
 export type ThemePreference = "dark" | "light" | "system";
 
+/** Concrete theme applied after resolving system preference. */
 export type EffectiveTheme = "dark" | "light";
 
+/** Versioned settings persisted in browser storage. */
 export type UserSettings = {
   version: 1;
   theme: ThemePreference;
@@ -11,7 +14,9 @@ export type UserSettings = {
 
 const SETTINGS_KEY = "rust-daily:v1:settings";
 
+/** Smallest supported editor font size in pixels. */
 export const MIN_EDITOR_FONT_SIZE = 14;
+/** Largest supported editor font size in pixels. */
 export const MAX_EDITOR_FONT_SIZE = 22;
 const DEFAULT_EDITOR_FONT_SIZE = 16;
 
@@ -23,6 +28,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isThemePreference = (value: unknown): value is ThemePreference =>
   typeof value === "string" && THEME_PREFERENCES.has(value);
 
+/** Rounds and clamps the editor font size into the supported range. */
 export const clampEditorFontSize = (fontSize: number) =>
   Math.min(
     MAX_EDITOR_FONT_SIZE,
@@ -64,6 +70,7 @@ const normalizeSettings = (value: unknown): UserSettings | null => {
   };
 };
 
+/** Loads settings from browser storage, falling back to defaults. */
 export const loadSettings = () => {
   try {
     const raw = window.localStorage.getItem(SETTINGS_KEY);
@@ -75,6 +82,7 @@ export const loadSettings = () => {
   }
 };
 
+/** Validates and saves user settings to browser storage. */
 export const saveSettings = (settings: UserSettings) => {
   const normalized = normalizeSettings(settings);
 
@@ -90,6 +98,7 @@ export const saveSettings = (settings: UserSettings) => {
   }
 };
 
+/** Resolves `system` into the current concrete browser theme. */
 export const resolveThemePreference = (
   theme: ThemePreference,
 ): EffectiveTheme => {

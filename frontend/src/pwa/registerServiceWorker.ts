@@ -8,6 +8,7 @@ type RegisterServiceWorkerOptions = {
 const canRegisterServiceWorker = () =>
   import.meta.env.PROD && "serviceWorker" in navigator;
 
+/** Registers the generated PWA service worker in production builds. */
 export const registerServiceWorker = ({
   onOfflineReady,
   onUpdateAvailable,

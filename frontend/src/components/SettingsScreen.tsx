@@ -65,6 +65,7 @@ const SettingsSection = ({
   </section>
 );
 
+/** Settings and local-data management screen. */
 export function SettingsScreen({
   settings,
   summary,

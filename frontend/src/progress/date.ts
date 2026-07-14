@@ -2,6 +2,7 @@ import type { LessonCompletion, LocalDate } from "../types/progress";
 
 const padDatePart = (value: number) => String(value).padStart(2, "0");
 
+/** Formats a `Date` as a local `YYYY-MM-DD` progress date. */
 export const toLocalDate = (date: Date) => {
   const year = date.getFullYear();
   const month = padDatePart(date.getMonth() + 1);
@@ -26,6 +27,7 @@ const addLocalDays = (localDate: string, days: number) => {
 const dateSetFromCompletions = (completions: LessonCompletion[]) =>
   new Set<string>(completions.map((completion) => completion.localDate));
 
+/** Returns whether the learner has a completion on the current local date. */
 export const hasCompletionToday = (
   completions: LessonCompletion[],
   now = new Date(),
@@ -53,6 +55,7 @@ const countBackwards = (completedDates: Set<string>, startDate: string) => {
   return count;
 };
 
+/** Counts consecutive local completion dates ending today or yesterday. */
 export const getCurrentStreak = (
   completions: LessonCompletion[],
   now = new Date(),

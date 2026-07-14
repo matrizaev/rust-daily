@@ -1,3 +1,8 @@
+//! Bounded asynchronous queue for lesson runner jobs.
+//!
+//! The queue provides backpressure, preserves per-request deadlines across
+//! queueing and execution, and cancels work when callers drop the response.
+
 use std::{future::Future, sync::Arc};
 
 use thiserror::Error;
@@ -16,7 +21,9 @@ use crate::{
     service::{DispatchError, RunDispatcher},
 };
 
+/// Execution backend used by worker tasks.
 pub trait LessonRunner: Clone + Send + Sync + 'static {
+    /// Runs a validated lesson request within the given deadline and cancellation scope.
     fn run(
         &self,
         job_id: Uuid,
@@ -26,16 +33,20 @@ pub trait LessonRunner: Clone + Send + Sync + 'static {
     ) -> impl Future<Output = Result<LearnerOutcome, ServiceFailure>> + Send;
 }
 
+/// Cloneable handle for submitting work to the bounded runner queue.
 #[derive(Clone)]
 pub struct RunQueue {
     sender: mpsc::Sender<RunJob>,
     timeout: std::time::Duration,
 }
 
+/// Failure to enqueue a validated run request.
 #[derive(Debug, Error)]
 pub enum EnqueueError {
+    /// The queue has reached configured capacity.
     #[error("too many run requests are queued")]
     Full,
+    /// All workers or receivers are gone.
     #[error("run queue is unavailable")]
     Closed(ServiceFailure),
 }
@@ -48,6 +59,7 @@ struct RunJob {
 }
 
 impl RunQueue {
+    /// Attempts to enqueue a request without waiting for capacity.
     pub fn try_enqueue(
         &self,
         request: ValidatedRunRequest,
@@ -120,6 +132,7 @@ impl RunDispatcher for RunQueue {
     }
 }
 
+/// Spawns runner workers and returns a queue handle for dispatching jobs.
 pub fn spawn_workers(config: Arc<RunnerSettings>) -> RunQueue {
     let runner = PodmanLessonRunner::new(Arc::clone(&config));
     spawn_workers_with_runner(config, runner)

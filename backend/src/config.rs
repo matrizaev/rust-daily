@@ -1,3 +1,8 @@
+//! Typed configuration loading and validation.
+//!
+//! Raw YAML and environment values are converted into narrow types before the
+//! rest of the backend can use paths, origins, image names, or resource limits.
+
 use std::{
     net::{IpAddr, SocketAddr},
     num::{NonZeroU64, NonZeroUsize},
@@ -15,53 +20,85 @@ use crate::model::{ValidationLimits, ValidationLimitsError};
 const DEFAULT_CONFIG_DIR: &str = "config";
 const DEFAULT_ENVIRONMENT: &str = "local";
 
+/// Fully validated backend settings.
 #[derive(Debug, Clone)]
 pub struct Settings {
+    /// HTTP server settings.
     pub server: ServerSettings,
+    /// Static frontend settings.
     pub frontend: FrontendSettings,
+    /// Runner and queue settings.
     pub runner: RunnerSettings,
+    /// Request validation limits.
     pub validation: ValidationSettings,
+    /// API transport limits.
     pub api: ApiSettings,
 }
 
+/// HTTP server bind and browser-origin settings.
 #[derive(Debug, Clone)]
 pub struct ServerSettings {
+    /// Socket address Actix binds to.
     pub bind_address: BindAddress,
+    /// Optional allowed CORS origin for browser requests.
     pub cors_origin: Option<CorsOrigin>,
 }
 
+/// Static frontend asset settings.
 #[derive(Debug, Clone)]
 pub struct FrontendSettings {
+    /// Directory containing the built Vite frontend.
     pub dist: FrontendDist,
 }
 
+/// Runner, queue, and container resource settings.
 #[derive(Debug, Clone)]
 pub struct RunnerSettings {
+    /// Maximum number of queued validation jobs.
     pub queue_capacity: NonZeroUsize,
+    /// Number of worker tasks consuming the queue.
     pub workers: NonZeroUsize,
+    /// End-to-end request deadline for queueing, execution, and cleanup.
     pub timeout: Duration,
+    /// Timeout for cleanup operations.
     pub cleanup_timeout: Duration,
+    /// Maximum learner-visible stdout and stderr bytes.
     pub max_output_bytes: NonZeroUsize,
+    /// Maximum raw process output retained before terminating a run.
     pub max_process_output_bytes: NonZeroUsize,
+    /// Size of the writable `/workspace` tmpfs inside the runner container.
     pub workspace_tmpfs_bytes: NonZeroU64,
+    /// Memory limit applied to the runner container.
     pub container_memory_bytes: NonZeroU64,
+    /// CPU quota applied to the runner container.
     pub container_cpus: ContainerCpus,
+    /// Process limit applied to the runner container.
     pub container_pids_limit: NonZeroU64,
+    /// Size of the runner container's `/tmp` tmpfs.
     pub tmp_tmpfs_bytes: NonZeroU64,
+    /// Memory headroom reserved for Cargo and rustc outside tmpfs mounts.
     pub process_headroom_bytes: NonZeroU64,
+    /// Core-file ulimit passed to Podman.
     pub core_ulimit: CoreUlimit,
+    /// Local Podman image used for lesson validation.
     pub image: RunnerImage,
+    /// Host directory used for temporary per-job workspaces.
     pub workspace_root: WorkspaceRoot,
+    /// Path to the Podman executable.
     pub podman_path: PodmanPath,
 }
 
+/// Validated request validation settings.
 #[derive(Debug, Clone)]
 pub struct ValidationSettings {
+    /// Limits applied before a request reaches the runner.
     pub limits: ValidationLimits,
 }
 
+/// HTTP API transport settings.
 #[derive(Debug, Clone)]
 pub struct ApiSettings {
+    /// Maximum JSON payload accepted by the Actix extractor.
     pub max_json_payload_bytes: NonZeroUsize,
 }
 
@@ -124,53 +161,97 @@ struct RawApiSettings {
     max_json_payload_bytes: usize,
 }
 
+/// Errors raised while loading or validating configuration.
 #[derive(Debug, Error)]
 pub enum SettingsError {
+    /// The underlying configuration loader failed.
     #[error("failed to load configuration: {0}")]
     Load(#[from] ConfigError),
+    /// A numeric field that must be non-zero was zero.
     #[error("configuration field `{field}` must be greater than 0")]
-    NonZero { field: ConfigField },
+    NonZero {
+        /// Configuration field that failed validation.
+        field: ConfigField,
+    },
+    /// A required string or path field was empty.
     #[error("configuration field `{field}` must not be empty")]
-    Empty { field: ConfigField },
+    Empty {
+        /// Configuration field that failed validation.
+        field: ConfigField,
+    },
+    /// A field failed semantic validation.
     #[error("configuration field `{field}` is invalid: {reason}")]
     Invalid {
+        /// Configuration field that failed validation.
         field: ConfigField,
+        /// Static explanation of the failed validation rule.
         reason: &'static str,
     },
+    /// Validation limits were internally inconsistent.
     #[error("invalid validation limits: {0}")]
     InvalidValidationLimits(#[from] ValidationLimitsError),
 }
 
+/// Identifies a configuration field in validation errors.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum ConfigField {
+    /// `server.host`
     ServerHost,
+    /// `server.port`
     ServerPort,
+    /// `runner.queue_capacity`
     RunnerQueueCapacity,
+    /// `runner.workers`
     RunnerWorkers,
+    /// `runner.timeout_secs`
     RunnerTimeoutSecs,
+    /// `runner.cleanup_timeout_secs`
     RunnerCleanupTimeoutSecs,
+    /// `runner.max_output_bytes`
     RunnerMaxOutputBytes,
+    /// `runner.max_process_output_bytes`
     RunnerMaxProcessOutputBytes,
+    /// `runner.workspace_tmpfs_bytes`
     RunnerWorkspaceTmpfsBytes,
+    /// `runner.container_memory_bytes`
     RunnerContainerMemoryBytes,
+    /// `runner.container_cpus`
     RunnerContainerCpus,
+    /// `runner.container_pids_limit`
     RunnerContainerPidsLimit,
+    /// `runner.tmp_tmpfs_bytes`
     RunnerTmpTmpfsBytes,
+    /// `runner.process_headroom_bytes`
     RunnerProcessHeadroomBytes,
+    /// `runner.core_ulimit`
     RunnerCoreUlimit,
+    /// `runner.image`
     RunnerImage,
+    /// `runner.workspace_root`
     RunnerWorkspaceRoot,
+    /// `runner.podman_path`
     RunnerPodmanPath,
+    /// `frontend.dist`
     FrontendDist,
+    /// `server.cors_origin`
     ServerCorsOrigin,
+    /// `validation.max_files`
     ValidationMaxFiles,
+    /// `validation.max_file_bytes`
     ValidationMaxFileBytes,
+    /// `validation.max_total_bytes`
     ValidationMaxTotalBytes,
+    /// `validation.max_path_bytes`
     ValidationMaxPathBytes,
+    /// `validation.max_path_component_bytes`
     ValidationMaxPathComponentBytes,
+    /// `validation.max_diagnostic_snippets_per_case`
     ValidationMaxDiagnosticSnippetsPerCase,
+    /// `validation.max_diagnostic_snippet_bytes`
     ValidationMaxDiagnosticSnippetBytes,
+    /// `validation.max_diagnostic_total_bytes`
     ValidationMaxDiagnosticTotalBytes,
+    /// `api.max_json_payload_bytes`
     ApiMaxJsonPayloadBytes,
 }
 
@@ -214,10 +295,12 @@ impl std::fmt::Display for ConfigField {
     }
 }
 
+/// Validated Actix bind address.
 #[derive(Debug, Clone)]
 pub struct BindAddress(SocketAddr);
 
 impl BindAddress {
+    /// Returns the socket address for Actix binding.
     pub fn socket_addr(&self) -> SocketAddr {
         self.0
     }
@@ -252,10 +335,12 @@ impl TryFrom<(String, u16)> for BindAddress {
     }
 }
 
+/// Validated Podman image reference for runner containers.
 #[derive(Debug, Clone)]
 pub struct RunnerImage(String);
 
 impl RunnerImage {
+    /// Returns the image reference as a Podman argument.
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -289,10 +374,12 @@ impl TryFrom<String> for RunnerImage {
     }
 }
 
+/// Positive finite CPU quota for Podman.
 #[derive(Debug, Clone)]
 pub struct ContainerCpus(f64);
 
 impl ContainerCpus {
+    /// Formats the value for Podman's `--cpus` argument.
     pub fn as_podman_arg(&self) -> String {
         self.0.to_string()
     }
@@ -313,10 +400,12 @@ impl TryFrom<f64> for ContainerCpus {
     }
 }
 
+/// Podman `core=` ulimit value.
 #[derive(Debug, Clone)]
 pub struct CoreUlimit(String);
 
 impl CoreUlimit {
+    /// Formats the value for Podman's `--ulimit` argument.
     pub fn as_podman_arg(&self) -> String {
         format!("core={}", self.0)
     }
@@ -344,10 +433,12 @@ impl TryFrom<String> for CoreUlimit {
     }
 }
 
+/// Host directory where per-run temporary workspaces are created.
 #[derive(Debug, Clone)]
 pub struct WorkspaceRoot(PathBuf);
 
 impl WorkspaceRoot {
+    /// Returns the workspace root path.
     pub fn as_path(&self) -> &Path {
         &self.0
     }
@@ -367,10 +458,12 @@ impl TryFrom<PathBuf> for WorkspaceRoot {
     }
 }
 
+/// Validated path to the Podman executable.
 #[derive(Debug, Clone)]
 pub struct PodmanPath(PathBuf);
 
 impl PodmanPath {
+    /// Returns the executable path.
     pub fn as_path(&self) -> &Path {
         &self.0
     }
@@ -390,10 +483,12 @@ impl TryFrom<PathBuf> for PodmanPath {
     }
 }
 
+/// Directory containing the built frontend assets.
 #[derive(Debug, Clone)]
 pub struct FrontendDist(PathBuf);
 
 impl FrontendDist {
+    /// Returns the frontend distribution path.
     pub fn as_path(&self) -> &Path {
         &self.0
     }
@@ -413,10 +508,12 @@ impl TryFrom<PathBuf> for FrontendDist {
     }
 }
 
+/// Normalized HTTP or HTTPS origin accepted by CORS middleware.
 #[derive(Debug, Clone)]
 pub struct CorsOrigin(String);
 
 impl CorsOrigin {
+    /// Returns the serialized origin.
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -464,6 +561,7 @@ impl TryFrom<String> for CorsOrigin {
     }
 }
 
+/// Loads settings from the default config directory and process environment.
 pub fn load_settings() -> Result<Settings, SettingsError> {
     let app_env = std::env::var("RUST_DAILY_ENV")
         .or_else(|_| std::env::var("APP_ENV"))
@@ -475,6 +573,7 @@ pub fn load_settings() -> Result<Settings, SettingsError> {
     load_settings_from_dir(&config_dir, &app_env)
 }
 
+/// Loads settings from a specific config directory and environment name.
 pub fn load_settings_from_dir(config_dir: &Path, app_env: &str) -> Result<Settings, SettingsError> {
     load_settings_from_dir_with_environment(config_dir, app_env, true)
 }

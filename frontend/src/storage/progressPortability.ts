@@ -28,6 +28,7 @@ const dateStamp = (now: Date) => now.toISOString().slice(0, 10);
 const progressExportFileName = (now = new Date()) =>
   `rust-daily-progress-${dateStamp(now)}.json`;
 
+/** Downloads the current progress store as a versioned JSON export. */
 export const downloadProgressExport = (
   progress: ProgressStore,
   now = new Date(),
@@ -70,6 +71,7 @@ const parseProgressExportJson = (raw: string): ProgressStore | null => {
   }
 };
 
+/** Reads a progress import file in wrapped or raw progress-store form. */
 export const readProgressExportFile = async (file: File) => {
   const progress = parseProgressExportJson(await file.text());
 

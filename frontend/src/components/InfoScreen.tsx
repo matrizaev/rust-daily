@@ -1,6 +1,7 @@
 import { ArrowLeft, ExternalLink, Mail } from "lucide-react";
 import type { ReactNode } from "react";
 
+/** Static informational page route supported by the app. */
 export type InfoPageKind = "about" | "contact" | "privacy" | "terms";
 
 type InfoScreenProps = {
@@ -256,8 +257,10 @@ const InfoSection = ({ section }: { section: InfoPageSection }) => (
   </section>
 );
 
+/** Returns the document title text for a static info page. */
 export const getInfoPageTitle = (page: InfoPageKind) => INFO_PAGES[page].title;
 
+/** Renders an about, contact, privacy, or terms page. */
 export function InfoScreen({ page, onReturnHome }: InfoScreenProps) {
   const infoPage = INFO_PAGES[page];
 
