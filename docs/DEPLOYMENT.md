@@ -121,11 +121,13 @@ when invoked manually and by systemd. The systemd unit creates
 `/run/rust-daily-backend` as a private runtime directory for Podman runtime
 state.
 
-Production runner workspaces use `/var/www12/rust-daily-runs`. The systemd unit
-mounts this path as a private tmpfs with `size=2G` and `nr_inodes=200000`, which
-bounds disk and inode abuse from writable `/workspace` container mounts. The
-tmpfs path is intentionally not listed in `ReadWritePaths`, because a bind mount
-there would cover the tmpfs with the host directory.
+Production sets `runner.workspace_root` to `/var/www12/rust-daily-runs`. That
+directory stores per-request host-side Cargo workspaces before they are mounted
+read-only into runner containers. The systemd unit mounts this path as a private
+tmpfs with `size=2G` and `nr_inodes=200000`, which bounds disk and inode abuse
+from prepared runner inputs. The tmpfs path is intentionally not listed in
+`ReadWritePaths`, because a bind mount there would cover the tmpfs with the host
+directory.
 
 The backend mounts each prepared workspace read-only at `/input`. The managed
 container copies it into a size-bounded `/workspace` tmpfs before executing
@@ -135,6 +137,37 @@ precompiled cache. Backend cleanup passes `podman rm --volumes`, so the volume i
 removed with the container. Standard runs do not create this volume. The cache
 is therefore not copied into the memory-accounted workspace tmpfs and cannot
 accumulate as orphaned runner volumes.
+
+Advanced target volumes should be backed by a bounded filesystem instead of the
+host root filesystem. On the production VPS this is a loop-backed ext4 image
+mounted over the rootless Podman volume directory:
+
+```text
+/var/www12/podman-volumes.img on /var/www12/.local/share/containers/storage/volumes type ext4 (rw,nosuid,nodev,noatime)
+```
+
+Use an `/etc/fstab` entry like:
+
+```fstab
+/var/www12/podman-volumes.img  /var/www12/.local/share/containers/storage/volumes  ext4  loop,nosuid,nodev,noatime,nofail,x-systemd.device-timeout=10s  0  0
+```
+
+Do not add `noexec`: Cargo test binaries under `/opt/rust-daily-target` must be
+executable inside the runner container. The backend unit includes:
+
+```ini
+RequiresMountsFor=/var/www12/.local/share/containers/storage/volumes
+```
+
+That makes systemd order the backend behind the Podman volume-store mount, so the
+service does not start with volumes falling back to the host root filesystem.
+Each advanced submission gets its own anonymous Podman volume; submissions do
+not share target files with each other. They do share the capacity and I/O of
+the loop-backed volume filesystem. With `runner.workers: 2`, at most two runner
+containers should actively use advanced target volumes at the same time under
+normal operation. If the loop image fills, advanced validations fail with
+`ENOSPC` or a runner service failure, but the host root filesystem remains
+protected.
 
 The service also enables `PrivateTmp`, `ProtectSystem=strict`, `ProtectHome`,
 narrow `ReadWritePaths`, `LimitCORE=0`, `MemoryMax=1G`, `MemorySwapMax=0`,
