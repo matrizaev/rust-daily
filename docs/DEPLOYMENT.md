@@ -33,8 +33,9 @@ The workflow:
 5. Copies the backend, `config/`, `docker/`, and `frontend/dist/`.
 6. Installs the systemd unit and Nginx vhost.
 7. Swaps the uploaded files into place.
-8. Starts Actix, validates Nginx configuration, reloads Nginx, and verifies the
-   service plus local `GET /healthz` and `GET /`.
+8. Starts Actix, validates Nginx configuration, reloads Nginx, waits for local
+   `GET /healthz`, verifies local `GET /`, and runs the default deployed
+   runner smoke case.
 
 Required GitHub repository secrets:
 
@@ -302,7 +303,8 @@ Then manually verify:
 6. the service worker can reopen a visited lesson offline.
 
 The repository's standard-library Python smoke client can exercise the live
-runner path:
+runner path. Deployment runs this default `pass` case automatically after the
+VPS update succeeds:
 
 ```bash
 make smoke-runner SMOKE_URL=https://borrowquest.qzz.io
