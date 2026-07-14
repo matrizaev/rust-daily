@@ -1,3 +1,9 @@
+//! Cargo JSON output classification and learner-facing stream filtering.
+//!
+//! The runner uses `--message-format=json`; this module distinguishes learner
+//! failures from Cargo/runtime infrastructure failures before building a
+//! response.
+
 use std::{io::Cursor, process::Output};
 
 use cargo_metadata::{Message, diagnostic::DiagnosticLevel};
@@ -6,6 +12,7 @@ use crate::model::{LearnerOutcome, RunStatus};
 
 const TRUNCATION_MARKER: &str = "\n[output truncated]\n";
 
+/// Converts structured Cargo output into a learner-visible outcome.
 pub fn result_from_output(
     output: Output,
     duration_ms: u64,
@@ -27,17 +34,26 @@ pub fn result_from_output(
     Some(LearnerOutcome::new(status, stdout, stderr, duration_ms))
 }
 
+/// Classified outcome of a Cargo process.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum CargoOutputStatus {
+    /// Cargo completed successfully.
     Success,
+    /// The inner timeout command exited with its timeout status.
     TimedOut,
+    /// rustc emitted one or more ordinary compiler errors.
     CompilerError,
+    /// Cargo ran tests and reported a test failure.
     Failure,
+    /// Cargo failed before producing test or compiler diagnostics.
     CargoError,
+    /// Podman or the container command failed.
     InfrastructureError,
+    /// rustc emitted an internal compiler error.
     InternalCompilerError,
 }
 
+/// Classifies raw Cargo process output.
 pub fn output_status(output: &Output) -> CargoOutputStatus {
     if output.status.success() {
         return CargoOutputStatus::Success;
@@ -68,6 +84,7 @@ pub fn output_status(output: &Output) -> CargoOutputStatus {
     }
 }
 
+/// Filters Cargo bookkeeping records and caps output for API responses.
 pub fn filtered_output_streams(output: &Output, max_output_bytes: usize) -> (String, String) {
     let command_succeeded = output.status.success();
     let stdout = output_stream_for_response(&output.stdout, command_succeeded);
@@ -76,10 +93,12 @@ pub fn filtered_output_streams(output: &Output, max_output_bytes: usize) -> (Str
     cap_output(stdout.as_bytes(), stderr.as_bytes(), max_output_bytes)
 }
 
+/// Caps already-filtered stdout and stderr to a shared byte budget.
 pub fn cap_streams(stdout: &str, stderr: &str, max_output_bytes: usize) -> (String, String) {
     cap_output(stdout.as_bytes(), stderr.as_bytes(), max_output_bytes)
 }
 
+/// Extracts compiler diagnostics for compile-fail expectation matching.
 pub fn diagnostic_text(output: &Output) -> String {
     let compiler_diagnostics = compiler_diagnostic_text(&output.stdout)
         .into_iter()

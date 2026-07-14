@@ -234,6 +234,7 @@ const aggregateResults = (results: StepResult[]): ValidationResult => {
   };
 };
 
+/** Runs configured browser and backend validation steps and aggregates results. */
 export const runValidation = async (request: ValidationRequest) => {
   const results = await Promise.all(
     validationSteps(request).map((validation) =>

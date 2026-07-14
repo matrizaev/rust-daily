@@ -5,6 +5,7 @@ const footerLinks = [
   { href: "#terms", label: "Terms of Service" },
 ];
 
+/** Footer links to static project information pages. */
 export function SiteFooter() {
   return (
     <footer className="site-footer">

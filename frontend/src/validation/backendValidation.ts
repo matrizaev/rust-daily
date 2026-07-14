@@ -553,6 +553,7 @@ const resultFromFetchError = (
     : unavailableResult(startedAt);
 };
 
+/** Sends a backend validation request and normalizes the HTTP response. */
 export const runBackendValidation = async (
   request: ValidationRequest,
   backendUrl: string,

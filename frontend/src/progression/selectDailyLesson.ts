@@ -23,6 +23,7 @@ const firstIncompleteLesson = (
     .sort((left, right) => left.order - right.order)
     .find((lesson) => !completedLessonIds.has(lesson.id)) ?? null;
 
+/** Selects the next incomplete lesson, then cycles completed lessons by date. */
 export const selectDailyLesson = (
   lessons: LessonIndexEntry[],
   progress: ProgressStore,

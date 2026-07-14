@@ -16,12 +16,15 @@ import type {
 import { toLocalDate } from "./date";
 
 const PROGRESS_KEY = "rust-daily:v1:progress";
+/** Browser event emitted after progress write attempts. */
 export const PROGRESS_STORAGE_EVENT = "rust-daily:progress-storage";
 
+/** Result of attempting to write progress to browser storage. */
 export type ProgressWriteResult =
   | { ok: true }
   | { ok: false; reason: "quota" | "unavailable" | "invalid" };
 
+/** Result of reading progress from browser storage. */
 export type ProgressReadResult =
   | { ok: true; progress: ProgressStore }
   | { ok: false; reason: "unavailable" | "invalid"; progress: ProgressStore };
@@ -191,9 +194,11 @@ const hasCrossRecordInvariants = (value: Record<string, unknown>) => {
       concept.completedLessons === completions.filter((completion) => completion.conceptId === concept.conceptId).length);
 };
 
+/** Validates an unknown value as a full progress store. */
 export const isProgressStore = (value: unknown): value is ProgressStore =>
   isRecord(value) && hasProgressStoreFields(value) && hasCrossRecordInvariants(value);
 
+/** Reads progress and reports malformed or unavailable storage explicitly. */
 export const readProgress = (): ProgressReadResult => {
   let raw: string | null;
   try {
@@ -214,6 +219,7 @@ export const readProgress = (): ProgressReadResult => {
   }
 };
 
+/** Loads progress, falling back to a fresh store on read failure. */
 export const loadProgress = () => readProgress().progress;
 
 const notifyProgressStorage = (result: ProgressWriteResult) => {
@@ -235,9 +241,11 @@ const saveProgress = (progress: ProgressStore): ProgressWriteResult => {
   }
 };
 
+/** Replaces stored progress with a validated imported store. */
 export const replaceProgress = (progress: ProgressStore) =>
   saveProgress(progress);
 
+/** Clears stored progress. */
 export const resetProgress = () => {
   try {
     window.localStorage.removeItem(PROGRESS_KEY);
@@ -377,11 +385,13 @@ const completeAttempt = (
     status: "completed",
   }));
 
+/** Ensures a lesson has an in-progress attempt record. */
 export const ensureLessonAttempt = (lessonId: string, now = new Date()) =>
   updateProgress((progress) =>
     touch(ensureAttempt(progress, lessonId, now), now),
   );
 
+/** Increments validation-attempt count for a lesson. */
 export const recordValidationAttempt = (lessonId: string, now = new Date()) =>
   updateProgress((progress) =>
     touch(
@@ -397,6 +407,7 @@ export const recordValidationAttempt = (lessonId: string, now = new Date()) =>
     ),
   );
 
+/** Records the highest hint level revealed for a lesson attempt. */
 export const recordHintReveal = (
   lessonId: string,
   hintsRevealed: number,
@@ -416,6 +427,7 @@ export const recordHintReveal = (
     ),
   );
 
+/** Completes a lesson once and updates concept progress. */
 export const recordLessonCompletion = (
   lesson: Lesson,
   concept: Concept | null,

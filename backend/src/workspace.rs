@@ -1,3 +1,8 @@
+//! Temporary Cargo workspace preparation for validated submissions.
+//!
+//! The backend materializes only validated paths and always writes its own
+//! manifest before the runner mounts the workspace read-only.
+
 use std::{
     io,
     path::{Path, PathBuf},
@@ -10,34 +15,48 @@ use uuid::Uuid;
 
 use crate::model::{ValidatedCompileFailCase, ValidatedRunRequest};
 
+/// Filesystem errors while preparing a runner workspace.
 #[derive(Debug, Error)]
 pub enum WorkspaceError {
+    /// The configured workspace root could not be created.
     #[error("failed to create workspace root {path:?}: {source}")]
     CreateRoot {
+        /// Workspace root path.
         path: PathBuf,
+        /// Underlying filesystem error.
         #[source]
         source: io::Error,
     },
+    /// A per-job temporary workspace could not be created.
     #[error("failed to create temporary workspace under {path:?}: {source}")]
     CreateTempDir {
+        /// Configured workspace root path.
         path: PathBuf,
+        /// Underlying filesystem error.
         #[source]
         source: io::Error,
     },
+    /// A parent directory for a workspace file could not be created.
     #[error("failed to create directory {path:?}: {source}")]
     CreateDirectory {
+        /// Directory path.
         path: PathBuf,
+        /// Underlying filesystem error.
         #[source]
         source: io::Error,
     },
+    /// A workspace file could not be written.
     #[error("failed to write file {path:?}: {source}")]
     WriteFile {
+        /// File path.
         path: PathBuf,
+        /// Underlying filesystem error.
         #[source]
         source: io::Error,
     },
 }
 
+/// Creates a temporary Cargo workspace for one validated run request.
 pub async fn prepare_workspace(
     job_id: Uuid,
     request: &ValidatedRunRequest,
@@ -69,10 +88,12 @@ pub async fn prepare_workspace(
     Ok(temp_dir)
 }
 
+/// Cargo integration-test target name generated for a compile-fail case.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct TestTargetName(String);
 
 impl TestTargetName {
+    /// Derives the generated target name from a validated compile-fail case.
     pub fn from_case(case: &ValidatedCompileFailCase) -> Self {
         Self(format!(
             "compile_fail_{}",
@@ -80,11 +101,13 @@ impl TestTargetName {
         ))
     }
 
+    /// Returns the target name passed to `cargo check --test`.
     pub fn as_str(&self) -> &str {
         &self.0
     }
 }
 
+/// Writes a compile-fail source file as a generated integration-test target.
 pub async fn write_compile_fail_case(
     workspace: &Path,
     case: &ValidatedCompileFailCase,

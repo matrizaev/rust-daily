@@ -1,3 +1,4 @@
+/** Fast source-shape checks run in the browser worker. */
 export type StructuralCheck =
   | {
       type: "enum_unit_variants";
@@ -44,8 +45,10 @@ export type StructuralCheck =
       forbiddenSnippets?: string[];
     };
 
+/** Backend dependency set requested by a lesson validation step. */
 export type DependencySet = "std" | "advanced";
 
+/** Authored negative compile case checked by the backend runner. */
 export type CompileFailCase = {
   name: string;
   path: string;
@@ -54,6 +57,7 @@ export type CompileFailCase = {
   forbiddenDiagnostics?: string[];
 };
 
+/** One validation step configured by lesson content. */
 export type LessonValidationStep =
   | {
       mode: "structural";
@@ -85,6 +89,7 @@ export type LessonValidationStep =
       mode: "self-check";
     };
 
+/** Validation configuration for a lesson. */
 export type LessonValidation =
   | LessonValidationStep
   | {
@@ -92,6 +97,7 @@ export type LessonValidation =
       validations: LessonValidationStep[];
     };
 
+/** Normalized validation status shown in the UI. */
 export type ValidationStatus =
   | "passed"
   | "self_check"
@@ -101,6 +107,7 @@ export type ValidationStatus =
   | "unsupported"
   | "internal_error";
 
+/** Runtime validation request built from lesson content and current files. */
 export type ValidationRequest = {
   lessonId: string;
   validation: LessonValidation;
@@ -108,11 +115,13 @@ export type ValidationRequest = {
   files: Record<string, string>;
 };
 
+/** One user-facing validation failure. */
 export type ValidationFailure = {
   name: string;
   message: string;
 };
 
+/** Normalized validation result consumed by the lesson screen. */
 export type ValidationResult = {
   status: ValidationStatus;
   durationMs: number;

@@ -1,3 +1,5 @@
+//! Mapping from internal errors to stable HTTP JSON errors.
+
 use actix_web::{HttpResponse, ResponseError, body::BoxBody, http::StatusCode};
 use serde::Serialize;
 use serde_json::{Value, json};
@@ -9,21 +11,31 @@ use crate::{
     service::{DispatchError, RunServiceError},
 };
 
+/// Error type returned by HTTP handlers.
 #[derive(Debug, Error)]
 pub enum ApiError {
+    /// The submitted run request failed domain validation.
     #[error(transparent)]
     Validation(#[from] ValidationError),
+    /// The JSON body exceeded the configured Actix extractor limit.
     #[error("request JSON body exceeds configured size limit")]
     JsonPayloadTooLarge,
+    /// The JSON body could not be deserialized as a run request.
     #[error("invalid JSON request body: {source}")]
     InvalidJson {
+        /// Source error reported by Actix's JSON extractor.
         #[source]
         source: actix_web::error::JsonPayloadError,
     },
+    /// The run queue is full.
     #[error("too many run requests are queued")]
     QueueFull,
+    /// Runner infrastructure failed before producing a learner outcome.
     #[error("service temporarily unavailable")]
-    ServiceUnavailable { correlation_id: Uuid },
+    ServiceUnavailable {
+        /// Correlation ID emitted in logs for the failed job.
+        correlation_id: Uuid,
+    },
 }
 
 #[derive(Debug, Serialize)]

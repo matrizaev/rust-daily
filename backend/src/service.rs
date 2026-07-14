@@ -1,3 +1,8 @@
+//! Application service layer for lesson validation requests.
+//!
+//! This module validates inbound request DTOs into domain types before handing
+//! accepted work to the runner queue.
+
 use std::future::Future;
 
 use thiserror::Error;
@@ -10,15 +15,19 @@ use crate::{
     queue::RunQueue,
 };
 
+/// Concrete application service used by the Actix handlers.
 pub type AppService = LessonRunService<RunQueue>;
 
+/// Port for dispatching validated lesson runs to an execution backend.
 pub trait RunDispatcher: Clone + Send + Sync + 'static {
+    /// Enqueues or runs a validated request and returns the learner-visible outcome.
     fn dispatch(
         &self,
         request: ValidatedRunRequest,
     ) -> impl Future<Output = Result<LearnerOutcome, DispatchError>> + Send;
 }
 
+/// Coordinates request validation and dispatch to the runner queue.
 #[derive(Clone)]
 pub struct LessonRunService<Q> {
     queue: Q,
@@ -29,6 +38,7 @@ impl<Q> LessonRunService<Q>
 where
     Q: RunDispatcher,
 {
+    /// Creates a service with a dispatcher and validation limits.
     pub fn new(queue: Q, validation_limits: ValidationLimits) -> Self {
         Self {
             queue,
@@ -36,6 +46,7 @@ where
         }
     }
 
+    /// Validates an inbound request and dispatches it for execution.
     pub async fn run_lesson(&self, request: RunRequest) -> Result<LearnerOutcome, RunServiceError> {
         let request = ValidatedRunRequest::try_from(RunRequestValidation::new(
             request,
@@ -45,18 +56,24 @@ where
     }
 }
 
+/// Errors returned by the dispatch port after validation succeeds.
 #[derive(Debug, Clone, Copy, Error, Eq, PartialEq)]
 pub enum DispatchError {
+    /// The bounded queue cannot accept more work.
     #[error("too many run requests are queued")]
     AtCapacity,
+    /// The runner infrastructure failed before producing a learner outcome.
     #[error("runner service failed")]
     ServiceFailure(#[from] crate::model::ServiceFailure),
 }
 
+/// Errors produced by the application service.
 #[derive(Debug, Error)]
 pub enum RunServiceError {
+    /// The inbound request failed validation.
     #[error(transparent)]
     Validation(#[from] ValidationError),
+    /// A validated request could not be dispatched.
     #[error(transparent)]
     Dispatch(#[from] DispatchError),
 }

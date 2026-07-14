@@ -1,3 +1,4 @@
+/** Saved editable lesson draft. */
 export type DraftRecord = {
   lessonId: string;
   code: string;
@@ -5,10 +6,12 @@ export type DraftRecord = {
   updatedAt: string;
 };
 
+/** Result of writing draft state to browser storage. */
 export type DraftWriteResult =
   | { ok: true; record: DraftRecord | null }
   | { ok: false; reason: "unavailable" | "quota" };
 
+/** Result of reading draft state from browser storage. */
 export type DraftReadResult =
   | { ok: true; record: DraftRecord | null }
   | { ok: false; reason: "unavailable" | "invalid" };
@@ -77,6 +80,7 @@ const parseDraft = (raw: string, lessonId: string): DraftRecord | null => {
   return isDraftCandidate(record, lessonId) ? normalizeDraft(record) : null;
 };
 
+/** Reads and validates the saved draft for one lesson. */
 export const readDraft = (lessonId: string): DraftReadResult => {
   try {
     const raw = window.localStorage.getItem(getDraftKey(lessonId));
@@ -90,11 +94,13 @@ export const readDraft = (lessonId: string): DraftReadResult => {
   }
 };
 
+/** Loads the saved draft for one lesson, returning `null` on read failure. */
 export const loadDraft = (lessonId: string): DraftRecord | null => {
   const result = readDraft(lessonId);
   return result.ok ? result.record : null;
 };
 
+/** Saves the current editable file as the lesson draft. */
 export const saveDraft = (
   lessonId: string,
   code: string,
@@ -123,6 +129,7 @@ export const saveDraft = (
   }
 };
 
+/** Removes the saved draft for one lesson. */
 export const clearDraft = (lessonId: string) => {
   try {
     window.localStorage.removeItem(getDraftKey(lessonId));
@@ -132,6 +139,7 @@ export const clearDraft = (lessonId: string) => {
   }
 };
 
+/** Removes all Rust Daily draft records from browser storage. */
 export const clearAllDrafts = () => {
   try {
     const draftKeys = Object.keys(window.localStorage).filter((key) =>

@@ -42,6 +42,7 @@ const sameOriginBackendUrl = () =>
 const defaultBackendUrl = () =>
   import.meta.env.DEV ? LOCAL_BACKEND_URL : sameOriginBackendUrl();
 
+/** Backend origin used for Cargo-backed validation requests. */
 export const BACKEND_URL =
   normalizeBackendUrl(
     runtimeBackendUrl() ?? import.meta.env.VITE_RUST_DAILY_BACKEND_URL ?? "",

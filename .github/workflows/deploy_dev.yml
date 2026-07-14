@@ -102,4 +102,20 @@ jobs:
             sudo systemctl start $DEPLOY_SERVICE; \
             sudo nginx -t; \
             sudo systemctl reload nginx; \
+            echo 'Running post-deploy verification'; \
+            if ! sudo systemctl is-active --quiet $DEPLOY_SERVICE; then \
+              echo '$DEPLOY_SERVICE is not active'; \
+              sudo journalctl -u $DEPLOY_SERVICE -n 200 --no-pager; \
+              exit 1; \
+            fi; \
+            if ! curl -fsS -o /dev/null http://127.0.0.1:8080/healthz; then \
+              echo 'healthz check failed'; \
+              sudo journalctl -u $DEPLOY_SERVICE -n 200 --no-pager; \
+              exit 1; \
+            fi; \
+            if ! curl -fsS -o /dev/null http://127.0.0.1:8080/; then \
+              echo 'HTTP root check failed'; \
+              sudo journalctl -u $DEPLOY_SERVICE -n 200 --no-pager; \
+              exit 1; \
+            fi; \
           "

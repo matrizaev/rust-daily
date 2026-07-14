@@ -181,6 +181,7 @@ const syncEditorDocument = (view: EditorView | null, value: string) => {
   });
 };
 
+/** CodeMirror-backed Rust editor used for the editable lesson file. */
 export function CodeEditor({
   value,
   onChange,

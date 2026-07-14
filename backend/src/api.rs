@@ -1,3 +1,8 @@
+//! HTTP boundary for validation requests.
+//!
+//! Handlers in this module keep Actix-specific extraction and response shaping
+//! separate from validation, queueing, and runner orchestration.
+
 use actix_web::{
     error::JsonPayloadError,
     http::{Method, header},
@@ -11,21 +16,25 @@ use crate::{
     service::AppService,
 };
 
+/// Lightweight health-check response.
 #[derive(Debug, Serialize)]
 pub struct HealthResponse {
     status: &'static str,
 }
 
+/// Registers the backend API routes.
 pub fn configure(config: &mut web::ServiceConfig) {
     config
         .route("/healthz", web::get().to(healthz))
         .route("/run", web::post().to(run));
 }
 
+/// Reports process health for local and deployment checks.
 pub async fn healthz() -> web::Json<HealthResponse> {
     web::Json(HealthResponse { status: "ok" })
 }
 
+/// Validates and runs a submitted lesson snapshot.
 pub async fn run(
     service: web::Data<AppService>,
     request: web::Json<RunRequest>,
@@ -34,12 +43,14 @@ pub async fn run(
     Ok(web::Json(result))
 }
 
+/// Builds the JSON extractor configuration used by `/run`.
 pub fn json_config(max_json_payload_bytes: usize) -> web::JsonConfig {
     web::JsonConfig::default()
         .limit(max_json_payload_bytes)
         .error_handler(|error, _request| json_payload_error(error).into())
 }
 
+/// Converts Actix JSON extraction failures into stable API errors.
 pub fn json_payload_error(error: JsonPayloadError) -> ApiError {
     match error {
         JsonPayloadError::Overflow { .. } | JsonPayloadError::OverflowKnownLength { .. } => {
@@ -49,6 +60,7 @@ pub fn json_payload_error(error: JsonPayloadError) -> ApiError {
     }
 }
 
+/// Builds the single-origin CORS policy for browser `/run` requests.
 pub fn cors(origin: &str) -> actix_cors::Cors {
     actix_cors::Cors::default()
         .allowed_origin(origin)

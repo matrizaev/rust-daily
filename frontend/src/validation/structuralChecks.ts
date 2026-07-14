@@ -607,6 +607,7 @@ const runStructuralCheck = (
     ? runSourceIncludesCheck(rawSource, check)
     : checkRunners[check.type](cleanSource, check as never);
 
+/** Runs authored source-shape checks against learner code. */
 export const runStructuralChecks = (
   source: string,
   checks: StructuralCheck[],

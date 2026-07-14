@@ -1,3 +1,9 @@
+//! Domain model for run requests, validation limits, and learner outcomes.
+//!
+//! The frontend sends Serde DTOs into this module; successful validation
+//! converts them into narrow types that the service, workspace, and runner can
+//! trust.
+
 use std::{
     collections::{BTreeMap, BTreeSet},
     num::NonZeroUsize,
@@ -19,9 +25,12 @@ const TESTDATA_PREFIX: &str = "testdata/";
 const COMPILE_FAIL_PREFIX: &str = "compile_fail/";
 const MAX_COMPILE_FAIL_CASES: usize = 4;
 const MAX_COMPILE_FAIL_CASE_NAME_BYTES: usize = 80;
+/// Maximum accepted path length before configuration is applied.
 pub const MAX_PATH_BYTES_HARD_LIMIT: usize = 240;
+/// Maximum accepted path component length before configuration is applied.
 pub const MAX_PATH_COMPONENT_BYTES_HARD_LIMIT: usize = 120;
 
+/// Raw `/run` request accepted at the HTTP boundary.
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
 pub struct RunRequest {
     #[serde(default)]
@@ -34,6 +43,7 @@ pub struct RunRequest {
 }
 
 impl RunRequest {
+    /// Creates a standard-library Cargo test request.
     pub fn new(files: Vec<SubmittedFile>) -> Self {
         Self {
             mode: RunMode::default(),
@@ -43,6 +53,7 @@ impl RunRequest {
         }
     }
 
+    /// Creates a Cargo test request for a specific dependency set.
     pub fn with_dependency_set(files: Vec<SubmittedFile>, dependency_set: DependencySet) -> Self {
         Self {
             mode: RunMode::default(),
@@ -52,6 +63,7 @@ impl RunRequest {
         }
     }
 
+    /// Creates a compile-fail validation request.
     pub fn compile_fail(
         files: Vec<SubmittedFile>,
         compile_fail_cases: Vec<SubmittedCompileFailCase>,
@@ -66,14 +78,18 @@ impl RunRequest {
     }
 }
 
+/// Runner mode requested by a lesson validation step.
 #[derive(Debug, Clone, Copy, Default, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 pub enum RunMode {
+    /// Run `cargo test` for the submitted snapshot.
     #[default]
     CargoTest,
+    /// Check that authored compile-fail cases fail with expected diagnostics.
     CompileFail,
 }
 
+/// Raw file submitted as part of a run request.
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
 pub struct SubmittedFile {
     path: String,
@@ -81,6 +97,7 @@ pub struct SubmittedFile {
 }
 
 impl SubmittedFile {
+    /// Creates a submitted file DTO.
     pub fn new(path: impl Into<String>, content: impl Into<String>) -> Self {
         Self {
             path: path.into(),
@@ -93,6 +110,7 @@ impl SubmittedFile {
     }
 }
 
+/// Raw compile-fail case submitted with a compile-fail run request.
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
 pub struct SubmittedCompileFailCase {
     name: String,
@@ -105,6 +123,7 @@ pub struct SubmittedCompileFailCase {
 }
 
 impl SubmittedCompileFailCase {
+    /// Creates a compile-fail case with expected diagnostics.
     pub fn new(
         name: impl Into<String>,
         path: impl Into<String>,
@@ -120,6 +139,7 @@ impl SubmittedCompileFailCase {
         }
     }
 
+    /// Adds diagnostic snippets that must not appear in the failure output.
     pub fn with_forbidden_diagnostics(mut self, forbidden_diagnostics: Vec<String>) -> Self {
         self.forbidden_diagnostics = forbidden_diagnostics;
         self
@@ -136,10 +156,12 @@ impl SubmittedCompileFailCase {
     }
 }
 
+/// Validated path for a submitted source, test, fixture, or test-data file.
 #[derive(Debug, Clone, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct SubmittedPath(String);
 
 impl SubmittedPath {
+    /// Returns the path using slash separators.
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -178,10 +200,12 @@ impl TryFrom<&str> for SubmittedPath {
     }
 }
 
+/// Validated file content for a submitted file or compile-fail case.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct SubmittedContent(String);
 
 impl SubmittedContent {
+    /// Returns UTF-8 source bytes for filesystem writes.
     pub fn as_bytes(&self) -> &[u8] {
         self.0.as_bytes()
     }
@@ -218,6 +242,7 @@ impl TryFrom<SubmittedContentInput> for SubmittedContent {
     }
 }
 
+/// Compile-fail case after path, name, content, and diagnostic validation.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ValidatedCompileFailCase {
     name: CompileFailCaseName,
@@ -228,31 +253,38 @@ pub struct ValidatedCompileFailCase {
 }
 
 impl ValidatedCompileFailCase {
+    /// Case name used in learner-facing summaries.
     pub fn name(&self) -> &CompileFailCaseName {
         &self.name
     }
 
+    /// Original authored compile-fail source path.
     pub fn path(&self) -> &CompileFailPath {
         &self.path
     }
 
+    /// Source content for the generated compile-fail integration test.
     pub fn content(&self) -> &SubmittedContent {
         &self.content
     }
 
+    /// Diagnostic snippets that must appear in rustc error output.
     pub fn expected_diagnostics(&self) -> &BTreeSet<DiagnosticSnippet> {
         &self.expected_diagnostics
     }
 
+    /// Diagnostic snippets that must not appear in rustc error output.
     pub fn forbidden_diagnostics(&self) -> &BTreeSet<DiagnosticSnippet> {
         &self.forbidden_diagnostics
     }
 }
 
+/// Validated compile-fail case name.
 #[derive(Debug, Clone, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct CompileFailCaseName(String);
 
 impl CompileFailCaseName {
+    /// Returns the canonical case name.
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -284,10 +316,12 @@ impl TryFrom<String> for CompileFailCaseName {
     }
 }
 
+/// Validated path for an authored compile-fail source file.
 #[derive(Debug, Clone, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct CompileFailPath(String);
 
 impl CompileFailPath {
+    /// Returns the compile-fail source path.
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -313,10 +347,12 @@ impl TryFrom<String> for CompileFailPath {
     }
 }
 
+/// Non-empty diagnostic snippet used for compile-fail matching.
 #[derive(Debug, Clone, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct DiagnosticSnippet(String);
 
 impl DiagnosticSnippet {
+    /// Returns the snippet text.
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -338,6 +374,7 @@ impl TryFrom<(String, &str)> for DiagnosticSnippet {
     }
 }
 
+/// Run request after all validation invariants have been enforced.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ValidatedRunRequest {
     mode: RunMode,
@@ -347,29 +384,35 @@ pub struct ValidatedRunRequest {
 }
 
 impl ValidatedRunRequest {
+    /// Returns the requested run mode.
     pub fn mode(&self) -> RunMode {
         self.mode
     }
 
+    /// Iterates over validated submitted files in deterministic path order.
     pub fn files(&self) -> impl Iterator<Item = (&SubmittedPath, &SubmittedContent)> {
         self.files.iter()
     }
 
+    /// Returns the dependency set used to generate `Cargo.toml`.
     pub fn dependency_set(&self) -> DependencySet {
         self.dependency_set
     }
 
+    /// Returns validated compile-fail cases for compile-fail mode.
     pub fn compile_fail_cases(&self) -> &[ValidatedCompileFailCase] {
         &self.compile_fail_cases
     }
 }
 
+/// Conversion input for validating a raw run request with configured limits.
 pub struct RunRequestValidation {
     request: RunRequest,
     limits: ValidationLimits,
 }
 
 impl RunRequestValidation {
+    /// Creates a validation job for a raw request.
     pub fn new(request: RunRequest, limits: ValidationLimits) -> Self {
         Self { request, limits }
     }
@@ -662,6 +705,7 @@ fn validate_diagnostic_snippets(
     Ok(validated)
 }
 
+/// Configured limits applied before requests can reach the runner.
 #[derive(Debug, Clone, Copy)]
 pub struct ValidationLimits {
     max_files: NonZeroUsize,
@@ -675,8 +719,11 @@ pub struct ValidationLimits {
 }
 
 impl ValidationLimits {
-    // Each value is independently configurable and already strongly typed; keeping the
-    // constructor exhaustive prevents silently falling back to a security-sensitive default.
+    /// Creates validation limits after checking cross-field consistency.
+    ///
+    /// Each value is independently configurable and already strongly typed;
+    /// keeping the constructor exhaustive prevents silently falling back to a
+    /// security-sensitive default.
     #[allow(clippy::too_many_arguments)]
     pub fn try_new(
         max_files: NonZeroUsize,
@@ -751,129 +798,246 @@ impl ValidationLimits {
             .saturating_add(JSON_ENVELOPE_BYTES)
     }
 
+    /// Maximum number of submitted files.
     pub fn max_files(self) -> usize {
         self.max_files.get()
     }
 
+    /// Maximum bytes per submitted file.
     pub fn max_file_bytes(self) -> usize {
         self.max_file_bytes.get()
     }
 
+    /// Maximum combined bytes for files and diagnostic snippets.
     pub fn max_total_bytes(self) -> usize {
         self.max_total_bytes.get()
     }
 
+    /// Maximum bytes in a submitted path.
     pub fn max_path_bytes(self) -> usize {
         self.max_path_bytes.get()
     }
 
+    /// Maximum bytes in one submitted path component.
     pub fn max_path_component_bytes(self) -> usize {
         self.max_path_component_bytes.get()
     }
 
+    /// Maximum diagnostic snippets per compile-fail case.
     pub fn max_diagnostic_snippets_per_case(self) -> usize {
         self.max_diagnostic_snippets_per_case.get()
     }
 
+    /// Maximum bytes per diagnostic snippet.
     pub fn max_diagnostic_snippet_bytes(self) -> usize {
         self.max_diagnostic_snippet_bytes.get()
     }
 
+    /// Maximum combined bytes for diagnostic snippets.
     pub fn max_diagnostic_total_bytes(self) -> usize {
         self.max_diagnostic_total_bytes.get()
     }
 }
 
+/// Invalid validation-limit configuration.
 #[derive(Debug, Error)]
 pub enum ValidationLimitsError {
+    /// Total request bytes are lower than the per-file limit.
     #[error(
         "max total bytes ({max_total_bytes}) must be at least max file bytes ({max_file_bytes})"
     )]
     TotalBytesBelowFileBytes {
+        /// Configured per-file byte limit.
         max_file_bytes: usize,
+        /// Configured total byte limit.
         max_total_bytes: usize,
     },
+    /// Path component bytes exceed the whole-path byte limit.
     #[error(
         "max path component bytes ({max_path_component_bytes}) must not exceed max path bytes ({max_path_bytes})"
     )]
     PathComponentBytesAbovePathBytes {
+        /// Configured whole-path byte limit.
         max_path_bytes: usize,
+        /// Configured per-component byte limit.
         max_path_component_bytes: usize,
     },
+    /// Configured path limits exceed hard safety maximums.
     #[error(
         "configured path limits ({max_path_bytes}/{max_path_component_bytes}) exceed hard maximums ({hard_max_path_bytes}/{hard_max_path_component_bytes})"
     )]
     PathLimitAboveHardMaximum {
+        /// Configured whole-path byte limit.
         max_path_bytes: usize,
+        /// Hard maximum whole-path byte limit.
         hard_max_path_bytes: usize,
+        /// Configured per-component byte limit.
         max_path_component_bytes: usize,
+        /// Hard maximum per-component byte limit.
         hard_max_path_component_bytes: usize,
     },
+    /// Per-snippet bytes exceed the diagnostic total.
     #[error(
         "max diagnostic snippet bytes ({max_diagnostic_snippet_bytes}) must not exceed max diagnostic total bytes ({max_diagnostic_total_bytes})"
     )]
     DiagnosticSnippetBytesAboveDiagnosticTotalBytes {
+        /// Configured per-snippet byte limit.
         max_diagnostic_snippet_bytes: usize,
+        /// Configured total diagnostic byte limit.
         max_diagnostic_total_bytes: usize,
     },
 }
 
+/// Request validation failure before a run reaches the queue.
 #[derive(Debug, Error)]
 pub enum ValidationError {
+    /// No files were submitted.
     #[error("files must be non-empty")]
     EmptyFiles,
+    /// More files were submitted than configured limits allow.
     #[error("too many files: maximum is {max}")]
-    TooManyFiles { max: usize },
+    TooManyFiles {
+        /// Maximum accepted file count.
+        max: usize,
+    },
+    /// A single submitted file exceeded the per-file byte limit.
     #[error("file `{path}` is too large: maximum is {max_bytes} bytes")]
-    FileTooLarge { path: String, max_bytes: usize },
+    FileTooLarge {
+        /// Submitted file path.
+        path: String,
+        /// Maximum accepted bytes for one file.
+        max_bytes: usize,
+    },
+    /// The combined submitted payload exceeded the total byte limit.
     #[error("submitted content is too large: maximum is {max_bytes} bytes")]
-    TotalTooLarge { max_bytes: usize },
+    TotalTooLarge {
+        /// Maximum accepted total bytes.
+        max_bytes: usize,
+    },
+    /// A path was absolute, traversed upward, empty, or otherwise unsafe.
     #[error("file path must be relative and safe: `{path}`")]
-    UnsafePath { path: String },
+    UnsafePath {
+        /// Rejected path.
+        path: String,
+    },
+    /// A path was safe but outside the supported runner path families.
     #[error("unsupported file path: `{path}`")]
-    UnsupportedPath { path: String },
+    UnsupportedPath {
+        /// Rejected path.
+        path: String,
+    },
+    /// The same submitted path appeared more than once.
     #[error("duplicate file path: `{path}`")]
-    DuplicatePath { path: SubmittedPath },
+    DuplicatePath {
+        /// Duplicate path.
+        path: SubmittedPath,
+    },
+    /// Two paths would make one materialized file an ancestor of another.
     #[error(
         "file paths cannot make a file an ancestor of another file: `{path}` and `{conflicting_path}`"
     )]
     PathTreeCollision {
+        /// Submitted path.
         path: String,
+        /// Conflicting submitted path.
         conflicting_path: String,
     },
+    /// A submitted file would collide with a generated compile-fail target.
     #[error("submitted file collides with generated compile-fail target: `{path}`")]
-    GeneratedTargetCollision { path: String },
+    GeneratedTargetCollision {
+        /// Generated target path.
+        path: String,
+    },
+    /// A required file such as `src/lib.rs` or a public test was missing.
     #[error("missing required file: `{path}`")]
-    MissingRequiredFile { path: &'static str },
+    MissingRequiredFile {
+        /// Required path or path pattern.
+        path: &'static str,
+    },
+    /// Compile-fail cases were sent with a normal Cargo test request.
     #[error("compile-fail cases are only allowed for compile-fail requests")]
     CompileFailCasesNotAllowed,
+    /// Compile-fail mode was requested without any cases.
     #[error("compile-fail requests must include at least one case")]
     MissingCompileFailCases,
+    /// Too many compile-fail cases were submitted.
     #[error("too many compile-fail cases: maximum is {max}")]
-    TooManyCompileFailCases { max: usize },
+    TooManyCompileFailCases {
+        /// Maximum accepted compile-fail case count.
+        max: usize,
+    },
+    /// Compile-fail case name failed normalization rules.
     #[error("invalid compile-fail case name: `{name}`")]
-    InvalidCompileFailCaseName { name: String },
+    InvalidCompileFailCaseName {
+        /// Rejected case name.
+        name: String,
+    },
+    /// Two compile-fail cases produced the same target name.
     #[error("duplicate compile-fail case name: `{name}`")]
-    DuplicateCompileFailCaseName { name: String },
+    DuplicateCompileFailCaseName {
+        /// Duplicate case name.
+        name: String,
+    },
+    /// Two compile-fail cases used the same source path.
     #[error("duplicate compile-fail case path: `{path}`")]
-    DuplicateCompileFailCasePath { path: String },
+    DuplicateCompileFailCasePath {
+        /// Duplicate compile-fail path.
+        path: String,
+    },
+    /// A compile-fail case had no expected diagnostic snippets.
     #[error("compile-fail case `{name}` must include expected diagnostics")]
-    MissingExpectedDiagnostics { name: String },
+    MissingExpectedDiagnostics {
+        /// Case name.
+        name: String,
+    },
+    /// A diagnostic snippet was empty after trimming.
     #[error("compile-fail case `{name}` has an empty diagnostic snippet")]
-    EmptyDiagnosticSnippet { name: String },
+    EmptyDiagnosticSnippet {
+        /// Case name.
+        name: String,
+    },
+    /// A compile-fail case exceeded the snippet count limit.
     #[error("compile-fail case `{name}` has too many diagnostic snippets: maximum is {max}")]
-    TooManyDiagnosticSnippets { name: String, max: usize },
+    TooManyDiagnosticSnippets {
+        /// Case name.
+        name: String,
+        /// Maximum accepted snippet count.
+        max: usize,
+    },
+    /// A diagnostic snippet exceeded the per-snippet byte limit.
     #[error("compile-fail case `{name}` has a diagnostic snippet larger than {max_bytes} bytes")]
-    DiagnosticSnippetTooLarge { name: String, max_bytes: usize },
+    DiagnosticSnippetTooLarge {
+        /// Case name.
+        name: String,
+        /// Maximum accepted bytes for one snippet.
+        max_bytes: usize,
+    },
+    /// Combined diagnostic snippets exceeded the total byte limit.
     #[error("diagnostic snippets are too large: maximum is {max_bytes} bytes")]
-    DiagnosticsTooLarge { max_bytes: usize },
+    DiagnosticsTooLarge {
+        /// Maximum accepted diagnostic bytes.
+        max_bytes: usize,
+    },
+    /// A diagnostic snippet appeared more than once in a case.
     #[error("compile-fail case `{name}` has duplicate diagnostic snippet `{snippet}`")]
-    DuplicateDiagnosticSnippet { name: String, snippet: String },
+    DuplicateDiagnosticSnippet {
+        /// Case name.
+        name: String,
+        /// Duplicate snippet.
+        snippet: String,
+    },
+    /// A snippet appeared in both expected and forbidden diagnostics.
     #[error("compile-fail case `{name}` both expects and forbids diagnostic snippet `{snippet}`")]
-    ConflictingDiagnosticSnippet { name: String, snippet: String },
+    ConflictingDiagnosticSnippet {
+        /// Case name.
+        name: String,
+        /// Conflicting snippet.
+        snippet: String,
+    },
 }
 
 impl ValidationError {
+    /// Returns whether this validation error should map to HTTP 413.
     pub fn is_payload_limit(&self) -> bool {
         matches!(
             self,
@@ -896,15 +1060,21 @@ impl ValidationError {
     }
 }
 
+/// Learner-visible run status.
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum RunStatus {
+    /// Validation passed.
     Passed,
+    /// Tests or compile-fail expectations failed.
     Failed,
+    /// The submitted code did not compile.
     CompileError,
+    /// The run exceeded its deadline.
     TimedOut,
 }
 
+/// Absolute deadline shared across queueing, execution, and cleanup.
 #[derive(Debug, Clone, Copy)]
 pub struct RunDeadline {
     started_at: Instant,
@@ -912,6 +1082,7 @@ pub struct RunDeadline {
 }
 
 impl RunDeadline {
+    /// Starts a deadline that expires after the given timeout.
     pub fn after(timeout: Duration) -> Self {
         Self {
             started_at: Instant::now(),
@@ -919,28 +1090,37 @@ impl RunDeadline {
         }
     }
 
+    /// Returns the remaining time before the deadline expires.
     pub fn remaining(self) -> Duration {
         self.timeout.saturating_sub(self.started_at.elapsed())
     }
 
+    /// Returns whether the deadline has elapsed.
     pub fn is_elapsed(self) -> bool {
         self.remaining().is_zero()
     }
 
+    /// Returns the original timeout duration.
     pub fn timeout(self) -> Duration {
         self.timeout
     }
 }
 
+/// Learner-visible result produced by validation.
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
 pub struct LearnerOutcome {
+    /// Final status of the run.
     pub status: RunStatus,
+    /// Learner-visible standard output.
     pub stdout: String,
+    /// Learner-visible standard error or diagnostics.
     pub stderr: String,
+    /// Elapsed time in milliseconds.
     pub duration_ms: u64,
 }
 
 impl LearnerOutcome {
+    /// Creates a learner outcome.
     pub fn new(status: RunStatus, stdout: String, stderr: String, duration_ms: u64) -> Self {
         Self {
             status,
@@ -951,6 +1131,7 @@ impl LearnerOutcome {
     }
 }
 
+/// Infrastructure failure identified by a correlation ID.
 #[derive(Debug, Clone, Copy, Error, Eq, PartialEq)]
 #[error("service failure")]
 pub struct ServiceFailure {
@@ -958,10 +1139,12 @@ pub struct ServiceFailure {
 }
 
 impl ServiceFailure {
+    /// Creates a service failure for a job correlation ID.
     pub fn new(correlation_id: Uuid) -> Self {
         Self { correlation_id }
     }
 
+    /// Returns the job correlation ID.
     pub fn correlation_id(self) -> Uuid {
         self.correlation_id
     }
