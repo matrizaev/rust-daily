@@ -1,8 +1,9 @@
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { execFile } from "node:child_process";
-import { join, dirname } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
+import { writeText } from "./test-support.mjs";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const FRONTEND_DIR = join(SCRIPT_DIR, "..", "..");
@@ -229,13 +230,6 @@ const applyRawTupleDetourFixture = (state) => {
   state.files.set("fixture-arc/002-next/solution/src/next.rs", rawTupleDetourSolution);
   state.lessons[0].lesson.hints[2].solutionCode = configDomainSolution;
   state.lessons[1].lesson.hints[2].solutionCode = rawTupleDetourSolution;
-};
-
-const writeText = async (root, relativePath, content) => {
-  const path = join(root, relativePath);
-
-  await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, content);
 };
 
 const writeFixture = async (root, state) => {

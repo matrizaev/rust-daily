@@ -13,6 +13,8 @@ env:
   DEPLOY_SERVICE: rust-daily-backend.service
   DEPLOY_USER: cicd
   RUNNER_IMAGE: rust-runner:1.95
+  SMOKE_URL: https://borrowquest.qzz.io
+  SMOKE_CASE: pass
 
 jobs:
   build_and_deploy:
@@ -108,7 +110,15 @@ jobs:
               sudo journalctl -u $DEPLOY_SERVICE -n 200 --no-pager; \
               exit 1; \
             fi; \
-            if ! curl -fsS -o /dev/null http://127.0.0.1:8080/healthz; then \
+            healthz_ready=0; \
+            for attempt in {1..30}; do \
+              if curl -fsS -o /dev/null http://127.0.0.1:8080/healthz >/dev/null 2>&1; then \
+                healthz_ready=1; \
+                break; \
+              fi; \
+              sleep 2; \
+            done; \
+            if [ \"\$healthz_ready\" != 1 ]; then \
               echo 'healthz check failed'; \
               sudo journalctl -u $DEPLOY_SERVICE -n 200 --no-pager; \
               exit 1; \
@@ -119,3 +129,5 @@ jobs:
               exit 1; \
             fi; \
           "
+      - name: Smoke deployed runner
+        run: make smoke-runner SMOKE_URL="$SMOKE_URL" SMOKE_CASE="$SMOKE_CASE"
