@@ -229,8 +229,11 @@ dependency sets in the browser.
 - uses the key at `/etc/ssl/private/borrowquest.qzz.io.key`;
 - restores real client addresses from Cloudflare `CF-Connecting-IP` through
   `/etc/nginx/cloudflare-real-ip.conf`;
-- limits request bodies to 1 MB;
+- limits request bodies to 2 MB, above `api.max_json_payload_bytes`;
 - rate-limits `POST /run` to 6 requests per minute per client with a burst of 4;
+- marks `/sw.js` and dynamic app-shell entry points as revalidated or
+  non-cacheable while allowing immutable caching for hashed build artifacts and
+  generated lesson JSON;
 - forwards the original host, client address, and scheme;
 - proxies to `http://127.0.0.1:8080`.
 
@@ -285,6 +288,7 @@ After deployment:
 ```bash
 curl -fsS https://borrowquest.qzz.io/healthz
 curl -fsSI https://borrowquest.qzz.io/
+curl -fsSI https://borrowquest.qzz.io/sw.js
 ```
 
 Expected health response:
@@ -292,6 +296,17 @@ Expected health response:
 ```json
 {"status":"ok"}
 ```
+
+The `/sw.js` header response should include:
+
+```text
+cache-control: no-cache, no-store, must-revalidate
+cdn-cache-control: no-store
+```
+
+If Cloudflare still serves stale service-worker headers after this Nginx change,
+purge at least `/sw.js`, `/`, `/index.html`, and `/manifest.webmanifest`, then
+check for Cloudflare cache rules that override origin cache headers.
 
 Then manually verify:
 
