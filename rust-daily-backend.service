@@ -2,6 +2,7 @@
 Description=rust-daily-backend
 After=network-online.target
 Wants=network-online.target
+RequiresMountsFor=/var/www12/.local/share/containers/storage/volumes
 
 [Service]
 User=www-data12
