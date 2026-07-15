@@ -77,7 +77,7 @@ impl ProcessCommandSpec {
     }
 }
 
-trait ProcessExecutor: Clone + Send + Sync + 'static {
+trait ProcessExecutor: Send + Sync + 'static {
     fn command(&self, spec: &ProcessCommandSpec) -> Command;
 }
 
@@ -94,12 +94,21 @@ impl ProcessExecutor for TokioProcessExecutor {
 #[derive(Clone)]
 pub struct PodmanLessonRunner {
     config: Arc<RunnerSettings>,
+    executor: Arc<dyn ProcessExecutor>,
 }
 
 impl PodmanLessonRunner {
     /// Creates a runner that shares validated runner settings.
     pub fn new(config: Arc<RunnerSettings>) -> Self {
-        Self { config }
+        Self {
+            config,
+            executor: Arc::new(TokioProcessExecutor),
+        }
+    }
+
+    #[cfg(test)]
+    fn new_with_executor(config: Arc<RunnerSettings>, executor: Arc<dyn ProcessExecutor>) -> Self {
+        Self { config, executor }
     }
 }
 
@@ -111,7 +120,34 @@ impl crate::queue::LessonRunner for PodmanLessonRunner {
         deadline: RunDeadline,
         cancellation: CancellationToken,
     ) -> Result<LearnerOutcome, ServiceFailure> {
-        run(job_id, request, &self.config, deadline, cancellation).await
+        let started_at = Instant::now();
+
+        if deadline.is_elapsed() {
+            warn!(%job_id, "job expired before runner started");
+            return Err(ServiceFailure::new(job_id));
+        }
+
+        match run_inner(
+            job_id,
+            &request,
+            &self.config,
+            deadline,
+            &cancellation,
+            started_at,
+            self.executor.as_ref(),
+        )
+        .await
+        {
+            Ok(result) => Ok(result),
+            Err(RunnerError::Podman(error)) if error.kind() == io::ErrorKind::TimedOut => {
+                Ok(timeout_result(started_at, &self.config))
+            }
+            Err(error) => {
+                warn!(%job_id, error = %error, "runner internal error");
+
+                Err(ServiceFailure::new(job_id))
+            }
+        }
     }
 }
 
@@ -160,18 +196,15 @@ struct StreamCapture {
     exceeded: bool,
 }
 
-struct PodmanContainer<'a, E> {
+struct PodmanContainer<'a> {
     name: String,
     config: &'a RunnerSettings,
     deadline: RunDeadline,
     cancellation: &'a CancellationToken,
-    executor: &'a E,
+    executor: &'a dyn ProcessExecutor,
 }
 
-impl<'a, E> PodmanContainer<'a, E>
-where
-    E: ProcessExecutor,
-{
+impl<'a> PodmanContainer<'a> {
     async fn start(
         job_id: Uuid,
         input: &TempDir,
@@ -179,7 +212,7 @@ where
         config: &'a RunnerSettings,
         deadline: RunDeadline,
         cancellation: &'a CancellationToken,
-        executor: &'a E,
+        executor: &'a dyn ProcessExecutor,
     ) -> Result<Self, io::Error> {
         let name = format!("rust-daily-{}", job_id.simple());
         let input_mount = format!("{}:/input:ro,Z", input.path().display());
@@ -504,78 +537,15 @@ fn find_boolean_field(value: &serde_json::Value, field: &str) -> Option<bool> {
     }
 }
 
-/// Runs one validated request in a managed Podman container.
-pub async fn run(
-    job_id: Uuid,
-    request: ValidatedRunRequest,
-    config: &RunnerSettings,
-    deadline: RunDeadline,
-    cancellation: CancellationToken,
-) -> Result<LearnerOutcome, ServiceFailure> {
-    run_with_executor(
-        job_id,
-        request,
-        config,
-        deadline,
-        cancellation,
-        &TokioProcessExecutor,
-    )
-    .await
-}
-
-async fn run_with_executor<E>(
-    job_id: Uuid,
-    request: ValidatedRunRequest,
-    config: &RunnerSettings,
-    deadline: RunDeadline,
-    cancellation: CancellationToken,
-    executor: &E,
-) -> Result<LearnerOutcome, ServiceFailure>
-where
-    E: ProcessExecutor,
-{
-    let started_at = Instant::now();
-
-    if deadline.is_elapsed() {
-        warn!(%job_id, "job expired before runner started");
-        return Err(ServiceFailure::new(job_id));
-    }
-
-    match run_inner(
-        job_id,
-        &request,
-        config,
-        deadline,
-        &cancellation,
-        started_at,
-        executor,
-    )
-    .await
-    {
-        Ok(result) => Ok(result),
-        Err(RunnerError::Podman(error)) if error.kind() == io::ErrorKind::TimedOut => {
-            Ok(timeout_result(started_at, config))
-        }
-        Err(error) => {
-            warn!(%job_id, error = %error, "runner internal error");
-
-            Err(ServiceFailure::new(job_id))
-        }
-    }
-}
-
-async fn run_inner<E>(
+async fn run_inner(
     job_id: Uuid,
     request: &ValidatedRunRequest,
     config: &RunnerSettings,
     deadline: RunDeadline,
     cancellation: &CancellationToken,
     started_at: Instant,
-    executor: &E,
-) -> Result<LearnerOutcome, RunnerError>
-where
-    E: ProcessExecutor,
-{
+    executor: &dyn ProcessExecutor,
+) -> Result<LearnerOutcome, RunnerError> {
     let workspace = prepare_workspace(job_id, request, config.workspace_root.as_path()).await?;
     let workspace_path = workspace.path().to_path_buf();
 
@@ -620,15 +590,12 @@ where
     result
 }
 
-async fn run_cargo_test<E>(
-    container: &PodmanContainer<'_, E>,
+async fn run_cargo_test(
+    container: &PodmanContainer<'_>,
     dependency_set: DependencySet,
     config: &RunnerSettings,
     started_at: Instant,
-) -> Result<LearnerOutcome, RunnerError>
-where
-    E: ProcessExecutor,
-{
+) -> Result<LearnerOutcome, RunnerError> {
     let outcome = container.execute(dependency_set.test_command()).await;
     let duration_ms = elapsed_ms(started_at);
 
@@ -660,15 +627,12 @@ where
     }
 }
 
-async fn run_compile_fail<E>(
-    container: &PodmanContainer<'_, E>,
+async fn run_compile_fail(
+    container: &PodmanContainer<'_>,
     request: &ValidatedRunRequest,
     config: &RunnerSettings,
     started_at: Instant,
-) -> Result<LearnerOutcome, RunnerError>
-where
-    E: ProcessExecutor,
-{
+) -> Result<LearnerOutcome, RunnerError> {
     let dependency_set = request.dependency_set();
     let lib_outcome = container
         .execute(dependency_set.check_lib_command())
@@ -810,14 +774,11 @@ enum CompileFailCaseResult {
     OutputLimitExceeded,
 }
 
-async fn run_compile_fail_case<E>(
-    container: &PodmanContainer<'_, E>,
+async fn run_compile_fail_case(
+    container: &PodmanContainer<'_>,
     dependency_set: DependencySet,
     case: &ValidatedCompileFailCase,
-) -> Result<CompileFailCaseResult, RunnerError>
-where
-    E: ProcessExecutor,
-{
+) -> Result<CompileFailCaseResult, RunnerError> {
     let target_name = TestTargetName::from_case(case);
     let outcome = container
         .execute(dependency_set.check_test_command(target_name.as_str()))
@@ -896,17 +857,14 @@ fn output_limit_result(started_at: Instant, config: &RunnerSettings) -> LearnerO
     )
 }
 
-async fn execute_podman_command<E>(
+async fn execute_podman_command(
     container_name: &str,
     cargo_command: crate::dependency_set::CargoTestCommand,
     config: &RunnerSettings,
     deadline: RunDeadline,
     cancellation: &CancellationToken,
-    executor: &E,
-) -> Result<PodmanOutcome, io::Error>
-where
-    E: ProcessExecutor,
-{
+    executor: &dyn ProcessExecutor,
+) -> Result<PodmanOutcome, io::Error> {
     let outer_timeout = deadline.remaining();
     if outer_timeout.is_zero() {
         return Ok(PodmanOutcome::OuterTimeout);
@@ -1094,8 +1052,8 @@ mod tests {
     use uuid::Uuid;
 
     use super::{
-        ProcessCommandSpec, ProcessExecutor, collect_limited_stream, ensure_control_success,
-        find_boolean_field, log_output, run_with_executor, timeout_io_error,
+        PodmanLessonRunner, ProcessCommandSpec, ProcessExecutor, collect_limited_stream,
+        ensure_control_success, find_boolean_field, log_output, timeout_io_error,
     };
     use crate::{
         config::{
@@ -1106,6 +1064,7 @@ mod tests {
             RunDeadline, RunRequest, RunRequestValidation, RunStatus, SubmittedCompileFailCase,
             SubmittedFile, ValidatedRunRequest, ValidationLimits,
         },
+        queue::LessonRunner,
     };
 
     #[derive(Clone, Copy, Default)]
@@ -1324,18 +1283,19 @@ mod tests {
     #[tokio::test]
     async fn fake_executor_covers_managed_container_command_lifecycle() {
         let root = tempfile::tempdir().expect("test root should be created");
-        let config = runner_settings(root.path().join("runs"));
+        let config = Arc::new(runner_settings(root.path().join("runs")));
         let executor = FakeProcessExecutor::default();
+        let runner =
+            PodmanLessonRunner::new_with_executor(Arc::clone(&config), Arc::new(executor.clone()));
 
-        let result = run_with_executor(
-            Uuid::nil(),
-            validated_request(),
-            &config,
-            RunDeadline::after(config.timeout),
-            CancellationToken::new(),
-            &executor,
-        )
-        .await;
+        let result = runner
+            .run(
+                Uuid::nil(),
+                validated_request(),
+                RunDeadline::after(config.timeout),
+                CancellationToken::new(),
+            )
+            .await;
         let specs = executor
             .specs
             .lock()
@@ -1396,18 +1356,19 @@ mod tests {
     #[tokio::test]
     async fn advanced_request_mounts_disposable_target_volume() {
         let root = tempfile::tempdir().expect("test root should be created");
-        let config = runner_settings(root.path().join("runs"));
+        let config = Arc::new(runner_settings(root.path().join("runs")));
         let executor = FakeProcessExecutor::default();
+        let runner =
+            PodmanLessonRunner::new_with_executor(Arc::clone(&config), Arc::new(executor.clone()));
 
-        let result = run_with_executor(
-            Uuid::nil(),
-            validated_request_with_dependency_set(DependencySet::Advanced),
-            &config,
-            RunDeadline::after(config.timeout),
-            CancellationToken::new(),
-            &executor,
-        )
-        .await;
+        let result = runner
+            .run(
+                Uuid::nil(),
+                validated_request_with_dependency_set(DependencySet::Advanced),
+                RunDeadline::after(config.timeout),
+                CancellationToken::new(),
+            )
+            .await;
         let specs = executor
             .specs
             .lock()
@@ -1430,20 +1391,22 @@ mod tests {
         let root = tempfile::tempdir().expect("test root should be created");
         let mut config = runner_settings(root.path().join("runs"));
         config.max_process_output_bytes = nonzero(64);
+        let config = Arc::new(config);
         let executor = FakeProcessExecutor {
             cargo_behavior: FakeCargoBehavior::OutputFlood,
             ..FakeProcessExecutor::default()
         };
+        let runner =
+            PodmanLessonRunner::new_with_executor(Arc::clone(&config), Arc::new(executor.clone()));
 
-        let result = run_with_executor(
-            Uuid::nil(),
-            validated_request(),
-            &config,
-            RunDeadline::after(config.timeout),
-            CancellationToken::new(),
-            &executor,
-        )
-        .await;
+        let result = runner
+            .run(
+                Uuid::nil(),
+                validated_request(),
+                RunDeadline::after(config.timeout),
+                CancellationToken::new(),
+            )
+            .await;
 
         let result = result.expect("run should succeed");
         assert_eq!(result.status, RunStatus::Failed);
@@ -1470,21 +1433,22 @@ mod tests {
             ),
         ] {
             let root = tempfile::tempdir().expect("test root should be created");
-            let config = runner_settings(root.path().join("runs"));
+            let config = Arc::new(runner_settings(root.path().join("runs")));
             let executor = FakeProcessExecutor {
                 cargo_behavior: behavior,
                 ..FakeProcessExecutor::default()
             };
+            let runner =
+                PodmanLessonRunner::new_with_executor(Arc::clone(&config), Arc::new(executor));
 
-            let result = run_with_executor(
-                Uuid::nil(),
-                validated_compile_fail_request(expected_diagnostic),
-                &config,
-                RunDeadline::after(config.timeout),
-                CancellationToken::new(),
-                &executor,
-            )
-            .await;
+            let result = runner
+                .run(
+                    Uuid::nil(),
+                    validated_compile_fail_request(expected_diagnostic),
+                    RunDeadline::after(config.timeout),
+                    CancellationToken::new(),
+                )
+                .await;
 
             assert_eq!(result.expect("run should succeed").status, expected_status);
         }
@@ -1501,21 +1465,22 @@ mod tests {
             (FakeCargoBehavior::InfrastructureError, None),
         ] {
             let root = tempfile::tempdir().expect("test root should be created");
-            let config = runner_settings(root.path().join("runs"));
+            let config = Arc::new(runner_settings(root.path().join("runs")));
             let executor = FakeProcessExecutor {
                 cargo_behavior: behavior,
                 ..FakeProcessExecutor::default()
             };
+            let runner =
+                PodmanLessonRunner::new_with_executor(Arc::clone(&config), Arc::new(executor));
 
-            let result = run_with_executor(
-                Uuid::nil(),
-                validated_request(),
-                &config,
-                RunDeadline::after(config.timeout),
-                CancellationToken::new(),
-                &executor,
-            )
-            .await;
+            let result = runner
+                .run(
+                    Uuid::nil(),
+                    validated_request(),
+                    RunDeadline::after(config.timeout),
+                    CancellationToken::new(),
+                )
+                .await;
 
             assert_eq!(result.ok().map(|outcome| outcome.status), expected_status);
         }
@@ -1535,20 +1500,22 @@ mod tests {
             let root = tempfile::tempdir().expect("test root should be created");
             let mut config = runner_settings(root.path().join("runs"));
             config.max_process_output_bytes = nonzero(64);
+            let config = Arc::new(config);
             let executor = FakeProcessExecutor {
                 cargo_behavior: behavior,
                 ..FakeProcessExecutor::default()
             };
+            let runner =
+                PodmanLessonRunner::new_with_executor(Arc::clone(&config), Arc::new(executor));
 
-            let result = run_with_executor(
-                Uuid::nil(),
-                validated_compile_fail_request("private field"),
-                &config,
-                RunDeadline::after(config.timeout),
-                CancellationToken::new(),
-                &executor,
-            )
-            .await;
+            let result = runner
+                .run(
+                    Uuid::nil(),
+                    validated_compile_fail_request("private field"),
+                    RunDeadline::after(config.timeout),
+                    CancellationToken::new(),
+                )
+                .await;
 
             assert_eq!(result.ok().map(|outcome| outcome.status), expected_status);
         }
@@ -1557,32 +1524,30 @@ mod tests {
     #[tokio::test]
     async fn fake_executor_covers_elapsed_deadline_and_cancellation() {
         let root = tempfile::tempdir().expect("test root should be created");
-        let config = runner_settings(root.path().join("runs"));
+        let config = Arc::new(runner_settings(root.path().join("runs")));
         let executor = FakeProcessExecutor {
             cargo_behavior: FakeCargoBehavior::Slow,
             ..FakeProcessExecutor::default()
         };
+        let runner = PodmanLessonRunner::new_with_executor(Arc::clone(&config), Arc::new(executor));
 
-        let expired = run_with_executor(
-            Uuid::nil(),
-            validated_request(),
-            &config,
-            RunDeadline::after(Duration::ZERO),
-            CancellationToken::new(),
-            &executor,
-        )
-        .await;
+        let expired = runner
+            .run(
+                Uuid::nil(),
+                validated_request(),
+                RunDeadline::after(Duration::ZERO),
+                CancellationToken::new(),
+            )
+            .await;
         assert!(expired.is_err());
 
         let cancellation = CancellationToken::new();
         let cancel = cancellation.clone();
-        let run = run_with_executor(
+        let run = runner.run(
             Uuid::nil(),
             validated_request(),
-            &config,
             RunDeadline::after(config.timeout),
             cancellation,
-            &executor,
         );
         let cancel_soon = async move {
             tokio::time::sleep(Duration::from_millis(10)).await;
@@ -1598,20 +1563,21 @@ mod tests {
         let root = tempfile::tempdir().expect("test root should be created");
         let mut config = runner_settings(root.path().join("runs"));
         config.timeout = Duration::from_millis(10);
+        let config = Arc::new(config);
         let executor = FakeProcessExecutor {
             cargo_behavior: FakeCargoBehavior::Slow,
             ..FakeProcessExecutor::default()
         };
+        let runner = PodmanLessonRunner::new_with_executor(Arc::clone(&config), Arc::new(executor));
 
-        let result = run_with_executor(
-            Uuid::nil(),
-            validated_request(),
-            &config,
-            RunDeadline::after(config.timeout),
-            CancellationToken::new(),
-            &executor,
-        )
-        .await;
+        let result = runner
+            .run(
+                Uuid::nil(),
+                validated_request(),
+                RunDeadline::after(config.timeout),
+                CancellationToken::new(),
+            )
+            .await;
 
         assert_eq!(
             result.expect("run should succeed").status,

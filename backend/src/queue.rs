@@ -3,8 +3,15 @@
 //! The queue provides backpressure, preserves per-request deadlines across
 //! queueing and execution, and cancels work when callers drop the response.
 
-use std::{future::Future, sync::Arc};
+use std::{
+    future::Future,
+    sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    },
+};
 
+use metrics::counter;
 use thiserror::Error;
 use tokio::{
     sync::{Mutex, mpsc, oneshot},
@@ -17,6 +24,7 @@ use uuid::Uuid;
 use crate::{
     config::RunnerSettings,
     model::{LearnerOutcome, RunDeadline, ServiceFailure, ValidatedRunRequest},
+    observability,
     runner::PodmanLessonRunner,
     service::{DispatchError, RunDispatcher},
 };
@@ -38,6 +46,67 @@ pub trait LessonRunner: Clone + Send + Sync + 'static {
 pub struct RunQueue {
     sender: mpsc::Sender<RunJob>,
     timeout: std::time::Duration,
+    running_jobs: Arc<AtomicUsize>,
+    workers: usize,
+}
+
+/// Point-in-time summary of the bounded runner queue.
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub struct QueueSummary {
+    queue_capacity: usize,
+    available_slots: usize,
+    running_jobs: usize,
+    workers: usize,
+    is_closed: bool,
+}
+
+impl QueueSummary {
+    /// Creates a summary from observed queue values.
+    pub const fn new(
+        queue_capacity: usize,
+        available_slots: usize,
+        running_jobs: usize,
+        workers: usize,
+        is_closed: bool,
+    ) -> Self {
+        Self {
+            queue_capacity,
+            available_slots,
+            running_jobs,
+            workers,
+            is_closed,
+        }
+    }
+
+    /// Maximum number of jobs that can wait in the queue.
+    pub const fn queue_capacity(self) -> usize {
+        self.queue_capacity
+    }
+
+    /// Number of queue slots currently available.
+    pub const fn available_slots(self) -> usize {
+        self.available_slots
+    }
+
+    /// Number of jobs currently waiting for a worker.
+    pub const fn queued_depth(self) -> usize {
+        self.queue_capacity.saturating_sub(self.available_slots)
+    }
+
+    /// Number of worker tasks currently running a job.
+    pub const fn running_jobs(self) -> usize {
+        self.running_jobs
+    }
+
+    /// Number of configured worker tasks.
+    pub const fn workers(self) -> usize {
+        self.workers
+    }
+
+    /// Returns whether all queue receivers are closed.
+    pub const fn is_closed(self) -> bool {
+        self.is_closed
+    }
 }
 
 /// Failure to enqueue a validated run request.
@@ -59,6 +128,17 @@ struct RunJob {
 }
 
 impl RunQueue {
+    /// Returns a point-in-time summary of queue capacity and worker activity.
+    pub fn summary(&self) -> QueueSummary {
+        QueueSummary::new(
+            self.sender.max_capacity(),
+            self.sender.capacity(),
+            self.running_jobs.load(Ordering::Relaxed),
+            self.workers,
+            self.sender.is_closed(),
+        )
+    }
+
     /// Attempts to enqueue a request without waiting for capacity.
     pub fn try_enqueue(
         &self,
@@ -90,14 +170,19 @@ impl RunQueue {
 
         match self.sender.try_send(job) {
             Ok(()) => {
+                counter!("rust_daily_runner_jobs_enqueued_total").increment(1);
                 info!(%job_id, "job accepted");
                 Ok((job_id, response_rx))
             }
             Err(mpsc::error::TrySendError::Full(job)) => {
+                counter!("rust_daily_runner_jobs_rejected_total", "reason" => "queue_full")
+                    .increment(1);
                 warn!(job_id = %job.id, "job rejected due to queue capacity");
                 Err(EnqueueError::Full)
             }
             Err(mpsc::error::TrySendError::Closed(job)) => {
+                counter!("rust_daily_runner_jobs_rejected_total", "reason" => "queue_closed")
+                    .increment(1);
                 warn!(job_id = %job.id, "job rejected because queue is closed");
                 Err(EnqueueError::Closed(ServiceFailure::new(job.id)))
             }
@@ -121,6 +206,7 @@ impl RunDispatcher for RunQueue {
         match tokio::time::timeout(deadline.remaining(), response).await {
             Ok(Ok(result)) => result.map_err(DispatchError::ServiceFailure),
             Ok(Err(_)) => {
+                counter!("rust_daily_runner_jobs_failed_total").increment(1);
                 warn!(%job_id, "run worker dropped the result channel");
                 Err(DispatchError::ServiceFailure(ServiceFailure::new(job_id)))
             }
@@ -144,23 +230,32 @@ where
 {
     let (sender, receiver) = mpsc::channel(config.queue_capacity.get());
     let receiver = Arc::new(Mutex::new(receiver));
+    let running_jobs = Arc::new(AtomicUsize::new(0));
+    let workers = config.workers.get();
 
-    for worker_id in 0..config.workers.get() {
+    for worker_id in 0..workers {
         tokio::spawn(worker_loop(
             worker_id,
             Arc::clone(&receiver),
             runner.clone(),
+            Arc::clone(&running_jobs),
         ));
     }
 
     RunQueue {
         sender,
         timeout: config.timeout,
+        running_jobs,
+        workers,
     }
 }
 
-async fn worker_loop<R>(worker_id: usize, receiver: Arc<Mutex<mpsc::Receiver<RunJob>>>, runner: R)
-where
+async fn worker_loop<R>(
+    worker_id: usize,
+    receiver: Arc<Mutex<mpsc::Receiver<RunJob>>>,
+    runner: R,
+    running_jobs: Arc<AtomicUsize>,
+) where
     R: LessonRunner,
 {
     loop {
@@ -176,13 +271,20 @@ where
 
         let job_id = job.id;
         if job.response_tx.is_closed() {
+            counter!(
+                "rust_daily_runner_jobs_canceled_total",
+                "reason" => "response_dropped_before_start"
+            )
+            .increment(1);
             warn!(%job_id, worker_id, "job skipped because result receiver was dropped");
             continue;
         }
 
         info!(%job_id, worker_id, "job started by worker");
 
+        running_jobs.fetch_add(1, Ordering::Relaxed);
         run_job(job, worker_id, runner.clone()).await;
+        running_jobs.fetch_sub(1, Ordering::Relaxed);
     }
 }
 
@@ -208,20 +310,41 @@ where
             };
             match &result {
                 Ok(outcome) => info!(
-                    %job_id,
-                    worker_id,
-                    status = ?outcome.status,
-                    duration_ms = outcome.duration_ms,
-                    "job finished"
-                ),
+                        %job_id,
+                        worker_id,
+                        status = ?outcome.status,
+                        duration_ms = outcome.duration_ms,
+                        "job finished"
+                    ),
                 Err(_) => warn!(%job_id, worker_id, "job failed internally"),
             }
+            let completion = result
+                .as_ref()
+                .ok()
+                .map(|outcome| (outcome.status, outcome.duration_ms));
+            let failed = result.is_err();
 
-            if job.response_tx.send(result).is_err() {
+            if job.response_tx.send(result).is_ok() {
+                if let Some((status, duration_ms)) = completion {
+                    observability::record_runner_job_completed(status, duration_ms);
+                } else if failed {
+                    counter!("rust_daily_runner_jobs_failed_total").increment(1);
+                }
+            } else {
+                counter!(
+                    "rust_daily_runner_jobs_canceled_total",
+                    "reason" => "response_dropped_before_delivery"
+                )
+                .increment(1);
                 warn!(%job_id, worker_id, "job result receiver was dropped");
             }
         }
         () = job.response_tx.closed() => {
+            counter!(
+                "rust_daily_runner_jobs_canceled_total",
+                "reason" => "response_dropped_while_running"
+            )
+            .increment(1);
             warn!(%job_id, worker_id, "job canceled because result receiver was dropped");
             cancellation.cancel();
             let _ = run_task.await;
@@ -239,7 +362,10 @@ mod tests {
     use std::{
         num::{NonZeroU64, NonZeroUsize},
         path::PathBuf,
-        sync::Arc,
+        sync::{
+            Arc,
+            atomic::{AtomicUsize, Ordering},
+        },
         time::Duration,
     };
 
@@ -255,7 +381,7 @@ mod tests {
         SubmittedFile, ValidatedRunRequest, ValidationLimits,
     };
 
-    use super::{EnqueueError, LessonRunner, RunQueue, spawn_workers_with_runner};
+    use super::{EnqueueError, LessonRunner, RunJob, RunQueue, spawn_workers_with_runner};
     use crate::service::RunDispatcher;
 
     #[derive(Clone, Copy)]
@@ -343,6 +469,15 @@ mod tests {
         NonZeroUsize::new(value).expect("test value should be non-zero")
     }
 
+    fn test_queue(sender: mpsc::Sender<RunJob>, timeout: Duration) -> RunQueue {
+        RunQueue {
+            sender,
+            timeout,
+            running_jobs: Arc::new(AtomicUsize::new(0)),
+            workers: 1,
+        }
+    }
+
     fn runner_settings(workspace_root: PathBuf) -> Arc<RunnerSettings> {
         Arc::new(RunnerSettings {
             queue_capacity: nonzero(2),
@@ -377,10 +512,7 @@ mod tests {
     #[tokio::test]
     async fn try_enqueue_accepts_jobs_until_capacity() {
         let (sender, mut receiver) = mpsc::channel(1);
-        let queue = RunQueue {
-            sender,
-            timeout: std::time::Duration::from_secs(10),
-        };
+        let queue = test_queue(sender, Duration::from_secs(10));
 
         let response = queue
             .try_enqueue(validated_request())
@@ -395,10 +527,7 @@ mod tests {
     #[tokio::test]
     async fn try_enqueue_reports_full_queue() {
         let (sender, _receiver) = mpsc::channel(1);
-        let queue = RunQueue {
-            sender,
-            timeout: std::time::Duration::from_secs(10),
-        };
+        let queue = test_queue(sender, Duration::from_secs(10));
         let _first = queue
             .try_enqueue(validated_request())
             .expect("first enqueue should fit");
@@ -414,10 +543,7 @@ mod tests {
     async fn try_enqueue_reports_closed_queue() {
         let (sender, receiver) = mpsc::channel(1);
         drop(receiver);
-        let queue = RunQueue {
-            sender,
-            timeout: std::time::Duration::from_secs(10),
-        };
+        let queue = test_queue(sender, Duration::from_secs(10));
 
         let error = queue
             .try_enqueue(validated_request())
@@ -432,10 +558,7 @@ mod tests {
     #[tokio::test]
     async fn dispatch_completes_expired_queued_job_without_worker() {
         let (sender, mut receiver) = mpsc::channel(1);
-        let queue = RunQueue {
-            sender,
-            timeout: std::time::Duration::from_millis(10),
-        };
+        let queue = test_queue(sender, Duration::from_millis(10));
 
         let result = queue.dispatch(validated_request()).await;
         let job = receiver.recv().await.expect("job should remain queued");
@@ -445,6 +568,25 @@ mod tests {
             Err(crate::service::DispatchError::ServiceFailure(_))
         ));
         assert!(job.response_tx.is_closed());
+    }
+
+    #[tokio::test]
+    async fn summary_reports_queue_depth_and_running_jobs() {
+        let (sender, _receiver) = mpsc::channel(2);
+        let queue = test_queue(sender, Duration::from_secs(10));
+        queue.running_jobs.store(1, Ordering::Relaxed);
+        let _first = queue
+            .try_enqueue(validated_request())
+            .expect("first enqueue should fit");
+
+        let summary = queue.summary();
+
+        assert_eq!(summary.queue_capacity(), 2);
+        assert_eq!(summary.available_slots(), 1);
+        assert_eq!(summary.queued_depth(), 1);
+        assert_eq!(summary.running_jobs(), 1);
+        assert_eq!(summary.workers(), 1);
+        assert!(!summary.is_closed());
     }
 
     #[tokio::test]

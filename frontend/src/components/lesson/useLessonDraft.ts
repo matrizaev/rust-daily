@@ -33,11 +33,9 @@ const getStarterDraftState = (lesson: Lesson): DraftState => ({
 
 const draftRecordToState = (lesson: Lesson, draft: DraftRecord): DraftState => {
   const editableFile = getPrimaryEditableFile(lesson);
-  const legacyCode =
-    editableFile.path === DEFAULT_EDITABLE_PATH ? draft.code : editableFile.content;
 
   return {
-    code: draft.files[editableFile.path] ?? legacyCode,
+    code: draft.files[editableFile.path] ?? editableFile.content,
     filePath: editableFile.path,
     lastSavedAt: draft.updatedAt,
     saveError: null,
@@ -76,18 +74,12 @@ const draftPersistenceState = (
   ? { savedAt: result.record?.updatedAt ?? null, error: null }
   : { savedAt: null, error: result.reason };
 
-const clearStarterDraft = (lessonId: string) =>
-  draftPersistenceState(clearDraft(lessonId));
-
-const saveChangedDraft = (lessonId: string, filePath: string, code: string) =>
-  draftPersistenceState(saveDraft(lessonId, code, filePath));
-
 const persistDraft = (lesson: Lesson, filePath: string, code: string) => {
   if (code === getPrimaryEditableFile(lesson).content) {
-    return clearStarterDraft(lesson.id);
+    return draftPersistenceState(clearDraft(lesson.id));
   }
 
-  return saveChangedDraft(lesson.id, filePath, code);
+  return draftPersistenceState(saveDraft(lesson.id, code, filePath));
 };
 
 export const useLessonDraft = (lesson: Lesson) => {

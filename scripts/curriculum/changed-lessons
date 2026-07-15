@@ -1,14 +1,15 @@
 #!/usr/bin/env node
+import { spawnSync } from "node:child_process";
+import { join } from "node:path";
 import {
   DEFAULT_BASE,
   LESSONS_ROOT,
-  captureCommand,
+  REPO_ROOT,
   changedFilesFromGit,
   readJson,
   readLessonRecords,
   uniqueSorted,
 } from "./lib/repo.mjs";
-import { join } from "node:path";
 
 const usage = () => `Usage:
   scripts/curriculum/changed-lessons [--base origin/main] [--format text|json]
@@ -89,7 +90,11 @@ const recordsById = (records) =>
   new Map(records.map((record) => [record.id, record]));
 
 const readJsonAtBase = (base, file) => {
-  const result = captureCommand("git", ["show", `${base}:${file}`]);
+  const result = spawnSync("git", ["show", `${base}:${file}`], {
+    cwd: REPO_ROOT,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
 
   if (result.status !== 0) {
     return null;

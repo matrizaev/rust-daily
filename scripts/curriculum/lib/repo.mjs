@@ -26,27 +26,7 @@ export const readJson = async (path) => JSON.parse(await readFile(path, "utf8"))
 export const writeJson = async (path, value) =>
   writeFile(path, `${JSON.stringify(value, null, 2)}\n`);
 
-export const repoRelativePath = (path) =>
-  relative(REPO_ROOT, path).split("\\").join("/");
-
 export const uniqueSorted = (values) => [...new Set(values)].sort();
-
-export const runCommand = (
-  command,
-  args,
-  { cwd = REPO_ROOT, env = process.env, stdio = "inherit" } = {},
-) => spawnSync(command, args, { cwd, env, stdio });
-
-export const captureCommand = (
-  command,
-  args,
-  { cwd = REPO_ROOT, env = process.env } = {},
-) => spawnSync(command, args, {
-  cwd,
-  env,
-  encoding: "utf8",
-  stdio: ["ignore", "pipe", "pipe"],
-});
 
 export const exitFromResult = (result) => {
   if (result.signal) {
@@ -62,39 +42,42 @@ export const splitLines = (value) =>
     .map((line) => line.trim())
     .filter(Boolean);
 
-const findLessonDirsIn = async (root) => {
-  if (!(await pathExists(root))) {
+export const findLessonDirs = async () => {
+  if (!(await pathExists(LESSONS_ROOT))) {
     return [];
   }
 
-  const entries = await readdir(root, { withFileTypes: true });
-  const childResults = await Promise.all(
-    entries.map(async (entry) => {
+  const lessonDirs = [];
+  const pendingDirs = [LESSONS_ROOT];
+
+  while (pendingDirs.length > 0) {
+    const root = pendingDirs.pop();
+    const entries = await readdir(root, { withFileTypes: true });
+
+    for (const entry of entries) {
       const path = join(root, entry.name);
 
       if (!entry.isDirectory()) {
-        return [];
+        continue;
       }
 
       if (await pathExists(join(path, "lesson.json"))) {
-        return [path];
+        lessonDirs.push(path);
+      } else {
+        pendingDirs.push(path);
       }
+    }
+  }
 
-      return findLessonDirsIn(path);
-    }),
-  );
-
-  return childResults.flat().sort();
+  return lessonDirs.sort();
 };
-
-export const findLessonDirs = () => findLessonDirsIn(LESSONS_ROOT);
 
 export const readLessonRecords = async () => {
   const dirs = await findLessonDirs();
   const records = await Promise.all(
     dirs.map(async (dir) => ({
       dir,
-      relPath: repoRelativePath(dir),
+      relPath: relative(REPO_ROOT, dir).split("\\").join("/"),
       lesson: await readJson(join(dir, "lesson.json")),
     })),
   );
@@ -119,7 +102,11 @@ export const lessonRecordsByArc = async () => {
 };
 
 export const changedFilesFromGit = (base = DEFAULT_BASE) => {
-  const diff = captureCommand("git", ["diff", "--name-only", base, "--"]);
+  const diff = spawnSync("git", ["diff", "--name-only", base, "--"], {
+    cwd: REPO_ROOT,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
 
   if (diff.status !== 0) {
     throw new Error(
@@ -127,11 +114,15 @@ export const changedFilesFromGit = (base = DEFAULT_BASE) => {
     );
   }
 
-  const untracked = captureCommand("git", [
-    "ls-files",
-    "--others",
-    "--exclude-standard",
-  ]);
+  const untracked = spawnSync(
+    "git",
+    ["ls-files", "--others", "--exclude-standard"],
+    {
+      cwd: REPO_ROOT,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
 
   if (untracked.status !== 0) {
     throw new Error(`Could not list untracked files.\n${untracked.stderr || untracked.stdout}`);
@@ -139,6 +130,3 @@ export const changedFilesFromGit = (base = DEFAULT_BASE) => {
 
   return uniqueSorted([...splitLines(diff.stdout), ...splitLines(untracked.stdout)]);
 };
-
-export const executableNodeArgs = (script, args = []) => [script, ...args];
-

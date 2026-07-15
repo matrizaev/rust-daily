@@ -40,3 +40,7 @@ api:
   # Upper bound allows JSON to escape every admitted input
   # byte as \u00XX. Settings loading rejects smaller values.
   max_json_payload_bytes: 1600000
+
+observability:
+  metrics_enabled: true
+  metrics_bearer_token: null

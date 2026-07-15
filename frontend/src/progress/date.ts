@@ -1,12 +1,10 @@
 import type { LessonCompletion, LocalDate } from "../types/progress";
 
-const padDatePart = (value: number) => String(value).padStart(2, "0");
-
 /** Formats a `Date` as a local `YYYY-MM-DD` progress date. */
 export const toLocalDate = (date: Date) => {
   const year = date.getFullYear();
-  const month = padDatePart(date.getMonth() + 1);
-  const day = padDatePart(date.getDate());
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}` as LocalDate;
 };

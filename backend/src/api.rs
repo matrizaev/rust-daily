@@ -4,6 +4,7 @@
 //! separate from validation, queueing, and runner orchestration.
 
 use actix_web::{
+    HttpRequest, HttpResponse,
     error::JsonPayloadError,
     http::{Method, header},
     web,
@@ -11,8 +12,11 @@ use actix_web::{
 use serde::Serialize;
 
 use crate::{
+    config::ObservabilitySettings,
     error::ApiError,
     model::{LearnerOutcome, RunRequest},
+    observability::metrics_response,
+    queue::{QueueSummary, RunQueue},
     service::AppService,
 };
 
@@ -22,16 +26,64 @@ pub struct HealthResponse {
     status: &'static str,
 }
 
+/// Readiness response including bounded queue health.
+#[derive(Debug, Serialize)]
+pub struct ReadinessResponse {
+    status: &'static str,
+    queue: QueueHealthResponse,
+}
+
+/// Runner queue health fields safe to expose in operational checks.
+#[derive(Debug, Serialize)]
+pub struct QueueHealthResponse {
+    capacity: usize,
+    queued_depth: usize,
+    available_slots: usize,
+    running_jobs: usize,
+    workers: usize,
+    closed: bool,
+}
+
 /// Registers the backend API routes.
 pub fn configure(config: &mut web::ServiceConfig) {
     config
         .route("/healthz", web::get().to(healthz))
+        .route("/readyz", web::get().to(readyz))
+        .route("/metrics", web::get().to(metrics))
         .route("/run", web::post().to(run));
 }
 
 /// Reports process health for local and deployment checks.
 pub async fn healthz() -> web::Json<HealthResponse> {
     web::Json(HealthResponse { status: "ok" })
+}
+
+/// Reports process readiness and in-process runner queue health.
+pub async fn readyz(queue: web::Data<RunQueue>) -> HttpResponse {
+    let queue = queue.summary();
+    let response = ReadinessResponse {
+        status: if queue.is_closed() {
+            "unavailable"
+        } else {
+            "ok"
+        },
+        queue: QueueHealthResponse::from(queue),
+    };
+
+    if queue.is_closed() {
+        HttpResponse::ServiceUnavailable().json(response)
+    } else {
+        HttpResponse::Ok().json(response)
+    }
+}
+
+/// Renders Prometheus-compatible metrics when enabled and authorized.
+pub async fn metrics(
+    settings: web::Data<ObservabilitySettings>,
+    queue: web::Data<RunQueue>,
+    request: HttpRequest,
+) -> HttpResponse {
+    metrics_response(&settings, &request, queue.summary())
 }
 
 /// Validates and runs a submitted lesson snapshot.
@@ -68,6 +120,19 @@ pub fn cors(origin: &str) -> actix_cors::Cors {
         .allowed_headers([header::CONTENT_TYPE])
         .max_age(3600)
         .block_on_origin_mismatch(true)
+}
+
+impl From<QueueSummary> for QueueHealthResponse {
+    fn from(summary: QueueSummary) -> Self {
+        Self {
+            capacity: summary.queue_capacity(),
+            queued_depth: summary.queued_depth(),
+            available_slots: summary.available_slots(),
+            running_jobs: summary.running_jobs(),
+            workers: summary.workers(),
+            closed: summary.is_closed(),
+        }
+    }
 }
 
 #[cfg(test)]

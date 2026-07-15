@@ -20,14 +20,7 @@ const PREFIX = "rust-daily:v1:draft";
 
 const getDraftKey = (lessonId: string) => `${PREFIX}:${lessonId}`;
 
-type DraftCandidate = {
-  lessonId: string;
-  code?: unknown;
-  files?: unknown;
-  updatedAt?: unknown;
-};
-
-const hasStringFileMap = (files: unknown) =>
+const isStringFileMap = (files: unknown): files is Record<string, string> =>
   files !== null &&
   typeof files === "object" &&
   Object.values(files).every((value) => typeof value === "string");
@@ -35,49 +28,27 @@ const hasStringFileMap = (files: unknown) =>
 const isObject = (record: unknown): record is object =>
   typeof record === "object" && record !== null;
 
-const hasDraftContent = (candidate: Partial<DraftRecord>) =>
-  typeof candidate.code === "string" || hasStringFileMap(candidate.files);
-
-const isDraftCandidate = (
+const isDraftRecord = (
   record: unknown,
   lessonId: string,
-): record is DraftCandidate => {
+): record is DraftRecord => {
   if (!isObject(record)) {
     return false;
   }
   const candidate = record as Partial<DraftRecord>;
 
-  return candidate.lessonId === lessonId && hasDraftContent(candidate);
-};
-
-const normalizeFiles = (record: DraftCandidate) => {
-  if (record.files && typeof record.files === "object") {
-    return record.files as Record<string, string>;
-  }
-
-  return {
-    "src/lib.rs": typeof record.code === "string" ? record.code : "",
-  };
-};
-
-const normalizeDraft = (record: DraftCandidate): DraftRecord => {
-  const files = normalizeFiles(record);
-
-  return {
-    lessonId: record.lessonId,
-    code: files["src/lib.rs"] ?? Object.values(files)[0] ?? "",
-    files,
-    updatedAt:
-      typeof record.updatedAt === "string"
-        ? record.updatedAt
-        : new Date().toISOString(),
-  };
+  return (
+    candidate.lessonId === lessonId &&
+    typeof candidate.code === "string" &&
+    isStringFileMap(candidate.files) &&
+    typeof candidate.updatedAt === "string"
+  );
 };
 
 const parseDraft = (raw: string, lessonId: string): DraftRecord | null => {
   const record = JSON.parse(raw) as unknown;
 
-  return isDraftCandidate(record, lessonId) ? normalizeDraft(record) : null;
+  return isDraftRecord(record, lessonId) ? record : null;
 };
 
 /** Reads and validates the saved draft for one lesson. */
@@ -92,12 +63,6 @@ export const readDraft = (lessonId: string): DraftReadResult => {
   } catch {
     return { ok: false, reason: "unavailable" };
   }
-};
-
-/** Loads the saved draft for one lesson, returning `null` on read failure. */
-export const loadDraft = (lessonId: string): DraftRecord | null => {
-  const result = readDraft(lessonId);
-  return result.ok ? result.record : null;
 };
 
 /** Saves the current editable file as the lesson draft. */

@@ -4,6 +4,7 @@
 //! rest of the backend can use paths, origins, image names, or resource limits.
 
 use std::{
+    fmt,
     net::{IpAddr, SocketAddr},
     num::{NonZeroU64, NonZeroUsize},
     path::{Path, PathBuf},
@@ -33,6 +34,8 @@ pub struct Settings {
     pub validation: ValidationSettings,
     /// API transport limits.
     pub api: ApiSettings,
+    /// Metrics and operational observability settings.
+    pub observability: ObservabilitySettings,
 }
 
 /// HTTP server bind and browser-origin settings.
@@ -102,6 +105,15 @@ pub struct ApiSettings {
     pub max_json_payload_bytes: NonZeroUsize,
 }
 
+/// Metrics and operational observability settings.
+#[derive(Debug, Clone)]
+pub struct ObservabilitySettings {
+    /// Whether the Prometheus metrics endpoint is enabled.
+    pub metrics_enabled: bool,
+    /// Optional bearer token required by `/metrics`.
+    pub metrics_bearer_token: Option<MetricsBearerToken>,
+}
+
 #[derive(Debug, Deserialize)]
 struct RawSettings {
     server: RawServerSettings,
@@ -109,6 +121,8 @@ struct RawSettings {
     runner: RawRunnerSettings,
     validation: RawValidationSettings,
     api: RawApiSettings,
+    #[serde(default)]
+    observability: RawObservabilitySettings,
 }
 
 #[derive(Debug, Deserialize)]
@@ -159,6 +173,23 @@ struct RawValidationSettings {
 #[derive(Debug, Deserialize)]
 struct RawApiSettings {
     max_json_payload_bytes: usize,
+}
+
+#[derive(Debug, Deserialize)]
+struct RawObservabilitySettings {
+    #[serde(default = "default_metrics_enabled")]
+    metrics_enabled: bool,
+    #[serde(default)]
+    metrics_bearer_token: Option<String>,
+}
+
+impl Default for RawObservabilitySettings {
+    fn default() -> Self {
+        Self {
+            metrics_enabled: default_metrics_enabled(),
+            metrics_bearer_token: None,
+        }
+    }
 }
 
 /// Errors raised while loading or validating configuration.
@@ -253,6 +284,8 @@ pub enum ConfigField {
     ValidationMaxDiagnosticTotalBytes,
     /// `api.max_json_payload_bytes`
     ApiMaxJsonPayloadBytes,
+    /// `observability.metrics_bearer_token`
+    ObservabilityMetricsBearerToken,
 }
 
 impl std::fmt::Display for ConfigField {
@@ -289,9 +322,48 @@ impl std::fmt::Display for ConfigField {
             Self::ValidationMaxDiagnosticSnippetBytes => "validation.max_diagnostic_snippet_bytes",
             Self::ValidationMaxDiagnosticTotalBytes => "validation.max_diagnostic_total_bytes",
             Self::ApiMaxJsonPayloadBytes => "api.max_json_payload_bytes",
+            Self::ObservabilityMetricsBearerToken => "observability.metrics_bearer_token",
         };
 
         formatter.write_str(name)
+    }
+}
+
+/// Validated bearer token used to protect the Prometheus metrics endpoint.
+#[derive(Clone, Eq, PartialEq)]
+pub struct MetricsBearerToken(String);
+
+impl MetricsBearerToken {
+    /// Returns the token value for Authorization header comparison.
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl fmt::Debug for MetricsBearerToken {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str("MetricsBearerToken(<redacted>)")
+    }
+}
+
+impl TryFrom<String> for MetricsBearerToken {
+    type Error = SettingsError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let value = value.trim();
+        if value.is_empty() {
+            return Err(SettingsError::Empty {
+                field: ConfigField::ObservabilityMetricsBearerToken,
+            });
+        }
+        if value.chars().any(char::is_control) {
+            return Err(SettingsError::Invalid {
+                field: ConfigField::ObservabilityMetricsBearerToken,
+                reason: "must not contain control characters",
+            });
+        }
+
+        Ok(Self(value.to_string()))
     }
 }
 
@@ -563,19 +635,13 @@ impl TryFrom<String> for CorsOrigin {
 
 /// Loads settings from the default config directory and process environment.
 pub fn load_settings() -> Result<Settings, SettingsError> {
-    let app_env = std::env::var("RUST_DAILY_ENV")
-        .or_else(|_| std::env::var("APP_ENV"))
-        .unwrap_or_else(|_| DEFAULT_ENVIRONMENT.to_string());
+    let app_env =
+        std::env::var("RUST_DAILY_ENV").unwrap_or_else(|_| DEFAULT_ENVIRONMENT.to_string());
     let config_dir = std::env::var("RUST_DAILY_CONFIG_DIR")
         .map(PathBuf::from)
         .unwrap_or_else(|_| PathBuf::from(DEFAULT_CONFIG_DIR));
 
-    load_settings_from_dir(&config_dir, &app_env)
-}
-
-/// Loads settings from a specific config directory and environment name.
-pub fn load_settings_from_dir(config_dir: &Path, app_env: &str) -> Result<Settings, SettingsError> {
-    load_settings_from_dir_with_environment(config_dir, app_env, true)
+    load_settings_from_dir_with_environment(&config_dir, &app_env, true)
 }
 
 fn load_settings_from_dir_with_environment(
@@ -594,105 +660,10 @@ fn load_settings_from_dir_with_environment(
                 .separator("__")
                 .try_parsing(true),
         );
-        builder = apply_legacy_environment_overrides(builder)?;
     }
 
     let raw = builder.build()?.try_deserialize::<RawSettings>()?;
     raw.try_into()
-}
-
-fn apply_legacy_environment_overrides(
-    mut builder: config::ConfigBuilder<config::builder::DefaultState>,
-) -> Result<config::ConfigBuilder<config::builder::DefaultState>, ConfigError> {
-    if let Some(value) = env_string("RUST_DAILY_HOST") {
-        builder = builder.set_override("server.host", value)?;
-    }
-    if let Some(value) = env_number("RUST_DAILY_PORT")? {
-        builder = builder.set_override("server.port", value)?;
-    }
-    if let Some(value) = env_string("RUST_DAILY_CORS_ORIGIN") {
-        builder = builder.set_override("server.cors_origin", value)?;
-    }
-    if let Some(value) = env_string("RUST_DAILY_FRONTEND_DIST") {
-        builder = builder.set_override("frontend.dist", value)?;
-    }
-    if let Some(value) = env_number("RUST_DAILY_QUEUE_CAPACITY")? {
-        builder = builder.set_override("runner.queue_capacity", value)?;
-    }
-    if let Some(value) = env_number("RUST_DAILY_WORKERS")? {
-        builder = builder.set_override("runner.workers", value)?;
-    }
-    if let Some(value) = env_number("RUST_DAILY_TIMEOUT_SECS")? {
-        builder = builder.set_override("runner.timeout_secs", value)?;
-    }
-    if let Some(value) = env_number("RUST_DAILY_CLEANUP_TIMEOUT_SECS")? {
-        builder = builder.set_override("runner.cleanup_timeout_secs", value)?;
-    }
-    if let Some(value) = env_number("RUST_DAILY_MAX_OUTPUT_BYTES")? {
-        builder = builder.set_override("runner.max_output_bytes", value)?;
-    }
-    if let Some(value) = env_number("RUST_DAILY_MAX_PROCESS_OUTPUT_BYTES")? {
-        builder = builder.set_override("runner.max_process_output_bytes", value)?;
-    }
-    if let Some(value) = env_number("RUST_DAILY_WORKSPACE_TMPFS_BYTES")? {
-        builder = builder.set_override("runner.workspace_tmpfs_bytes", value)?;
-    }
-    if let Some(value) = env_number("RUST_DAILY_CONTAINER_MEMORY_BYTES")? {
-        builder = builder.set_override("runner.container_memory_bytes", value)?;
-    }
-    if let Some(value) = env_string("RUST_DAILY_RUNNER_IMAGE") {
-        builder = builder.set_override("runner.image", value)?;
-    }
-    if let Some(value) = env_string("RUST_DAILY_WORKSPACE_ROOT") {
-        builder = builder.set_override("runner.workspace_root", value)?;
-    }
-    if let Some(value) = env_string("RUST_DAILY_PODMAN_PATH") {
-        builder = builder.set_override("runner.podman_path", value)?;
-    }
-    if let Some(value) = env_number("RUST_DAILY_MAX_FILES")? {
-        builder = builder.set_override("validation.max_files", value)?;
-    }
-    if let Some(value) = env_number("RUST_DAILY_MAX_FILE_BYTES")? {
-        builder = builder.set_override("validation.max_file_bytes", value)?;
-    }
-    if let Some(value) = env_number("RUST_DAILY_MAX_TOTAL_BYTES")? {
-        builder = builder.set_override("validation.max_total_bytes", value)?;
-    }
-    if let Some(value) = env_number("RUST_DAILY_MAX_PATH_BYTES")? {
-        builder = builder.set_override("validation.max_path_bytes", value)?;
-    }
-    if let Some(value) = env_number("RUST_DAILY_MAX_PATH_COMPONENT_BYTES")? {
-        builder = builder.set_override("validation.max_path_component_bytes", value)?;
-    }
-    if let Some(value) = env_number("RUST_DAILY_MAX_DIAGNOSTIC_SNIPPETS_PER_CASE")? {
-        builder = builder.set_override("validation.max_diagnostic_snippets_per_case", value)?;
-    }
-    if let Some(value) = env_number("RUST_DAILY_MAX_DIAGNOSTIC_SNIPPET_BYTES")? {
-        builder = builder.set_override("validation.max_diagnostic_snippet_bytes", value)?;
-    }
-    if let Some(value) = env_number("RUST_DAILY_MAX_DIAGNOSTIC_TOTAL_BYTES")? {
-        builder = builder.set_override("validation.max_diagnostic_total_bytes", value)?;
-    }
-    if let Some(value) = env_number("RUST_DAILY_MAX_JSON_PAYLOAD_BYTES")? {
-        builder = builder.set_override("api.max_json_payload_bytes", value)?;
-    }
-
-    Ok(builder)
-}
-
-fn env_string(name: &str) -> Option<String> {
-    std::env::var(name).ok()
-}
-
-fn env_number(name: &str) -> Result<Option<i64>, ConfigError> {
-    let Some(value) = env_string(name) else {
-        return Ok(None);
-    };
-
-    value
-        .parse::<i64>()
-        .map(Some)
-        .map_err(|error| ConfigError::Message(format!("{name} must be an integer: {error}")))
 }
 
 impl TryFrom<RawSettings> for Settings {
@@ -714,6 +685,7 @@ impl TryFrom<RawSettings> for Settings {
             runner: raw.runner.try_into()?,
             validation,
             api,
+            observability: raw.observability.try_into()?,
         })
     }
 }
@@ -875,6 +847,26 @@ impl TryFrom<RawApiSettings> for ApiSettings {
     }
 }
 
+impl TryFrom<RawObservabilitySettings> for ObservabilitySettings {
+    type Error = SettingsError;
+
+    fn try_from(raw: RawObservabilitySettings) -> Result<Self, Self::Error> {
+        let metrics_bearer_token = raw
+            .metrics_bearer_token
+            .map(MetricsBearerToken::try_from)
+            .transpose()?;
+
+        Ok(Self {
+            metrics_enabled: raw.metrics_enabled,
+            metrics_bearer_token,
+        })
+    }
+}
+
+const fn default_metrics_enabled() -> bool {
+    true
+}
+
 fn nonzero_usize(field: ConfigField, value: usize) -> Result<NonZeroUsize, SettingsError> {
     NonZeroUsize::new(value).ok_or(SettingsError::NonZero { field })
 }
@@ -893,9 +885,7 @@ mod tests {
 
     use tempfile::tempdir;
 
-    use super::{
-        ConfigField, SettingsError, load_settings_from_dir, load_settings_from_dir_with_environment,
-    };
+    use super::{ConfigField, SettingsError, load_settings_from_dir_with_environment};
 
     static ENV_LOCK: Mutex<()> = Mutex::new(());
 
@@ -943,6 +933,8 @@ runner:
         assert_eq!(settings.runner.process_headroom_bytes.get(), 33_554_432);
         assert_eq!(settings.runner.core_ulimit.as_podman_arg(), "core=1:2");
         assert_eq!(settings.validation.limits.max_files(), 8);
+        assert!(settings.observability.metrics_enabled);
+        assert!(settings.observability.metrics_bearer_token.is_none());
     }
 
     #[test]
@@ -1126,6 +1118,10 @@ validation:
                 ConfigField::ApiMaxJsonPayloadBytes,
                 "api.max_json_payload_bytes",
             ),
+            (
+                ConfigField::ObservabilityMetricsBearerToken,
+                "observability.metrics_bearer_token",
+            ),
         ];
 
         for (field, expected) in fields {
@@ -1177,6 +1173,13 @@ frontend:
   dist: ''
 ",
                 ConfigField::FrontendDist,
+            ),
+            (
+                "
+observability:
+  metrics_bearer_token: ''
+",
+                ConfigField::ObservabilityMetricsBearerToken,
             ),
         ];
 
@@ -1278,29 +1281,34 @@ api:
     }
 
     #[test]
-    fn legacy_environment_overrides_are_applied() {
+    fn nested_environment_overrides_are_loaded() {
         let _guard = EnvGuard::set(&[
-            ("RUST_DAILY_HOST", "0.0.0.0"),
-            ("RUST_DAILY_PORT", "18080"),
-            ("RUST_DAILY_CORS_ORIGIN", "https://example.test"),
-            ("RUST_DAILY_FRONTEND_DIST", "dist/prod"),
-            ("RUST_DAILY_QUEUE_CAPACITY", "7"),
-            ("RUST_DAILY_WORKERS", "4"),
-            ("RUST_DAILY_TIMEOUT_SECS", "9"),
-            ("RUST_DAILY_MAX_OUTPUT_BYTES", "12345"),
-            ("RUST_DAILY_RUNNER_IMAGE", "runner:test"),
-            ("RUST_DAILY_WORKSPACE_ROOT", "/tmp/workspaces"),
-            ("RUST_DAILY_PODMAN_PATH", "/usr/bin/podman"),
-            ("RUST_DAILY_MAX_FILES", "6"),
-            ("RUST_DAILY_MAX_FILE_BYTES", "7000"),
-            ("RUST_DAILY_MAX_TOTAL_BYTES", "8000"),
-            ("RUST_DAILY_MAX_JSON_PAYLOAD_BYTES", "70000"),
+            ("RUST_DAILY_SERVER__HOST", "0.0.0.0"),
+            ("RUST_DAILY_SERVER__PORT", "18080"),
+            ("RUST_DAILY_SERVER__CORS_ORIGIN", "https://example.test"),
+            ("RUST_DAILY_FRONTEND__DIST", "dist/prod"),
+            ("RUST_DAILY_RUNNER__QUEUE_CAPACITY", "7"),
+            ("RUST_DAILY_RUNNER__WORKERS", "4"),
+            ("RUST_DAILY_RUNNER__TIMEOUT_SECS", "9"),
+            ("RUST_DAILY_RUNNER__MAX_OUTPUT_BYTES", "12345"),
+            ("RUST_DAILY_RUNNER__IMAGE", "runner:test"),
+            ("RUST_DAILY_RUNNER__WORKSPACE_ROOT", "/tmp/workspaces"),
+            ("RUST_DAILY_RUNNER__PODMAN_PATH", "/usr/bin/podman"),
+            ("RUST_DAILY_VALIDATION__MAX_FILES", "6"),
+            ("RUST_DAILY_VALIDATION__MAX_FILE_BYTES", "7000"),
+            ("RUST_DAILY_VALIDATION__MAX_TOTAL_BYTES", "8000"),
+            ("RUST_DAILY_API__MAX_JSON_PAYLOAD_BYTES", "70000"),
+            ("RUST_DAILY_OBSERVABILITY__METRICS_ENABLED", "false"),
+            (
+                "RUST_DAILY_OBSERVABILITY__METRICS_BEARER_TOKEN",
+                "local-secret",
+            ),
         ]);
         let root = tempdir().expect("temp config dir should be created");
         write_config(root.path(), "default.yaml", default_config());
 
-        let settings = load_settings_from_dir(root.path(), "local")
-            .expect("legacy environment should override config");
+        let settings = load_settings_from_dir_with_environment(root.path(), "local", true)
+            .expect("nested environment should override config");
 
         assert_eq!(settings.server.bind_address.to_string(), "0.0.0.0:18080");
         assert_eq!(
@@ -1329,16 +1337,26 @@ api:
         assert_eq!(settings.validation.limits.max_file_bytes(), 7000);
         assert_eq!(settings.validation.limits.max_total_bytes(), 8000);
         assert_eq!(settings.api.max_json_payload_bytes.get(), 70000);
+        assert!(!settings.observability.metrics_enabled);
+        assert_eq!(
+            settings
+                .observability
+                .metrics_bearer_token
+                .as_ref()
+                .expect("metrics token")
+                .as_str(),
+            "local-secret"
+        );
     }
 
     #[test]
-    fn legacy_environment_numbers_must_parse() {
-        let _guard = EnvGuard::set(&[("RUST_DAILY_PORT", "not-a-number")]);
+    fn nested_environment_numbers_must_parse() {
+        let _guard = EnvGuard::set(&[("RUST_DAILY_SERVER__PORT", "not-a-number")]);
         let root = tempdir().expect("temp config dir should be created");
         write_config(root.path(), "default.yaml", default_config());
 
-        let error =
-            load_settings_from_dir(root.path(), "local").expect_err("bad env number should fail");
+        let error = load_settings_from_dir_with_environment(root.path(), "local", true)
+            .expect_err("bad env number should fail");
 
         assert!(matches!(error, SettingsError::Load(_)));
     }
@@ -1458,6 +1476,9 @@ validation:
   max_diagnostic_total_bytes: 8192
 api:
   max_json_payload_bytes: 1600000
+observability:
+  metrics_enabled: true
+  metrics_bearer_token: null
 "
     }
 }

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
+import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import {
   DEFAULT_BASE,
   REPO_ROOT,
   exitFromResult,
-  runCommand,
 } from "./lib/repo.mjs";
 
 const usage = () => `Usage:
@@ -88,7 +88,11 @@ const stepsForOptions = (options) => {
 
 const runTextStep = ([label, command, args]) => {
   console.log(`==> ${label}`);
-  const result = runCommand(command, args);
+  const result = spawnSync(command, args, {
+    cwd: REPO_ROOT,
+    env: process.env,
+    stdio: "inherit",
+  });
   const status = exitFromResult(result);
 
   if (status !== 0) {
@@ -97,7 +101,11 @@ const runTextStep = ([label, command, args]) => {
 };
 
 const runJsonStep = ([label, command, args]) => {
-  const result = runCommand(command, args, { stdio: ["ignore", "pipe", "pipe"] });
+  const result = spawnSync(command, args, {
+    cwd: REPO_ROOT,
+    env: process.env,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
 
   return {
     label,
@@ -143,4 +151,3 @@ const main = () => {
 
 process.chdir(REPO_ROOT);
 main();
-

@@ -2,12 +2,18 @@
 
 use std::{io, sync::Arc};
 
-use actix_web::{App, HttpServer, dev::Server, middleware::Condition, web};
+use actix_web::{
+    App, HttpServer,
+    dev::Server,
+    middleware::{self, Condition},
+    web,
+};
 use tracing::info;
 
 use crate::{
     api::{configure, cors, json_config},
     config::Settings,
+    observability,
     queue::spawn_workers,
     runner::initialize_runtime,
     service::AppService,
@@ -26,10 +32,11 @@ pub fn build_server(settings: Settings) -> io::Result<Server> {
     let bind_address = settings.server.bind_address.to_string();
     let runner_settings = Arc::new(settings.runner.clone());
     let queue = spawn_workers(Arc::clone(&runner_settings));
-    let service = AppService::new(queue, settings.validation.limits);
+    let service = AppService::new(queue.clone(), settings.validation.limits);
     let server_settings = settings.server.clone();
     let frontend_settings = settings.frontend.clone();
     let api_settings = settings.api.clone();
+    let observability_settings = settings.observability.clone();
 
     info!(
         bind_address = %settings.server.bind_address,
@@ -48,8 +55,11 @@ pub fn build_server(settings: Settings) -> io::Result<Server> {
             .map_or("http://localhost", |origin| origin.as_str());
 
         App::new()
+            .wrap(middleware::from_fn(observability::record_http_metrics))
             .wrap(Condition::new(cors_enabled, cors(cors_origin)))
             .app_data(web::Data::new(service.clone()))
+            .app_data(web::Data::new(queue.clone()))
+            .app_data(web::Data::new(observability_settings.clone()))
             .app_data(json_config(api_settings.max_json_payload_bytes.get()))
             .configure(configure)
             .service(frontend_files(&frontend_settings.dist))

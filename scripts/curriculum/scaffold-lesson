@@ -1,15 +1,16 @@
 #!/usr/bin/env node
+import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import {
   exitFromResult,
   FRONTEND_DIR,
-  runCommand,
+  REPO_ROOT,
 } from "./lib/repo.mjs";
 
-const result = runCommand(
+const result = spawnSync(
   process.execPath,
   [join(FRONTEND_DIR, "scripts/curriculum/scaffold-lesson.mjs"), ...process.argv.slice(2)],
+  { cwd: REPO_ROOT, env: process.env, stdio: "inherit" },
 );
 
 process.exit(exitFromResult(result));
-

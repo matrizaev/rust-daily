@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   clearAllDrafts,
   clearDraft,
-  loadDraft,
+  readDraft,
   saveDraft,
 } from "../storage/draftStore";
 import {
@@ -58,20 +58,23 @@ describe("draft storage", () => {
     expect(saved).toMatchObject({
       ok: true,
       record: {
-      lessonId: "lesson-1",
-      code: "pub fn main() {}",
-      files: { "src/main.rs": "pub fn main() {}" },
+        lessonId: "lesson-1",
+        code: "pub fn main() {}",
+        files: { "src/main.rs": "pub fn main() {}" },
       },
     });
-    expect(loadDraft("lesson-1")).toMatchObject({
-      files: { "src/main.rs": "pub fn main() {}" },
+    expect(readDraft("lesson-1")).toMatchObject({
+      ok: true,
+      record: {
+        files: { "src/main.rs": "pub fn main() {}" },
+      },
     });
 
     clearDraft("lesson-1");
-    expect(loadDraft("lesson-1")).toBeNull();
+    expect(readDraft("lesson-1")).toEqual({ ok: true, record: null });
   });
 
-  it("normalizes legacy code-only drafts and ignores invalid records", () => {
+  it("rejects invalid draft records", () => {
     window.localStorage.setItem(
       "rust-daily:v1:draft:lesson-1",
       JSON.stringify({ lessonId: "lesson-1", code: "pub fn old() {}" }),
@@ -81,11 +84,8 @@ describe("draft storage", () => {
       JSON.stringify({ lessonId: "wrong", code: "pub fn old() {}" }),
     );
 
-    expect(loadDraft("lesson-1")).toMatchObject({
-      code: "pub fn old() {}",
-      files: { "src/lib.rs": "pub fn old() {}" },
-    });
-    expect(loadDraft("lesson-2")).toBeNull();
+    expect(readDraft("lesson-1")).toEqual({ ok: false, reason: "invalid" });
+    expect(readDraft("lesson-2")).toEqual({ ok: false, reason: "invalid" });
   });
 
   it("clears only Rust Daily draft keys", () => {

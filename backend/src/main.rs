@@ -3,6 +3,7 @@ use rust_daily_backend::{config::load_settings, observability, run};
 #[actix_web::main]
 async fn main() {
     observability::init_tracing();
+    observability::init_metrics();
 
     let settings = match load_settings() {
         Ok(settings) => settings,

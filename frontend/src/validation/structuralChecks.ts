@@ -58,13 +58,15 @@ const findNamedOpenBrace = (source: string, keyword: string, name: string) => {
   return match ? match.index + match[0].lastIndexOf("{") : -1;
 };
 
-const braceDelta = (char: string) => Number(char === "{") - Number(char === "}");
-
 const extractBraceBody = (source: string, openBraceIndex: number) => {
   let depth = 1;
 
   for (let index = openBraceIndex + 1; index < source.length; index += 1) {
-    depth += braceDelta(source[index]);
+    if (source[index] === "{") {
+      depth += 1;
+    } else if (source[index] === "}") {
+      depth -= 1;
+    }
 
     if (depth === 0) {
       return source.slice(openBraceIndex + 1, index);

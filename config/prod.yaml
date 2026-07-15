@@ -10,3 +10,7 @@ runner:
   image: rust-runner:1.95
   workspace_root: /var/www12/rust-daily-runs
   podman_path: /usr/bin/podman
+
+observability:
+  metrics_enabled: true
+  metrics_bearer_token: null

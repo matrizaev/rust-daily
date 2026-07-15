@@ -82,15 +82,3 @@ export type LessonDetailResponse = {
   schemaVersion: 1 | 2;
   detail: LessonDetail;
 };
-
-/** Canonical generated lesson record before runtime normalization. */
-export type RawLesson = Omit<
-  Lesson,
-  "schemaVersion" | "order" | "starterCode" | "files" | "hints"
-> & {
-  schemaVersion?: 1 | 2;
-  order?: number;
-  starterCode?: string;
-  files?: LessonFile[];
-  hints: string[] | LessonHint[];
-};
