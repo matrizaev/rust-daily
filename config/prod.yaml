@@ -1,7 +1,7 @@
 server:
   host: 127.0.0.1
   port: 8080
-  cors_origin: https://borrowquest.qzz.io
+  cors_origin: https://borrowquest.site
 
 frontend:
   dist: /var/www12/html/frontend/dist

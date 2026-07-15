@@ -8,7 +8,7 @@ better at writing clear, production-quality code. The curriculum favors small,
 realistic refactors over algorithm puzzles and teaches one idea at a time
 through starter code, tests, hints, and an authored solution.
 
-**Live app:** [borrowquest.qzz.io](https://borrowquest.qzz.io/)
+**Live app:** [borrowquest.site](https://borrowquest.site/)
 
 ## What It Teaches
 
@@ -155,5 +155,5 @@ library. Supported cases are `pass`, `multi-file-pass`, `fail`,
 ## Deployment
 
 Production runs as one Actix service on a VPS. Actix serves the built PWA and
-the `/run` API behind Nginx and Cloudflare. Pushes to `main` deploy through
+the `/run` API behind Nginx. Pushes to `main` deploy through
 GitHub Actions.
