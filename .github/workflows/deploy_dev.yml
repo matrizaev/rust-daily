@@ -8,11 +8,11 @@ env:
   CARGO_TERM_COLOR: always
   DEPLOY_DIR: /var/www12/html
   DEPLOY_RUNNER_WORKSPACE_ROOT: /var/www12/rust-daily-runs
-  DEPLOY_NGINX_CONF: borrowquest.qzz.io.conf
+  DEPLOY_NGINX_CONF: borrowquest.site.conf
   DEPLOY_SERVICE: rust-daily-backend.service
   DEPLOY_USER: cicd
   RUNNER_IMAGE: rust-runner:1.95
-  SMOKE_URL: https://borrowquest.qzz.io
+  SMOKE_URL: https://borrowquest.site
   SMOKE_CASE: pass
 
 jobs:

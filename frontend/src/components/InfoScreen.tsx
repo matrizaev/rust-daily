@@ -145,7 +145,7 @@ const INFO_PAGES: Record<InfoPageKind, InfoPage> = {
       {
         title: "Sharing and international processing",
         paragraphs: [
-          "Data may be processed by infrastructure providers that deliver, protect, or host the service, including Cloudflare and the server hosting provider. Data may also be disclosed when required by law or necessary to protect the service and its users. These providers may process data in countries outside your own under their applicable safeguards.",
+          "Data may be processed by infrastructure providers that deliver, protect, or host the service, including the server hosting provider. Data may also be disclosed when required by law or necessary to protect the service and its users. These providers may process data in countries outside your own under their applicable safeguards.",
           "If you contact the project by email or GitHub, those services process the information you provide under their own privacy policies.",
         ],
       },

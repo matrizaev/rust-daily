@@ -312,7 +312,7 @@ live host cgroups or filesystem capacity as a startup preflight.
 
 Local development runs Vite and Actix on separate origins. Production uses one
 origin, so the frontend posts to `/run`; Actix CORS middleware still pins the
-accepted browser origin to `https://borrowquest.qzz.io` and rejects requests with
+accepted browser origin to `https://borrowquest.site` and rejects requests with
 any other `Origin` header. This is browser request hygiene only; non-browser
 abuse is handled by rate limits, queue bounds, and runner isolation.
 
@@ -320,8 +320,7 @@ abuse is handled by rate limits, queue bounds, and runner isolation.
 
 ```mermaid
 flowchart LR
-    User --> Cloudflare
-    Cloudflare --> Nginx
+    User --> Nginx
     Nginx --> Actix
     Actix --> Static[Vite production files]
     Actix --> Queue[Validation queue]
@@ -338,7 +337,7 @@ account when the installed `rust-runner:1.95` image is missing or its
 source-hash label differs from the deployed Dockerfile, dependency cache, or
 runner entrypoints.
 
-The live deployment is [borrowquest.qzz.io](https://borrowquest.qzz.io/).
+The live deployment is [borrowquest.site](https://borrowquest.site/).
 Operational details are in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ## Trust Model and Constraints

@@ -3,4 +3,4 @@ Allow: /
 Disallow: /run
 Disallow: /content/
 
-Sitemap: https://borrowquest.qzz.io/sitemap.xml
+Sitemap: https://borrowquest.site/sitemap.xml

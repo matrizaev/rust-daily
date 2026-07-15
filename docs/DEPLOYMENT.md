@@ -3,7 +3,7 @@
 ## Live Service
 
 Rust Daily is deployed at
-[https://borrowquest.qzz.io/](https://borrowquest.qzz.io/).
+[https://borrowquest.site/](https://borrowquest.site/).
 
 Production uses one public origin:
 
@@ -18,7 +18,7 @@ Actix listens on `127.0.0.1:8080`, serves the frontend, exposes
 Nginx terminates TLS and proxies browser traffic to Actix. The production vhost
 keeps `/metrics` private by only allowing loopback clients through that route.
 Production uses one public browser origin,
-`https://borrowquest.qzz.io`, and does not require a separate frontend API URL.
+`https://borrowquest.site`, and does not require a separate frontend API URL.
 Actix CORS middleware only emits CORS headers for that origin and rejects
 requests that present any other browser `Origin`.
 
@@ -53,7 +53,7 @@ The workflow assumes:
 SSH user:        cicd
 Deploy root:     /var/www12/html
 Service:         rust-daily-backend.service
-Nginx vhost:     borrowquest.qzz.io.conf
+Nginx vhost:     borrowquest.site.conf
 Runtime user:    www-data12
 Runtime group:   www-data
 ```
@@ -63,8 +63,8 @@ validate edits with `visudo -cf /etc/sudoers.d/cicd` before rerunning deploys:
 
 ```sudoers
 Cmnd_Alias RUST_DAILY_DEPLOY_ROOT = \
-  /usr/bin/install -m 0644 /tmp/borrowquest.qzz.io.conf /etc/nginx/sites-available/borrowquest.qzz.io.conf, \
-  /usr/bin/ln -sfn /etc/nginx/sites-available/borrowquest.qzz.io.conf /etc/nginx/sites-enabled/borrowquest.qzz.io.conf, \
+  /usr/bin/install -m 0644 /tmp/borrowquest.site.conf /etc/nginx/sites-available/borrowquest.site.conf, \
+  /usr/bin/ln -sfn /etc/nginx/sites-available/borrowquest.site.conf /etc/nginx/sites-enabled/borrowquest.site.conf, \
   /usr/bin/install -m 0644 /tmp/rust-daily-backend.service /etc/systemd/system/rust-daily-backend.service, \
   /usr/bin/install -d -o www-data12 -g www-data -m 0700 /var/www12/.cache /var/www12/.config /var/www12/.local/share, \
   /usr/bin/install -d -m 0755 /var/www12/acme-challenge/.well-known/acme-challenge, \
@@ -99,8 +99,8 @@ dependencies, the Dockerfile, `run-advanced-lesson-cargo.sh`, or
 /var/www12/html/docker/
 /var/www12/html/frontend/dist/
 /etc/systemd/system/rust-daily-backend.service
-/etc/nginx/sites-available/borrowquest.qzz.io.conf
-/etc/nginx/sites-enabled/borrowquest.qzz.io.conf
+/etc/nginx/sites-available/borrowquest.site.conf
+/etc/nginx/sites-enabled/borrowquest.site.conf
 ```
 
 `config/prod.yaml` points Actix at
@@ -326,13 +326,13 @@ dependency sets in the browser.
 
 ## Nginx and TLS
 
-`borrowquest.qzz.io.conf`:
+`borrowquest.site.conf`:
 
 - redirects HTTP to HTTPS;
 - serves `/.well-known/acme-challenge/` from `/var/www12/acme-challenge`
   before redirecting other HTTP requests;
-- uses the certificate at `/etc/ssl/certs/borrowquest.qzz.io.pem`;
-- uses the key at `/etc/ssl/private/borrowquest.qzz.io.key`;
+- uses the certificate at `/etc/ssl/certs/borrowquest.site.pem`;
+- uses the key at `/etc/ssl/private/borrowquest.site.key`;
 - limits request bodies to 2 MB, above `api.max_json_payload_bytes`;
 - rate-limits `POST /run` to 6 requests per minute per client with a burst of 4;
 - only allows loopback clients to reach `/metrics` through Nginx;
@@ -343,16 +343,16 @@ dependency sets in the browser.
 - proxies to `http://127.0.0.1:8080`.
 
 Actix, not Nginx, serves static assets and owns `/run`.
-The `borrowquest.qzz.io` DNS record points directly at the VPS. Because Nginx
+The `borrowquest.site` DNS record points directly at the VPS. Because Nginx
 terminates public browser TLS directly, the host must have a publicly trusted
 certificate installed at the configured certificate and key paths before
 deployment installs the vhost:
 
 ```bash
 sudo install -d -m 0755 /var/www12/acme-challenge/.well-known/acme-challenge
-sudo certbot certonly --webroot -w /var/www12/acme-challenge -d borrowquest.qzz.io
-sudo install -m 0644 /etc/letsencrypt/live/borrowquest.qzz.io/fullchain.pem /etc/ssl/certs/borrowquest.qzz.io.pem
-sudo install -m 0600 /etc/letsencrypt/live/borrowquest.qzz.io/privkey.pem /etc/ssl/private/borrowquest.qzz.io.key
+sudo certbot certonly --webroot -w /var/www12/acme-challenge -d borrowquest.site
+sudo install -m 0644 /etc/letsencrypt/live/borrowquest.site/fullchain.pem /etc/ssl/certs/borrowquest.site.pem
+sudo install -m 0600 /etc/letsencrypt/live/borrowquest.site/privkey.pem /etc/ssl/private/borrowquest.site.key
 sudo nginx -t
 sudo systemctl reload nginx
 ```
@@ -402,11 +402,11 @@ configure `RUST_DAILY_SERVER__CORS_ORIGIN`.
 After deployment:
 
 ```bash
-curl -fsS https://borrowquest.qzz.io/healthz
+curl -fsS https://borrowquest.site/healthz
 curl -fsS http://127.0.0.1:8080/readyz
 curl -fsS http://127.0.0.1:8080/metrics | grep rust_daily_runner_queue_depth
-curl -fsSI https://borrowquest.qzz.io/
-curl -fsSI https://borrowquest.qzz.io/sw.js
+curl -fsSI https://borrowquest.site/
+curl -fsSI https://borrowquest.site/sw.js
 ```
 
 Expected health response:
@@ -435,7 +435,7 @@ runner path. Deployment runs this default `pass` case automatically after the
 VPS update succeeds:
 
 ```bash
-make smoke-runner SMOKE_URL=https://borrowquest.qzz.io
+make smoke-runner SMOKE_URL=https://borrowquest.site
 ```
 
 Use `SMOKE_CASE=multi-file-pass`, `fail`, `compile-error`, or `timeout` to

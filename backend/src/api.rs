@@ -159,7 +159,7 @@ mod tests {
     async fn cors_rejects_mismatched_origin() {
         let app = test::init_service(
             App::new()
-                .wrap(cors("https://borrowquest.qzz.io"))
+                .wrap(cors("https://borrowquest.site"))
                 .route("/run", web::post().to(HttpResponse::Ok)),
         )
         .await;
@@ -177,13 +177,13 @@ mod tests {
     async fn cors_allows_configured_origin() {
         let app = test::init_service(
             App::new()
-                .wrap(cors("https://borrowquest.qzz.io"))
+                .wrap(cors("https://borrowquest.site"))
                 .route("/run", web::post().to(HttpResponse::Ok)),
         )
         .await;
         let request = test::TestRequest::post()
             .uri("/run")
-            .insert_header((header::ORIGIN, "https://borrowquest.qzz.io"))
+            .insert_header((header::ORIGIN, "https://borrowquest.site"))
             .to_request();
 
         let response = test::call_service(&app, request).await;
