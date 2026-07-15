@@ -28,6 +28,7 @@ const cargoRequest = (
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -172,8 +173,42 @@ describe("runBackendValidation", () => {
       .toMatchObject({
         status: "failed",
         summary: "This lesson payload is too large for the Rust runner.",
-      });
+    });
     expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it("does not use lesson timeoutMs as the backend request timeout", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn((_url: string, init?: RequestInit) =>
+      new Promise<Response>((_resolve, reject) => {
+        const signal = init?.signal;
+
+        if (signal instanceof AbortSignal) {
+          signal.addEventListener("abort", () => {
+            reject(new DOMException("Aborted", "AbortError"));
+          });
+        }
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const validation = cargoRequest({
+      mode: "backend-cargo-test",
+      timeoutMs: 1,
+      dependencySet: "std",
+      testCode: "#[test]\nfn code_compiles() {}\n",
+    });
+    const pending = runBackendValidation(validation, "http://runner");
+
+    await vi.advanceTimersByTimeAsync(5_000);
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect((init.signal as AbortSignal).aborted).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(60_000);
+    await expect(pending).resolves.toMatchObject({
+      status: "timeout",
+      summary: "The Rust runner did not respond before the check timeout.",
+    });
   });
 
   it("uses only service-unavailable correlation IDs from error bodies", async () => {
