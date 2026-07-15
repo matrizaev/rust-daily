@@ -3,14 +3,13 @@ import {
   loadSettings,
   resolveThemePreference,
   saveSettings,
-  type EffectiveTheme,
   type UserSettings,
 } from "../storage/settingsStore";
 
-const getSystemTheme = (): EffectiveTheme => resolveThemePreference("system");
-
 const useEffectiveTheme = (settings: UserSettings) => {
-  const [systemTheme, setSystemTheme] = useState<EffectiveTheme>(getSystemTheme);
+  const [systemTheme, setSystemTheme] = useState(() =>
+    resolveThemePreference("system"),
+  );
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");

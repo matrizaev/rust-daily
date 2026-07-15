@@ -6,29 +6,13 @@ import type {
   LessonDetailResponse,
   LessonIndexEntry,
 } from "../types/lesson";
-import { normalizeLessonIndex } from "./normalizeLessons";
 
-const lessonIndex = normalizeLessonIndex(
-  lessonIndexData as LessonIndexEntry[],
-) as LessonIndexEntry[];
+const lessonIndex = lessonIndexData as LessonIndexEntry[];
 const lessonDetailCache = new Map<string, LessonDetail>();
 const CONTENT_REVISION = contentRevisionData.revision;
 
 const lessonDetailUrl = (lessonId: string) =>
   `${import.meta.env.BASE_URL}content/lessons/${encodeURIComponent(lessonId)}.json?v=${CONTENT_REVISION}`;
-
-const mergeLessonDetail = (
-  lesson: LessonIndexEntry,
-  detail: LessonDetail,
-): Lesson => ({
-  ...lesson,
-  instructions: detail.instructions,
-  files: detail.files,
-  hints: detail.hints,
-  completionExplanation: detail.completionExplanation,
-  validation: detail.validation,
-  starterCode: detail.starterCode,
-});
 
 /** Looks up lightweight lesson metadata by ID. */
 export const getLessonById = (lessonId: string) =>
@@ -41,7 +25,15 @@ export const getLessonIndex = () => lessonIndex;
 export const mergeLesson = (
   lesson: LessonIndexEntry,
   detail: LessonDetail,
-) => mergeLessonDetail(lesson, detail);
+): Lesson => ({
+  ...lesson,
+  instructions: detail.instructions,
+  files: detail.files,
+  hints: detail.hints,
+  completionExplanation: detail.completionExplanation,
+  validation: detail.validation,
+  starterCode: detail.starterCode,
+});
 
 const loadLessonDetail = async (lessonId: string) => {
   const cached = lessonDetailCache.get(lessonId);
@@ -72,7 +64,7 @@ export const loadLesson = async (lessonId: string) => {
     return null;
   }
 
-  return mergeLessonDetail(lesson, await loadLessonDetail(lessonId));
+  return mergeLesson(lesson, await loadLessonDetail(lessonId));
 };
 
 /** Starts a best-effort lesson detail fetch for a likely future route. */

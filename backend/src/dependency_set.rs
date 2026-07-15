@@ -93,20 +93,10 @@ impl DependencySet {
 /// Program and arguments for one Cargo validation command.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct CargoTestCommand {
-    program: &'static str,
-    args: Vec<String>,
-}
-
-impl CargoTestCommand {
     /// Command executable name inside the runner environment.
-    pub fn program(&self) -> &'static str {
-        self.program
-    }
-
+    pub program: &'static str,
     /// Command arguments passed after the executable name.
-    pub fn args(&self) -> &[String] {
-        &self.args
-    }
+    pub args: Vec<String>,
 }
 
 #[cfg(test)]
@@ -135,30 +125,30 @@ mod tests {
         assert!(!DependencySet::Std.cargo_toml().contains("actix-web ="));
 
         let test = DependencySet::Std.test_command();
-        assert_eq!(test.program(), "cargo");
-        assert_eq!(test.args(), ["test"]);
+        assert_eq!(test.program, "cargo");
+        assert_eq!(test.args, ["test"]);
 
         let check_lib = DependencySet::Std.check_lib_command();
-        assert_eq!(check_lib.program(), "cargo");
-        assert_eq!(check_lib.args(), ["check", "--lib"]);
+        assert_eq!(check_lib.program, "cargo");
+        assert_eq!(check_lib.args, ["check", "--lib"]);
 
         let check_test = DependencySet::Std.check_test_command("case_name");
-        assert_eq!(check_test.program(), "cargo");
-        assert_eq!(check_test.args(), ["check", "--test", "case_name"]);
+        assert_eq!(check_test.program, "cargo");
+        assert_eq!(check_test.args, ["check", "--test", "case_name"]);
     }
 
     #[test]
     fn advanced_dependency_set_uses_cached_runner_commands() {
         let test = DependencySet::Advanced.test_command();
-        assert_eq!(test.program(), "run-advanced-lesson-cargo");
-        assert_eq!(test.args(), ["test"]);
+        assert_eq!(test.program, "run-advanced-lesson-cargo");
+        assert_eq!(test.args, ["test"]);
 
         let check_lib = DependencySet::Advanced.check_lib_command();
-        assert_eq!(check_lib.program(), "run-advanced-lesson-cargo");
-        assert_eq!(check_lib.args(), ["check", "--lib"]);
+        assert_eq!(check_lib.program, "run-advanced-lesson-cargo");
+        assert_eq!(check_lib.args, ["check", "--lib"]);
 
         let check_test = DependencySet::Advanced.check_test_command("case_name");
-        assert_eq!(check_test.program(), "run-advanced-lesson-cargo");
-        assert_eq!(check_test.args(), ["check", "--test", "case_name"]);
+        assert_eq!(check_test.program, "run-advanced-lesson-cargo");
+        assert_eq!(check_test.args, ["check", "--test", "case_name"]);
     }
 }

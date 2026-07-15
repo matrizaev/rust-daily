@@ -14,8 +14,10 @@ Cloudflare -> Nginx -> Actix -> Vite files
 ```
 
 Actix listens on `127.0.0.1:8080`, serves the frontend, exposes
-`GET /healthz`, and handles `POST /run`. Nginx terminates TLS and proxies every
-request to Actix. Production uses one public browser origin,
+`GET /healthz`, `GET /readyz`, `GET /metrics`, and handles `POST /run`.
+Nginx terminates TLS and proxies browser traffic to Actix. The production vhost
+keeps `/metrics` private by only allowing loopback clients through that route.
+Production uses one public browser origin,
 `https://borrowquest.qzz.io`, and does not require a separate frontend API URL.
 Actix CORS middleware only emits CORS headers for that origin and rejects
 requests that present any other browser `Origin`.
@@ -197,6 +199,75 @@ sudo systemctl restart rust-daily-backend.service
 
 The backend writes structured JSON logs through `tracing` to journald.
 
+## Operational Metrics
+
+The backend installs a Prometheus recorder at startup and serves metrics from
+`GET /metrics` when `observability.metrics_enabled=true`. The endpoint includes:
+
+- `rust_daily_http_requests_total` and
+  `rust_daily_http_request_duration_seconds`, labeled by method, coarse route
+  path, HTTP status code, and status class.
+- `rust_daily_runner_queue_depth`,
+  `rust_daily_runner_queue_available_slots`,
+  `rust_daily_runner_running_jobs`, and worker/capacity gauges.
+- Runner job counters for enqueued, rejected, canceled, completed, and failed
+  jobs.
+
+Scrape the Actix loopback listener from the same host or a local Prometheus
+agent:
+
+```yaml
+scrape_configs:
+  - job_name: rust-daily-backend
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["127.0.0.1:8080"]
+```
+
+If a scraper can reach the endpoint from outside the service host, set a bearer
+token outside the repository in a root-owned environment file:
+
+```bash
+sudo install -d -m 0700 /etc/rust-daily-backend
+sudo install -m 0600 /dev/null /etc/rust-daily-backend/metrics.env
+sudoedit /etc/rust-daily-backend/metrics.env
+```
+
+```env
+RUST_DAILY_OBSERVABILITY__METRICS_BEARER_TOKEN=replace-with-long-random-token
+```
+
+Reference that file from a systemd drop-in:
+
+```ini
+# sudo systemctl edit rust-daily-backend.service
+[Service]
+EnvironmentFile=/etc/rust-daily-backend/metrics.env
+```
+
+Then configure Prometheus:
+
+```yaml
+authorization:
+  type: Bearer
+  credentials: replace-with-long-random-token
+```
+
+The production Nginx vhost blocks public `/metrics` access by default. Prefer
+same-host scraping, a private network, VPN, SSH tunnel, or a Prometheus agent.
+If `/metrics` must be proxied publicly, keep TLS, require the bearer token, and
+add an IP allowlist in Nginx.
+
+Useful queries:
+
+```promql
+sum by (status_code) (rate(rust_daily_http_requests_total[5m]))
+histogram_quantile(0.95, rate(rust_daily_http_request_duration_seconds_bucket[5m]))
+rust_daily_runner_queue_depth
+rust_daily_runner_running_jobs
+increase(rust_daily_runner_jobs_rejected_total[10m])
+```
+
 Before binding the HTTP server, startup verifies that Podman is rootless, the
 configured image exists locally, remote Podman environment variables are not
 set, and stale containers bearing `io.rust-daily.managed=true` can be removed.
@@ -264,6 +335,7 @@ dependency sets in the browser.
   `/etc/nginx/cloudflare-real-ip.conf`;
 - limits request bodies to 2 MB, above `api.max_json_payload_bytes`;
 - rate-limits `POST /run` to 6 requests per minute per client with a burst of 4;
+- only allows loopback clients to reach `/metrics` through Nginx;
 - marks `/sw.js` and dynamic app-shell entry points as revalidated or
   non-cacheable while allowing immutable caching for hashed build artifacts and
   generated lesson JSON;
@@ -308,6 +380,8 @@ RUST_DAILY_VALIDATION__MAX_FILES
 RUST_DAILY_VALIDATION__MAX_FILE_BYTES
 RUST_DAILY_VALIDATION__MAX_TOTAL_BYTES
 RUST_DAILY_API__MAX_JSON_PAYLOAD_BYTES
+RUST_DAILY_OBSERVABILITY__METRICS_ENABLED
+RUST_DAILY_OBSERVABILITY__METRICS_BEARER_TOKEN
 ```
 
 Production frontend builds use `window.location.origin` for the API. For a
@@ -320,6 +394,8 @@ After deployment:
 
 ```bash
 curl -fsS https://borrowquest.qzz.io/healthz
+curl -fsS http://127.0.0.1:8080/readyz
+curl -fsS http://127.0.0.1:8080/metrics | grep rust_daily_runner_queue_depth
 curl -fsSI https://borrowquest.qzz.io/
 curl -fsSI https://borrowquest.qzz.io/sw.js
 ```

@@ -35,16 +35,6 @@ const getLessonIdFromHash = () => {
   return hash.startsWith("#lesson/") ? hash.replace("#lesson/", "") : null;
 };
 
-const getLessonRouteFromHash = (lessons: LessonIndexEntry[]): AppRoute => {
-  const lessonId = getLessonIdFromHash();
-
-  if (lessonId && lessons.some((lesson) => lesson.id === lessonId)) {
-    return { kind: "lesson", lessonId };
-  }
-
-  return { kind: "home" };
-};
-
 export const getRouteFromHash = (lessons: LessonIndexEntry[]): AppRoute => {
   const staticRoute = staticRoutes.get(window.location.hash);
 
@@ -52,5 +42,11 @@ export const getRouteFromHash = (lessons: LessonIndexEntry[]): AppRoute => {
     return staticRoute;
   }
 
-  return getLessonRouteFromHash(lessons);
+  const lessonId = getLessonIdFromHash();
+
+  if (lessonId && lessons.some((lesson) => lesson.id === lessonId)) {
+    return { kind: "lesson", lessonId };
+  }
+
+  return { kind: "home" };
 };

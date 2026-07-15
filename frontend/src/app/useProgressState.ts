@@ -39,8 +39,6 @@ export const useProgressState = () => {
     return result.ok;
   }, []);
 
-  const handleDeleteDrafts = useCallback(() => clearAllDrafts(), []);
-
   const handleExportProgress = useCallback(() => {
     downloadProgressExport(progress);
   }, [progress]);
@@ -78,7 +76,7 @@ export const useProgressState = () => {
     progress,
     storageError,
     summary,
-    handleDeleteDrafts,
+    handleDeleteDrafts: clearAllDrafts,
     handleDeleteProgress,
     handleExportProgress,
     handleImportProgress,

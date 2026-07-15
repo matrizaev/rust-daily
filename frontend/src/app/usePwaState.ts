@@ -3,16 +3,14 @@ import { registerServiceWorker } from "../pwa/registerServiceWorker";
 
 type UpdateServiceWorker = () => Promise<void>;
 
-const getIsOffline = () => !navigator.onLine;
-
 export const usePwaState = () => {
-  const [isOffline, setIsOffline] = useState(getIsOffline);
+  const [isOffline, setIsOffline] = useState(() => !navigator.onLine);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateServiceWorker, setUpdateServiceWorker] =
     useState<UpdateServiceWorker | null>(null);
 
   useEffect(() => {
-    const updateOnlineState = () => setIsOffline(getIsOffline());
+    const updateOnlineState = () => setIsOffline(!navigator.onLine);
 
     window.addEventListener("online", updateOnlineState);
     window.addEventListener("offline", updateOnlineState);

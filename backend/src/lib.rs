@@ -27,8 +27,6 @@ pub mod runner;
 pub mod server;
 /// Application service layer between HTTP handlers and the queue.
 pub mod service;
-/// Static frontend file serving.
-pub mod static_files;
 /// Temporary Cargo workspace preparation.
 pub mod workspace;
 

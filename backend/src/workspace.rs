@@ -93,17 +93,15 @@ pub async fn prepare_workspace(
 pub struct TestTargetName(String);
 
 impl TestTargetName {
-    /// Derives the generated target name from a validated compile-fail case.
-    pub fn from_case(case: &ValidatedCompileFailCase) -> Self {
-        Self(format!(
-            "compile_fail_{}",
-            case.name().as_str().replace('-', "_")
-        ))
-    }
-
     /// Returns the target name passed to `cargo check --test`.
     pub fn as_str(&self) -> &str {
         &self.0
+    }
+}
+
+impl From<&ValidatedCompileFailCase> for TestTargetName {
+    fn from(case: &ValidatedCompileFailCase) -> Self {
+        Self(case.name().generated_test_target())
     }
 }
 
@@ -112,7 +110,7 @@ pub async fn write_compile_fail_case(
     workspace: &Path,
     case: &ValidatedCompileFailCase,
 ) -> Result<TestTargetName, WorkspaceError> {
-    let target_name = TestTargetName::from_case(case);
+    let target_name = TestTargetName::from(case);
     let path = workspace
         .join("tests")
         .join(format!("{}.rs", target_name.as_str()));

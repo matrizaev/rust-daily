@@ -18,17 +18,7 @@ pub fn result_from_output(
     duration_ms: u64,
     max_output_bytes: usize,
 ) -> Option<LearnerOutcome> {
-    let status = match output_status(&output) {
-        CargoOutputStatus::Success => RunStatus::Passed,
-        CargoOutputStatus::TimedOut => RunStatus::TimedOut,
-        CargoOutputStatus::CompilerError => RunStatus::CompileError,
-        CargoOutputStatus::Failure => RunStatus::Failed,
-        CargoOutputStatus::CargoError
-        | CargoOutputStatus::InfrastructureError
-        | CargoOutputStatus::InternalCompilerError => {
-            return None;
-        }
-    };
+    let status = RunStatus::try_from(output_status(&output)).ok()?;
     let (stdout, stderr) = filtered_output_streams(&output, max_output_bytes);
 
     Some(LearnerOutcome::new(status, stdout, stderr, duration_ms))
@@ -51,6 +41,22 @@ pub enum CargoOutputStatus {
     InfrastructureError,
     /// rustc emitted an internal compiler error.
     InternalCompilerError,
+}
+
+impl TryFrom<CargoOutputStatus> for RunStatus {
+    type Error = CargoOutputStatus;
+
+    fn try_from(status: CargoOutputStatus) -> Result<Self, Self::Error> {
+        match status {
+            CargoOutputStatus::Success => Ok(Self::Passed),
+            CargoOutputStatus::TimedOut => Ok(Self::TimedOut),
+            CargoOutputStatus::CompilerError => Ok(Self::CompileError),
+            CargoOutputStatus::Failure => Ok(Self::Failed),
+            CargoOutputStatus::CargoError
+            | CargoOutputStatus::InfrastructureError
+            | CargoOutputStatus::InternalCompilerError => Err(status),
+        }
+    }
 }
 
 /// Classifies raw Cargo process output.
@@ -93,11 +99,6 @@ pub fn filtered_output_streams(output: &Output, max_output_bytes: usize) -> (Str
     cap_output(stdout.as_bytes(), stderr.as_bytes(), max_output_bytes)
 }
 
-/// Caps already-filtered stdout and stderr to a shared byte budget.
-pub fn cap_streams(stdout: &str, stderr: &str, max_output_bytes: usize) -> (String, String) {
-    cap_output(stdout.as_bytes(), stderr.as_bytes(), max_output_bytes)
-}
-
 /// Extracts compiler diagnostics for compile-fail expectation matching.
 pub fn diagnostic_text(output: &Output) -> String {
     let compiler_diagnostics = compiler_diagnostic_text(&output.stdout)
@@ -119,19 +120,6 @@ pub fn diagnostic_text(output: &Output) -> String {
     .filter(|stream| !stream.trim().is_empty())
     .collect::<Vec<_>>()
     .join("\n\n")
-}
-
-#[cfg(test)]
-fn classify_status(output: &Output) -> Option<RunStatus> {
-    match output_status(output) {
-        CargoOutputStatus::Success => Some(RunStatus::Passed),
-        CargoOutputStatus::TimedOut => Some(RunStatus::TimedOut),
-        CargoOutputStatus::CompilerError => Some(RunStatus::CompileError),
-        CargoOutputStatus::Failure => Some(RunStatus::Failed),
-        CargoOutputStatus::CargoError
-        | CargoOutputStatus::InfrastructureError
-        | CargoOutputStatus::InternalCompilerError => None,
-    }
 }
 
 fn cargo_reported_level(output: &[u8], expected: DiagnosticLevel) -> bool {
@@ -175,7 +163,7 @@ fn should_include_response_line(line: &str, command_succeeded: bool) -> bool {
         return false;
     }
 
-    match cargo_message(line) {
+    match cargo_messages(line.as_bytes()).next() {
         Some(Message::CompilerMessage(_)) | Some(Message::TextLine(_)) | None => true,
         Some(
             Message::CompilerArtifact(_)
@@ -194,11 +182,11 @@ fn cargo_messages(output: &[u8]) -> impl Iterator<Item = Message> + '_ {
     Message::parse_stream(Cursor::new(output)).filter_map(Result::ok)
 }
 
-fn cargo_message(line: &str) -> Option<Message> {
-    cargo_messages(line.as_bytes()).next()
-}
-
-fn cap_output(stdout: &[u8], stderr: &[u8], max_output_bytes: usize) -> (String, String) {
+pub(crate) fn cap_output(
+    stdout: &[u8],
+    stderr: &[u8],
+    max_output_bytes: usize,
+) -> (String, String) {
     let stdout = String::from_utf8_lossy(stdout).into_owned();
     let stderr = String::from_utf8_lossy(stderr).into_owned();
 
@@ -276,7 +264,7 @@ mod tests {
 
     use serde_json::json;
 
-    use super::{cap_output, classify_status, diagnostic_text, result_from_output};
+    use super::{cap_output, diagnostic_text, output_status, result_from_output};
     use crate::model::RunStatus;
 
     fn output(status: i32, stdout: &str, stderr: &str) -> std::process::Output {
@@ -350,7 +338,7 @@ mod tests {
     #[test]
     fn classifies_successful_output_as_passed() {
         assert_eq!(
-            classify_status(&output(0, "running 1 test", "")),
+            RunStatus::try_from(output_status(&output(0, "running 1 test", ""))).ok(),
             Some(RunStatus::Passed)
         );
     }
@@ -358,11 +346,12 @@ mod tests {
     #[test]
     fn classifies_compile_errors_distinctly() {
         assert_eq!(
-            classify_status(&output(
+            RunStatus::try_from(output_status(&output(
                 101,
                 &compiler_message("error", "error: bad type"),
                 "",
-            )),
+            )))
+            .ok(),
             Some(RunStatus::CompileError)
         );
     }
@@ -370,11 +359,12 @@ mod tests {
     #[test]
     fn classifies_test_failures_as_failed() {
         assert_eq!(
-            classify_status(&output(
+            RunStatus::try_from(output_status(&output(
                 101,
                 &format!("{}\ntest answer_is_42 ... FAILED", build_finished(true)),
                 "error: test failed, to rerun pass `--test lesson`",
-            )),
+            )))
+            .ok(),
             Some(RunStatus::Failed)
         );
     }
@@ -382,7 +372,7 @@ mod tests {
     #[test]
     fn classifies_inner_timeout_exit_code() {
         assert_eq!(
-            classify_status(&output(124, "", "")),
+            RunStatus::try_from(output_status(&output(124, "", ""))).ok(),
             Some(RunStatus::TimedOut)
         );
     }
