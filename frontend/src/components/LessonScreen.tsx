@@ -1,4 +1,4 @@
-import { ArrowLeft, Settings } from "lucide-react";
+import { ArrowLeft, Package, Settings } from "lucide-react";
 import { Suspense, lazy } from "react";
 import CompletionPanel from "./CompletionPanel";
 import HintPanel from "./HintPanel";
@@ -7,6 +7,7 @@ import ValidationPanel from "./ValidationPanel";
 import { useLessonDraft } from "./lesson/useLessonDraft";
 import { useLessonProgress } from "./lesson/useLessonProgress";
 import { useLessonValidation } from "./lesson/useLessonValidation";
+import { dependencySetDetailsForValidation } from "../validation/dependencySets";
 import type { ProgressStore } from "../types/progress";
 import type { Concept, Lesson } from "../types/lesson";
 
@@ -67,6 +68,33 @@ const LessonTopbar = ({
 
 type LessonBriefProps = Pick<LessonScreenProps, "concept" | "lesson">;
 
+const DependencySetBlock = ({ lesson }: { lesson: Lesson }) => {
+  const dependencySet = dependencySetDetailsForValidation(lesson.validation);
+
+  return (
+    <div className="dependency-block">
+      <span className="dependency-heading">
+        <Package size={17} aria-hidden="true" />
+        Dependencies
+      </span>
+      <strong>
+        {dependencySet.name} ({dependencySet.id})
+      </strong>
+      <p>{dependencySet.summary}</p>
+
+      {dependencySet.availableCrates.length > 0 ? (
+        <ul className="dependency-crate-list" aria-label="Available external crates">
+          {dependencySet.availableCrates.map((crateName) => (
+            <li key={crateName}>
+              <code>{crateName}</code>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+};
+
 const LessonBrief = ({ lesson, concept }: LessonBriefProps) => (
   <aside className="lesson-brief">
     <p className="eyebrow">One concept</p>
@@ -82,6 +110,8 @@ const LessonBrief = ({ lesson, concept }: LessonBriefProps) => (
       <span>Concept</span>
       <strong>{concept?.name ?? lesson.conceptId}</strong>
     </div>
+
+    <DependencySetBlock lesson={lesson} />
   </aside>
 );
 
