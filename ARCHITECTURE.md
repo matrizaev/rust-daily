@@ -320,7 +320,8 @@ abuse is handled by rate limits, queue bounds, and runner isolation.
 
 ```mermaid
 flowchart LR
-    User --> Nginx
+    User --> Cloudflare
+    Cloudflare --> Nginx
     Nginx --> Actix
     Actix --> Static[Vite production files]
     Actix --> Queue[Validation queue]

@@ -498,7 +498,7 @@ The implementation is divided into:
 - generated runtime lesson content;
 - an Actix and Tokio validation service;
 - a rootless Podman Rust runner;
-- Nginx in production.
+- Nginx and Cloudflare in production.
 
 Detailed component and runtime flows are defined in
 [../ARCHITECTURE.md](../ARCHITECTURE.md). Production operation is defined in

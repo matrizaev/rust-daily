@@ -9,6 +9,7 @@ env:
   DEPLOY_DIR: /var/www12/html
   DEPLOY_RUNNER_WORKSPACE_ROOT: /var/www12/rust-daily-runs
   DEPLOY_NGINX_CONF: borrowquest.site.conf
+  DEPLOY_CLOUDFLARE_REAL_IP_CONF: cloudflare-real-ip.conf
   DEPLOY_SERVICE: rust-daily-backend.service
   DEPLOY_USER: cicd
   RUNNER_IMAGE: rust-runner:1.95
@@ -56,6 +57,16 @@ jobs:
           set -euo pipefail
           test -n "$DEPLOY_HOST"
 
+          cloudflare_real_ip_conf="$(mktemp)"
+          trap 'rm -f "$cloudflare_real_ip_conf"' EXIT
+          {
+            echo 'real_ip_header CF-Connecting-IP;'
+            echo 'real_ip_recursive on;'
+            for url in https://www.cloudflare.com/ips-v4 https://www.cloudflare.com/ips-v6; do
+              curl -fsS "$url" | tr ' ' '\n' | awk 'NF { printf "set_real_ip_from %s;\n", $1 }'
+            done
+          } > "$cloudflare_real_ip_conf"
+          grep -q '^set_real_ip_from ' "$cloudflare_real_ip_conf"
           runner_source_hash="$(sha256sum docker/rust-runner.Dockerfile docker/run-advanced-lesson-cargo.sh docker/run-advanced-lesson-tests.sh docker/dependency-cache/Cargo.toml docker/dependency-cache/src/lib.rs | sha256sum | cut -d' ' -f1)"
 
           ssh "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$DEPLOY_DIR/frontend' && rm -rf '$DEPLOY_DIR/config.tmp' '$DEPLOY_DIR/docker.tmp' '$DEPLOY_DIR/frontend/dist.tmp'"
@@ -64,15 +75,16 @@ jobs:
           scp -r ./docker "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_DIR/docker.tmp"
           scp -r ./frontend/dist "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_DIR/frontend/dist.tmp"
           scp "./$DEPLOY_NGINX_CONF" "$DEPLOY_USER@$DEPLOY_HOST:/tmp/$DEPLOY_NGINX_CONF"
+          scp "$cloudflare_real_ip_conf" "$DEPLOY_USER@$DEPLOY_HOST:/tmp/$DEPLOY_CLOUDFLARE_REAL_IP_CONF"
           scp ./rust-daily-backend.service "$DEPLOY_USER@$DEPLOY_HOST:/tmp/$DEPLOY_SERVICE"
 
           ssh "$DEPLOY_USER@$DEPLOY_HOST" "\
             set -euo pipefail; \
+            sudo install -m 0644 /tmp/$DEPLOY_CLOUDFLARE_REAL_IP_CONF /etc/nginx/$DEPLOY_CLOUDFLARE_REAL_IP_CONF; \
             sudo install -m 0644 /tmp/$DEPLOY_NGINX_CONF /etc/nginx/sites-available/$DEPLOY_NGINX_CONF; \
             sudo ln -sfn /etc/nginx/sites-available/$DEPLOY_NGINX_CONF /etc/nginx/sites-enabled/$DEPLOY_NGINX_CONF; \
             sudo install -m 0644 /tmp/$DEPLOY_SERVICE /etc/systemd/system/$DEPLOY_SERVICE; \
             sudo install -d -o www-data12 -g www-data -m 0700 /var/www12/.cache /var/www12/.config /var/www12/.local/share; \
-            sudo install -d -m 0755 /var/www12/acme-challenge/.well-known/acme-challenge; \
             sudo install -d -m 0755 '$DEPLOY_RUNNER_WORKSPACE_ROOT'; \
             rm -rf '$DEPLOY_DIR/docker'; \
             mv '$DEPLOY_DIR/docker.tmp' '$DEPLOY_DIR/docker'; \

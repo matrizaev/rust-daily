@@ -155,5 +155,5 @@ library. Supported cases are `pass`, `multi-file-pass`, `fail`,
 ## Deployment
 
 Production runs as one Actix service on a VPS. Actix serves the built PWA and
-the `/run` API behind Nginx. Pushes to `main` deploy through
+the `/run` API behind Nginx and Cloudflare. Pushes to `main` deploy through
 GitHub Actions.
