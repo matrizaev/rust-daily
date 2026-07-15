@@ -9,7 +9,9 @@ import type {
 const DIAGNOSTICS_LIMIT = 4096;
 const SUMMARY_LIMIT = 240;
 const FAILURE_LIMIT = 20;
-const BACKEND_RESPONSE_GRACE_MS = 3000;
+// This is a transport guard for stalled HTTP requests, not the Rust execution
+// budget. The backend runner and proxy own execution deadlines.
+const BACKEND_REQUEST_TIMEOUT_MS = 65_000;
 
 type BackendRunStatus =
   | "passed"
@@ -568,9 +570,7 @@ export const runBackendValidation = async (
     return unavailableResult(startedAt);
   }
 
-  const timeout = createBackendTimeout(
-    request.validation.timeoutMs + BACKEND_RESPONSE_GRACE_MS,
-  );
+  const timeout = createBackendTimeout(BACKEND_REQUEST_TIMEOUT_MS);
 
   try {
     const response = await fetchBackendRun(request, backendUrl, timeout.signal);

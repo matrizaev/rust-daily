@@ -106,6 +106,12 @@ const stepLabel = (validation: LessonValidationStep) =>
       ? "Rust runner"
       : "Browser checks";
 
+const localValidationSteps = (validations: LessonValidationStep[]) =>
+  validations.filter((validation) => !isBackendStep(validation));
+
+const backendValidationSteps = (validations: LessonValidationStep[]) =>
+  validations.filter(isBackendStep);
+
 const createWorker = () =>
   new Worker(new URL("./validationWorker.ts", import.meta.url), {
     type: "module",
@@ -157,6 +163,19 @@ const runValidationStep = async (
     label: stepLabel(validation),
     result,
   };
+};
+
+const runValidationSteps = async (
+  request: ValidationRequest,
+  validations: LessonValidationStep[],
+) => {
+  const results: StepResult[] = [];
+
+  for (const validation of validations) {
+    results.push(await runValidationStep(request, validation));
+  }
+
+  return results;
 };
 
 const uniqueFailures = (failures: ValidationFailure[]) => {
@@ -234,13 +253,26 @@ const aggregateResults = (results: StepResult[]): ValidationResult => {
   };
 };
 
+const allowsBackendValidation = ({ result }: StepResult) =>
+  result.status === "passed" || result.status === "self_check";
+
 /** Runs configured browser and backend validation steps and aggregates results. */
 export const runValidation = async (request: ValidationRequest) => {
-  const results = await Promise.all(
-    validationSteps(request).map((validation) =>
-      runValidationStep(request, validation),
-    ),
+  const validations = validationSteps(request);
+  const localResults = await runValidationSteps(
+    request,
+    localValidationSteps(validations),
   );
+
+  if (!localResults.every(allowsBackendValidation)) {
+    return aggregateResults(localResults);
+  }
+
+  const backendResults = await runValidationSteps(
+    request,
+    backendValidationSteps(validations),
+  );
+  const results = [...localResults, ...backendResults];
 
   return aggregateResults(results);
 };
