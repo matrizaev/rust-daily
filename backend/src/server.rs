@@ -2,6 +2,7 @@
 
 use std::{io, sync::Arc};
 
+use actix_files::Files;
 use actix_web::{
     App, HttpServer,
     dev::Server,
@@ -17,12 +18,11 @@ use crate::{
     queue::spawn_workers,
     runner::initialize_runtime,
     service::AppService,
-    static_files::frontend_files,
 };
 
 /// Initializes runner prerequisites and serves the configured Actix server.
 pub async fn run(settings: Settings) -> io::Result<()> {
-    tokio::fs::create_dir_all(settings.runner.workspace_root.as_path()).await?;
+    tokio::fs::create_dir_all(settings.runner.workspace_root.as_ref()).await?;
     initialize_runtime(&settings.runner).await?;
     build_server(settings)?.await
 }
@@ -40,7 +40,7 @@ pub fn build_server(settings: Settings) -> io::Result<Server> {
 
     info!(
         bind_address = %settings.server.bind_address,
-        frontend_dist = ?settings.frontend.dist.as_path(),
+        frontend_dist = ?settings.frontend.dist.as_ref(),
         workers = settings.runner.workers.get(),
         queue_capacity = settings.runner.queue_capacity.get(),
         runner_image = %settings.runner.image,
@@ -52,7 +52,7 @@ pub fn build_server(settings: Settings) -> io::Result<Server> {
         let cors_enabled = cors_origin.is_some();
         let cors_origin = cors_origin
             .as_ref()
-            .map_or("http://localhost", |origin| origin.as_str());
+            .map_or("http://localhost", |origin| origin.as_ref());
 
         App::new()
             .wrap(middleware::from_fn(observability::record_http_metrics))
@@ -62,7 +62,13 @@ pub fn build_server(settings: Settings) -> io::Result<Server> {
             .app_data(web::Data::new(observability_settings.clone()))
             .app_data(json_config(api_settings.max_json_payload_bytes.get()))
             .configure(configure)
-            .service(frontend_files(&frontend_settings.dist))
+            .service(
+                Files::new("/", frontend_settings.dist.as_ref())
+                    .index_file("index.html")
+                    .prefer_utf8(true)
+                    .use_etag(true)
+                    .use_last_modified(true),
+            )
     })
     .bind(bind_address)?
     .run())

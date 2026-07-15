@@ -9,7 +9,7 @@ frontend:
 runner:
   queue_capacity: 20
   workers: 2
-  timeout_secs: 12
+  timeout_secs: 30
   cleanup_timeout_secs: 2
   max_output_bytes: 65536
   max_process_output_bytes: 4194304

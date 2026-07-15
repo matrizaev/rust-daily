@@ -288,6 +288,11 @@ impl CompileFailCaseName {
     pub fn as_str(&self) -> &str {
         &self.0
     }
+
+    /// Returns the generated Cargo test target name for this compile-fail case.
+    pub fn generated_test_target(&self) -> String {
+        format!("compile_fail_{}", self.0.replace('-', "_"))
+    }
 }
 
 impl std::fmt::Display for CompileFailCaseName {
@@ -516,10 +521,7 @@ fn validate_path_tree(
     }
 
     for case in compile_fail_cases {
-        let generated_path = format!(
-            "tests/compile_fail_{}.rs",
-            case.name().as_str().replace('-', "_")
-        );
+        let generated_path = format!("tests/{}.rs", case.name().generated_test_target());
         if submitted_paths
             .iter()
             .any(|submitted_path| paths_collide(submitted_path, &generated_path))
@@ -589,7 +591,7 @@ fn validate_compile_fail_cases(
             });
         }
 
-        let target_name = name.as_str().replace('-', "_");
+        let target_name = name.generated_test_target();
         if !target_names.insert(target_name) {
             return Err(ValidationError::DuplicateCompileFailCaseName {
                 name: name.as_str().to_string(),
@@ -1074,6 +1076,17 @@ pub enum RunStatus {
     TimedOut,
 }
 
+impl From<RunStatus> for &'static str {
+    fn from(status: RunStatus) -> Self {
+        match status {
+            RunStatus::Passed => "passed",
+            RunStatus::Failed => "failed",
+            RunStatus::CompileError => "compile_error",
+            RunStatus::TimedOut => "timed_out",
+        }
+    }
+}
+
 /// Absolute deadline shared across queueing, execution, and cleanup.
 #[derive(Debug, Clone, Copy)]
 pub struct RunDeadline {
@@ -1098,11 +1111,6 @@ impl RunDeadline {
     /// Returns whether the deadline has elapsed.
     pub fn is_elapsed(self) -> bool {
         self.remaining().is_zero()
-    }
-
-    /// Returns the original timeout duration.
-    pub fn timeout(self) -> Duration {
-        self.timeout
     }
 }
 

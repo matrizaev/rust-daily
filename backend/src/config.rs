@@ -333,9 +333,8 @@ impl std::fmt::Display for ConfigField {
 #[derive(Clone, Eq, PartialEq)]
 pub struct MetricsBearerToken(String);
 
-impl MetricsBearerToken {
-    /// Returns the token value for Authorization header comparison.
-    pub fn as_str(&self) -> &str {
+impl AsRef<str> for MetricsBearerToken {
+    fn as_ref(&self) -> &str {
         &self.0
     }
 }
@@ -371,13 +370,6 @@ impl TryFrom<String> for MetricsBearerToken {
 #[derive(Debug, Clone)]
 pub struct BindAddress(SocketAddr);
 
-impl BindAddress {
-    /// Returns the socket address for Actix binding.
-    pub fn socket_addr(&self) -> SocketAddr {
-        self.0
-    }
-}
-
 impl std::fmt::Display for BindAddress {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.0.fmt(formatter)
@@ -411,16 +403,15 @@ impl TryFrom<(String, u16)> for BindAddress {
 #[derive(Debug, Clone)]
 pub struct RunnerImage(String);
 
-impl RunnerImage {
-    /// Returns the image reference as a Podman argument.
-    pub fn as_str(&self) -> &str {
+impl AsRef<str> for RunnerImage {
+    fn as_ref(&self) -> &str {
         &self.0
     }
 }
 
 impl std::fmt::Display for RunnerImage {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        formatter.write_str(self.as_str())
+        formatter.write_str(self.as_ref())
     }
 }
 
@@ -450,10 +441,9 @@ impl TryFrom<String> for RunnerImage {
 #[derive(Debug, Clone)]
 pub struct ContainerCpus(f64);
 
-impl ContainerCpus {
-    /// Formats the value for Podman's `--cpus` argument.
-    pub fn as_podman_arg(&self) -> String {
-        self.0.to_string()
+impl std::fmt::Display for ContainerCpus {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(formatter)
     }
 }
 
@@ -476,10 +466,9 @@ impl TryFrom<f64> for ContainerCpus {
 #[derive(Debug, Clone)]
 pub struct CoreUlimit(String);
 
-impl CoreUlimit {
-    /// Formats the value for Podman's `--ulimit` argument.
-    pub fn as_podman_arg(&self) -> String {
-        format!("core={}", self.0)
+impl std::fmt::Display for CoreUlimit {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "core={}", self.0)
     }
 }
 
@@ -509,9 +498,8 @@ impl TryFrom<String> for CoreUlimit {
 #[derive(Debug, Clone)]
 pub struct WorkspaceRoot(PathBuf);
 
-impl WorkspaceRoot {
-    /// Returns the workspace root path.
-    pub fn as_path(&self) -> &Path {
+impl AsRef<Path> for WorkspaceRoot {
+    fn as_ref(&self) -> &Path {
         &self.0
     }
 }
@@ -534,9 +522,8 @@ impl TryFrom<PathBuf> for WorkspaceRoot {
 #[derive(Debug, Clone)]
 pub struct PodmanPath(PathBuf);
 
-impl PodmanPath {
-    /// Returns the executable path.
-    pub fn as_path(&self) -> &Path {
+impl AsRef<Path> for PodmanPath {
+    fn as_ref(&self) -> &Path {
         &self.0
     }
 }
@@ -559,9 +546,8 @@ impl TryFrom<PathBuf> for PodmanPath {
 #[derive(Debug, Clone)]
 pub struct FrontendDist(PathBuf);
 
-impl FrontendDist {
-    /// Returns the frontend distribution path.
-    pub fn as_path(&self) -> &Path {
+impl AsRef<Path> for FrontendDist {
+    fn as_ref(&self) -> &Path {
         &self.0
     }
 }
@@ -584,9 +570,8 @@ impl TryFrom<PathBuf> for FrontendDist {
 #[derive(Debug, Clone)]
 pub struct CorsOrigin(String);
 
-impl CorsOrigin {
-    /// Returns the serialized origin.
-    pub fn as_str(&self) -> &str {
+impl AsRef<str> for CorsOrigin {
+    fn as_ref(&self) -> &str {
         &self.0
     }
 }
@@ -863,7 +848,7 @@ impl TryFrom<RawObservabilitySettings> for ObservabilitySettings {
     }
 }
 
-const fn default_metrics_enabled() -> bool {
+fn default_metrics_enabled() -> bool {
     true
 }
 
@@ -910,7 +895,7 @@ runner:
 ",
         );
 
-        let settings = load_settings_from_dir_without_environment(root.path(), "local")
+        let settings = load_settings_from_dir_with_environment(root.path(), "local", false)
             .expect("settings should load");
 
         assert_eq!(settings.server.bind_address.to_string(), "127.0.0.1:19090");
@@ -920,18 +905,18 @@ runner:
                 .cors_origin
                 .as_ref()
                 .expect("cors origin")
-                .as_str(),
+                .as_ref(),
             "http://localhost:5173"
         );
-        assert_eq!(settings.frontend.dist.as_path(), Path::new("frontend/dist"));
+        assert_eq!(settings.frontend.dist.as_ref(), Path::new("frontend/dist"));
         assert_eq!(settings.runner.workers.get(), 3);
         assert_eq!(settings.runner.queue_capacity.get(), 20);
-        assert_eq!(settings.runner.podman_path.as_path(), Path::new("podman"));
-        assert_eq!(settings.runner.container_cpus.as_podman_arg(), "0.75");
+        assert_eq!(settings.runner.podman_path.as_ref(), Path::new("podman"));
+        assert_eq!(settings.runner.container_cpus.to_string(), "0.75");
         assert_eq!(settings.runner.container_pids_limit.get(), 64);
         assert_eq!(settings.runner.tmp_tmpfs_bytes.get(), 33_554_432);
         assert_eq!(settings.runner.process_headroom_bytes.get(), 33_554_432);
-        assert_eq!(settings.runner.core_ulimit.as_podman_arg(), "core=1:2");
+        assert_eq!(settings.runner.core_ulimit.to_string(), "core=1:2");
         assert_eq!(settings.validation.limits.max_files(), 8);
         assert!(settings.observability.metrics_enabled);
         assert!(settings.observability.metrics_bearer_token.is_none());
@@ -950,7 +935,7 @@ server:
 ",
         );
 
-        let settings = load_settings_from_dir_without_environment(root.path(), "local")
+        let settings = load_settings_from_dir_with_environment(root.path(), "local", false)
             .expect("settings should load");
 
         assert!(settings.server.cors_origin.is_none());
@@ -969,7 +954,7 @@ runner:
 ",
         );
 
-        let error = load_settings_from_dir_without_environment(root.path(), "local")
+        let error = load_settings_from_dir_with_environment(root.path(), "local", false)
             .expect_err("zero workers should fail");
 
         assert!(matches!(
@@ -993,7 +978,7 @@ runner:
 ",
         );
 
-        let error = load_settings_from_dir_without_environment(root.path(), "local")
+        let error = load_settings_from_dir_with_environment(root.path(), "local", false)
             .expect_err("oversized tmpfs should fail");
 
         assert!(matches!(
@@ -1038,7 +1023,7 @@ validation:
 ",
         );
 
-        let error = load_settings_from_dir_without_environment(root.path(), "local")
+        let error = load_settings_from_dir_with_environment(root.path(), "local", false)
             .expect_err("invalid validation limits should fail");
 
         assert!(matches!(error, SettingsError::InvalidValidationLimits(_)));
@@ -1316,21 +1301,21 @@ api:
                 .server
                 .cors_origin
                 .as_ref()
-                .map(|value| value.as_str()),
+                .map(|value| value.as_ref()),
             Some("https://example.test")
         );
-        assert_eq!(settings.frontend.dist.as_path(), Path::new("dist/prod"));
+        assert_eq!(settings.frontend.dist.as_ref(), Path::new("dist/prod"));
         assert_eq!(settings.runner.queue_capacity.get(), 7);
         assert_eq!(settings.runner.workers.get(), 4);
         assert_eq!(settings.runner.timeout.as_secs(), 9);
         assert_eq!(settings.runner.max_output_bytes.get(), 12345);
-        assert_eq!(settings.runner.image.as_str(), "runner:test");
+        assert_eq!(settings.runner.image.as_ref(), "runner:test");
         assert_eq!(
-            settings.runner.workspace_root.as_path(),
+            settings.runner.workspace_root.as_ref(),
             Path::new("/tmp/workspaces")
         );
         assert_eq!(
-            settings.runner.podman_path.as_path(),
+            settings.runner.podman_path.as_ref(),
             Path::new("/usr/bin/podman")
         );
         assert_eq!(settings.validation.limits.max_files(), 6);
@@ -1344,7 +1329,7 @@ api:
                 .metrics_bearer_token
                 .as_ref()
                 .expect("metrics token")
-                .as_str(),
+                .as_ref(),
             "local-secret"
         );
     }
@@ -1375,11 +1360,37 @@ api:
         ));
     }
 
-    fn load_settings_from_dir_without_environment(
-        config_dir: &Path,
-        app_env: &str,
-    ) -> Result<super::Settings, super::SettingsError> {
-        load_settings_from_dir_with_environment(config_dir, app_env, false)
+    #[test]
+    fn rejects_null_metrics_enabled() {
+        for config in [
+            "\nobservability:\n  metrics_enabled:\n",
+            "\nobservability:\n  metrics_enabled: null\n",
+        ] {
+            let error = load_with_local_override(config)
+                .expect_err("explicit null metrics enablement should fail closed");
+
+            assert!(matches!(error, SettingsError::Load(_)));
+        }
+    }
+
+    #[test]
+    fn missing_observability_defaults_metrics_enabled() {
+        let root = tempdir().expect("temp config dir should be created");
+        write_config(
+            root.path(),
+            "default.yaml",
+            &default_config().replace(
+                "observability:\n  metrics_enabled: true\n  metrics_bearer_token: null\n",
+                "",
+            ),
+        );
+        write_config(root.path(), "local.yaml", "");
+
+        let settings = load_settings_from_dir_with_environment(root.path(), "local", false)
+            .expect("settings should load");
+
+        assert!(settings.observability.metrics_enabled);
+        assert!(settings.observability.metrics_bearer_token.is_none());
     }
 
     fn load_with_local_override(override_config: &str) -> Result<super::Settings, SettingsError> {
@@ -1387,7 +1398,7 @@ api:
         write_config(root.path(), "default.yaml", default_config());
         write_config(root.path(), "local.yaml", override_config);
 
-        load_settings_from_dir_without_environment(root.path(), "local")
+        load_settings_from_dir_with_environment(root.path(), "local", false)
     }
 
     fn write_config(root: &Path, name: &str, contents: &str) {

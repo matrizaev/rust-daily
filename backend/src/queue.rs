@@ -53,25 +53,35 @@ pub struct RunQueue {
 /// Point-in-time summary of the bounded runner queue.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct QueueSummary {
+    /// Maximum number of jobs that can wait in the queue.
     queue_capacity: usize,
+    /// Number of queue slots currently available.
     available_slots: usize,
+    /// Number of jobs currently waiting for a worker.
+    queued_depth: usize,
+    /// Number of worker tasks currently running a job.
     running_jobs: usize,
+    /// Number of configured worker tasks.
     workers: usize,
+    /// Returns whether all queue receivers are closed.
     is_closed: bool,
 }
 
 impl QueueSummary {
-    /// Creates a summary from observed queue values.
-    pub const fn new(
+    /// Creates a summary while preserving derived queue-depth consistency.
+    pub fn new(
         queue_capacity: usize,
         available_slots: usize,
         running_jobs: usize,
         workers: usize,
         is_closed: bool,
     ) -> Self {
+        let available_slots = available_slots.min(queue_capacity);
+
         Self {
             queue_capacity,
             available_slots,
+            queued_depth: queue_capacity.saturating_sub(available_slots),
             running_jobs,
             workers,
             is_closed,
@@ -79,32 +89,32 @@ impl QueueSummary {
     }
 
     /// Maximum number of jobs that can wait in the queue.
-    pub const fn queue_capacity(self) -> usize {
+    pub fn queue_capacity(self) -> usize {
         self.queue_capacity
     }
 
     /// Number of queue slots currently available.
-    pub const fn available_slots(self) -> usize {
+    pub fn available_slots(self) -> usize {
         self.available_slots
     }
 
     /// Number of jobs currently waiting for a worker.
-    pub const fn queued_depth(self) -> usize {
-        self.queue_capacity.saturating_sub(self.available_slots)
+    pub fn queued_depth(self) -> usize {
+        self.queued_depth
     }
 
     /// Number of worker tasks currently running a job.
-    pub const fn running_jobs(self) -> usize {
+    pub fn running_jobs(self) -> usize {
         self.running_jobs
     }
 
     /// Number of configured worker tasks.
-    pub const fn workers(self) -> usize {
+    pub fn workers(self) -> usize {
         self.workers
     }
 
     /// Returns whether all queue receivers are closed.
-    pub const fn is_closed(self) -> bool {
+    pub fn is_closed(self) -> bool {
         self.is_closed
     }
 }
@@ -130,9 +140,12 @@ struct RunJob {
 impl RunQueue {
     /// Returns a point-in-time summary of queue capacity and worker activity.
     pub fn summary(&self) -> QueueSummary {
+        let queue_capacity = self.sender.max_capacity();
+        let available_slots = self.sender.capacity();
+
         QueueSummary::new(
-            self.sender.max_capacity(),
-            self.sender.capacity(),
+            queue_capacity,
+            available_slots,
             self.running_jobs.load(Ordering::Relaxed),
             self.workers,
             self.sender.is_closed(),
@@ -381,7 +394,9 @@ mod tests {
         SubmittedFile, ValidatedRunRequest, ValidationLimits,
     };
 
-    use super::{EnqueueError, LessonRunner, RunJob, RunQueue, spawn_workers_with_runner};
+    use super::{
+        EnqueueError, LessonRunner, QueueSummary, RunJob, RunQueue, spawn_workers_with_runner,
+    };
     use crate::service::RunDispatcher;
 
     #[derive(Clone, Copy)]
@@ -587,6 +602,13 @@ mod tests {
         assert_eq!(summary.running_jobs(), 1);
         assert_eq!(summary.workers(), 1);
         assert!(!summary.is_closed());
+    }
+
+    #[test]
+    fn queue_summary_derives_depth_from_capacity_and_available_slots() {
+        let summary = QueueSummary::new(20, 19, 0, 2, false);
+
+        assert_eq!(summary.queued_depth(), 1);
     }
 
     #[tokio::test]

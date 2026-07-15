@@ -10,7 +10,7 @@ use actix_web::{
     Error, HttpRequest, HttpResponse,
     body::MessageBody,
     dev::{ServiceRequest, ServiceResponse},
-    http::header,
+    http::{StatusCode, header},
     middleware::Next,
 };
 use metrics::{counter, gauge, histogram};
@@ -21,6 +21,39 @@ use tracing_subscriber::EnvFilter;
 use crate::{config::ObservabilitySettings, model::RunStatus, queue::QueueSummary};
 
 static PROMETHEUS_HANDLE: OnceLock<Option<PrometheusHandle>> = OnceLock::new();
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+enum HttpStatusClass {
+    Success,
+    Redirection,
+    ClientError,
+    ServerError,
+    Other,
+}
+
+impl From<StatusCode> for HttpStatusClass {
+    fn from(status: StatusCode) -> Self {
+        match status.as_u16() {
+            200..=299 => Self::Success,
+            300..=399 => Self::Redirection,
+            400..=499 => Self::ClientError,
+            500..=599 => Self::ServerError,
+            _ => Self::Other,
+        }
+    }
+}
+
+impl From<HttpStatusClass> for &'static str {
+    fn from(status_class: HttpStatusClass) -> Self {
+        match status_class {
+            HttpStatusClass::Success => "2xx",
+            HttpStatusClass::Redirection => "3xx",
+            HttpStatusClass::ClientError => "4xx",
+            HttpStatusClass::ServerError => "5xx",
+            HttpStatusClass::Other => "other",
+        }
+    }
+}
 
 /// Initializes JSON tracing using `RUST_LOG` when it is present.
 pub fn init_tracing() {
@@ -70,8 +103,9 @@ pub(crate) async fn record_http_metrics(
     let path = path_label(&request);
     let started = Instant::now();
     let response = next.call(request).await?;
-    let status_code = response.status().as_u16().to_string();
-    let status_class = status_class(response.status().as_u16());
+    let status = response.status();
+    let status_code = status.as_u16().to_string();
+    let status_class: &'static str = HttpStatusClass::from(status).into();
     let elapsed = started.elapsed().as_secs_f64();
 
     counter!(
@@ -120,7 +154,7 @@ pub(crate) fn metrics_response(
 
 /// Records a completed runner job and its learner-visible outcome.
 pub(crate) fn record_runner_job_completed(status: RunStatus, duration_ms: u64) {
-    let status = run_status_label(status);
+    let status: &'static str = status.into();
     counter!("rust_daily_runner_jobs_completed_total", "status" => status).increment(1);
     histogram!("rust_daily_runner_job_duration_seconds", "status" => status)
         .record(std::time::Duration::from_millis(duration_ms).as_secs_f64());
@@ -147,7 +181,7 @@ fn metrics_authorized(settings: &ObservabilitySettings, request: &HttpRequest) -
         return false;
     };
 
-    constant_time_eq(value, &format!("Bearer {}", token.as_str()))
+    constant_time_eq(value, &format!("Bearer {}", token.as_ref()))
 }
 
 fn constant_time_eq(left: &str, right: &str) -> bool {
@@ -189,32 +223,11 @@ fn path_label(request: &ServiceRequest) -> String {
     }
 }
 
-fn status_class(status: u16) -> &'static str {
-    match status {
-        200..=299 => "2xx",
-        300..=399 => "3xx",
-        400..=499 => "4xx",
-        500..=599 => "5xx",
-        _ => "other",
-    }
-}
-
-fn run_status_label(status: RunStatus) -> &'static str {
-    match status {
-        RunStatus::Passed => "passed",
-        RunStatus::Failed => "failed",
-        RunStatus::CompileError => "compile_error",
-        RunStatus::TimedOut => "timed_out",
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use actix_web::{http::StatusCode, test::TestRequest};
 
-    use super::{
-        constant_time_eq, metrics_authorized, metrics_response, run_status_label, status_class,
-    };
+    use super::{HttpStatusClass, constant_time_eq, metrics_authorized, metrics_response};
     use crate::{
         config::{MetricsBearerToken, ObservabilitySettings},
         model::RunStatus,
@@ -223,14 +236,27 @@ mod tests {
 
     #[test]
     fn status_labels_are_stable() {
-        assert_eq!(status_class(200), "2xx");
-        assert_eq!(status_class(302), "3xx");
-        assert_eq!(status_class(404), "4xx");
-        assert_eq!(status_class(503), "5xx");
-        assert_eq!(status_class(700), "other");
+        let success: &'static str = HttpStatusClass::from(StatusCode::OK).into();
+        let redirection: &'static str = HttpStatusClass::from(StatusCode::FOUND).into();
+        let client_error: &'static str = HttpStatusClass::from(StatusCode::NOT_FOUND).into();
+        let server_error: &'static str =
+            HttpStatusClass::from(StatusCode::SERVICE_UNAVAILABLE).into();
+        let other: &'static str = HttpStatusClass::from(
+            StatusCode::from_u16(700).expect("test status code should be valid"),
+        )
+        .into();
 
-        assert_eq!(run_status_label(RunStatus::Passed), "passed");
-        assert_eq!(run_status_label(RunStatus::CompileError), "compile_error");
+        assert_eq!(success, "2xx");
+        assert_eq!(redirection, "3xx");
+        assert_eq!(client_error, "4xx");
+        assert_eq!(server_error, "5xx");
+        assert_eq!(other, "other");
+
+        let passed: &'static str = RunStatus::Passed.into();
+        let compile_error: &'static str = RunStatus::CompileError.into();
+
+        assert_eq!(passed, "passed");
+        assert_eq!(compile_error, "compile_error");
     }
 
     #[test]

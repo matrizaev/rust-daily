@@ -27,7 +27,7 @@ use uuid::Uuid;
 
 use crate::{
     cargo_output::{
-        CargoOutputStatus, cap_streams, diagnostic_text, output_status, result_from_output,
+        CargoOutputStatus, cap_output, diagnostic_text, output_status, result_from_output,
     },
     config::RunnerSettings,
     dependency_set::DependencySet,
@@ -288,7 +288,12 @@ impl<'a> PodmanContainer<'a> {
 
         let output = time::timeout(self.config.cleanup_timeout, command.output())
             .await
-            .map_err(|_| timeout_io_error("Podman container cleanup timed out"))??;
+            .map_err(|_| {
+                io::Error::new(
+                    io::ErrorKind::TimedOut,
+                    "Podman container cleanup timed out",
+                )
+            })??;
         ensure_control_success("remove Podman container", &output)
     }
 }
@@ -302,7 +307,7 @@ fn start_container_command_spec(
     dependency_set: DependencySet,
     timeout_seconds: u64,
 ) -> ProcessCommandSpec {
-    let mut spec = ProcessCommandSpec::new(config.podman_path.as_path());
+    let mut spec = ProcessCommandSpec::new(config.podman_path.as_ref());
     spec.args(["--cgroup-manager", "cgroupfs", "run", "--detach", "--name"])
         .arg(container_name)
         .args(["--label", "io.rust-daily.managed=true", "--label"])
@@ -314,11 +319,11 @@ fn start_container_command_spec(
         .args(["--memory-swap"])
         .arg(config.container_memory_bytes.get().to_string())
         .args(["--cpus"])
-        .arg(config.container_cpus.as_podman_arg())
+        .arg(config.container_cpus.to_string())
         .args(["--pids-limit"])
         .arg(config.container_pids_limit.get().to_string())
         .args(["--ulimit"])
-        .arg(config.core_ulimit.as_podman_arg())
+        .arg(config.core_ulimit.to_string())
         .args([
             "--read-only",
             "--http-proxy=false",
@@ -350,7 +355,7 @@ fn start_container_command_spec(
     ])
     .arg(input_mount)
     .args(["-w", "/workspace"])
-    .arg(config.image.as_str())
+    .arg(config.image.as_ref())
     .args(["sh", "-c", "chmod 1777 /workspace && exec sleep infinity"]);
     spec
 }
@@ -359,7 +364,7 @@ fn prepare_workspace_command_spec(
     config: &RunnerSettings,
     container_name: &str,
 ) -> ProcessCommandSpec {
-    let mut spec = ProcessCommandSpec::new(config.podman_path.as_path());
+    let mut spec = ProcessCommandSpec::new(config.podman_path.as_ref());
     spec.args(["exec"]).arg(container_name).args([
         "sh",
         "-c",
@@ -372,7 +377,7 @@ fn cleanup_container_command_spec(
     config: &RunnerSettings,
     container_name: &str,
 ) -> ProcessCommandSpec {
-    let mut spec = ProcessCommandSpec::new(config.podman_path.as_path());
+    let mut spec = ProcessCommandSpec::new(config.podman_path.as_ref());
     spec.args(["rm", "--force", "--ignore", "--volumes", "--time", "0"])
         .arg(container_name);
     spec
@@ -384,7 +389,7 @@ fn cargo_command_spec(
     config: &RunnerSettings,
     outer_timeout: std::time::Duration,
 ) -> ProcessCommandSpec {
-    let mut spec = ProcessCommandSpec::new(config.podman_path.as_path());
+    let mut spec = ProcessCommandSpec::new(config.podman_path.as_ref());
     spec.args([
         "--cgroup-manager",
         "cgroupfs",
@@ -395,8 +400,8 @@ fn cargo_command_spec(
     .arg(container_name)
     .args(["timeout", "--kill-after=1s"])
     .arg(format!("{}s", duration_seconds_ceil(outer_timeout).max(1)))
-    .arg(cargo_command.program())
-    .args(cargo_command.args())
+    .arg(cargo_command.program)
+    .args(&cargo_command.args)
     .args(["--offline", "--message-format=json"]);
     spec
 }
@@ -408,12 +413,18 @@ async fn execute_control_command(
 ) -> Result<Output, io::Error> {
     let remaining = deadline.remaining();
     if remaining.is_zero() {
-        return Err(timeout_io_error("run deadline elapsed"));
+        return Err(io::Error::new(
+            io::ErrorKind::TimedOut,
+            "run deadline elapsed",
+        ));
     }
 
     tokio::select! {
         result = time::timeout(remaining, command.output()) => {
-            result.map_err(|_| timeout_io_error("run deadline elapsed"))?
+            result.map_err(|_| io::Error::new(
+                io::ErrorKind::TimedOut,
+                "run deadline elapsed",
+            ))?
         }
         () = cancellation.cancelled() => Err(io::Error::new(
             io::ErrorKind::Interrupted,
@@ -435,10 +446,6 @@ fn ensure_control_success(action: &str, output: &Output) -> Result<(), io::Error
     )))
 }
 
-fn timeout_io_error(message: &'static str) -> io::Error {
-    io::Error::new(io::ErrorKind::TimedOut, message)
-}
-
 fn duration_seconds_ceil(duration: std::time::Duration) -> u64 {
     duration
         .as_secs()
@@ -456,11 +463,16 @@ pub async fn initialize_runtime(config: &RunnerSettings) -> Result<(), io::Error
         ));
     }
 
-    let mut info = Command::new(config.podman_path.as_path());
+    let mut info = Command::new(config.podman_path.as_ref());
     info.arg("info").arg("--format").arg("json");
     let output = time::timeout(config.cleanup_timeout, info.output())
         .await
-        .map_err(|_| timeout_io_error("Podman runtime preflight timed out"))??;
+        .map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::TimedOut,
+                "Podman runtime preflight timed out",
+            )
+        })??;
     ensure_control_success("inspect Podman runtime", &output)?;
     let info: serde_json::Value = serde_json::from_slice(&output.stdout)
         .map_err(|error| io::Error::other(format!("invalid Podman info JSON: {error}")))?;
@@ -468,18 +480,20 @@ pub async fn initialize_runtime(config: &RunnerSettings) -> Result<(), io::Error
         return Err(io::Error::other("lesson runner requires rootless Podman"));
     }
 
-    let mut image = Command::new(config.podman_path.as_path());
-    image.arg("image").arg("exists").arg(config.image.as_str());
+    let mut image = Command::new(config.podman_path.as_ref());
+    image.arg("image").arg("exists").arg(config.image.as_ref());
     let output = time::timeout(config.cleanup_timeout, image.output())
         .await
-        .map_err(|_| timeout_io_error("Podman image preflight timed out"))??;
+        .map_err(|_| {
+            io::Error::new(io::ErrorKind::TimedOut, "Podman image preflight timed out")
+        })??;
     ensure_control_success("find configured runner image", &output)?;
 
     reap_stale_containers(config).await
 }
 
 async fn reap_stale_containers(config: &RunnerSettings) -> Result<(), io::Error> {
-    let mut list = Command::new(config.podman_path.as_path());
+    let mut list = Command::new(config.podman_path.as_ref());
     list.arg("ps")
         .arg("--all")
         .arg("--quiet")
@@ -487,7 +501,12 @@ async fn reap_stale_containers(config: &RunnerSettings) -> Result<(), io::Error>
         .arg("label=io.rust-daily.managed=true");
     let output = time::timeout(config.cleanup_timeout, list.output())
         .await
-        .map_err(|_| timeout_io_error("listing managed containers timed out"))??;
+        .map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::TimedOut,
+                "listing managed containers timed out",
+            )
+        })??;
     ensure_control_success("list managed containers", &output)?;
 
     for id in String::from_utf8_lossy(&output.stdout)
@@ -495,7 +514,7 @@ async fn reap_stale_containers(config: &RunnerSettings) -> Result<(), io::Error>
         .map(str::trim)
         .filter(|id| !id.is_empty())
     {
-        let mut remove = Command::new(config.podman_path.as_path());
+        let mut remove = Command::new(config.podman_path.as_ref());
         remove
             .arg("rm")
             .arg("--force")
@@ -506,7 +525,9 @@ async fn reap_stale_containers(config: &RunnerSettings) -> Result<(), io::Error>
             .arg(id);
         let output = time::timeout(config.cleanup_timeout, remove.output())
             .await
-            .map_err(|_| timeout_io_error("stale container cleanup timed out"))??;
+            .map_err(|_| {
+                io::Error::new(io::ErrorKind::TimedOut, "stale container cleanup timed out")
+            })??;
         ensure_control_success("remove stale managed container", &output)?;
         warn!(container_id = id, "removed stale managed runner container");
     }
@@ -546,7 +567,7 @@ async fn run_inner(
     started_at: Instant,
     executor: &dyn ProcessExecutor,
 ) -> Result<LearnerOutcome, RunnerError> {
-    let workspace = prepare_workspace(job_id, request, config.workspace_root.as_path()).await?;
+    let workspace = prepare_workspace(job_id, request, config.workspace_root.as_ref()).await?;
     let workspace_path = workspace.path().to_path_buf();
 
     if request.mode() == RunMode::CompileFail {
@@ -746,7 +767,11 @@ async fn run_compile_fail(
     } else {
         diagnostics.join("\n\n")
     };
-    let (stdout, stderr) = cap_streams(&stdout, &stderr, config.max_output_bytes.get());
+    let (stdout, stderr) = cap_output(
+        stdout.as_bytes(),
+        stderr.as_bytes(),
+        config.max_output_bytes.get(),
+    );
 
     Ok(LearnerOutcome::new(
         status,
@@ -779,7 +804,7 @@ async fn run_compile_fail_case(
     dependency_set: DependencySet,
     case: &ValidatedCompileFailCase,
 ) -> Result<CompileFailCaseResult, RunnerError> {
-    let target_name = TestTargetName::from_case(case);
+    let target_name = TestTargetName::from(case);
     let outcome = container
         .execute(dependency_set.check_test_command(target_name.as_str()))
         .await?;
@@ -1053,7 +1078,7 @@ mod tests {
 
     use super::{
         PodmanLessonRunner, ProcessCommandSpec, ProcessExecutor, collect_limited_stream,
-        ensure_control_success, find_boolean_field, log_output, timeout_io_error,
+        ensure_control_success, find_boolean_field, log_output,
     };
     use crate::{
         config::{
@@ -1614,9 +1639,5 @@ mod tests {
         let error = ensure_control_success("test command", &failure)
             .expect_err("failed command should return context");
         assert!(error.to_string().contains("runtime failed"));
-        assert_eq!(
-            timeout_io_error("deadline").kind(),
-            std::io::ErrorKind::TimedOut
-        );
     }
 }
