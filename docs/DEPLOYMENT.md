@@ -8,9 +8,9 @@ Rust Daily is deployed at
 Production uses one public origin:
 
 ```text
-Cloudflare -> Nginx -> Actix -> Vite files
-                         |
-                         +-> bounded validation queue -> rootless Podman
+Browser -> Nginx -> Actix -> Vite files
+                    |
+                    +-> bounded validation queue -> rootless Podman
 ```
 
 Actix listens on `127.0.0.1:8080`, serves the frontend, exposes
@@ -63,11 +63,11 @@ validate edits with `visudo -cf /etc/sudoers.d/cicd` before rerunning deploys:
 
 ```sudoers
 Cmnd_Alias RUST_DAILY_DEPLOY_ROOT = \
-  /usr/bin/install -m 0644 /tmp/cloudflare-real-ip.conf /etc/nginx/cloudflare-real-ip.conf, \
   /usr/bin/install -m 0644 /tmp/borrowquest.qzz.io.conf /etc/nginx/sites-available/borrowquest.qzz.io.conf, \
   /usr/bin/ln -sfn /etc/nginx/sites-available/borrowquest.qzz.io.conf /etc/nginx/sites-enabled/borrowquest.qzz.io.conf, \
   /usr/bin/install -m 0644 /tmp/rust-daily-backend.service /etc/systemd/system/rust-daily-backend.service, \
   /usr/bin/install -d -o www-data12 -g www-data -m 0700 /var/www12/.cache /var/www12/.config /var/www12/.local/share, \
+  /usr/bin/install -d -m 0755 /var/www12/acme-challenge/.well-known/acme-challenge, \
   /usr/bin/install -d -m 0755 /var/www12/rust-daily-runs, \
   /usr/bin/systemctl daemon-reload, \
   /usr/bin/systemctl stop rust-daily-backend.service, \
@@ -329,10 +329,10 @@ dependency sets in the browser.
 `borrowquest.qzz.io.conf`:
 
 - redirects HTTP to HTTPS;
+- serves `/.well-known/acme-challenge/` from `/var/www12/acme-challenge`
+  before redirecting other HTTP requests;
 - uses the certificate at `/etc/ssl/certs/borrowquest.qzz.io.pem`;
 - uses the key at `/etc/ssl/private/borrowquest.qzz.io.key`;
-- restores real client addresses from Cloudflare `CF-Connecting-IP` through
-  `/etc/nginx/cloudflare-real-ip.conf`;
 - limits request bodies to 2 MB, above `api.max_json_payload_bytes`;
 - rate-limits `POST /run` to 6 requests per minute per client with a burst of 4;
 - only allows loopback clients to reach `/metrics` through Nginx;
@@ -343,10 +343,19 @@ dependency sets in the browser.
 - proxies to `http://127.0.0.1:8080`.
 
 Actix, not Nginx, serves static assets and owns `/run`.
-Deployment generates `/etc/nginx/cloudflare-real-ip.conf` from Cloudflare's
-published IPv4 and IPv6 ranges before `nginx -t`, so stale or unavailable
-Cloudflare range data fails deployment instead of silently weakening `/run`
-throttling.
+The `borrowquest.qzz.io` DNS record points directly at the VPS. Because Nginx
+terminates public browser TLS directly, the host must have a publicly trusted
+certificate installed at the configured certificate and key paths before
+deployment installs the vhost:
+
+```bash
+sudo install -d -m 0755 /var/www12/acme-challenge/.well-known/acme-challenge
+sudo certbot certonly --webroot -w /var/www12/acme-challenge -d borrowquest.qzz.io
+sudo install -m 0644 /etc/letsencrypt/live/borrowquest.qzz.io/fullchain.pem /etc/ssl/certs/borrowquest.qzz.io.pem
+sudo install -m 0600 /etc/letsencrypt/live/borrowquest.qzz.io/privkey.pem /etc/ssl/private/borrowquest.qzz.io.key
+sudo nginx -t
+sudo systemctl reload nginx
+```
 
 Validate proxy configuration with:
 
@@ -410,12 +419,7 @@ The `/sw.js` header response should include:
 
 ```text
 cache-control: no-cache, no-store, must-revalidate
-cdn-cache-control: no-store
 ```
-
-If Cloudflare still serves stale service-worker headers after this Nginx change,
-purge at least `/sw.js`, `/`, `/index.html`, and `/manifest.webmanifest`, then
-check for Cloudflare cache rules that override origin cache headers.
 
 Then manually verify:
 
