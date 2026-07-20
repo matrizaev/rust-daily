@@ -189,13 +189,22 @@ for lesson detail JSON. Cargo-backed validation still requires the backend.
 
 ## Backend
 
-The backend is an Actix application with three routes:
+The backend is an Actix application with four API endpoints and a static-file
+fallback:
 
 | Route | Purpose |
 | --- | --- |
 | `GET /healthz` | Service health |
+| `GET /readyz` | Service readiness and runner queue health |
+| `GET /metrics` | Prometheus metrics when enabled and authorized |
 | `POST /run` | Validate, compile, and test a lesson submission |
 | `/*` | Serve the production frontend |
+
+`/healthz` reports whether the process is alive. `/readyz` additionally reports
+whether the runner queue can accept work, returning `503 Service Unavailable`
+when the queue is closed. `/metrics` returns `404 Not Found` when metrics are
+disabled and `401 Unauthorized` when its optional bearer token is required but
+not supplied.
 
 The `/run` path crosses these modules:
 
