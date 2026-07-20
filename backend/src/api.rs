@@ -20,20 +20,20 @@ use crate::{
     service::AppService,
 };
 
-/// Lightweight health-check response.
+/// JSON payload returned by the lightweight `GET /healthz` check.
 #[derive(Debug, Serialize)]
 pub struct HealthResponse {
     status: &'static str,
 }
 
-/// Readiness response including bounded queue health.
+/// JSON payload returned by `GET /readyz`, including bounded queue health.
 #[derive(Debug, Serialize)]
 pub struct ReadinessResponse {
     status: &'static str,
     queue: QueueHealthResponse,
 }
 
-/// Runner queue health fields safe to expose in operational checks.
+/// Runner queue health fields safe to expose through `GET /readyz`.
 #[derive(Debug, Serialize)]
 pub struct QueueHealthResponse {
     capacity: usize,
@@ -44,7 +44,7 @@ pub struct QueueHealthResponse {
     closed: bool,
 }
 
-/// Registers the backend API routes.
+/// Registers the health, readiness, metrics, and lesson-run API endpoints.
 pub fn configure(config: &mut web::ServiceConfig) {
     config
         .route("/healthz", web::get().to(healthz))
@@ -53,12 +53,12 @@ pub fn configure(config: &mut web::ServiceConfig) {
         .route("/run", web::post().to(run));
 }
 
-/// Reports process health for local and deployment checks.
+/// Handles `GET /healthz` for local and deployment liveness checks.
 pub async fn healthz() -> web::Json<HealthResponse> {
     web::Json(HealthResponse { status: "ok" })
 }
 
-/// Reports process readiness and in-process runner queue health.
+/// Handles `GET /readyz`, returning `503` when the runner queue is closed.
 pub async fn readyz(queue: web::Data<RunQueue>) -> HttpResponse {
     let queue = queue.summary();
     let response = ReadinessResponse {
@@ -77,7 +77,7 @@ pub async fn readyz(queue: web::Data<RunQueue>) -> HttpResponse {
     }
 }
 
-/// Renders Prometheus-compatible metrics when enabled and authorized.
+/// Handles `GET /metrics` when Prometheus metrics are enabled and authorized.
 pub async fn metrics(
     settings: web::Data<ObservabilitySettings>,
     queue: web::Data<RunQueue>,
@@ -86,7 +86,7 @@ pub async fn metrics(
     metrics_response(&settings, &request, queue.summary())
 }
 
-/// Validates and runs a submitted lesson snapshot.
+/// Handles `POST /run` by validating and running a submitted lesson snapshot.
 pub async fn run(
     service: web::Data<AppService>,
     request: web::Json<RunRequest>,

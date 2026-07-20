@@ -195,4 +195,37 @@ describe("runStructuralChecks", () => {
       },
     ]);
   });
+
+  it("finds methods in later inherent impl blocks", () => {
+    const failures = runStructuralChecks(
+      `
+      pub struct Money;
+
+      impl Money {
+          pub fn new() -> Self { Self }
+      }
+
+      impl Money {
+          pub fn checked_add(self, rhs: Self) -> Result<Self, ()> {
+              let _ = rhs;
+              Ok(self)
+          }
+      }
+      `,
+      [
+        {
+          type: "impl_method",
+          implFor: "Money",
+          methodName: "checked_add",
+          requiredSignatureIncludes: [
+            "pub fn checked_add",
+            "rhs: Self",
+            "Result<Self, ()>",
+          ],
+        },
+      ],
+    );
+
+    expect(failures).toEqual([]);
+  });
 });

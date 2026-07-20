@@ -388,13 +388,17 @@ const runTupleStructFieldsCheck = (
 };
 
 const implPattern = (implFor: string) =>
-  new RegExp(`\\bimpl${optionalGenericsPattern}\\s+${escapeRegex(implFor)}\\s*\\{`);
+  new RegExp(
+    `\\bimpl${optionalGenericsPattern}\\s+${escapeRegex(implFor)}\\s*\\{`,
+    "g",
+  );
 
-const extractImplBody = (source: string, implFor: string) => {
-  const match = implPattern(implFor).exec(source);
-
-  return match ? extractBraceBody(source, match.index + match[0].lastIndexOf("{")) : null;
-};
+const extractImplBodies = (source: string, implFor: string) =>
+  [...source.matchAll(implPattern(implFor))]
+    .map((match) =>
+      extractBraceBody(source, (match.index ?? 0) + match[0].lastIndexOf("{")),
+    )
+    .filter(isString);
 
 const functionPattern = (functionName: string) =>
   new RegExp(`\\bfn\\s+${escapeRegex(functionName)}\\b`, "g");
@@ -508,14 +512,16 @@ const methodSignatureFailures = (
 };
 
 const runImplMethodCheck = (source: string, check: ImplMethodCheck) => {
-  const body = extractImplBody(source, check.implFor);
+  const bodies = extractImplBodies(source, check.implFor);
 
-  if (body === null) {
+  if (bodies.length === 0) {
     return [failure(check.implFor, `impl ${check.implFor} block was not found.`)];
   }
 
   return methodSignatureFailures(
-    findFunctionSignature(body, check.methodName),
+    bodies
+      .map((body) => findFunctionSignature(body, check.methodName))
+      .find(isString) ?? null,
     check.methodName,
     check.requiredSignatureIncludes,
   );
