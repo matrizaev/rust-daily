@@ -10,6 +10,11 @@ through starter code, tests, hints, and an authored solution.
 
 **Live app:** [borrowquest.site](https://borrowquest.site/)
 
+Rust Daily was built from scratch through to the final product using OpenAI
+Codex and a specification-driven development (SDD) approach. GPT-5.6 Sol was
+used to create feature specifications and conduct code reviews, while GPT-5.6
+Terra was used for implementation.
+
 ## What It Teaches
 
 The current curriculum contains 90 lessons across 15 progressive arcs. It
