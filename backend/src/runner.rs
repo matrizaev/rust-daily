@@ -390,10 +390,14 @@ fn cargo_command_spec(
     outer_timeout: std::time::Duration,
 ) -> ProcessCommandSpec {
     let mut spec = ProcessCommandSpec::new(config.podman_path.as_ref());
+    // rustdoc executes doctest binaries from TMPDIR, while the container's
+    // general-purpose /tmp mount intentionally remains non-executable.
     spec.args([
         "--cgroup-manager",
         "cgroupfs",
         "exec",
+        "--env",
+        "TMPDIR=/workspace",
         "--user",
         "10001:10001",
     ])
@@ -1366,6 +1370,7 @@ mod tests {
         assert!(prepare.iter().any(|arg| arg.contains("cp -a /input/.")));
 
         let cargo = args(&specs[2]);
+        assert!(has_pair(&cargo, "--env", "TMPDIR=/workspace"));
         assert!(has_pair(&cargo, "--user", "10001:10001"));
         assert!(cargo.contains(&"--kill-after=1s".to_string()));
         assert!(cargo.contains(&"--offline".to_string()));
