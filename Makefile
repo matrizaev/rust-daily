@@ -10,7 +10,7 @@ SMOKE_CASE ?= pass
 BACKEND_COVERAGE_THRESHOLD ?= 80
 BACKEND_COVERAGE_EXCLUDE_FILES := src/main.rs src/server.rs src/static_files.rs src/observability.rs
 
-.PHONY: format lint test coverage coverage-backend coverage-frontend runner-image smoke-runner smoke-advanced-runner dev-full
+.PHONY: format lint test coverage coverage-backend coverage-frontend runner-image smoke-runner smoke-advanced-runner dev-full e2e-lessons
 
 format:
 	cargo fmt --manifest-path backend/Cargo.toml --all
@@ -37,6 +37,11 @@ smoke-runner:
 
 smoke-advanced-runner:
 	bash docker/smoke-advanced-runner.sh $(RUNNER_IMAGE)
+
+e2e-lessons: runner-image
+	node scripts/e2e-all-lessons.mjs --start \
+		--base-url http://localhost:$(or $(FRONTEND_PORT),15173) \
+		--backend-url http://127.0.0.1:$(or $(BACKEND_PORT),18080)
 
 dev-full: runner-image
 	@set -euo pipefail; \

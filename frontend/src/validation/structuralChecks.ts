@@ -257,8 +257,25 @@ const forbiddenSnippetFailures = (source: string, snippets: string[]) =>
     .filter((snippet) => includesForbiddenSnippet(source, snippet))
     .map((snippet) => failure(snippet, `Remove forbidden snippet: ${snippet}.`));
 
+const stripLeadingAttributes = (entry: string) => {
+  let cursor = skipWhitespace(entry, 0);
+
+  while (entry.startsWith("#[", cursor)) {
+    const openBracket = cursor + 1;
+    const closeBracket = findMatchingDelimiter(entry, openBracket, "[", "]");
+
+    if (closeBracket < 0) {
+      break;
+    }
+
+    cursor = skipWhitespace(entry, closeBracket + 1);
+  }
+
+  return entry.slice(cursor);
+};
+
 const getEnumVariantName = (entry: string) => {
-  const match = ENUM_VARIANT_IDENTIFIER.exec(entry.trim());
+  const match = ENUM_VARIANT_IDENTIFIER.exec(stripLeadingAttributes(entry));
 
   return match?.[1] ?? null;
 };
@@ -542,10 +559,15 @@ const runImplTraitForTypeCheck = (
   check: ImplTraitForTypeCheck,
 ) => {
   const pattern = new RegExp(
-    `\\bimpl${optionalGenericsPattern}\\s+${escapeRegex(check.traitName)}\\s+for\\s+${escapeRegex(check.typeName)}\\b`,
+    `\\bimpl${optionalGenericsPattern}\\s+([^{};]+?)\\s+for\\s+${escapeRegex(check.typeName)}\\b`,
+    "g",
+  );
+  const expectedTrait = normalizeTraitReference(check.traitName);
+  const implementedTraits = [...source.matchAll(pattern)].map((match) =>
+    normalizeTraitReference(match[1]),
   );
 
-  return pattern.test(source)
+  return implementedTraits.includes(expectedTrait)
     ? []
     : [
         failure(
@@ -554,6 +576,11 @@ const runImplTraitForTypeCheck = (
         ),
       ];
 };
+
+const normalizeTraitReference = (traitName: string) =>
+  normalizeWhitespace(traitName)
+    .replace(/\b(?:[A-Za-z_][A-Za-z0-9_]*::)+(?=[A-Za-z_][A-Za-z0-9_]*)/g, "")
+    .replace(/\s*([<>,])\s*/g, "$1");
 
 const declarationWithAttributesPattern = (typeName: string) =>
   new RegExp(

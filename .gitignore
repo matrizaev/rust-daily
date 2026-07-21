@@ -3,5 +3,6 @@ dist/
 target/
 *.tsbuildinfo
 .playwright-cli/
+output/playwright/
 coverage/
 cobertura.xml
