@@ -228,4 +228,81 @@ describe("runStructuralChecks", () => {
 
     expect(failures).toEqual([]);
   });
+
+  it("accepts enum variants with attributes and payloads", () => {
+    const failures = runStructuralChecks(
+      `
+      pub enum ConfigLoadError {
+          #[error("missing APP_PORT")]
+          MissingEnvironment,
+          #[error("invalid APP_PORT: {0}")]
+          InvalidPort(std::num::ParseIntError),
+          #[error("failed to read config file")]
+          FileRead {
+              #[source]
+              source: std::io::Error,
+          },
+      }
+      `,
+      [
+        {
+          type: "enum_unit_variants",
+          enumName: "ConfigLoadError",
+          requiredVariants: ["MissingEnvironment", "InvalidPort", "FileRead"],
+        },
+      ],
+    );
+
+    expect(failures).toEqual([]);
+  });
+
+  it("matches equivalent qualified and imported trait paths", () => {
+    const failures = runStructuralChecks(
+      `
+      pub struct ParseUserError;
+      pub struct RawRequest;
+      pub struct Request;
+
+      impl fmt::Display for ParseUserError {}
+      impl std::convert::TryFrom<crate::RawRequest> for Request {}
+      `,
+      [
+        {
+          type: "impl_trait_for_type",
+          traitName: "std::fmt::Display",
+          typeName: "ParseUserError",
+        },
+        {
+          type: "impl_trait_for_type",
+          traitName: "TryFrom<RawRequest>",
+          typeName: "Request",
+        },
+      ],
+    );
+
+    expect(failures).toEqual([]);
+  });
+
+  it("does not confuse traits with similar leaf names", () => {
+    const failures = runStructuralChecks(
+      `
+      pub struct Money;
+      impl custom::MoneyDisplay for Money {}
+      `,
+      [
+        {
+          type: "impl_trait_for_type",
+          traitName: "std::fmt::Display",
+          typeName: "Money",
+        },
+      ],
+    );
+
+    expect(failures).toEqual([
+      {
+        name: "std::fmt::Display",
+        message: "impl std::fmt::Display for Money was not found.",
+      },
+    ]);
+  });
 });
