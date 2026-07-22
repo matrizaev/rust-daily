@@ -1087,7 +1087,7 @@ impl From<RunStatus> for &'static str {
     }
 }
 
-/// Absolute deadline shared across queueing, execution, and cleanup.
+/// Absolute deadline shared across queueing and submitted-code execution.
 #[derive(Debug, Clone, Copy)]
 pub struct RunDeadline {
     started_at: Instant,

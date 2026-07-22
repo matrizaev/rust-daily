@@ -9,6 +9,7 @@ use std::{
         Arc,
         atomic::{AtomicUsize, Ordering},
     },
+    time::Duration,
 };
 
 use metrics::counter;
@@ -29,6 +30,10 @@ use crate::{
     service::{DispatchError, RunDispatcher},
 };
 
+// Container cleanup is bounded separately; this small addition covers workspace
+// cleanup and task scheduling before the worker sends its final result.
+const RESULT_DELIVERY_SCHEDULING_GRACE: Duration = Duration::from_secs(1);
+
 /// Execution backend used by worker tasks.
 pub trait LessonRunner: Clone + Send + Sync + 'static {
     /// Runs a validated lesson request within the given deadline and cancellation scope.
@@ -45,7 +50,9 @@ pub trait LessonRunner: Clone + Send + Sync + 'static {
 #[derive(Clone)]
 pub struct RunQueue {
     sender: mpsc::Sender<RunJob>,
-    timeout: std::time::Duration,
+    timeout: Duration,
+    // This does not extend the deadline passed to submitted code.
+    result_delivery_grace: Duration,
     running_jobs: Arc<AtomicUsize>,
     workers: usize,
 }
@@ -209,26 +216,54 @@ impl RunDispatcher for RunQueue {
         request: ValidatedRunRequest,
     ) -> Result<LearnerOutcome, DispatchError> {
         let deadline = RunDeadline::after(self.timeout);
-        let (job_id, response) =
+        let (job_id, mut response) =
             self.try_enqueue_with_deadline(request, deadline)
                 .map_err(|error| match error {
                     EnqueueError::Full => DispatchError::AtCapacity,
                     EnqueueError::Closed(failure) => DispatchError::ServiceFailure(failure),
                 })?;
 
-        match tokio::time::timeout(deadline.remaining(), response).await {
-            Ok(Ok(result)) => result.map_err(DispatchError::ServiceFailure),
-            Ok(Err(_)) => {
-                counter!("rust_daily_runner_jobs_failed_total").increment(1);
-                warn!(%job_id, "run worker dropped the result channel");
-                Err(DispatchError::ServiceFailure(ServiceFailure::new(job_id)))
-            }
+        match tokio::time::timeout(deadline.remaining(), &mut response).await {
+            Ok(result) => map_worker_response(job_id, result),
             Err(_) => {
-                warn!(%job_id, "job expired while waiting in queue");
-                Err(DispatchError::ServiceFailure(ServiceFailure::new(job_id)))
+                info!(
+                    %job_id,
+                    grace = ?self.result_delivery_grace,
+                    "job deadline elapsed; waiting for runner result delivery"
+                );
+
+                match tokio::time::timeout(self.result_delivery_grace, response).await {
+                    Ok(result) => map_worker_response(job_id, result),
+                    Err(_) => {
+                        warn!(
+                            %job_id,
+                            grace = ?self.result_delivery_grace,
+                            "run worker did not deliver a result within the cleanup grace"
+                        );
+                        Err(DispatchError::ServiceFailure(ServiceFailure::new(job_id)))
+                    }
+                }
             }
         }
     }
+}
+
+fn map_worker_response(
+    job_id: Uuid,
+    response: Result<Result<LearnerOutcome, ServiceFailure>, oneshot::error::RecvError>,
+) -> Result<LearnerOutcome, DispatchError> {
+    match response {
+        Ok(result) => result.map_err(DispatchError::ServiceFailure),
+        Err(_) => {
+            counter!("rust_daily_runner_jobs_failed_total").increment(1);
+            warn!(%job_id, "run worker dropped the result channel");
+            Err(DispatchError::ServiceFailure(ServiceFailure::new(job_id)))
+        }
+    }
+}
+
+fn result_delivery_grace(cleanup_timeout: Duration) -> Duration {
+    cleanup_timeout.saturating_add(RESULT_DELIVERY_SCHEDULING_GRACE)
 }
 
 /// Spawns runner workers and returns a queue handle for dispatching jobs.
@@ -258,6 +293,7 @@ where
     RunQueue {
         sender,
         timeout: config.timeout,
+        result_delivery_grace: result_delivery_grace(config.cleanup_timeout),
         running_jobs,
         workers,
     }
@@ -488,6 +524,7 @@ mod tests {
         RunQueue {
             sender,
             timeout,
+            result_delivery_grace: Duration::from_millis(10),
             running_jobs: Arc::new(AtomicUsize::new(0)),
             workers: 1,
         }
@@ -583,6 +620,33 @@ mod tests {
             Err(crate::service::DispatchError::ServiceFailure(_))
         ));
         assert!(job.response_tx.is_closed());
+    }
+
+    #[tokio::test]
+    async fn dispatch_delivers_runner_timeout_result_after_deadline() {
+        let (sender, mut receiver) = mpsc::channel(1);
+        let mut queue = test_queue(sender, Duration::ZERO);
+        queue.result_delivery_grace = Duration::from_secs(1);
+        let delivery = tokio::spawn(async move {
+            let job = receiver.recv().await.expect("job should be queued");
+            tokio::task::yield_now().await;
+            job.response_tx
+                .send(Ok(LearnerOutcome::new(
+                    RunStatus::TimedOut,
+                    String::new(),
+                    "runner timed out".to_string(),
+                    1,
+                )))
+                .expect("queue should retain the result receiver during cleanup grace");
+        });
+
+        let result = queue
+            .dispatch(validated_request())
+            .await
+            .expect("runner timeout should remain a learner outcome");
+        delivery.await.expect("delivery task should complete");
+
+        assert_eq!(result.status, RunStatus::TimedOut);
     }
 
     #[tokio::test]

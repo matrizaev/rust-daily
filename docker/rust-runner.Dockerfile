@@ -14,6 +14,8 @@ COPY docker/dependency-cache/src/lib.rs /tmp/dependency-cache/src/lib.rs
 
 RUN CARGO_TARGET_DIR=/opt/rust-daily-target \
         cargo test --manifest-path /tmp/dependency-cache/Cargo.toml --no-run \
+    && CARGO_TARGET_DIR=/opt/rust-daily-target \
+        cargo check --manifest-path /tmp/dependency-cache/Cargo.toml --lib \
     && rm -rf /opt/rust-daily-target/debug/incremental \
     && rm -rf /tmp/dependency-cache
 
@@ -25,6 +27,7 @@ RUN chmod 0755 /usr/local/bin/run-advanced-lesson-cargo \
 
 RUN groupadd --gid 10001 rustdaily \
     && useradd --uid 10001 --gid 10001 --no-create-home --shell /usr/sbin/nologin rustdaily \
+    && chmod -R a+rX /usr/local/cargo/registry \
     && chown -R 10001:10001 /opt/rust-daily-target
 
 USER 10001:10001

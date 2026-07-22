@@ -11,6 +11,7 @@ const CASES = [
   "compile-fail-unexpected-pass",
   "compile-fail-wrong-diagnostic",
   "advanced-pass",
+  "advanced-compile-fail-pass",
 ];
 
 const usage = () => `Usage:
@@ -110,4 +111,3 @@ const main = () => {
 };
 
 main();
-

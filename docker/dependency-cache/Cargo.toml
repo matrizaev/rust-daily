@@ -19,6 +19,10 @@ actix-rt = "2"
 http = "1"
 proptest = { version = "1", default-features = false, features = ["std"] }
 
+[profile.dev]
+debug = 0
+incremental = false
+
 [profile.test]
 debug = 0
 incremental = false
