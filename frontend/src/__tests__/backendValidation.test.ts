@@ -211,6 +211,35 @@ describe("runBackendValidation", () => {
     });
   });
 
+  it("aborts the backend request when caller cancellation is signaled", async () => {
+    const fetchMock = vi.fn((_url: string, init?: RequestInit) =>
+      new Promise<Response>((_resolve, reject) => {
+        const signal = init?.signal;
+
+        if (signal instanceof AbortSignal) {
+          signal.addEventListener("abort", () => {
+            reject(new DOMException("Aborted", "AbortError"));
+          });
+        }
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const controller = new AbortController();
+
+    const pending = runBackendValidation(
+      cargoRequest(),
+      "http://runner",
+      controller.signal,
+    );
+    controller.abort();
+
+    await expect(pending).resolves.toMatchObject({
+      status: "timeout",
+    });
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect((init.signal as AbortSignal).aborted).toBe(true);
+  });
+
   it("uses only service-unavailable correlation IDs from error bodies", async () => {
     vi.stubGlobal(
       "fetch",

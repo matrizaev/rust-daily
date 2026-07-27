@@ -125,4 +125,20 @@ describe("runValidation", () => {
     ]);
     expect(backendValidationMock).toHaveBeenCalledOnce();
   });
+
+  it("passes caller cancellation to backend validation", async () => {
+    const controller = new AbortController();
+    backendValidationMock.mockResolvedValue(validationResult("passed"));
+
+    await runValidation(validationRequest([backendStep]), controller.signal);
+
+    expect(backendValidationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lessonId: "lesson-1",
+        validation: backendStep,
+      }),
+      expect.any(String),
+      controller.signal,
+    );
+  });
 });

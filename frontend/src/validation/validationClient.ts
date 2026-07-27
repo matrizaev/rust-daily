@@ -117,10 +117,18 @@ const createWorker = () =>
     type: "module",
   });
 
-const runWorkerValidation = (request: ValidationRequest) =>
+const runWorkerValidation = (
+  request: ValidationRequest,
+  signal?: AbortSignal,
+) =>
   new Promise<ValidationResult>((resolve) => {
     const startedAt = performance.now();
     let worker: Worker;
+
+    if (signal?.aborted) {
+      resolve(timeoutResult(startedAt));
+      return;
+    }
 
     try {
       worker = createWorker();
@@ -129,35 +137,47 @@ const runWorkerValidation = (request: ValidationRequest) =>
       return;
     }
 
-    const timer = window.setTimeout(() => {
+    let settled = false;
+    let timer = 0;
+    const finish = (result: ValidationResult) => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      window.clearTimeout(timer);
+      signal?.removeEventListener("abort", handleAbort);
       worker.terminate();
-      resolve(timeoutResult(startedAt));
-    }, getTimeoutMs(request));
+      resolve(result);
+    };
+    const handleAbort = () => finish(timeoutResult(startedAt));
 
     worker.onmessage = (event: MessageEvent<ValidationResult>) => {
-      window.clearTimeout(timer);
-      worker.terminate();
-      resolve(event.data);
+      finish(event.data);
     };
 
     worker.onerror = () => {
-      window.clearTimeout(timer);
-      worker.terminate();
-      resolve(internalErrorResult(startedAt));
+      finish(internalErrorResult(startedAt));
     };
 
+    signal?.addEventListener("abort", handleAbort, { once: true });
+    timer = window.setTimeout(
+      () => finish(timeoutResult(startedAt)),
+      getTimeoutMs(request),
+    );
     worker.postMessage(request);
   });
 
 const runValidationStep = async (
   request: ValidationRequest,
   validation: LessonValidationStep,
+  signal?: AbortSignal,
 ): Promise<StepResult> => {
   const requestForStep = stepRequest(request, validation);
   const result =
     isBackendStep(validation)
-      ? await runBackendValidation(requestForStep, BACKEND_URL)
-      : await runWorkerValidation(requestForStep);
+      ? await runBackendValidation(requestForStep, BACKEND_URL, signal)
+      : await runWorkerValidation(requestForStep, signal);
 
   return {
     label: stepLabel(validation),
@@ -168,11 +188,16 @@ const runValidationStep = async (
 const runValidationSteps = async (
   request: ValidationRequest,
   validations: LessonValidationStep[],
+  signal?: AbortSignal,
 ) => {
   const results: StepResult[] = [];
 
   for (const validation of validations) {
-    results.push(await runValidationStep(request, validation));
+    if (signal?.aborted) {
+      break;
+    }
+
+    results.push(await runValidationStep(request, validation, signal));
   }
 
   return results;
@@ -257,12 +282,28 @@ const allowsBackendValidation = ({ result }: StepResult) =>
   result.status === "passed" || result.status === "self_check";
 
 /** Runs configured browser and backend validation steps and aggregates results. */
-export const runValidation = async (request: ValidationRequest) => {
+export const runValidation = async (
+  request: ValidationRequest,
+  signal?: AbortSignal,
+) => {
+  const startedAt = performance.now();
+
+  if (signal?.aborted) {
+    return timeoutResult(startedAt);
+  }
+
   const validations = validationSteps(request);
   const localResults = await runValidationSteps(
     request,
     localValidationSteps(validations),
+    signal,
   );
+
+  if (signal?.aborted) {
+    return localResults.length > 0
+      ? aggregateResults(localResults)
+      : timeoutResult(startedAt);
+  }
 
   if (!localResults.every(allowsBackendValidation)) {
     return aggregateResults(localResults);
@@ -271,8 +312,11 @@ export const runValidation = async (request: ValidationRequest) => {
   const backendResults = await runValidationSteps(
     request,
     backendValidationSteps(validations),
+    signal,
   );
   const results = [...localResults, ...backendResults];
 
-  return aggregateResults(results);
+  return results.length > 0
+    ? aggregateResults(results)
+    : timeoutResult(startedAt);
 };

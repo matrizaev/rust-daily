@@ -91,6 +91,7 @@ export const useLessonValidation = ({
 }: UseLessonValidationOptions) => {
   const [state, setState] = useState<ValidationPanelState>(idleValidationState);
   const [checkedCode, setCheckedCode] = useState<string | null>(null);
+  const activeValidationRef = useRef<AbortController | null>(null);
   const codeRef = useRef(code);
 
   useEffect(() => {
@@ -98,8 +99,15 @@ export const useLessonValidation = ({
   }, [code]);
 
   useEffect(() => {
+    activeValidationRef.current?.abort();
+    activeValidationRef.current = null;
     setState(idleValidationState);
     setCheckedCode(null);
+
+    return () => {
+      activeValidationRef.current?.abort();
+      activeValidationRef.current = null;
+    };
   }, [lesson.id]);
 
   useEffect(() => {
@@ -120,12 +128,24 @@ export const useLessonValidation = ({
       return;
     }
 
+    activeValidationRef.current?.abort();
+    const controller = new AbortController();
+    activeValidationRef.current = controller;
     setState(runningValidationState);
 
     const result = await runValidation(
       buildValidationRequest(lesson, validation, requestCode, filePath),
+      controller.signal,
     );
 
+    if (
+      controller.signal.aborted ||
+      activeValidationRef.current !== controller
+    ) {
+      return;
+    }
+
+    activeValidationRef.current = null;
     setCheckedCode(requestCode);
     setState(resultState(result, codeRef.current !== requestCode));
 
