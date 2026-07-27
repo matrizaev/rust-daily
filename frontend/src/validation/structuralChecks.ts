@@ -617,9 +617,13 @@ const runDerivedTraitForTypeCheck = (
       ];
 };
 
-const runSourceIncludesCheck = (source: string, check: SourceIncludesCheck) => [
-  ...missingSnippetFailures(source, check.requiredSnippets),
-  ...forbiddenSnippetFailures(source, check.forbiddenSnippets ?? []),
+const runSourceIncludesCheck = (
+  cleanSource: string,
+  rawSource: string,
+  check: SourceIncludesCheck,
+) => [
+  ...missingSnippetFailures(rawSource, check.requiredSnippets),
+  ...forbiddenSnippetFailures(cleanSource, check.forbiddenSnippets ?? []),
 ];
 
 const checkRunners = {
@@ -639,7 +643,7 @@ const runStructuralCheck = (
   check: StructuralCheck,
 ) =>
   check.type === "source_includes"
-    ? runSourceIncludesCheck(rawSource, check)
+    ? runSourceIncludesCheck(cleanSource, rawSource, check)
     : checkRunners[check.type](cleanSource, check as never);
 
 /** Runs authored source-shape checks against learner code. */
