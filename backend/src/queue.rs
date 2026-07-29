@@ -7,7 +7,7 @@ use std::{
     future::Future,
     sync::{
         Arc,
-        atomic::{AtomicUsize, Ordering},
+        atomic::{AtomicBool, AtomicUsize, Ordering},
     },
     time::Duration,
 };
@@ -30,20 +30,37 @@ use crate::{
     service::{DispatchError, RunDispatcher},
 };
 
-// Container cleanup is bounded separately; this small addition covers workspace
-// cleanup and task scheduling before the worker sends its final result.
-const RESULT_DELIVERY_SCHEDULING_GRACE: Duration = Duration::from_secs(1);
-
 /// Execution backend used by worker tasks.
-pub trait LessonRunner: Clone + Send + Sync + 'static {
-    /// Runs a validated lesson request within the given deadline and cancellation scope.
+pub(crate) trait LessonRunner: Clone + Send + Sync + 'static {
+    /// Runs a validated request, publishing its outcome before bounded cleanup completes.
     fn run(
         &self,
         job_id: Uuid,
         request: ValidatedRunRequest,
         deadline: RunDeadline,
         cancellation: CancellationToken,
-    ) -> impl Future<Output = Result<LearnerOutcome, ServiceFailure>> + Send;
+        outcome: OutcomePublisher,
+    ) -> impl Future<Output = ()> + Send;
+}
+
+/// Single-use channel through which a runner publishes its terminal result.
+pub(crate) struct OutcomePublisher {
+    sender: Option<oneshot::Sender<Result<LearnerOutcome, ServiceFailure>>>,
+}
+
+impl OutcomePublisher {
+    pub(crate) fn new(sender: oneshot::Sender<Result<LearnerOutcome, ServiceFailure>>) -> Self {
+        Self {
+            sender: Some(sender),
+        }
+    }
+
+    /// Publishes the terminal result at most once.
+    pub(crate) fn publish(&mut self, result: Result<LearnerOutcome, ServiceFailure>) -> bool {
+        self.sender
+            .take()
+            .is_some_and(|sender| sender.send(result).is_ok())
+    }
 }
 
 /// Cloneable handle for submitting work to the bounded runner queue.
@@ -51,8 +68,6 @@ pub trait LessonRunner: Clone + Send + Sync + 'static {
 pub struct RunQueue {
     sender: mpsc::Sender<RunJob>,
     timeout: Duration,
-    // This does not extend the deadline passed to submitted code.
-    result_delivery_grace: Duration,
     running_jobs: Arc<AtomicUsize>,
     workers: usize,
 }
@@ -142,6 +157,50 @@ struct RunJob {
     request: ValidatedRunRequest,
     response_tx: oneshot::Sender<Result<LearnerOutcome, ServiceFailure>>,
     deadline: RunDeadline,
+    control: JobControl,
+}
+
+struct EnqueuedRun {
+    job_id: Uuid,
+    response: oneshot::Receiver<Result<LearnerOutcome, ServiceFailure>>,
+    control: JobControl,
+}
+
+#[derive(Clone)]
+struct JobControl {
+    deadline_expired: Arc<AtomicBool>,
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+enum ResponseClosure {
+    DeadlineExpired,
+    ClientCancellation,
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+enum CancellationPhase {
+    BeforeStart,
+    WhileRunning,
+}
+
+impl JobControl {
+    fn pending() -> Self {
+        Self {
+            deadline_expired: Arc::new(AtomicBool::new(false)),
+        }
+    }
+
+    fn mark_deadline_expired(&self) {
+        self.deadline_expired.store(true, Ordering::Release);
+    }
+
+    fn response_closure(&self) -> ResponseClosure {
+        if self.deadline_expired.load(Ordering::Acquire) {
+            ResponseClosure::DeadlineExpired
+        } else {
+            ResponseClosure::ClientCancellation
+        }
+    }
 }
 
 impl RunQueue {
@@ -165,26 +224,22 @@ impl RunQueue {
         request: ValidatedRunRequest,
     ) -> Result<oneshot::Receiver<Result<LearnerOutcome, ServiceFailure>>, EnqueueError> {
         self.try_enqueue_with_deadline(request, RunDeadline::after(self.timeout))
-            .map(|(_, response)| response)
+            .map(|enqueued| enqueued.response)
     }
 
     fn try_enqueue_with_deadline(
         &self,
         request: ValidatedRunRequest,
         deadline: RunDeadline,
-    ) -> Result<
-        (
-            Uuid,
-            oneshot::Receiver<Result<LearnerOutcome, ServiceFailure>>,
-        ),
-        EnqueueError,
-    > {
+    ) -> Result<EnqueuedRun, EnqueueError> {
         let (response_tx, response_rx) = oneshot::channel();
+        let control = JobControl::pending();
         let job = RunJob {
             id: Uuid::new_v4(),
             request,
             response_tx,
             deadline,
+            control: control.clone(),
         };
         let job_id = job.id;
 
@@ -192,7 +247,11 @@ impl RunQueue {
             Ok(()) => {
                 counter!("rust_daily_runner_jobs_enqueued_total").increment(1);
                 info!(%job_id, "job accepted");
-                Ok((job_id, response_rx))
+                Ok(EnqueuedRun {
+                    job_id,
+                    response: response_rx,
+                    control,
+                })
             }
             Err(mpsc::error::TrySendError::Full(job)) => {
                 counter!("rust_daily_runner_jobs_rejected_total", "reason" => "queue_full")
@@ -216,34 +275,40 @@ impl RunDispatcher for RunQueue {
         request: ValidatedRunRequest,
     ) -> Result<LearnerOutcome, DispatchError> {
         let deadline = RunDeadline::after(self.timeout);
-        let (job_id, mut response) =
-            self.try_enqueue_with_deadline(request, deadline)
-                .map_err(|error| match error {
-                    EnqueueError::Full => DispatchError::AtCapacity,
-                    EnqueueError::Closed(failure) => DispatchError::ServiceFailure(failure),
-                })?;
+        let EnqueuedRun {
+            job_id,
+            mut response,
+            control,
+        } = self
+            .try_enqueue_with_deadline(request, deadline)
+            .map_err(|error| match error {
+                EnqueueError::Full => DispatchError::AtCapacity,
+                EnqueueError::Closed(failure) => DispatchError::ServiceFailure(failure),
+            })?;
 
-        match tokio::time::timeout(deadline.remaining(), &mut response).await {
-            Ok(result) => map_worker_response(job_id, result),
-            Err(_) => {
-                info!(
-                    %job_id,
-                    grace = ?self.result_delivery_grace,
-                    "job deadline elapsed; waiting for runner result delivery"
-                );
+        await_worker_response(job_id, &mut response, deadline, &control).await
+    }
+}
 
-                match tokio::time::timeout(self.result_delivery_grace, response).await {
-                    Ok(result) => map_worker_response(job_id, result),
-                    Err(_) => {
-                        warn!(
-                            %job_id,
-                            grace = ?self.result_delivery_grace,
-                            "run worker did not deliver a result within the cleanup grace"
-                        );
-                        Err(DispatchError::ServiceFailure(ServiceFailure::new(job_id)))
-                    }
-                }
-            }
+async fn await_worker_response(
+    job_id: Uuid,
+    response: &mut oneshot::Receiver<Result<LearnerOutcome, ServiceFailure>>,
+    deadline: RunDeadline,
+    control: &JobControl,
+) -> Result<LearnerOutcome, DispatchError> {
+    tokio::select! {
+        biased;
+        result = response => map_worker_response(job_id, result),
+        () = tokio::time::sleep_until(deadline.expires_at()) => {
+            control.mark_deadline_expired();
+            let outcome = LearnerOutcome::timed_out(deadline);
+            observability::record_runner_job_completed(outcome.status, outcome.duration_ms);
+            info!(
+                %job_id,
+                duration_ms = outcome.duration_ms,
+                "job reached its absolute deadline"
+            );
+            Ok(outcome)
         }
     }
 }
@@ -253,7 +318,14 @@ fn map_worker_response(
     response: Result<Result<LearnerOutcome, ServiceFailure>, oneshot::error::RecvError>,
 ) -> Result<LearnerOutcome, DispatchError> {
     match response {
-        Ok(result) => result.map_err(DispatchError::ServiceFailure),
+        Ok(Ok(outcome)) => {
+            observability::record_runner_job_completed(outcome.status, outcome.duration_ms);
+            Ok(outcome)
+        }
+        Ok(Err(failure)) => {
+            counter!("rust_daily_runner_jobs_failed_total").increment(1);
+            Err(DispatchError::ServiceFailure(failure))
+        }
         Err(_) => {
             counter!("rust_daily_runner_jobs_failed_total").increment(1);
             warn!(%job_id, "run worker dropped the result channel");
@@ -262,17 +334,13 @@ fn map_worker_response(
     }
 }
 
-fn result_delivery_grace(cleanup_timeout: Duration) -> Duration {
-    cleanup_timeout.saturating_add(RESULT_DELIVERY_SCHEDULING_GRACE)
-}
-
 /// Spawns runner workers and returns a queue handle for dispatching jobs.
 pub fn spawn_workers(config: Arc<RunnerSettings>) -> RunQueue {
     let runner = PodmanLessonRunner::new(Arc::clone(&config));
     spawn_workers_with_runner(config, runner)
 }
 
-fn spawn_workers_with_runner<R>(config: Arc<RunnerSettings>, runner: R) -> RunQueue
+pub(crate) fn spawn_workers_with_runner<R>(config: Arc<RunnerSettings>, runner: R) -> RunQueue
 where
     R: LessonRunner,
 {
@@ -293,7 +361,6 @@ where
     RunQueue {
         sender,
         timeout: config.timeout,
-        result_delivery_grace: result_delivery_grace(config.cleanup_timeout),
         running_jobs,
         workers,
     }
@@ -320,12 +387,15 @@ async fn worker_loop<R>(
 
         let job_id = job.id;
         if job.response_tx.is_closed() {
-            counter!(
-                "rust_daily_runner_jobs_canceled_total",
-                "reason" => "response_dropped_before_start"
-            )
-            .increment(1);
-            warn!(%job_id, worker_id, "job skipped because result receiver was dropped");
+            match cancellation_reason(&job.control, CancellationPhase::BeforeStart) {
+                Some(reason) => record_cancellation(
+                    job_id,
+                    worker_id,
+                    reason,
+                    "job skipped because result receiver was dropped",
+                ),
+                None => info!(%job_id, worker_id, "expired queued job skipped"),
+            }
             continue;
         }
 
@@ -337,67 +407,121 @@ async fn worker_loop<R>(
     }
 }
 
-async fn run_job<R>(mut job: RunJob, worker_id: usize, runner: R)
+async fn run_job<R>(job: RunJob, worker_id: usize, runner: R)
 where
     R: LessonRunner,
 {
-    let job_id = job.id;
+    let RunJob {
+        id: job_id,
+        request,
+        response_tx,
+        deadline,
+        control,
+    } = job;
     let cancellation = CancellationToken::new();
     let runner_cancellation = cancellation.clone();
-    let run_task = tokio::spawn(async move {
+    let (outcome_tx, mut outcome_rx) = oneshot::channel();
+    let mut run_task = tokio::spawn(async move {
         runner
-            .run(job_id, job.request, job.deadline, runner_cancellation)
-            .await
+            .run(
+                job_id,
+                request,
+                deadline,
+                runner_cancellation,
+                OutcomePublisher::new(outcome_tx),
+            )
+            .await;
     });
-    tokio::pin!(run_task);
+    let mut response_tx = response_tx;
 
     tokio::select! {
+        biased;
+        result = &mut outcome_rx => {
+            let result = result.unwrap_or_else(|_| {
+                Err(ServiceFailure::new(job_id))
+            });
+            log_runner_result(job_id, worker_id, &result);
+
+            if response_tx.send(result).is_err() {
+                record_closed_response(job_id, worker_id, &control);
+                cancellation.cancel();
+            }
+            await_runner_task(job_id, worker_id, run_task).await;
+        }
         result = &mut run_task => {
             let result = match result {
-                Ok(result) => result,
+                Ok(()) => outcome_rx.await.unwrap_or_else(|_| Err(ServiceFailure::new(job_id))),
                 Err(error) => Err(runner_task_failed(job_id, worker_id, error)),
             };
-            match &result {
-                Ok(outcome) => info!(
-                        %job_id,
-                        worker_id,
-                        status = ?outcome.status,
-                        duration_ms = outcome.duration_ms,
-                        "job finished"
-                    ),
-                Err(_) => warn!(%job_id, worker_id, "job failed internally"),
-            }
-            let completion = result
-                .as_ref()
-                .ok()
-                .map(|outcome| (outcome.status, outcome.duration_ms));
-            let failed = result.is_err();
-
-            if job.response_tx.send(result).is_ok() {
-                if let Some((status, duration_ms)) = completion {
-                    observability::record_runner_job_completed(status, duration_ms);
-                } else if failed {
-                    counter!("rust_daily_runner_jobs_failed_total").increment(1);
-                }
-            } else {
-                counter!(
-                    "rust_daily_runner_jobs_canceled_total",
-                    "reason" => "response_dropped_before_delivery"
-                )
-                .increment(1);
-                warn!(%job_id, worker_id, "job result receiver was dropped");
+            log_runner_result(job_id, worker_id, &result);
+            if response_tx.send(result).is_err() {
+                record_closed_response(job_id, worker_id, &control);
             }
         }
-        () = job.response_tx.closed() => {
-            counter!(
-                "rust_daily_runner_jobs_canceled_total",
-                "reason" => "response_dropped_while_running"
-            )
-            .increment(1);
-            warn!(%job_id, worker_id, "job canceled because result receiver was dropped");
+        () = response_tx.closed() => {
+            record_closed_response(job_id, worker_id, &control);
             cancellation.cancel();
-            let _ = run_task.await;
+            await_runner_task(job_id, worker_id, run_task).await;
         }
+    }
+}
+
+fn log_runner_result(
+    job_id: Uuid,
+    worker_id: usize,
+    result: &Result<LearnerOutcome, ServiceFailure>,
+) {
+    match result {
+        Ok(outcome) => info!(
+            %job_id,
+            worker_id,
+            status = ?outcome.status,
+            duration_ms = outcome.duration_ms,
+            "job outcome produced"
+        ),
+        Err(_) => warn!(%job_id, worker_id, "job failed internally"),
+    }
+}
+
+fn record_closed_response(job_id: Uuid, worker_id: usize, control: &JobControl) {
+    match cancellation_reason(control, CancellationPhase::WhileRunning) {
+        Some(reason) => record_cancellation(
+            job_id,
+            worker_id,
+            reason,
+            "job canceled because result receiver was dropped",
+        ),
+        None => {
+            info!(%job_id, worker_id, "deadline-expired job is being canceled and cleaned up");
+        }
+    }
+}
+
+fn cancellation_reason(control: &JobControl, phase: CancellationPhase) -> Option<&'static str> {
+    match (control.response_closure(), phase) {
+        (ResponseClosure::DeadlineExpired, _) => None,
+        (ResponseClosure::ClientCancellation, CancellationPhase::BeforeStart) => {
+            Some("response_dropped_before_start")
+        }
+        (ResponseClosure::ClientCancellation, CancellationPhase::WhileRunning) => {
+            Some("response_dropped_while_running")
+        }
+    }
+}
+
+fn record_cancellation(
+    job_id: Uuid,
+    worker_id: usize,
+    reason: &'static str,
+    message: &'static str,
+) {
+    counter!("rust_daily_runner_jobs_canceled_total", "reason" => reason).increment(1);
+    warn!(%job_id, worker_id, reason, "{message}");
+}
+
+async fn await_runner_task(job_id: Uuid, worker_id: usize, run_task: tokio::task::JoinHandle<()>) {
+    if let Err(error) = run_task.await {
+        let _ = runner_task_failed(job_id, worker_id, error);
     }
 }
 
@@ -418,7 +542,7 @@ mod tests {
         time::Duration,
     };
 
-    use tokio::sync::{Notify, mpsc};
+    use tokio::sync::{Notify, Semaphore, mpsc};
     use tokio_util::sync::CancellationToken;
     use uuid::Uuid;
 
@@ -431,7 +555,8 @@ mod tests {
     };
 
     use super::{
-        EnqueueError, LessonRunner, QueueSummary, RunJob, RunQueue, spawn_workers_with_runner,
+        CancellationPhase, EnqueueError, JobControl, LessonRunner, QueueSummary, ResponseClosure,
+        RunJob, RunQueue, await_worker_response, cancellation_reason, spawn_workers_with_runner,
     };
     use crate::service::RunDispatcher;
 
@@ -445,13 +570,14 @@ mod tests {
             _request: ValidatedRunRequest,
             _deadline: RunDeadline,
             _cancellation: CancellationToken,
-        ) -> Result<LearnerOutcome, ServiceFailure> {
-            Ok(LearnerOutcome::new(
+            mut outcome: super::OutcomePublisher,
+        ) {
+            outcome.publish(Ok(LearnerOutcome::new(
                 RunStatus::Passed,
                 "ok".to_string(),
                 String::new(),
-                1,
-            ))
+                _deadline.elapsed_ms(),
+            )));
         }
     }
 
@@ -461,6 +587,83 @@ mod tests {
         cancelled: Arc<Notify>,
     }
 
+    #[derive(Clone)]
+    struct OutcomeThenCleanupRunner {
+        starts: Arc<AtomicUsize>,
+        cleanup_permits: Arc<Semaphore>,
+        status: RunStatus,
+    }
+
+    impl LessonRunner for OutcomeThenCleanupRunner {
+        async fn run(
+            &self,
+            _job_id: Uuid,
+            _request: ValidatedRunRequest,
+            deadline: RunDeadline,
+            _cancellation: CancellationToken,
+            mut outcome: super::OutcomePublisher,
+        ) {
+            self.starts.fetch_add(1, Ordering::Relaxed);
+            outcome.publish(Ok(LearnerOutcome::new(
+                self.status,
+                "ok".to_string(),
+                String::new(),
+                deadline.elapsed_ms(),
+            )));
+            self.cleanup_permits
+                .acquire()
+                .await
+                .expect("cleanup semaphore should remain open")
+                .forget();
+        }
+    }
+
+    #[derive(Clone)]
+    struct CountingRunner {
+        starts: Arc<AtomicUsize>,
+    }
+
+    impl LessonRunner for CountingRunner {
+        async fn run(
+            &self,
+            _job_id: Uuid,
+            _request: ValidatedRunRequest,
+            deadline: RunDeadline,
+            _cancellation: CancellationToken,
+            mut outcome: super::OutcomePublisher,
+        ) {
+            self.starts.fetch_add(1, Ordering::Relaxed);
+            outcome.publish(Ok(LearnerOutcome::new(
+                RunStatus::Passed,
+                String::new(),
+                String::new(),
+                deadline.elapsed_ms(),
+            )));
+        }
+    }
+
+    #[derive(Clone, Copy)]
+    struct OutcomeThenPanicRunner;
+
+    impl LessonRunner for OutcomeThenPanicRunner {
+        async fn run(
+            &self,
+            _job_id: Uuid,
+            _request: ValidatedRunRequest,
+            deadline: RunDeadline,
+            _cancellation: CancellationToken,
+            mut outcome: super::OutcomePublisher,
+        ) {
+            outcome.publish(Ok(LearnerOutcome::new(
+                RunStatus::Passed,
+                "published".to_string(),
+                String::new(),
+                deadline.elapsed_ms(),
+            )));
+            panic!("simulated cleanup failure after publication");
+        }
+    }
+
     impl LessonRunner for CancellationAwareRunner {
         async fn run(
             &self,
@@ -468,11 +671,12 @@ mod tests {
             _request: ValidatedRunRequest,
             _deadline: RunDeadline,
             cancellation: CancellationToken,
-        ) -> Result<LearnerOutcome, ServiceFailure> {
+            mut outcome: super::OutcomePublisher,
+        ) {
             self.started.notify_one();
             cancellation.cancelled().await;
             self.cancelled.notify_one();
-            Err(ServiceFailure::new(Uuid::nil()))
+            outcome.publish(Err(ServiceFailure::new(Uuid::nil())));
         }
     }
 
@@ -486,7 +690,8 @@ mod tests {
             _request: ValidatedRunRequest,
             _deadline: RunDeadline,
             _cancellation: CancellationToken,
-        ) -> Result<LearnerOutcome, ServiceFailure> {
+            _outcome: super::OutcomePublisher,
+        ) {
             panic!("intentional runner panic")
         }
     }
@@ -524,7 +729,6 @@ mod tests {
         RunQueue {
             sender,
             timeout,
-            result_delivery_grace: Duration::from_millis(10),
             running_jobs: Arc::new(AtomicUsize::new(0)),
             workers: 1,
         }
@@ -607,46 +811,47 @@ mod tests {
         assert!(!failure.correlation_id().is_nil());
     }
 
-    #[tokio::test]
-    async fn dispatch_completes_expired_queued_job_without_worker() {
+    #[tokio::test(start_paused = true)]
+    async fn dispatch_returns_timed_out_for_expired_queued_job_without_worker() {
         let (sender, mut receiver) = mpsc::channel(1);
-        let queue = test_queue(sender, Duration::from_millis(10));
+        let queue = test_queue(sender, Duration::from_secs(1));
 
         let result = queue.dispatch(validated_request()).await;
         let job = receiver.recv().await.expect("job should remain queued");
 
-        assert!(matches!(
-            result,
-            Err(crate::service::DispatchError::ServiceFailure(_))
-        ));
+        let outcome = result.expect("deadline expiry should be a learner outcome");
+        assert_eq!(outcome.status, RunStatus::TimedOut);
+        assert_eq!(outcome.duration_ms, 1000);
         assert!(job.response_tx.is_closed());
+        assert_eq!(
+            job.control.response_closure(),
+            ResponseClosure::DeadlineExpired
+        );
     }
 
-    #[tokio::test]
-    async fn dispatch_delivers_runner_timeout_result_after_deadline() {
-        let (sender, mut receiver) = mpsc::channel(1);
-        let mut queue = test_queue(sender, Duration::ZERO);
-        queue.result_delivery_grace = Duration::from_secs(1);
-        let delivery = tokio::spawn(async move {
-            let job = receiver.recv().await.expect("job should be queued");
-            tokio::task::yield_now().await;
-            job.response_tx
-                .send(Ok(LearnerOutcome::new(
-                    RunStatus::TimedOut,
-                    String::new(),
-                    "runner timed out".to_string(),
-                    1,
-                )))
-                .expect("queue should retain the result receiver during cleanup grace");
-        });
+    #[tokio::test(start_paused = true)]
+    async fn ready_runner_result_wins_at_the_exact_deadline() {
+        let deadline = RunDeadline::after(Duration::ZERO);
+        let control = JobControl::pending();
+        let (response_tx, mut response_rx) = tokio::sync::oneshot::channel();
+        response_tx
+            .send(Ok(LearnerOutcome::new(
+                RunStatus::Passed,
+                "ok".to_string(),
+                String::new(),
+                0,
+            )))
+            .expect("result receiver should remain open");
 
-        let result = queue
-            .dispatch(validated_request())
+        let result = await_worker_response(Uuid::new_v4(), &mut response_rx, deadline, &control)
             .await
-            .expect("runner timeout should remain a learner outcome");
-        delivery.await.expect("delivery task should complete");
+            .expect("ready runner result should win");
 
-        assert_eq!(result.status, RunStatus::TimedOut);
+        assert_eq!(result.status, RunStatus::Passed);
+        assert_eq!(
+            control.response_closure(),
+            ResponseClosure::ClientCancellation
+        );
     }
 
     #[tokio::test]
@@ -675,6 +880,43 @@ mod tests {
         assert_eq!(summary.queued_depth(), 1);
     }
 
+    #[test]
+    fn job_control_distinguishes_deadline_expiry_from_client_cancellation() {
+        let control = JobControl::pending();
+        assert_eq!(
+            control.response_closure(),
+            ResponseClosure::ClientCancellation
+        );
+
+        control.mark_deadline_expired();
+
+        assert_eq!(control.response_closure(), ResponseClosure::DeadlineExpired);
+    }
+
+    #[test]
+    fn deadline_expiry_does_not_emit_client_cancellation_reasons() {
+        let pending = JobControl::pending();
+        assert_eq!(
+            cancellation_reason(&pending, CancellationPhase::BeforeStart),
+            Some("response_dropped_before_start")
+        );
+        assert_eq!(
+            cancellation_reason(&pending, CancellationPhase::WhileRunning),
+            Some("response_dropped_while_running")
+        );
+
+        pending.mark_deadline_expired();
+
+        assert_eq!(
+            cancellation_reason(&pending, CancellationPhase::BeforeStart),
+            None
+        );
+        assert_eq!(
+            cancellation_reason(&pending, CancellationPhase::WhileRunning),
+            None
+        );
+    }
+
     #[tokio::test]
     async fn worker_pool_dispatches_with_injected_runner() {
         let root = tempfile::tempdir().expect("test root should be created");
@@ -690,6 +932,167 @@ mod tests {
         assert_eq!(result.stdout, "ok");
         drop(queue);
         tokio::task::yield_now().await;
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn outcome_is_delivered_before_cleanup_without_reusing_the_worker() {
+        let root = tempfile::tempdir().expect("test root should be created");
+        let starts = Arc::new(AtomicUsize::new(0));
+        let cleanup_permits = Arc::new(Semaphore::new(0));
+        let runner = OutcomeThenCleanupRunner {
+            starts: Arc::clone(&starts),
+            cleanup_permits: Arc::clone(&cleanup_permits),
+            status: RunStatus::Passed,
+        };
+        let queue = spawn_workers_with_runner(runner_settings(root.path().join("runs")), runner);
+
+        let first = queue
+            .dispatch(validated_request())
+            .await
+            .expect("outcome should arrive before cleanup");
+        assert_eq!(first.status, RunStatus::Passed);
+        assert_eq!(queue.summary().running_jobs(), 1);
+
+        let second = tokio::spawn({
+            let queue = queue.clone();
+            async move { queue.dispatch(validated_request()).await }
+        });
+        tokio::task::yield_now().await;
+        assert_eq!(starts.load(Ordering::Relaxed), 1);
+        assert_eq!(queue.summary().queued_depth(), 1);
+
+        tokio::time::advance(Duration::from_millis(10)).await;
+        cleanup_permits.add_permits(1);
+        let second = second
+            .await
+            .expect("second dispatch task should complete")
+            .expect("second outcome should arrive after worker reuse");
+        assert_eq!(second.status, RunStatus::Passed);
+        assert!(second.duration_ms >= 10);
+        assert_eq!(starts.load(Ordering::Relaxed), 2);
+
+        cleanup_permits.add_permits(1);
+        tokio::task::yield_now().await;
+        assert_eq!(queue.summary().running_jobs(), 0);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn running_deadline_returns_timeout_and_cancels_execution() {
+        let root = tempfile::tempdir().expect("test root should be created");
+        let started = Arc::new(Notify::new());
+        let cancelled = Arc::new(Notify::new());
+        let runner = CancellationAwareRunner {
+            started: Arc::clone(&started),
+            cancelled: Arc::clone(&cancelled),
+        };
+        let queue = spawn_workers_with_runner(runner_settings(root.path().join("runs")), runner);
+        let dispatch = tokio::spawn({
+            let queue = queue.clone();
+            async move { queue.dispatch(validated_request()).await }
+        });
+
+        started.notified().await;
+        tokio::time::advance(Duration::from_secs(1)).await;
+
+        let outcome = dispatch
+            .await
+            .expect("dispatch task should finish")
+            .expect("deadline should be a learner outcome");
+        assert_eq!(outcome.status, RunStatus::TimedOut);
+        assert_eq!(outcome.duration_ms, 1000);
+        cancelled.notified().await;
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn expired_queued_job_is_skipped_when_a_worker_receives_it_later() {
+        let (sender, receiver) = mpsc::channel(1);
+        let queue = test_queue(sender, Duration::from_secs(1));
+        let dispatch = tokio::spawn({
+            let queue = queue.clone();
+            async move { queue.dispatch(validated_request()).await }
+        });
+        tokio::task::yield_now().await;
+        tokio::time::advance(Duration::from_secs(1)).await;
+
+        let outcome = dispatch
+            .await
+            .expect("dispatch task should finish")
+            .expect("deadline should be a learner outcome");
+        assert_eq!(outcome.status, RunStatus::TimedOut);
+
+        let starts = Arc::new(AtomicUsize::new(0));
+        let runner = CountingRunner {
+            starts: Arc::clone(&starts),
+        };
+        let running_jobs = Arc::new(AtomicUsize::new(0));
+        drop(queue);
+        super::worker_loop(
+            0,
+            Arc::new(tokio::sync::Mutex::new(receiver)),
+            runner,
+            Arc::clone(&running_jobs),
+        )
+        .await;
+
+        assert_eq!(starts.load(Ordering::Relaxed), 0);
+        assert_eq!(running_jobs.load(Ordering::Relaxed), 0);
+    }
+
+    #[tokio::test]
+    async fn failure_after_publication_does_not_replace_the_outcome() {
+        let root = tempfile::tempdir().expect("test root should be created");
+        let queue = spawn_workers_with_runner(
+            runner_settings(root.path().join("runs")),
+            OutcomeThenPanicRunner,
+        );
+
+        let outcome = queue
+            .dispatch(validated_request())
+            .await
+            .expect("published outcome should survive later runner failure");
+
+        assert_eq!(outcome.status, RunStatus::Passed);
+        assert_eq!(outcome.stdout, "published");
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn failed_and_compile_error_durations_include_queue_wait() {
+        for status in [RunStatus::Failed, RunStatus::CompileError] {
+            let root = tempfile::tempdir().expect("test root should be created");
+            let starts = Arc::new(AtomicUsize::new(0));
+            let cleanup_permits = Arc::new(Semaphore::new(0));
+            let runner = OutcomeThenCleanupRunner {
+                starts,
+                cleanup_permits: Arc::clone(&cleanup_permits),
+                status,
+            };
+            let queue =
+                spawn_workers_with_runner(runner_settings(root.path().join("runs")), runner);
+
+            let first = queue
+                .dispatch(validated_request())
+                .await
+                .expect("first outcome should publish");
+            assert_eq!(first.status, status);
+
+            let second = tokio::spawn({
+                let queue = queue.clone();
+                async move { queue.dispatch(validated_request()).await }
+            });
+            tokio::task::yield_now().await;
+            tokio::time::advance(Duration::from_millis(250)).await;
+            cleanup_permits.add_permits(1);
+
+            let second = second
+                .await
+                .expect("second dispatch task should finish")
+                .expect("second outcome should publish");
+            assert_eq!(second.status, status);
+            assert_eq!(second.duration_ms, 250);
+
+            cleanup_permits.add_permits(1);
+            tokio::task::yield_now().await;
+        }
     }
 
     #[tokio::test]

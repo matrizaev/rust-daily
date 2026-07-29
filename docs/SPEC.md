@@ -1,6 +1,6 @@
 # Rust Daily Product Specification
 
-Status: current implementation and product contract as of July 11, 2026.
+Status: current implementation and product contract.
 
 ## 1. Product
 
@@ -377,30 +377,13 @@ result is `failed`.
 
 ### 7.4 Validation Limits
 
-Default server limits are:
-
-| Limit | Value |
-| --- | ---: |
-| JSON request | 300,000 bytes |
-| Individual file | 65,536 bytes |
-| Submitted files total | 262,144 bytes |
-| Queue capacity | 20 |
-| Workers | 2 |
-| Execution timeout | 10 seconds |
-| Combined output | 65,536 bytes |
-| Combined raw process stdout and stderr | 4,194,304 bytes |
-| Runner workspace tmpfs | 134,217,728 bytes |
-| Runner container memory | 268,435,456 bytes |
-| Runner container CPUs | 0.5 |
-| Runner pids limit | 128 |
-| Runner `/tmp` tmpfs | 67,108,864 bytes |
-| Runner process headroom | 67,108,864 bytes |
-| Runner core ulimit | 0:0 |
-| Path | 240 bytes |
-| Path component | 120 bytes |
-| Expected plus forbidden diagnostic snippets per compile-fail case | 16 |
-| Individual diagnostic snippet | 512 bytes |
-| Compile-fail diagnostics total | 8,192 bytes |
+The backend bounds request JSON, files, aggregate submitted content, paths,
+compile-fail diagnostics, queue depth, worker concurrency, execution time,
+learner-visible output, raw process output, and container resources. Exact
+backend defaults are owned by [`config/default.yaml`](../config/default.yaml);
+environment-specific configuration and `RUST_DAILY_*` overrides determine
+effective deployment values. Code owns only hard invariants that are not
+configurable, while the frontend owns its independent stalled-transport guard.
 
 Paths must be relative, unique, traversal-free, and inside the supported
 single-crate allowlist: `src/**/*.rs`, `tests/**/*.rs`, `fixtures/**`, and
@@ -413,12 +396,20 @@ Compile-fail case paths are validated separately and must be under
 request limit. Expected and forbidden snippets are trimmed, unique within each
 set, and disjoint.
 
-The execution deadline begins when the validated request enters the queue.
-Queue wait, container startup, all Cargo commands, and result collection share
-that deadline. A request still waiting in the queue completes as timed out and
-is not started later. The browser allows a three-second transport grace period
-beyond the authored lesson timeout so the backend remains the authority for
-execution timeouts.
+The absolute execution deadline begins when the validated request enters the
+queue. Queue wait, container startup, all Cargo commands, and learner-outcome
+production share that deadline. A request still waiting in the queue at expiry
+returns HTTP 200 with `timed_out` and is not started later. A running request
+that has not produced an outcome by expiry returns the same learner outcome and
+is canceled.
+
+The runner publishes its terminal outcome before bounded container and
+workspace cleanup. The worker remains occupied until cleanup completes, so
+outcome delivery does not increase effective concurrency. `duration_ms` always
+measures enqueue-to-outcome time. Cleanup has its own bound and cannot change
+an outcome that was already published. The frontend transport guard exists
+only to bound a stalled HTTP request; it does not define the Rust execution
+deadline.
 
 ### 7.5 Grading Boundary
 
@@ -526,11 +517,12 @@ A lesson change is complete only when:
 Repository validation commands are documented in
 [../README.md](../README.md).
 
-Pull requests run the GitHub Actions quality gate. It
-checks backend formatting, lint, tests, and at least 80% coverage for
-unit-testable backend library code; source and generated content; frontend
-build; at least 80% coverage for core frontend TypeScript logic; Fallow
-duplication, dead-code, and health checks; and all lesson reference solutions.
+Pull requests run the GitHub Actions quality gate. It checks backend formatting,
+lint, and tests; source and generated content; frontend build and tests; Fallow
+duplication, dead-code, and health checks; changed lesson reference solutions;
+and focused curriculum-script tests when harness code changes. Coverage and
+full-corpus lesson solution commands remain available as local or release
+confidence checks, but are not mandatory PR gates.
 
 ## 13. Current Exclusions
 

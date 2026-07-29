@@ -142,12 +142,12 @@ make smoke-runner
 make smoke-runner SMOKE_CASE=compile-error
 make smoke-runner SMOKE_CASE=multi-file-pass
 make smoke-runner SMOKE_CASE=compile-fail-pass
+scripts/smoke-runner-all --url http://127.0.0.1:8080
 ```
 
 This target wraps `scripts/play_run.py`, which uses only the Python 3 standard
-library. Supported cases are `pass`, `multi-file-pass`, `fail`,
-`compile-error`, `timeout`, `compile-fail-pass`,
-`compile-fail-unexpected-pass`, and `compile-fail-wrong-diagnostic`. Set
+library. Run `python3 scripts/play_run.py --help` for the authoritative case
+inventory and `scripts/smoke-runner-all --help` for aggregate options. Set
 `SMOKE_URL` to test another deployment.
 
 ## Documentation

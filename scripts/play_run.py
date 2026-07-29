@@ -219,7 +219,7 @@ def main() -> int:
         choices=sorted(EXPECTED_STATUSES),
         default="pass",
     )
-    parser.add_argument("--http-timeout", type=float, default=20.0)
+    parser.add_argument("--http-timeout", type=float, default=65.0)
     args = parser.parse_args()
 
     payload = payload_for_case(args.case)

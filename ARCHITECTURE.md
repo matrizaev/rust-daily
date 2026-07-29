@@ -128,8 +128,9 @@ source-to-generated parity.
 ## Frontend
 
 `frontend/src/App.tsx` is the application coordinator. It uses hash routes for
-the home, lesson, and settings screens. Lesson screens and lesson detail JSON
-are loaded lazily; the current and next lesson are prefetched.
+home, lesson, settings, and static informational screens. Lesson screens and
+lesson detail JSON are loaded lazily; the current and next lesson are
+prefetched.
 
 The main lesson flow is:
 
@@ -154,7 +155,9 @@ fixture, and test-data file separately; it does not concatenate tests.
   Actix API.
 - `backend-compile-fail` sends the same snapshot plus public compile-fail
   cases and expects those cases to fail with authored diagnostics.
-- `all` runs configured checks concurrently and aggregates their results.
+- `all` runs browser checks first and stops when any local check does not pass
+  or return `self_check`. Backend checks run only after that local gate
+  succeeds, and the executed results are aggregated.
 - A default Cargo compile test is added when a lesson only configures browser
   checks.
 
@@ -201,10 +204,11 @@ fallback:
 | `/*` | Serve the production frontend |
 
 `/healthz` reports whether the process is alive. `/readyz` additionally reports
-whether the runner queue can accept work, returning `503 Service Unavailable`
-when the queue is closed. `/metrics` returns `404 Not Found` when metrics are
-disabled and `401 Unauthorized` when its optional bearer token is required but
-not supplied.
+runner queue health. An open queue remains ready even when it is full; a full
+queue rejects new runs with `429 Too Many Requests`. A closed queue makes
+`/readyz` return `503 Service Unavailable`. `/metrics` returns `404 Not Found`
+when metrics are disabled and `401 Unauthorized` when its optional bearer token
+is required but not supplied.
 
 The `/run` path crosses these modules:
 
@@ -257,11 +261,12 @@ passed
 failed
 compile_error
 timed_out
-internal_error
 ```
 
-Invalid payloads return structured `400` or `413` responses. A full queue
-returns `429` immediately rather than allowing unbounded work.
+The frontend may normalize transport and service failures into its own
+`internal_error` state, but that is not a backend `RunStatus`. Invalid payloads
+return structured `400` or `413` responses. A full queue returns `429`
+immediately rather than allowing unbounded work.
 
 ## Runner Isolation
 
@@ -278,12 +283,15 @@ never exposed as a writable host mount. Podman starts the container with:
 - a non-root numeric user;
 - disabled proxy and container logging integration;
 - inner command timeouts, a native container timeout, and one absolute request
-  deadline that includes queueing and cleanup.
+  deadline that includes queueing, execution, and outcome production.
 
-Queued requests complete as timed out when their deadline expires; the closed
-response channel prevents a later worker from starting them. Compile-fail
-expectations match only structured rustc error diagnostics. Warning text cannot
-satisfy an expected-error snippet.
+Queued and running requests that have not produced an outcome at their deadline
+return HTTP 200 with `timed_out`. Expired queued work is skipped rather than
+started later. The runner publishes an outcome before bounded cleanup, while
+the worker stays occupied until cleanup completes. Cleanup cannot replace an
+already-published outcome. API `duration_ms` values measure from enqueue to
+outcome production. Compile-fail expectations match only structured rustc error
+diagnostics. Warning text cannot satisfy an expected-error snippet.
 
 Startup refuses to serve traffic unless Podman reports rootless mode, the
 configured local image exists, and managed stale containers can be reconciled.

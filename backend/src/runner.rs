@@ -9,7 +9,6 @@ use std::{
     path::{Path, PathBuf},
     process::{ExitStatus, Output, Stdio},
     sync::Arc,
-    time::Instant,
 };
 
 use tempfile::TempDir;
@@ -22,7 +21,7 @@ use tokio::{
     time,
 };
 use tokio_util::sync::CancellationToken;
-use tracing::{info, warn};
+use tracing::warn;
 use uuid::Uuid;
 
 use crate::{
@@ -119,34 +118,34 @@ impl crate::queue::LessonRunner for PodmanLessonRunner {
         request: ValidatedRunRequest,
         deadline: RunDeadline,
         cancellation: CancellationToken,
-    ) -> Result<LearnerOutcome, ServiceFailure> {
-        let started_at = Instant::now();
-
+        mut outcome: crate::queue::OutcomePublisher,
+    ) {
         if deadline.is_elapsed() {
             warn!(%job_id, "job expired before runner started");
-            return Err(ServiceFailure::new(job_id));
+            outcome.publish(Ok(LearnerOutcome::timed_out(deadline)));
+            return;
         }
 
-        match run_inner(
+        if let Err(error) = run_inner(
             job_id,
             &request,
             &self.config,
             deadline,
             &cancellation,
-            started_at,
             self.executor.as_ref(),
+            &mut outcome,
         )
         .await
         {
-            Ok(result) => Ok(result),
-            Err(RunnerError::Podman(error)) if error.kind() == io::ErrorKind::TimedOut => {
-                Ok(timeout_result(started_at, &self.config))
+            if let RunnerError::Podman(error) = &error
+                && error.kind() == io::ErrorKind::TimedOut
+            {
+                outcome.publish(Ok(LearnerOutcome::timed_out(deadline)));
+                return;
             }
-            Err(error) => {
-                warn!(%job_id, error = %error, "runner internal error");
 
-                Err(ServiceFailure::new(job_id))
-            }
+            warn!(%job_id, error = %error, "runner internal error");
+            outcome.publish(Err(ServiceFailure::new(job_id)));
         }
     }
 }
@@ -568,9 +567,9 @@ async fn run_inner(
     config: &RunnerSettings,
     deadline: RunDeadline,
     cancellation: &CancellationToken,
-    started_at: Instant,
     executor: &dyn ProcessExecutor,
-) -> Result<LearnerOutcome, RunnerError> {
+    outcome: &mut crate::queue::OutcomePublisher,
+) -> Result<(), RunnerError> {
     let workspace = prepare_workspace(job_id, request, config.workspace_root.as_ref()).await?;
     let workspace_path = workspace.path().to_path_buf();
 
@@ -593,36 +592,76 @@ async fn run_inner(
 
     let result = match request.mode() {
         RunMode::CargoTest => {
-            run_cargo_test(&container, request.dependency_set(), config, started_at).await
+            run_cargo_test(&container, request.dependency_set(), config, deadline).await
         }
-        RunMode::CompileFail => run_compile_fail(&container, request, config, started_at).await,
+        RunMode::CompileFail => run_compile_fail(&container, request, config, deadline).await,
     };
+
+    let result = match result {
+        Ok(result) => Ok(result),
+        Err(RunnerError::Podman(error)) if error.kind() == io::ErrorKind::TimedOut => {
+            Ok(LearnerOutcome::timed_out(deadline))
+        }
+        Err(error) => {
+            warn!(%job_id, error = %error, "runner internal error");
+            Err(ServiceFailure::new(job_id))
+        }
+    };
+    outcome.publish(result);
 
     if let Err(error) = container.cleanup().await {
         warn!(%job_id, error = %error, container = %container.name, "container cleanup failed");
     }
 
-    match tokio::task::spawn_blocking(move || workspace.close()).await {
-        Ok(Ok(())) => {}
-        Ok(Err(error)) => {
+    let workspace_close = tokio::task::spawn_blocking(move || workspace.close());
+    match await_workspace_close(workspace_close, config.cleanup_timeout).await {
+        WorkspaceCloseOutcome::Closed => {}
+        WorkspaceCloseOutcome::Failed(error) => {
             warn!(%job_id, error = %error, path = ?workspace_path, "workspace cleanup failed");
         }
-        Err(error) => {
+        WorkspaceCloseOutcome::TaskFailed(error) => {
             warn!(%job_id, error = %error, path = ?workspace_path, "workspace cleanup task failed");
+        }
+        WorkspaceCloseOutcome::TimedOut => {
+            warn!(
+                %job_id,
+                timeout = ?config.cleanup_timeout,
+                path = ?workspace_path,
+                "workspace cleanup timed out"
+            );
         }
     }
 
-    result
+    Ok(())
+}
+
+enum WorkspaceCloseOutcome {
+    Closed,
+    Failed(io::Error),
+    TaskFailed(JoinError),
+    TimedOut,
+}
+
+async fn await_workspace_close(
+    task: tokio::task::JoinHandle<io::Result<()>>,
+    timeout: std::time::Duration,
+) -> WorkspaceCloseOutcome {
+    match time::timeout(timeout, task).await {
+        Ok(Ok(Ok(()))) => WorkspaceCloseOutcome::Closed,
+        Ok(Ok(Err(error))) => WorkspaceCloseOutcome::Failed(error),
+        Ok(Err(error)) => WorkspaceCloseOutcome::TaskFailed(error),
+        Err(_) => WorkspaceCloseOutcome::TimedOut,
+    }
 }
 
 async fn run_cargo_test(
     container: &PodmanContainer<'_>,
     dependency_set: DependencySet,
     config: &RunnerSettings,
-    started_at: Instant,
+    deadline: RunDeadline,
 ) -> Result<LearnerOutcome, RunnerError> {
     let outcome = container.execute(dependency_set.test_command()).await;
-    let duration_ms = elapsed_ms(started_at);
+    let duration_ms = deadline.elapsed_ms();
 
     match outcome? {
         PodmanOutcome::Completed(output) => {
@@ -646,8 +685,8 @@ async fn run_cargo_test(
             result_from_output(output, duration_ms, config.max_output_bytes.get())
                 .ok_or(RunnerError::ContainerRuntime { code: None })
         }
-        PodmanOutcome::OuterTimeout => Ok(timeout_result(started_at, config)),
-        PodmanOutcome::OutputLimitExceeded => Ok(output_limit_result(started_at, config)),
+        PodmanOutcome::OuterTimeout => Ok(LearnerOutcome::timed_out(deadline)),
+        PodmanOutcome::OutputLimitExceeded => Ok(output_limit_result(deadline, config)),
         PodmanOutcome::Cancelled => Err(RunnerError::Cancelled),
     }
 }
@@ -656,7 +695,7 @@ async fn run_compile_fail(
     container: &PodmanContainer<'_>,
     request: &ValidatedRunRequest,
     config: &RunnerSettings,
-    started_at: Instant,
+    deadline: RunDeadline,
 ) -> Result<LearnerOutcome, RunnerError> {
     let dependency_set = request.dependency_set();
     let lib_outcome = container
@@ -665,19 +704,19 @@ async fn run_compile_fail(
 
     match lib_outcome {
         PodmanOutcome::OuterTimeout => {
-            return Ok(timeout_result(started_at, config));
+            return Ok(LearnerOutcome::timed_out(deadline));
         }
         PodmanOutcome::OutputLimitExceeded => {
-            return Ok(output_limit_result(started_at, config));
+            return Ok(output_limit_result(deadline, config));
         }
         PodmanOutcome::Cancelled => return Err(RunnerError::Cancelled),
         PodmanOutcome::Completed(output) => match output_status(&output) {
             CargoOutputStatus::Success => {}
-            CargoOutputStatus::TimedOut => return Ok(timeout_result(started_at, config)),
+            CargoOutputStatus::TimedOut => return Ok(LearnerOutcome::timed_out(deadline)),
             CargoOutputStatus::CompilerError => {
                 return result_from_output(
                     output,
-                    elapsed_ms(started_at),
+                    deadline.elapsed_ms(),
                     config.max_output_bytes.get(),
                 )
                 .ok_or(RunnerError::ContainerRuntime { code: None });
@@ -685,7 +724,7 @@ async fn run_compile_fail(
             CargoOutputStatus::Failure => {
                 return result_from_output(
                     output,
-                    elapsed_ms(started_at),
+                    deadline.elapsed_ms(),
                     config.max_output_bytes.get(),
                 )
                 .ok_or(RunnerError::ContainerRuntime { code: None });
@@ -753,9 +792,11 @@ async fn run_compile_fail(
                 failures.push(message);
                 diagnostics.push(format!("case `{name}` diagnostics:\n{case_diagnostics}"));
             }
-            CompileFailCaseResult::TimedOut => return Ok(timeout_result(started_at, config)),
+            CompileFailCaseResult::TimedOut => {
+                return Ok(LearnerOutcome::timed_out(deadline));
+            }
             CompileFailCaseResult::OutputLimitExceeded => {
-                return Ok(output_limit_result(started_at, config));
+                return Ok(output_limit_result(deadline, config));
             }
         }
     }
@@ -781,7 +822,7 @@ async fn run_compile_fail(
         status,
         stdout,
         stderr,
-        elapsed_ms(started_at),
+        deadline.elapsed_ms(),
     ))
 }
 
@@ -861,20 +902,7 @@ async fn run_compile_fail_case(
     }
 }
 
-fn timeout_result(started_at: Instant, config: &RunnerSettings) -> LearnerOutcome {
-    info!("outer runner timeout elapsed");
-    LearnerOutcome::new(
-        RunStatus::TimedOut,
-        String::new(),
-        format!(
-            "runner timed out after {} seconds",
-            config.timeout.as_secs()
-        ),
-        elapsed_ms(started_at),
-    )
-}
-
-fn output_limit_result(started_at: Instant, config: &RunnerSettings) -> LearnerOutcome {
+fn output_limit_result(deadline: RunDeadline, config: &RunnerSettings) -> LearnerOutcome {
     LearnerOutcome::new(
         RunStatus::Failed,
         String::new(),
@@ -882,7 +910,7 @@ fn output_limit_result(started_at: Instant, config: &RunnerSettings) -> LearnerO
             "runner output exceeded {} bytes",
             config.max_process_output_bytes.get()
         ),
-        elapsed_ms(started_at),
+        deadline.elapsed_ms(),
     )
 }
 
@@ -1050,11 +1078,6 @@ fn join_error(error: JoinError) -> io::Error {
     io::Error::other(format!("Podman output reader task failed: {error}"))
 }
 
-fn elapsed_ms(started_at: Instant) -> u64 {
-    let millis = started_at.elapsed().as_millis();
-    millis.min(u128::from(u64::MAX)) as u64
-}
-
 fn log_output(output: &[u8]) -> String {
     const MAX_LOG_CHARS: usize = 4096;
 
@@ -1067,34 +1090,90 @@ fn log_output(output: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use std::{
+        io,
         num::{NonZeroU64, NonZeroUsize},
         os::unix::process::ExitStatusExt,
         path::PathBuf,
         process::{ExitStatus, Output},
-        sync::{Arc, Mutex as StdMutex},
+        sync::{Arc, Barrier, Mutex as StdMutex},
         time::Duration,
     };
 
-    use tokio::sync::Mutex;
+    use tokio::sync::{Mutex, oneshot};
     use tokio::{io::AsyncWriteExt, process::Command, sync::mpsc};
     use tokio_util::sync::CancellationToken;
     use uuid::Uuid;
 
     use super::{
-        PodmanLessonRunner, ProcessCommandSpec, ProcessExecutor, collect_limited_stream,
-        ensure_control_success, find_boolean_field, log_output,
+        PodmanLessonRunner, ProcessCommandSpec, ProcessExecutor, WorkspaceCloseOutcome,
+        await_workspace_close, collect_limited_stream, ensure_control_success, find_boolean_field,
+        log_output,
     };
     use crate::{
         config::{
             ContainerCpus, CoreUlimit, PodmanPath, RunnerImage, RunnerSettings, WorkspaceRoot,
         },
         dependency_set::DependencySet,
+        model::{LearnerOutcome, ServiceFailure},
         model::{
             RunDeadline, RunRequest, RunRequestValidation, RunStatus, SubmittedCompileFailCase,
             SubmittedFile, ValidatedRunRequest, ValidationLimits,
         },
-        queue::LessonRunner,
+        queue::{LessonRunner, OutcomePublisher},
     };
+
+    async fn run_for_test(
+        runner: &PodmanLessonRunner,
+        request: ValidatedRunRequest,
+        deadline: RunDeadline,
+        cancellation: CancellationToken,
+    ) -> Result<LearnerOutcome, ServiceFailure> {
+        let (outcome_tx, outcome_rx) = oneshot::channel();
+        runner
+            .run(
+                Uuid::nil(),
+                request,
+                deadline,
+                cancellation,
+                OutcomePublisher::new(outcome_tx),
+            )
+            .await;
+        outcome_rx
+            .await
+            .expect("runner should publish exactly one outcome")
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn workspace_close_wait_is_bounded() {
+        let barrier = Arc::new(Barrier::new(2));
+        let task_barrier = Arc::clone(&barrier);
+        let task = tokio::task::spawn_blocking(move || {
+            task_barrier.wait();
+            task_barrier.wait();
+            Ok(())
+        });
+        barrier.wait();
+
+        let close = tokio::spawn(await_workspace_close(task, Duration::from_secs(1)));
+        tokio::task::yield_now().await;
+        tokio::time::advance(Duration::from_secs(1)).await;
+
+        assert!(matches!(
+            close.await.expect("close waiter should finish"),
+            WorkspaceCloseOutcome::TimedOut
+        ));
+        barrier.wait();
+    }
+
+    #[tokio::test]
+    async fn workspace_close_failure_remains_observable() {
+        let task = tokio::task::spawn_blocking(|| Err(io::Error::other("close failed")));
+
+        assert!(matches!(
+            await_workspace_close(task, Duration::from_secs(1)).await,
+            WorkspaceCloseOutcome::Failed(error) if error.to_string() == "close failed"
+        ));
+    }
 
     #[derive(Clone, Copy, Default)]
     enum FakeCargoBehavior {
@@ -1112,6 +1191,7 @@ mod tests {
     struct FakeProcessExecutor {
         specs: Arc<StdMutex<Vec<ProcessCommandSpec>>>,
         cargo_behavior: FakeCargoBehavior,
+        cleanup_fails: bool,
     }
 
     impl ProcessExecutor for FakeProcessExecutor {
@@ -1122,6 +1202,9 @@ mod tests {
                 .push(spec.clone());
 
             let args = args(spec);
+            if self.cleanup_fails && args.first().is_some_and(|arg| arg == "rm") {
+                return shell_command("exit 1");
+            }
             if !args.contains(&"--message-format=json".to_string()) {
                 return Command::new("/usr/bin/true");
             }
@@ -1317,14 +1400,13 @@ mod tests {
         let runner =
             PodmanLessonRunner::new_with_executor(Arc::clone(&config), Arc::new(executor.clone()));
 
-        let result = runner
-            .run(
-                Uuid::nil(),
-                validated_request(),
-                RunDeadline::after(config.timeout),
-                CancellationToken::new(),
-            )
-            .await;
+        let result = run_for_test(
+            &runner,
+            validated_request(),
+            RunDeadline::after(config.timeout),
+            CancellationToken::new(),
+        )
+        .await;
         let specs = executor
             .specs
             .lock()
@@ -1384,6 +1466,30 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn cleanup_failure_does_not_replace_a_published_outcome() {
+        let root = tempfile::tempdir().expect("test root should be created");
+        let config = Arc::new(runner_settings(root.path().join("runs")));
+        let executor = FakeProcessExecutor {
+            cleanup_fails: true,
+            ..FakeProcessExecutor::default()
+        };
+        let runner = PodmanLessonRunner::new_with_executor(config.clone(), Arc::new(executor));
+
+        let result = run_for_test(
+            &runner,
+            validated_request(),
+            RunDeadline::after(config.timeout),
+            CancellationToken::new(),
+        )
+        .await;
+
+        assert_eq!(
+            result.expect("cleanup cannot replace the outcome").status,
+            RunStatus::Passed
+        );
+    }
+
+    #[tokio::test]
     async fn advanced_request_mounts_disposable_target_volume() {
         let root = tempfile::tempdir().expect("test root should be created");
         let config = Arc::new(runner_settings(root.path().join("runs")));
@@ -1391,14 +1497,13 @@ mod tests {
         let runner =
             PodmanLessonRunner::new_with_executor(Arc::clone(&config), Arc::new(executor.clone()));
 
-        let result = runner
-            .run(
-                Uuid::nil(),
-                validated_request_with_dependency_set(DependencySet::Advanced),
-                RunDeadline::after(config.timeout),
-                CancellationToken::new(),
-            )
-            .await;
+        let result = run_for_test(
+            &runner,
+            validated_request_with_dependency_set(DependencySet::Advanced),
+            RunDeadline::after(config.timeout),
+            CancellationToken::new(),
+        )
+        .await;
         let specs = executor
             .specs
             .lock()
@@ -1429,14 +1534,13 @@ mod tests {
         let runner =
             PodmanLessonRunner::new_with_executor(Arc::clone(&config), Arc::new(executor.clone()));
 
-        let result = runner
-            .run(
-                Uuid::nil(),
-                validated_request(),
-                RunDeadline::after(config.timeout),
-                CancellationToken::new(),
-            )
-            .await;
+        let result = run_for_test(
+            &runner,
+            validated_request(),
+            RunDeadline::after(config.timeout),
+            CancellationToken::new(),
+        )
+        .await;
 
         let result = result.expect("run should succeed");
         assert_eq!(result.status, RunStatus::Failed);
@@ -1471,14 +1575,13 @@ mod tests {
             let runner =
                 PodmanLessonRunner::new_with_executor(Arc::clone(&config), Arc::new(executor));
 
-            let result = runner
-                .run(
-                    Uuid::nil(),
-                    validated_compile_fail_request(expected_diagnostic),
-                    RunDeadline::after(config.timeout),
-                    CancellationToken::new(),
-                )
-                .await;
+            let result = run_for_test(
+                &runner,
+                validated_compile_fail_request(expected_diagnostic),
+                RunDeadline::after(config.timeout),
+                CancellationToken::new(),
+            )
+            .await;
 
             assert_eq!(result.expect("run should succeed").status, expected_status);
         }
@@ -1503,14 +1606,13 @@ mod tests {
             let runner =
                 PodmanLessonRunner::new_with_executor(Arc::clone(&config), Arc::new(executor));
 
-            let result = runner
-                .run(
-                    Uuid::nil(),
-                    validated_request(),
-                    RunDeadline::after(config.timeout),
-                    CancellationToken::new(),
-                )
-                .await;
+            let result = run_for_test(
+                &runner,
+                validated_request(),
+                RunDeadline::after(config.timeout),
+                CancellationToken::new(),
+            )
+            .await;
 
             assert_eq!(result.ok().map(|outcome| outcome.status), expected_status);
         }
@@ -1538,14 +1640,13 @@ mod tests {
             let runner =
                 PodmanLessonRunner::new_with_executor(Arc::clone(&config), Arc::new(executor));
 
-            let result = runner
-                .run(
-                    Uuid::nil(),
-                    validated_compile_fail_request("private field"),
-                    RunDeadline::after(config.timeout),
-                    CancellationToken::new(),
-                )
-                .await;
+            let result = run_for_test(
+                &runner,
+                validated_compile_fail_request("private field"),
+                RunDeadline::after(config.timeout),
+                CancellationToken::new(),
+            )
+            .await;
 
             assert_eq!(result.ok().map(|outcome| outcome.status), expected_status);
         }
@@ -1561,20 +1662,24 @@ mod tests {
         };
         let runner = PodmanLessonRunner::new_with_executor(Arc::clone(&config), Arc::new(executor));
 
-        let expired = runner
-            .run(
-                Uuid::nil(),
-                validated_request(),
-                RunDeadline::after(Duration::ZERO),
-                CancellationToken::new(),
-            )
-            .await;
-        assert!(expired.is_err());
+        let expired = run_for_test(
+            &runner,
+            validated_request(),
+            RunDeadline::after(Duration::ZERO),
+            CancellationToken::new(),
+        )
+        .await;
+        assert_eq!(
+            expired
+                .expect("expired run should be a learner outcome")
+                .status,
+            RunStatus::TimedOut
+        );
 
         let cancellation = CancellationToken::new();
         let cancel = cancellation.clone();
-        let run = runner.run(
-            Uuid::nil(),
+        let run = run_for_test(
+            &runner,
             validated_request(),
             RunDeadline::after(config.timeout),
             cancellation,
@@ -1600,14 +1705,13 @@ mod tests {
         };
         let runner = PodmanLessonRunner::new_with_executor(Arc::clone(&config), Arc::new(executor));
 
-        let result = runner
-            .run(
-                Uuid::nil(),
-                validated_request(),
-                RunDeadline::after(config.timeout),
-                CancellationToken::new(),
-            )
-            .await;
+        let result = run_for_test(
+            &runner,
+            validated_request(),
+            RunDeadline::after(config.timeout),
+            CancellationToken::new(),
+        )
+        .await;
 
         assert_eq!(
             result.expect("run should succeed").status,

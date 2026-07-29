@@ -61,7 +61,7 @@ pub struct RunnerSettings {
     pub queue_capacity: NonZeroUsize,
     /// Number of worker tasks consuming the queue.
     pub workers: NonZeroUsize,
-    /// End-to-end request deadline for queueing, execution, and cleanup.
+    /// End-to-end request deadline for queueing, execution, and outcome production.
     pub timeout: Duration,
     /// Timeout for cleanup operations.
     pub cleanup_timeout: Duration,

@@ -34,3 +34,6 @@ tracing-subscriber = { version = "0.3", features = [
 ] }
 uuid = { version = "1.24.0", features = ["v4"] }
 url = "2"
+
+[dev-dependencies]
+tokio = { version = "1.53.1", features = ["test-util"] }

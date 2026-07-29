@@ -8,11 +8,12 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     num::NonZeroUsize,
     path::{Component, Path},
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+use tokio::time::Instant;
 use uuid::Uuid;
 
 use crate::dependency_set::DependencySet;
@@ -1108,6 +1109,27 @@ impl RunDeadline {
         self.timeout.saturating_sub(self.started_at.elapsed())
     }
 
+    /// Returns the absolute Tokio instant when this deadline expires.
+    pub fn expires_at(self) -> Instant {
+        self.started_at + self.timeout
+    }
+
+    /// Returns the elapsed time since the request was accepted for enqueueing.
+    pub fn elapsed(self) -> Duration {
+        self.started_at.elapsed()
+    }
+
+    /// Returns enqueue-relative elapsed time in saturated milliseconds.
+    pub fn elapsed_ms(self) -> u64 {
+        let millis = self.elapsed().as_millis();
+        millis.min(u128::from(u64::MAX)) as u64
+    }
+
+    /// Returns the configured end-to-end budget.
+    pub fn timeout(self) -> Duration {
+        self.timeout
+    }
+
     /// Returns whether the deadline has elapsed.
     pub fn is_elapsed(self) -> bool {
         self.remaining().is_zero()
@@ -1136,6 +1158,19 @@ impl LearnerOutcome {
             stderr,
             duration_ms,
         }
+    }
+
+    /// Creates the normal learner outcome for an accepted run that reached its deadline.
+    pub fn timed_out(deadline: RunDeadline) -> Self {
+        Self::new(
+            RunStatus::TimedOut,
+            String::new(),
+            format!(
+                "runner timed out after {} seconds",
+                deadline.timeout().as_secs()
+            ),
+            deadline.elapsed_ms(),
+        )
     }
 }
 

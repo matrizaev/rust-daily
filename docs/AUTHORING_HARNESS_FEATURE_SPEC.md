@@ -6,6 +6,19 @@ validation, PR quality CI, scaffold dry-runs, and parallel solution checks are
 in place. Deeper source/scaffolder module decomposition remains a hardening
 task.
 
+## Implementation Status
+
+| Capability | Status |
+| --- | --- |
+| Root authoring command surface | Implemented |
+| Changed lesson detection | Implemented |
+| Parallel solution tests | Implemented |
+| Aggregate author check | Implemented |
+| PR quality workflow | Implemented |
+| Curriculum review command | Implemented |
+| Aggregate runner smoke | Implemented |
+| Source and scaffolder module hardening | Remaining |
+
 ## Purpose
 
 The authoring harness should make creating, reviewing, validating, and shipping
@@ -17,9 +30,10 @@ workflow that lets an author move from arc idea to validated lesson sources with
 fast local feedback, clear failures, and CI coverage that catches drift before
 merge.
 
-## Problem
+## Pre-implementation Baseline
 
-The current harness is capable, but it will become a bottleneck at 500 lessons:
+The original implementation was capable, but had the following constraints
+before the command surface and CI phases landed:
 
 - source validation, runtime validation, scaffolding, and shared helpers are
   concentrated in large scripts;
