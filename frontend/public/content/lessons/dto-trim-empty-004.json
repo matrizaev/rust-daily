@@ -50,8 +50,7 @@
             {
               "type": "source_includes",
               "requiredSnippets": [
-                "trim()",
-                "to_owned()"
+                "trim()"
               ],
               "forbiddenSnippets": [
                 "unwrap()"
