@@ -856,6 +856,8 @@ p {
 }
 
 .lesson-brief {
+  position: sticky;
+  top: 18px;
   align-self: start;
   padding: 24px;
 }
@@ -1442,6 +1444,7 @@ p {
   }
 
   .lesson-brief {
+    position: static;
     padding: 20px;
   }
 
