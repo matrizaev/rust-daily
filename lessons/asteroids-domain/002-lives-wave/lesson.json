@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 2,
+  "id": "lives-wave-002",
+  "arcId": "asteroids-domain",
+  "arcTitle": "Asteroids game domain",
+  "order": 92,
+  "day": 2,
+  "arcLength": 7,
+  "title": "Non-zero lives and wave counters",
+  "conceptId": "lives-wave",
+  "difficulty": "easy",
+  "estimatedMinutes": 9,
+  "scenario": "A player session counts remaining lives and the current wave. Losing the last life must be the terminal game-over outcome, never a zero counter, and the wave must never overflow, so both counters need non-zero representations enforced at validation time and total transitions.",
+  "instructions": "In src/domain.rs add NonZeroLives (wrapping std::num::NonZeroU8) with new, value, and lose_one returning LifeLoss, and Wave (wrapping std::num::NonZeroU32) with FIRST, new, value, and next.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "src/domain.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/domain.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Wrap std::num::NonZeroU8 / NonZeroU32 in your own newtypes so the zero value cannot be represented."
+    },
+    {
+      "level": 2,
+      "body": "lose_one returns LifeLoss::Remaining when lives remain and LifeLoss::GameOver when the last life is lost; Wave::next returns None when checked_add would overflow."
+    },
+    {
+      "level": 3,
+      "body": "The reference approach for this lesson.",
+      "solutionCode": "use crate::{Vec2, Screen, Random, Input, Turn, circle_collide};\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]\npub struct Score(u32);\n\nimpl Score {\n    pub const ZERO: Self = Self(0);\n\n    pub const fn new(value: u32) -> Self {\n        Self(value)\n    }\n\n    pub const fn value(self) -> u32 {\n        self.0\n    }\n}\n\nimpl std::ops::AddAssign for Score {\n    fn add_assign(&mut self, rhs: Self) {\n        self.0 = self.0.saturating_add(rhs.0);\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]\npub struct NonZeroLives(std::num::NonZeroU8);\n\nimpl NonZeroLives {\n    pub fn new(value: u8) -> Option<Self> {\n        std::num::NonZeroU8::new(value).map(Self)\n    }\n\n    pub const fn value(self) -> u8 {\n        self.0.get()\n    }\n\n    /// Lose one life. The terminal case is `GameOver`, never a zero counter.\n    pub fn lose_one(self) -> LifeLoss {\n        std::num::NonZeroU8::new(self.0.get() - 1)\n            .map(Self)\n            .map_or(LifeLoss::GameOver, LifeLoss::Remaining)\n    }\n}\n\n/// The result of losing a life: either lives remain, or the session is over.\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LifeLoss {\n    Remaining(NonZeroLives),\n    GameOver,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]\npub struct Wave(std::num::NonZeroU32);\n\nimpl Wave {\n    pub const FIRST: Self = Self(std::num::NonZeroU32::MIN);\n\n    pub fn new(value: u32) -> Option<Self> {\n        std::num::NonZeroU32::new(value).map(Self)\n    }\n\n    pub const fn value(self) -> u32 {\n        self.0.get()\n    }\n\n    /// Advance to the next wave; `None` if it would overflow.\n    pub fn next(self) -> Option<Self> {\n        self.0.checked_add(1).map(Self)\n    }\n}\n"
+    }
+  ],
+  "completionExplanation": "Your code matches the reference approach: the previous lesson's work stays active, and the new types compile against the public tests.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "tuple_struct_fields",
+            "structName": "NonZeroLives",
+            "requiredTypes": [
+              "NonZeroU8"
+            ]
+          },
+          {
+            "type": "tuple_struct_fields",
+            "structName": "Wave",
+            "requiredTypes": [
+              "NonZeroU32"
+            ]
+          },
+          {
+            "type": "enum_unit_variants",
+            "enumName": "LifeLoss",
+            "requiredVariants": [
+              "Remaining",
+              "GameOver"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      },
+      {
+        "mode": "backend-compile-fail",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "cases": [
+          {
+            "name": "lives-private-field",
+            "expectedDiagnostics": [
+              "private"
+            ],
+            "forbiddenDiagnostics": [
+              "has no field named"
+            ],
+            "sourcePath": "compile_fail/lives_private_field.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

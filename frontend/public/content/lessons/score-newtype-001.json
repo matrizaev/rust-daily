@@ -1,0 +1,97 @@
+{
+  "id": "score-newtype-001",
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "In src/domain.rs define a Score newtype wrapping u32 with a private field, a ZERO constant, new and value constructors, and a saturating AddAssign impl.",
+    "starterCode": "// TODO: Model the score as a domain value.\n//\n// In src/domain.rs define:\n//   - `pub struct Score(u32)` with a PRIVATE field\n//   - `pub const ZERO: Self`\n//   - `pub const fn new(value: u32) -> Self` and `pub const fn value(self) -> u32`\n//   - `impl std::ops::AddAssign<Score>` that SATURATES at u32::MAX\n//\n// Derive at least Debug, Clone, Copy, PartialEq, Eq.\n",
+    "files": [
+      {
+        "path": "src/lib.rs",
+        "role": "readonly",
+        "content": "//! Read-only project context for the Asteroids domain arc.\n//!\n//! Geometry, the injected-randomness seam, and input plumbing are provided;\n//! the game rules live in the `domain` module and are built lesson by lesson.\n\npub mod domain;\n\n/// Minimal 2D vector (a stand-in for a math crate in this std-only arc).\n#[derive(Debug, Clone, Copy, PartialEq)]\npub struct Vec2 {\n    pub x: f32,\n    pub y: f32,\n}\n\nimpl Vec2 {\n    pub const ZERO: Self = Self::new(0.0, 0.0);\n\n    pub const fn new(x: f32, y: f32) -> Self {\n        Self { x, y }\n    }\n\n    pub fn length(self) -> f32 {\n        (self.x * self.x + self.y * self.y).sqrt()\n    }\n}\n\nimpl std::ops::Add for Vec2 {\n    type Output = Self;\n\n    fn add(self, other: Self) -> Self {\n        Self::new(self.x + other.x, self.y + other.y)\n    }\n}\n\nimpl std::ops::AddAssign for Vec2 {\n    fn add_assign(&mut self, other: Self) {\n        *self = *self + other;\n    }\n}\n\nimpl std::ops::Sub for Vec2 {\n    type Output = Self;\n\n    fn sub(self, other: Self) -> Self {\n        Self::new(self.x - other.x, self.y - other.y)\n    }\n}\n\nimpl std::ops::Mul<f32> for Vec2 {\n    type Output = Self;\n\n    fn mul(self, scalar: f32) -> Self {\n        Self::new(self.x * scalar, self.y * scalar)\n    }\n}\n\nimpl std::ops::MulAssign<f32> for Vec2 {\n    fn mul_assign(&mut self, scalar: f32) {\n        *self = *self * scalar;\n    }\n}\n\n/// The playfield in world units.\n#[derive(Debug, Clone, Copy, PartialEq)]\npub struct Screen {\n    pub width: f32,\n    pub height: f32,\n}\n\nimpl Screen {\n    pub const fn new(width: f32, height: f32) -> Self {\n        Self { width, height }\n    }\n\n    /// Center of the playfield.\n    pub const fn center(self) -> Vec2 {\n        Vec2::new(self.width / 2.0, self.height / 2.0)\n    }\n\n    /// Re-enter a position from the opposite edge.\n    pub fn wrap(self, mut pos: Vec2) -> Vec2 {\n        if pos.x < 0.0 {\n            pos.x += self.width;\n        }\n        if pos.x > self.width {\n            pos.x -= self.width;\n        }\n        if pos.y < 0.0 {\n            pos.y += self.height;\n        }\n        if pos.y > self.height {\n            pos.y -= self.height;\n        }\n        pos\n    }\n\n    /// Whether a point is on screen, edges included.\n    pub fn contains(self, pos: Vec2) -> bool {\n        pos.x >= 0.0 && pos.x <= self.width && pos.y >= 0.0 && pos.y <= self.height\n    }\n}\n\n/// Injected randomness. The simulation never touches a global RNG, so tests\n/// can drive it deterministically (a stand-in for `rand::RngExt`).\npub trait Random {\n    /// Uniform value in `min..max`.\n    fn range(&mut self, min: f32, max: f32) -> f32;\n\n    /// `true` with probability `p`.\n    fn chance(&mut self, p: f64) -> bool;\n}\n\n/// Per-frame player intent, translated from whatever input devices exist.\n#[derive(Debug, Clone, Copy, Default)]\npub struct Input {\n    pub turn: Option<Turn>,\n    pub thrust: bool,\n    pub fire: bool,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Turn {\n    Left,\n    Right,\n}\n\nimpl Turn {\n    /// Rotation direction on screen: +1 for right, -1 for left.\n    pub fn direction(self) -> f32 {\n        match self {\n            Turn::Left => -1.0,\n            Turn::Right => 1.0,\n        }\n    }\n}\n\n/// Circle-vs-circle overlap test.\npub fn circle_collide(a: Vec2, radius_a: f32, b: Vec2, radius_b: f32) -> bool {\n    (a - b).length() < radius_a + radius_b\n}\n"
+      },
+      {
+        "path": "src/domain.rs",
+        "role": "editable",
+        "content": "// TODO: Model the score as a domain value.\n//\n// In src/domain.rs define:\n//   - `pub struct Score(u32)` with a PRIVATE field\n//   - `pub const ZERO: Self`\n//   - `pub const fn new(value: u32) -> Self` and `pub const fn value(self) -> u32`\n//   - `impl std::ops::AddAssign<Score>` that SATURATES at u32::MAX\n//\n// Derive at least Debug, Clone, Copy, PartialEq, Eq.\n"
+      },
+      {
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::domain::Score;\n\n#[test]\nfn score_holds_its_value() {\n    assert_eq!(Score::ZERO.value(), 0);\n    assert_eq!(Score::new(100).value(), 100);\n}\n\n#[test]\nfn score_accumulates() {\n    let mut score = Score::new(20);\n    score += Score::new(50);\n    score += Score::new(30);\n    assert_eq!(score.value(), 100);\n}\n\n#[test]\nfn score_saturates_instead_of_overflowing() {\n    let mut score = Score::new(u32::MAX - 1);\n    score += Score::new(5);\n    assert_eq!(score.value(), u32::MAX);\n}\n\n#[test]\nfn score_is_a_copyable_comparable_value() {\n    let a = Score::new(10);\n    let b = a; // Score is Copy\n    assert_eq!(a, b);\n    assert!(a < Score::new(20));\n}\n"
+      }
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Start with a tuple struct with a private field: pub struct Score(u32); then add the constructors."
+      },
+      {
+        "level": 2,
+        "body": "value(self) -> u32 returns self.0; AddAssign must use self.0.saturating_add(rhs.0) so the score pins at u32::MAX instead of wrapping."
+      },
+      {
+        "level": 3,
+        "body": "The reference approach for this lesson.",
+        "solutionCode": "use crate::{Vec2, Screen, Random, Input, Turn, circle_collide};\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]\npub struct Score(u32);\n\nimpl Score {\n    pub const ZERO: Self = Self(0);\n\n    pub const fn new(value: u32) -> Self {\n        Self(value)\n    }\n\n    pub const fn value(self) -> u32 {\n        self.0\n    }\n}\n\nimpl std::ops::AddAssign for Score {\n    fn add_assign(&mut self, rhs: Self) {\n        self.0 = self.0.saturating_add(rhs.0);\n    }\n}\n"
+      }
+    ],
+    "completionExplanation": "Your code matches the reference approach: the previous lesson's work stays active, and the new types compile against the public tests.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "tuple_struct_fields",
+              "structName": "Score",
+              "requiredTypes": [
+                "u32"
+              ]
+            },
+            {
+              "type": "impl_method",
+              "implFor": "Score",
+              "methodName": "value",
+              "requiredSignatureIncludes": [
+                "u32"
+              ]
+            },
+            {
+              "type": "source_includes",
+              "requiredSnippets": [
+                "saturating_add"
+              ],
+              "forbiddenSnippets": []
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "score-private-field",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/score_private_field.rs",
+              "content": "use rust_daily_lesson::domain::Score;\n\nfn main() {\n    let _score = Score(100);\n}\n"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

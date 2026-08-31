@@ -1796,5 +1796,144 @@
       "diagnostics"
     ],
     "masteryThreshold": 3
+  },
+  {
+    "id": "score-newtype",
+    "name": "Score newtype",
+    "description": "Model a game score as a private-field newtype whose arithmetic saturates.",
+    "prerequisites": [],
+    "difficulty": [
+      "easy"
+    ],
+    "lessonIds": [
+      "score-newtype-001"
+    ],
+    "tags": [
+      "newtype",
+      "domain-modeling",
+      "arithmetic"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "lives-wave",
+    "name": "Non-zero lives and wave counters",
+    "description": "Represent remaining lives and the wave counter as non-zero values with total terminal transitions.",
+    "prerequisites": [
+      "score-newtype"
+    ],
+    "difficulty": [
+      "easy",
+      "medium"
+    ],
+    "lessonIds": [
+      "lives-wave-002"
+    ],
+    "tags": [
+      "newtype",
+      "nonzero",
+      "enums"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "ship-state",
+    "name": "Ship state machine",
+    "description": "Model the ship as active, invulnerable, or respawning states with timed transitions.",
+    "prerequisites": [
+      "lives-wave"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "ship-state-003"
+    ],
+    "tags": [
+      "state-machines",
+      "enums",
+      "duration"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "weapon-bullet",
+    "name": "Weapon cooldown and bullet lifetime",
+    "description": "Model rate-limited firing and bullet expiry as countdown states.",
+    "prerequisites": [
+      "ship-state"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "weapon-bullet-004"
+    ],
+    "tags": [
+      "state-machines",
+      "duration",
+      "lifecycle"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "asteroid-kinds",
+    "name": "Typed asteroid kinds",
+    "description": "Represent asteroid sizes as a typed enum with per-kind radius, score, and splitting.",
+    "prerequisites": [
+      "weapon-bullet"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "asteroid-kinds-005"
+    ],
+    "tags": [
+      "enums",
+      "domain-modeling"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "player-composition",
+    "name": "Player composition facade",
+    "description": "Compose lives, ship state, and weapon behind one player facade with outcome reporting.",
+    "prerequisites": [
+      "asteroid-kinds",
+      "ship-state"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "player-composition-006"
+    ],
+    "tags": [
+      "composition",
+      "facade"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "game-session",
+    "name": "Session update loop",
+    "description": "Compose a session update that turns input commands and injected randomness into game events.",
+    "prerequisites": [
+      "player-composition",
+      "asteroid-kinds"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "game-session-007"
+    ],
+    "tags": [
+      "composition",
+      "randomness",
+      "orchestration"
+    ],
+    "masteryThreshold": 3
   }
 ]

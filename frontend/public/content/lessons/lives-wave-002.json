@@ -1,0 +1,97 @@
+{
+  "id": "lives-wave-002",
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "In src/domain.rs add NonZeroLives (wrapping std::num::NonZeroU8) with new, value, and lose_one returning LifeLoss, and Wave (wrapping std::num::NonZeroU32) with FIRST, new, value, and next.",
+    "starterCode": "use crate::{Vec2, Screen, Random, Input, Turn, circle_collide};\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]\npub struct Score(u32);\n\nimpl Score {\n    pub const ZERO: Self = Self(0);\n\n    pub const fn new(value: u32) -> Self {\n        Self(value)\n    }\n\n    pub const fn value(self) -> u32 {\n        self.0\n    }\n}\n\nimpl std::ops::AddAssign for Score {\n    fn add_assign(&mut self, rhs: Self) {\n        self.0 = self.0.saturating_add(rhs.0);\n    }\n}\n\n\n// TODO: Model lives and waves as non-zero counters.\n//\n// Define:\n//   - `pub struct NonZeroLives(std::num::NonZeroU8)` (private field)\n//       - `pub fn new(value: u8) -> Option<Self>`\n//       - `pub const fn value(self) -> u8`\n//       - `pub fn lose_one(self) -> LifeLoss`\n//   - `pub enum LifeLoss { Remaining(NonZeroLives), GameOver }`\n//     losing the last life is the terminal `GameOver`, never a zero counter\n//   - `pub struct Wave(std::num::NonZeroU32)` (private field)\n//       - `pub const FIRST: Self`\n//       - `pub fn new(value: u32) -> Option<Self>`\n//       - `pub const fn value(self) -> u32`\n//       - `pub fn next(self) -> Option<Self>` (None when it would overflow)\n",
+    "files": [
+      {
+        "path": "src/lib.rs",
+        "role": "readonly",
+        "content": "//! Read-only project context for the Asteroids domain arc.\n//!\n//! Geometry, the injected-randomness seam, and input plumbing are provided;\n//! the game rules live in the `domain` module and are built lesson by lesson.\n\npub mod domain;\n\n/// Minimal 2D vector (a stand-in for a math crate in this std-only arc).\n#[derive(Debug, Clone, Copy, PartialEq)]\npub struct Vec2 {\n    pub x: f32,\n    pub y: f32,\n}\n\nimpl Vec2 {\n    pub const ZERO: Self = Self::new(0.0, 0.0);\n\n    pub const fn new(x: f32, y: f32) -> Self {\n        Self { x, y }\n    }\n\n    pub fn length(self) -> f32 {\n        (self.x * self.x + self.y * self.y).sqrt()\n    }\n}\n\nimpl std::ops::Add for Vec2 {\n    type Output = Self;\n\n    fn add(self, other: Self) -> Self {\n        Self::new(self.x + other.x, self.y + other.y)\n    }\n}\n\nimpl std::ops::AddAssign for Vec2 {\n    fn add_assign(&mut self, other: Self) {\n        *self = *self + other;\n    }\n}\n\nimpl std::ops::Sub for Vec2 {\n    type Output = Self;\n\n    fn sub(self, other: Self) -> Self {\n        Self::new(self.x - other.x, self.y - other.y)\n    }\n}\n\nimpl std::ops::Mul<f32> for Vec2 {\n    type Output = Self;\n\n    fn mul(self, scalar: f32) -> Self {\n        Self::new(self.x * scalar, self.y * scalar)\n    }\n}\n\nimpl std::ops::MulAssign<f32> for Vec2 {\n    fn mul_assign(&mut self, scalar: f32) {\n        *self = *self * scalar;\n    }\n}\n\n/// The playfield in world units.\n#[derive(Debug, Clone, Copy, PartialEq)]\npub struct Screen {\n    pub width: f32,\n    pub height: f32,\n}\n\nimpl Screen {\n    pub const fn new(width: f32, height: f32) -> Self {\n        Self { width, height }\n    }\n\n    /// Center of the playfield.\n    pub const fn center(self) -> Vec2 {\n        Vec2::new(self.width / 2.0, self.height / 2.0)\n    }\n\n    /// Re-enter a position from the opposite edge.\n    pub fn wrap(self, mut pos: Vec2) -> Vec2 {\n        if pos.x < 0.0 {\n            pos.x += self.width;\n        }\n        if pos.x > self.width {\n            pos.x -= self.width;\n        }\n        if pos.y < 0.0 {\n            pos.y += self.height;\n        }\n        if pos.y > self.height {\n            pos.y -= self.height;\n        }\n        pos\n    }\n\n    /// Whether a point is on screen, edges included.\n    pub fn contains(self, pos: Vec2) -> bool {\n        pos.x >= 0.0 && pos.x <= self.width && pos.y >= 0.0 && pos.y <= self.height\n    }\n}\n\n/// Injected randomness. The simulation never touches a global RNG, so tests\n/// can drive it deterministically (a stand-in for `rand::RngExt`).\npub trait Random {\n    /// Uniform value in `min..max`.\n    fn range(&mut self, min: f32, max: f32) -> f32;\n\n    /// `true` with probability `p`.\n    fn chance(&mut self, p: f64) -> bool;\n}\n\n/// Per-frame player intent, translated from whatever input devices exist.\n#[derive(Debug, Clone, Copy, Default)]\npub struct Input {\n    pub turn: Option<Turn>,\n    pub thrust: bool,\n    pub fire: bool,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Turn {\n    Left,\n    Right,\n}\n\nimpl Turn {\n    /// Rotation direction on screen: +1 for right, -1 for left.\n    pub fn direction(self) -> f32 {\n        match self {\n            Turn::Left => -1.0,\n            Turn::Right => 1.0,\n        }\n    }\n}\n\n/// Circle-vs-circle overlap test.\npub fn circle_collide(a: Vec2, radius_a: f32, b: Vec2, radius_b: f32) -> bool {\n    (a - b).length() < radius_a + radius_b\n}\n"
+      },
+      {
+        "path": "src/domain.rs",
+        "role": "editable",
+        "content": "use crate::{Vec2, Screen, Random, Input, Turn, circle_collide};\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]\npub struct Score(u32);\n\nimpl Score {\n    pub const ZERO: Self = Self(0);\n\n    pub const fn new(value: u32) -> Self {\n        Self(value)\n    }\n\n    pub const fn value(self) -> u32 {\n        self.0\n    }\n}\n\nimpl std::ops::AddAssign for Score {\n    fn add_assign(&mut self, rhs: Self) {\n        self.0 = self.0.saturating_add(rhs.0);\n    }\n}\n\n\n// TODO: Model lives and waves as non-zero counters.\n//\n// Define:\n//   - `pub struct NonZeroLives(std::num::NonZeroU8)` (private field)\n//       - `pub fn new(value: u8) -> Option<Self>`\n//       - `pub const fn value(self) -> u8`\n//       - `pub fn lose_one(self) -> LifeLoss`\n//   - `pub enum LifeLoss { Remaining(NonZeroLives), GameOver }`\n//     losing the last life is the terminal `GameOver`, never a zero counter\n//   - `pub struct Wave(std::num::NonZeroU32)` (private field)\n//       - `pub const FIRST: Self`\n//       - `pub fn new(value: u32) -> Option<Self>`\n//       - `pub const fn value(self) -> u32`\n//       - `pub fn next(self) -> Option<Self>` (None when it would overflow)\n"
+      },
+      {
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::domain::{LifeLoss, NonZeroLives, Wave};\n\n#[test]\nfn lives_are_non_zero() {\n    assert!(NonZeroLives::new(0).is_none());\n    assert_eq!(NonZeroLives::new(3).unwrap().value(), 3);\n}\n\n#[test]\nfn losing_a_life_keeps_lives_non_zero() {\n    match NonZeroLives::new(3).unwrap().lose_one() {\n        LifeLoss::Remaining(lives) => assert_eq!(lives.value(), 2),\n        LifeLoss::GameOver => panic!(\"three lives should not end the session\"),\n    }\n}\n\n#[test]\nfn losing_the_last_life_is_game_over() {\n    assert!(matches!(\n        NonZeroLives::new(1).unwrap().lose_one(),\n        LifeLoss::GameOver\n    ));\n}\n\n#[test]\nfn waves_start_at_one_and_advance() {\n    assert_eq!(Wave::FIRST.value(), 1);\n    assert_eq!(Wave::FIRST.next().unwrap().value(), 2);\n}\n\n#[test]\nfn wave_never_overflows() {\n    let max = Wave::new(u32::MAX).unwrap();\n    assert_eq!(max.value(), u32::MAX);\n    assert!(max.next().is_none());\n}\n"
+      }
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Wrap std::num::NonZeroU8 / NonZeroU32 in your own newtypes so the zero value cannot be represented."
+      },
+      {
+        "level": 2,
+        "body": "lose_one returns LifeLoss::Remaining when lives remain and LifeLoss::GameOver when the last life is lost; Wave::next returns None when checked_add would overflow."
+      },
+      {
+        "level": 3,
+        "body": "The reference approach for this lesson.",
+        "solutionCode": "use crate::{Vec2, Screen, Random, Input, Turn, circle_collide};\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]\npub struct Score(u32);\n\nimpl Score {\n    pub const ZERO: Self = Self(0);\n\n    pub const fn new(value: u32) -> Self {\n        Self(value)\n    }\n\n    pub const fn value(self) -> u32 {\n        self.0\n    }\n}\n\nimpl std::ops::AddAssign for Score {\n    fn add_assign(&mut self, rhs: Self) {\n        self.0 = self.0.saturating_add(rhs.0);\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]\npub struct NonZeroLives(std::num::NonZeroU8);\n\nimpl NonZeroLives {\n    pub fn new(value: u8) -> Option<Self> {\n        std::num::NonZeroU8::new(value).map(Self)\n    }\n\n    pub const fn value(self) -> u8 {\n        self.0.get()\n    }\n\n    /// Lose one life. The terminal case is `GameOver`, never a zero counter.\n    pub fn lose_one(self) -> LifeLoss {\n        std::num::NonZeroU8::new(self.0.get() - 1)\n            .map(Self)\n            .map_or(LifeLoss::GameOver, LifeLoss::Remaining)\n    }\n}\n\n/// The result of losing a life: either lives remain, or the session is over.\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LifeLoss {\n    Remaining(NonZeroLives),\n    GameOver,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]\npub struct Wave(std::num::NonZeroU32);\n\nimpl Wave {\n    pub const FIRST: Self = Self(std::num::NonZeroU32::MIN);\n\n    pub fn new(value: u32) -> Option<Self> {\n        std::num::NonZeroU32::new(value).map(Self)\n    }\n\n    pub const fn value(self) -> u32 {\n        self.0.get()\n    }\n\n    /// Advance to the next wave; `None` if it would overflow.\n    pub fn next(self) -> Option<Self> {\n        self.0.checked_add(1).map(Self)\n    }\n}\n"
+      }
+    ],
+    "completionExplanation": "Your code matches the reference approach: the previous lesson's work stays active, and the new types compile against the public tests.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "tuple_struct_fields",
+              "structName": "NonZeroLives",
+              "requiredTypes": [
+                "NonZeroU8"
+              ]
+            },
+            {
+              "type": "tuple_struct_fields",
+              "structName": "Wave",
+              "requiredTypes": [
+                "NonZeroU32"
+              ]
+            },
+            {
+              "type": "enum_unit_variants",
+              "enumName": "LifeLoss",
+              "requiredVariants": [
+                "Remaining",
+                "GameOver"
+              ]
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "lives-private-field",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "forbiddenDiagnostics": [
+                "has no field named"
+              ],
+              "path": "compile_fail/lives_private_field.rs",
+              "content": "use rust_daily_lesson::domain::NonZeroLives;\n\nfn main() {\n    let _lives = NonZeroLives(3);\n}\n"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

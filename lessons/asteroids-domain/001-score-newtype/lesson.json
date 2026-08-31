@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 2,
+  "id": "score-newtype-001",
+  "arcId": "asteroids-domain",
+  "arcTitle": "Asteroids game domain",
+  "order": 91,
+  "day": 1,
+  "arcLength": 7,
+  "title": "Score as a saturating newtype",
+  "conceptId": "score-newtype",
+  "difficulty": "easy",
+  "estimatedMinutes": 6,
+  "scenario": "The game service tracks the player's score, which accumulates from gameplay events such as destroyed asteroids. A raw u32 invites overflow and lets callers confuse the score with other amounts, so the service needs a dedicated Score value whose arithmetic saturates instead of overflowing.",
+  "instructions": "In src/domain.rs define a Score newtype wrapping u32 with a private field, a ZERO constant, new and value constructors, and a saturating AddAssign impl.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "src/domain.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/domain.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Start with a tuple struct with a private field: pub struct Score(u32); then add the constructors."
+    },
+    {
+      "level": 2,
+      "body": "value(self) -> u32 returns self.0; AddAssign must use self.0.saturating_add(rhs.0) so the score pins at u32::MAX instead of wrapping."
+    },
+    {
+      "level": 3,
+      "body": "The reference approach for this lesson.",
+      "solutionCode": "use crate::{Vec2, Screen, Random, Input, Turn, circle_collide};\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]\npub struct Score(u32);\n\nimpl Score {\n    pub const ZERO: Self = Self(0);\n\n    pub const fn new(value: u32) -> Self {\n        Self(value)\n    }\n\n    pub const fn value(self) -> u32 {\n        self.0\n    }\n}\n\nimpl std::ops::AddAssign for Score {\n    fn add_assign(&mut self, rhs: Self) {\n        self.0 = self.0.saturating_add(rhs.0);\n    }\n}\n"
+    }
+  ],
+  "completionExplanation": "Your code matches the reference approach: the previous lesson's work stays active, and the new types compile against the public tests.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "tuple_struct_fields",
+            "structName": "Score",
+            "requiredTypes": [
+              "u32"
+            ]
+          },
+          {
+            "type": "impl_method",
+            "implFor": "Score",
+            "methodName": "value",
+            "requiredSignatureIncludes": [
+              "u32"
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "saturating_add"
+            ],
+            "forbiddenSnippets": []
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      },
+      {
+        "mode": "backend-compile-fail",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "cases": [
+          {
+            "name": "score-private-field",
+            "expectedDiagnostics": [
+              "private"
+            ],
+            "forbiddenDiagnostics": [
+              "has no field named"
+            ],
+            "sourcePath": "compile_fail/score_private_field.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

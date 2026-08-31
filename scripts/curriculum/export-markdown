@@ -1,0 +1,243 @@
+#!/usr/bin/env node
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname, extname, join, relative } from "node:path";
+import {
+  LESSONS_ROOT,
+  REPO_ROOT,
+  readJson,
+  readLessonRecords,
+} from "./lib/repo.mjs";
+
+const DEFAULT_OUTPUT = join(REPO_ROOT, "docs/FULL_CURRICULUM.md");
+const PRODUCTION_URL = "https://borrowquest.site";
+const outputPath = process.argv[2]
+  ? join(REPO_ROOT, process.argv[2])
+  : DEFAULT_OUTPUT;
+
+const normalizePath = (value) => value.split("\\").join("/");
+const repoPath = (value) => normalizePath(relative(REPO_ROOT, value));
+
+const markdownCell = (value) =>
+  String(value ?? "")
+    .replaceAll("|", "\\|")
+    .replaceAll("\n", "<br>");
+
+const slug = (value) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9 -]/g, "")
+    .trim()
+    .replace(/\s+/g, "-");
+
+const productionLessonUrl = (lessonId) =>
+  `${PRODUCTION_URL}/#lesson/${encodeURIComponent(lessonId)}`;
+
+const languageForPath = (path) => {
+  const languages = {
+    ".json": "json",
+    ".md": "markdown",
+    ".rs": "rust",
+    ".toml": "toml",
+  };
+
+  return languages[extname(path)] ?? "text";
+};
+
+const codeBlock = (content, language = "text") => {
+  const longestFence = Math.max(
+    2,
+    ...[...content.matchAll(/`+/g)].map(([match]) => match.length),
+  );
+  const fence = "`".repeat(longestFence + 1);
+  const normalized = content.endsWith("\n") ? content : `${content}\n`;
+
+  return `${fence}${language}\n${normalized}${fence}`;
+};
+
+const withoutHeading = (content) =>
+  content.replace(/^#\s+Author Notes\s*\n+/i, "").trim();
+
+const formatHint = (hint) => {
+  const solutionNotice = hint.solutionCode
+    ? " The authored code is included in the Solution section."
+    : "";
+
+  return `${hint.level}. ${hint.body}${solutionNotice}`;
+};
+
+const collectCompileFailCases = (validation) => {
+  if (!validation) {
+    return [];
+  }
+
+  const steps = validation.validations ?? [validation];
+  return steps.flatMap((step) =>
+    step.mode === "backend-compile-fail" ? (step.cases ?? []) : [],
+  );
+};
+
+const conceptSummary = (concept) => {
+  if (!concept) {
+    return "Concept metadata is unavailable.";
+  }
+
+  const prerequisites = concept.prerequisites.length > 0
+    ? concept.prerequisites.map((id) => `\`${id}\``).join(", ")
+    : "None";
+  const tags = concept.tags.map((tag) => `\`${tag}\``).join(", ");
+
+  return [
+    concept.description,
+    "",
+    `- Prerequisites: ${prerequisites}`,
+    `- Tags: ${tags || "None"}`,
+  ].join("\n");
+};
+
+const renderLesson = async (record, conceptsById) => {
+  const { dir, lesson, relPath } = record;
+  const concept = conceptsById.get(lesson.conceptId);
+  const lines = [
+    `## ${lesson.order}. ${lesson.title}`,
+    "",
+    `Source: \`${relPath}\``,
+    "",
+    "| Field | Value |",
+    "| --- | --- |",
+    `| Lesson ID | \`${markdownCell(lesson.id)}\` |`,
+    `| Production lesson | [Open lesson](${productionLessonUrl(lesson.id)}) |`,
+    `| Arc | ${markdownCell(lesson.arcTitle)} (step ${lesson.day} of ${lesson.arcLength}) |`,
+    `| Concept | ${markdownCell(concept?.name ?? lesson.conceptId)} (\`${markdownCell(lesson.conceptId)}\`) |`,
+    `| Difficulty | ${markdownCell(lesson.difficulty)} |`,
+    `| Estimated time | ${markdownCell(lesson.estimatedMinutes)} minutes |`,
+    "",
+    "### Scenario",
+    "",
+    lesson.scenario,
+    "",
+    "### Task",
+    "",
+    lesson.instructions,
+    "",
+    "### Concept context",
+    "",
+    conceptSummary(concept),
+    "",
+    "### Starter project files",
+    "",
+  ];
+
+  for (const file of lesson.files) {
+    const sourcePath = join(dir, file.sourcePath);
+    const content = await readFile(sourcePath, "utf8");
+    lines.push(
+      `#### \`${file.path}\` — ${file.role}`,
+      "",
+      `Source: \`${repoPath(sourcePath)}\``,
+      "",
+      codeBlock(content, languageForPath(file.path)),
+      "",
+    );
+  }
+
+  lines.push("### Progressive hints", "");
+  for (const hint of lesson.hints) {
+    lines.push(formatHint(hint));
+  }
+
+  lines.push(
+    "",
+    "### Validation contract",
+    "",
+    lesson.validation
+      ? codeBlock(`${JSON.stringify(lesson.validation, null, 2)}\n`, "json")
+      : "No automated validation is defined.",
+    "",
+  );
+
+  const compileFailCases = collectCompileFailCases(lesson.validation);
+  if (compileFailCases.length > 0) {
+    lines.push("#### Compile-fail fixtures", "");
+    for (const testCase of compileFailCases) {
+      if (!testCase.sourcePath) {
+        continue;
+      }
+
+      const sourcePath = join(dir, testCase.sourcePath);
+      const content = await readFile(sourcePath, "utf8");
+      lines.push(
+        `##### ${testCase.name}`,
+        "",
+        `Source: \`${repoPath(sourcePath)}\``,
+        "",
+        codeBlock(content, languageForPath(testCase.sourcePath)),
+        "",
+      );
+    }
+  }
+
+  const editableFile = lesson.files.find((file) => file.role === "editable");
+  const solutionRoot = join(dir, lesson.author.solutionPath);
+  const solutionPath = join(solutionRoot, editableFile.path);
+  const solution = await readFile(solutionPath, "utf8");
+  lines.push(
+    "### Authored solution",
+    "",
+    `#### \`${editableFile.path}\``,
+    "",
+    `Source: \`${repoPath(solutionPath)}\``,
+    "",
+    codeBlock(solution, languageForPath(editableFile.path)),
+    "",
+    "### Completion explanation",
+    "",
+    lesson.completionExplanation,
+    "",
+    "### Author notes",
+    "",
+  );
+
+  const notesPath = join(dir, lesson.author.notesPath);
+  const notes = withoutHeading(await readFile(notesPath, "utf8"));
+  lines.push(notes, "");
+
+  return lines.join("\n");
+};
+
+const records = await readLessonRecords();
+const arcs = await readJson(join(LESSONS_ROOT, "arcs.json"));
+const concepts = await readJson(join(LESSONS_ROOT, "concepts.json"));
+const conceptsById = new Map(concepts.map((concept) => [concept.id, concept]));
+
+const document = [
+  "# Rust Daily Full Curriculum",
+  "",
+  "> Generated from the canonical files under `lessons/`. Do not edit this document as the curriculum source of truth.",
+  "",
+  `This document contains all ${records.length} lessons across ${arcs.length} arcs, ordered by global curriculum order. Each lesson includes its teaching context, complete starter project snapshot, hints, validation contract, compile-fail fixtures where applicable, authored solution, completion explanation, and author notes.`,
+  "",
+  "## Curriculum arcs",
+  "",
+  "| Arc | Pillar | Lessons | Description |",
+  "| --- | --- | ---: | --- |",
+  ...arcs.map((arc) =>
+    `| ${markdownCell(arc.title)} (\`${markdownCell(arc.id)}\`) | ${markdownCell(arc.pillar)} | ${arc.targetLessonCount} | ${markdownCell(arc.description)} |`
+  ),
+  "",
+  "## Lesson index",
+  "",
+  ...records.map(({ lesson }) =>
+    `${lesson.order}. [${lesson.title}](#${slug(`${lesson.order} ${lesson.title}`)}) — ${lesson.arcTitle}, step ${lesson.day}/${lesson.arcLength}`
+  ),
+  "",
+  "---",
+  "",
+];
+
+for (const record of records) {
+  document.push(await renderLesson(record, conceptsById), "---", "");
+}
+
+await mkdir(dirname(outputPath), { recursive: true });
+await writeFile(outputPath, `${document.join("\n").trim()}\n`);
+console.log(`Wrote ${records.length} lessons to ${repoPath(outputPath)}`);

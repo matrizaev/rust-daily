@@ -213,7 +213,7 @@ const assertUrlAvailable = async (url, label) => {
 
   throw new Error(
     `${label} address is already in use at ${url}. Stop the existing service, ` +
-      "choose another port, or omit --start to use services that are already running.",
+    "choose another port, or omit --start to use services that are already running.",
   );
 };
 
@@ -414,7 +414,7 @@ const main = async () => {
       results.push(result);
 
       const marker = result.status === "passed" ? "PASS" : "FAIL";
-      console.log(`[${String(lesson.order).padStart(2, "0")}/90] ${marker} ${lesson.id} (${result.wallTimeMs} ms)`);
+      console.log(`[${String(lesson.order).padStart(2, "0")}/${selected.length}] ${marker} ${lesson.id} (${result.wallTimeMs} ms)`);
       if (result.status !== "passed") {
         const screenshot = path.join(
           artifactDir,
