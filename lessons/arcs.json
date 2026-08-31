@@ -118,5 +118,13 @@
     "orderStart": 85,
     "targetLessonCount": 6,
     "description": "Use table-driven tests, executable docs, and properties to protect bounded domain values used by pricing and rollout policy."
+  },
+  {
+    "id": "asteroids-domain",
+    "title": "Asteroids game domain",
+    "pillar": "domain",
+    "orderStart": 91,
+    "targetLessonCount": 7,
+    "description": "Model an Asteroids game domain with newtypes, state machines, typed entities, and a composed session update."
   }
 ]

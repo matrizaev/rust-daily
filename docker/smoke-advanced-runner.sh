@@ -42,6 +42,7 @@ done
 
 curl --fail --silent --show-error "$url/healthz" >/dev/null
 python3 scripts/play_run.py --url "$url" --case advanced-pass --http-timeout 20
+python3 scripts/play_run.py --url "$url" --case advanced-compile-fail-pass --http-timeout 20
 
 managed_containers="$(podman ps --all --quiet --filter label=io.rust-daily.managed=true)"
 if [ -n "$managed_containers" ]; then

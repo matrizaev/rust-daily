@@ -528,9 +528,22 @@ const fetchBackendRun = (
   });
 };
 
-const createBackendTimeout = (timeoutMs: number) => {
+const createBackendTimeout = (
+  timeoutMs: number,
+  externalSignal?: AbortSignal,
+) => {
   const controller = new AbortController();
   let didTimeout = false;
+  const handleExternalAbort = () => controller.abort();
+
+  if (externalSignal?.aborted) {
+    controller.abort();
+  } else {
+    externalSignal?.addEventListener("abort", handleExternalAbort, {
+      once: true,
+    });
+  }
+
   const timer = window.setTimeout(() => {
     didTimeout = true;
     controller.abort();
@@ -539,7 +552,10 @@ const createBackendTimeout = (timeoutMs: number) => {
   return {
     didTimeout: () => didTimeout,
     signal: controller.signal,
-    clear: () => window.clearTimeout(timer),
+    clear: () => {
+      window.clearTimeout(timer);
+      externalSignal?.removeEventListener("abort", handleExternalAbort);
+    },
   };
 };
 
@@ -548,7 +564,8 @@ const resultFromFetchError = (
   didTimeout: boolean,
   startedAt: number,
 ) => {
-  const errorName = error instanceof Error ? error.name : "";
+  const errorName =
+    isRecord(error) && typeof error.name === "string" ? error.name : "";
 
   return didTimeout || errorName === "AbortError"
     ? timeoutResult(startedAt)
@@ -559,6 +576,7 @@ const resultFromFetchError = (
 export const runBackendValidation = async (
   request: ValidationRequest,
   backendUrl: string,
+  signal?: AbortSignal,
 ): Promise<ValidationResult> => {
   const startedAt = performance.now();
 
@@ -570,7 +588,7 @@ export const runBackendValidation = async (
     return unavailableResult(startedAt);
   }
 
-  const timeout = createBackendTimeout(BACKEND_REQUEST_TIMEOUT_MS);
+  const timeout = createBackendTimeout(BACKEND_REQUEST_TIMEOUT_MS, signal);
 
   try {
     const response = await fetchBackendRun(request, backendUrl, timeout.signal);

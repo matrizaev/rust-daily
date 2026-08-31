@@ -110,6 +110,10 @@ export function SettingsScreen({
   };
 
   const handleDeleteProgressClick = () => {
+    if (!window.confirm("Delete all local progress for Rust Daily?")) {
+      return;
+    }
+
     setStatus(
       onDeleteProgress()
         ? "Progress deleted."
@@ -131,15 +135,6 @@ export function SettingsScreen({
     const result = await onImportProgress(file);
     setStatus(result.message);
     input.value = "";
-  };
-
-  const handleDeleteProgress = () => {
-    if (!window.confirm("Delete all local progress for Rust Daily?")) {
-      return;
-    }
-
-    onDeleteProgress();
-    setStatus("Local progress deleted.");
   };
 
   const handleDeleteDrafts = () => {

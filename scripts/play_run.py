@@ -29,6 +29,22 @@ fn serde_json_works() {
 }
 """
 
+ADVANCED_COMPILE_FAIL_PRIVATE_LIB = """#[derive(serde::Serialize)]
+pub struct UserId {
+    value: u64,
+}
+
+impl UserId {
+    pub fn new(value: u64) -> Self {
+        Self { value }
+    }
+
+    pub fn value(&self) -> u64 {
+        self.value
+    }
+}
+"""
+
 SOURCES = {
     "pass": "pub fn answer() -> u64 { 42 }\n",
     "fail": "pub fn answer() -> u64 { 41 }\n",
@@ -112,6 +128,7 @@ EXPECTED_STATUSES = {
     "compile-fail-unexpected-pass": "failed",
     "compile-fail-wrong-diagnostic": "failed",
     "advanced-pass": "passed",
+    "advanced-compile-fail-pass": "passed",
 }
 
 
@@ -148,6 +165,13 @@ def build_compile_fail_payload(
 
 
 def payload_for_case(case: str) -> dict[str, object]:
+    if case == "advanced-compile-fail-pass":
+        payload = build_compile_fail_payload(
+            ADVANCED_COMPILE_FAIL_PRIVATE_LIB,
+            COMPILE_FAIL_CASE,
+        )
+        payload["dependencySet"] = "advanced"
+        return payload
     if case == "advanced-pass":
         return {
             "dependencySet": "advanced",
@@ -195,7 +219,7 @@ def main() -> int:
         choices=sorted(EXPECTED_STATUSES),
         default="pass",
     )
-    parser.add_argument("--http-timeout", type=float, default=20.0)
+    parser.add_argument("--http-timeout", type=float, default=65.0)
     args = parser.parse_args()
 
     payload = payload_for_case(args.case)

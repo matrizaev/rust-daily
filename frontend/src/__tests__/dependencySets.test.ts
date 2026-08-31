@@ -8,7 +8,7 @@ import type { LessonValidation } from "../types/validation";
 
 const dependencyNamesFromManifest = (manifest: string) => {
   const dependencySection = manifest.match(
-    /\[dependencies\]\n(?<dependencies>[\s\S]*?)\n\[profile\.test\]/,
+    /\[dependencies\]\r?\n(?<dependencies>[\s\S]*?)(?=\r?\n\[|$)/,
   )?.groups?.dependencies ?? "";
 
   return dependencySection

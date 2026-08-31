@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 2,
+  "id": "ship-state-003",
+  "arcId": "asteroids-domain",
+  "arcTitle": "Asteroids game domain",
+  "order": 93,
+  "day": 3,
+  "arcLength": 7,
+  "title": "Ship as a state machine",
+  "conceptId": "ship-state",
+  "difficulty": "medium",
+  "estimatedMinutes": 10,
+  "scenario": "The ship is never simply alive or dead: after respawning it is invulnerable while a protection timeout runs, and while respawning no ship exists at all. The game service needs these as explicit states so the invalid combinations are unrepresentable, with countdowns that expire into the next state.",
+  "instructions": "In src/domain.rs define ShipState with Active(Ship), Invulnerable { ship, remaining }, and Respawning { remaining }, plus update(dt, screen), ship(), ship_mut(), and the RESPAWN_TIME and INVULNERABILITY_TIME constants. The Ship kinematics are provided above.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "src/domain.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/domain.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Three variants: Active(Ship), Invulnerable { ship, remaining }, Respawning { remaining } \u2014 the ship only exists in the first two."
+    },
+    {
+      "level": 2,
+      "body": "In update, decrement remaining with saturating_sub(dt); when Respawning hits zero, transition to Invulnerable with Ship::spawn(screen) and INVULNERABILITY_TIME; when Invulnerable hits zero, transition to Active."
+    },
+    {
+      "level": 3,
+      "body": "The reference approach for this lesson.",
+      "solutionCode": "use crate::{Vec2, Screen, Random, Input, Turn, circle_collide};\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]\npub struct Score(u32);\n\nimpl Score {\n    pub const ZERO: Self = Self(0);\n\n    pub const fn new(value: u32) -> Self {\n        Self(value)\n    }\n\n    pub const fn value(self) -> u32 {\n        self.0\n    }\n}\n\nimpl std::ops::AddAssign for Score {\n    fn add_assign(&mut self, rhs: Self) {\n        self.0 = self.0.saturating_add(rhs.0);\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]\npub struct NonZeroLives(std::num::NonZeroU8);\n\nimpl NonZeroLives {\n    pub fn new(value: u8) -> Option<Self> {\n        std::num::NonZeroU8::new(value).map(Self)\n    }\n\n    pub const fn value(self) -> u8 {\n        self.0.get()\n    }\n\n    /// Lose one life. The terminal case is `GameOver`, never a zero counter.\n    pub fn lose_one(self) -> LifeLoss {\n        std::num::NonZeroU8::new(self.0.get() - 1)\n            .map(Self)\n            .map_or(LifeLoss::GameOver, LifeLoss::Remaining)\n    }\n}\n\n/// The result of losing a life: either lives remain, or the session is over.\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LifeLoss {\n    Remaining(NonZeroLives),\n    GameOver,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]\npub struct Wave(std::num::NonZeroU32);\n\nimpl Wave {\n    pub const FIRST: Self = Self(std::num::NonZeroU32::MIN);\n\n    pub fn new(value: u32) -> Option<Self> {\n        std::num::NonZeroU32::new(value).map(Self)\n    }\n\n    pub const fn value(self) -> u32 {\n        self.0.get()\n    }\n\n    /// Advance to the next wave; `None` if it would overflow.\n    pub fn next(self) -> Option<Self> {\n        self.0.checked_add(1).map(Self)\n    }\n}\n\n/// The player's ship: kinematics are provided; the state machine is your task.\n#[derive(Debug, Clone, Copy)]\npub struct Ship {\n    position: Vec2,\n    velocity: Vec2,\n    heading: f32,\n}\n\nimpl Ship {\n    const ROTATION_SPEED: f32 = 3.5;\n    const THRUST: f32 = 220.0;\n    const MAX_SPEED: f32 = 380.0;\n\n    /// Spawn the ship at the center of the playfield.\n    pub fn spawn(screen: Screen) -> Self {\n        Self {\n            position: screen.center(),\n            velocity: Vec2::ZERO,\n            heading: 0.0,\n        }\n    }\n\n    pub fn position(&self) -> Vec2 {\n        self.position\n    }\n\n    pub fn heading(&self) -> f32 {\n        self.heading\n    }\n\n    /// Integrate motion and wrap around the playfield.\n    pub fn update(&mut self, dt: std::time::Duration, screen: Screen) {\n        self.position += self.velocity * dt.as_secs_f32();\n        self.position = screen.wrap(self.position);\n    }\n\n    pub fn rotate(&mut self, turn: Turn, dt: std::time::Duration) {\n        self.heading += turn.direction() * Self::ROTATION_SPEED * dt.as_secs_f32();\n    }\n\n    pub fn accelerate(&mut self, dt: std::time::Duration) {\n        let facing = Vec2::new(self.heading.sin(), -self.heading.cos());\n        self.velocity += facing * (Self::THRUST * dt.as_secs_f32());\n        let speed = self.velocity.length();\n        if speed > Self::MAX_SPEED {\n            self.velocity *= Self::MAX_SPEED / speed;\n        }\n    }\n}\n\n/// The three states a ship can be in. There is no \"dead\" state: a dead ship is\n/// either respawning or the session is over.\n#[derive(Debug, Clone, Copy)]\npub enum ShipState {\n    Active(Ship),\n\n    /// Recently respawned; the ship exists but collisions are ignored.\n    Invulnerable {\n        ship: Ship,\n        remaining: std::time::Duration,\n    },\n\n    /// Waiting to respawn; there is no ship at all.\n    Respawning {\n        remaining: std::time::Duration,\n    },\n}\n\nimpl ShipState {\n    pub const INVULNERABILITY_TIME: std::time::Duration = std::time::Duration::from_secs(2);\n    pub const RESPAWN_TIME: std::time::Duration = std::time::Duration::from_millis(1_500);\n\n    /// Advance one frame: the ship moves, countdowns tick, and expired\n    /// countdowns transition to the next state.\n    pub fn update(&mut self, dt: std::time::Duration, screen: Screen) {\n        match self {\n            Self::Active(ship) => {\n                ship.update(dt, screen);\n            }\n            Self::Invulnerable { ship, remaining } => {\n                ship.update(dt, screen);\n                *remaining = remaining.saturating_sub(dt);\n                if remaining.is_zero() {\n                    let ship = std::mem::replace(ship, Ship::spawn(screen));\n                    *self = Self::Active(ship);\n                }\n            }\n            Self::Respawning { remaining } => {\n                *remaining = remaining.saturating_sub(dt);\n                if remaining.is_zero() {\n                    *self = Self::Invulnerable {\n                        ship: Ship::spawn(screen),\n                        remaining: Self::INVULNERABILITY_TIME,\n                    };\n                }\n            }\n        }\n    }\n\n    /// The ship, if one currently exists.\n    pub fn ship(&self) -> Option<&Ship> {\n        match self {\n            Self::Active(ship) | Self::Invulnerable { ship, .. } => Some(ship),\n            Self::Respawning { .. } => None,\n        }\n    }\n\n    pub fn ship_mut(&mut self) -> Option<&mut Ship> {\n        match self {\n            Self::Active(ship) | Self::Invulnerable { ship, .. } => Some(ship),\n            Self::Respawning { .. } => None,\n        }\n    }\n}\n"
+    }
+  ],
+  "completionExplanation": "Your code matches the reference approach: the previous lesson's work stays active, and the new types compile against the public tests.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "enum_unit_variants",
+            "enumName": "ShipState",
+            "requiredVariants": [
+              "Active",
+              "Invulnerable",
+              "Respawning"
+            ]
+          },
+          {
+            "type": "impl_method",
+            "implFor": "ShipState",
+            "methodName": "update",
+            "requiredSignatureIncludes": [
+              "Duration"
+            ]
+          },
+          {
+            "type": "source_includes",
+            "requiredSnippets": [
+              "saturating_sub"
+            ],
+            "forbiddenSnippets": []
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

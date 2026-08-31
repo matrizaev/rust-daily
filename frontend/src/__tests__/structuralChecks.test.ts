@@ -157,7 +157,51 @@ describe("runStructuralChecks", () => {
       "Money",
       "parse_money",
       "required text",
-      "Money",
+    ]);
+  });
+
+  it("ignores forbidden snippets in Rust comments", () => {
+    const failures = runStructuralChecks(
+      `
+      // Implement the default without unwrap or expect.
+      /*
+       * Calling panic! is forbidden too.
+       */
+      impl Default for Endpoint {
+          fn default() -> Self {
+              Self::new(Host::localhost(), Port::LOCAL_DEVELOPMENT)
+          }
+      }
+      `,
+      [
+        {
+          type: "source_includes",
+          requiredSnippets: ["Host::localhost()", "Port::LOCAL_DEVELOPMENT"],
+          forbiddenSnippets: ["unwrap", "expect", "panic!"],
+        },
+      ],
+    );
+
+    expect(failures).toEqual([]);
+  });
+
+  it("still reports forbidden snippets in Rust code", () => {
+    const failures = runStructuralChecks(
+      "fn endpoint() { build_endpoint().expect(\"valid endpoint\"); }",
+      [
+        {
+          type: "source_includes",
+          requiredSnippets: [],
+          forbiddenSnippets: ["unwrap", "expect"],
+        },
+      ],
+    );
+
+    expect(failures).toEqual([
+      {
+        name: "expect",
+        message: "Remove forbidden snippet: expect.",
+      },
     ]);
   });
 
