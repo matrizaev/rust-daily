@@ -52,7 +52,7 @@ fn large_asteroids_split_into_two_mediums() {
     match asteroid.destroy(&mut TestRandom) {
         AsteroidDestruction::Fragments(parts) => {
             assert_eq!(parts.len(), 2);
-            assert!(parts.iter().all(|a| matches!(a, Asteroid::Medium(_))));
+            assert!(parts.iter().all(|a| a.kind() == AsteroidKind::Medium));
             assert_eq!(parts[0].position(), Vec2::new(200.0, 200.0));
             // TestRandom returns the minimum: angle 0, speed 40 -> (40, 0).
             assert_eq!(parts[0].velocity(), Vec2::new(40.0, 0.0));

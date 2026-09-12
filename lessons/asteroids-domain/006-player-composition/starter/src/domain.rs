@@ -285,6 +285,32 @@ pub enum AsteroidKind {
     Small,
 }
 
+impl AsteroidKind {
+    fn radius(self) -> f32 {
+        match self {
+            Self::Large => 40.0,
+            Self::Medium => 22.0,
+            Self::Small => 12.0,
+        }
+    }
+
+    fn score(self) -> Score {
+        match self {
+            Self::Large => Score::new(20),
+            Self::Medium => Score::new(50),
+            Self::Small => Score::new(100),
+        }
+    }
+
+    fn next_smaller(self) -> Option<Self> {
+        match self {
+            Self::Large => Some(Self::Medium),
+            Self::Medium => Some(Self::Small),
+            Self::Small => None,
+        }
+    }
+}
+
 /// Kinematic state shared by every asteroid, regardless of size.
 #[derive(Debug, Clone, Copy)]
 pub struct AsteroidBody {
@@ -292,12 +318,11 @@ pub struct AsteroidBody {
     velocity: Vec2,
 }
 
-/// An asteroid of any size.
+/// An asteroid with a size kind and shared kinematic state.
 #[derive(Debug, Clone, Copy)]
-pub enum Asteroid {
-    Large(AsteroidBody),
-    Medium(AsteroidBody),
-    Small(AsteroidBody),
+pub struct Asteroid {
+    kind: AsteroidKind,
+    body: AsteroidBody,
 }
 
 /// The result of destroying an asteroid.
@@ -311,84 +336,60 @@ pub enum AsteroidDestruction {
 
 impl Asteroid {
     pub fn new(kind: AsteroidKind, position: Vec2, velocity: Vec2) -> Self {
-        let body = AsteroidBody { position, velocity };
-        match kind {
-            AsteroidKind::Large => Self::Large(body),
-            AsteroidKind::Medium => Self::Medium(body),
-            AsteroidKind::Small => Self::Small(body),
+        Self {
+            kind,
+            body: AsteroidBody { position, velocity },
         }
+    }
+
+    pub fn kind(&self) -> AsteroidKind {
+        self.kind
     }
 
     pub fn position(&self) -> Vec2 {
-        self.body().position
+        self.body.position
     }
 
     pub fn velocity(&self) -> Vec2 {
-        self.body().velocity
+        self.body.velocity
     }
 
     pub fn radius(&self) -> f32 {
-        match self {
-            Self::Large(_) => 40.0,
-            Self::Medium(_) => 22.0,
-            Self::Small(_) => 12.0,
-        }
+        self.kind.radius()
     }
 
     pub fn score(&self) -> Score {
-        match self {
-            Self::Large(_) => Score::new(20),
-            Self::Medium(_) => Score::new(50),
-            Self::Small(_) => Score::new(100),
-        }
+        self.kind.score()
     }
 
     /// Integrate motion and wrap around the playfield.
     pub fn update(&mut self, dt: std::time::Duration, screen: Screen) {
-        let body = self.body_mut();
-        body.position += body.velocity * dt.as_secs_f32();
-        body.position = screen.wrap(body.position);
+        self.body.position += self.body.velocity * dt.as_secs_f32();
+        self.body.position = screen.wrap(self.body.position);
     }
 
     /// Destroy the asteroid. Large and Medium split into two fragments of the
     /// next-smaller size at the parent's position, each with a random velocity
     /// drawn from the injected randomness; Small is destroyed outright.
     pub fn destroy(self, rng: &mut impl Random) -> AsteroidDestruction {
-        let mut fragment = |body: AsteroidBody| {
-            let angle = rng.range(0.0, std::f32::consts::TAU);
-            let speed = rng.range(SPEED_MIN, SPEED_MAX);
-            AsteroidBody {
-                position: body.position,
-                velocity: Vec2::new(angle.cos() * speed, angle.sin() * speed),
-            }
+        let Self { kind, body } = self;
+        let Some(fragment_kind) = kind.next_smaller() else {
+            return AsteroidDestruction::Destroyed;
         };
 
-        match self {
-            Self::Large(body) => AsteroidDestruction::Fragments([
-                Asteroid::Medium(fragment(body)),
-                Asteroid::Medium(fragment(body)),
-            ]),
-            Self::Medium(body) => AsteroidDestruction::Fragments([
-                Asteroid::Small(fragment(body)),
-                Asteroid::Small(fragment(body)),
-            ]),
-            Self::Small(_) => AsteroidDestruction::Destroyed,
-        }
-    }
+        let mut fragment = || {
+            let angle = rng.range(0.0, std::f32::consts::TAU);
+            let speed = rng.range(SPEED_MIN, SPEED_MAX);
+            Self::new(
+                fragment_kind,
+                body.position,
+                Vec2::new(angle.cos() * speed, angle.sin() * speed),
+            )
+        };
 
-    fn body(&self) -> &AsteroidBody {
-        match self {
-            Self::Large(body) | Self::Medium(body) | Self::Small(body) => body,
-        }
-    }
-
-    fn body_mut(&mut self) -> &mut AsteroidBody {
-        match self {
-            Self::Large(body) | Self::Medium(body) | Self::Small(body) => body,
-        }
+        AsteroidDestruction::Fragments([fragment(), fragment()])
     }
 }
-
 
 // TODO: Compose the player facade.
 //
