@@ -183,19 +183,20 @@ impl ShipState {
     }
 }
 
-impl Ship {
-    const SHIP_SIZE: f32 = 20.0;
-    const BULLET_SPEED: f32 = 520.0;
-    const BULLET_LIFETIME: std::time::Duration = std::time::Duration::from_millis(1_100);
 
-    /// Spawn a bullet at the ship's nose. Provided for you.
-    pub fn fire(&self) -> Bullet {
-        let facing = Vec2::new(self.heading.sin(), -self.heading.cos());
-        Bullet::new(
-            self.position + facing * Self::SHIP_SIZE,
-            facing * Self::BULLET_SPEED,
-            Self::BULLET_LIFETIME,
-        )
+/// The ship pose needed to create a bullet, without coupling Weapon to Ship.
+#[derive(Debug, Clone, Copy)]
+pub struct FiringPose {
+    origin: Vec2,
+    direction: Vec2,
+}
+
+impl From<&Ship> for FiringPose {
+    fn from(ship: &Ship) -> Self {
+        Self {
+            origin: ship.position,
+            direction: Vec2::new(ship.heading.sin(), -ship.heading.cos()),
+        }
     }
 }
 
@@ -209,28 +210,57 @@ pub enum WeaponState {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct Weapon {
+pub struct WeaponConfig {
     cooldown: std::time::Duration,
+    muzzle_offset: f32,
+    bullet_speed: f32,
+    bullet_lifetime: std::time::Duration,
+}
+
+impl WeaponConfig {
+    pub const fn new(
+        cooldown: std::time::Duration,
+        muzzle_offset: f32,
+        bullet_speed: f32,
+        bullet_lifetime: std::time::Duration,
+    ) -> Self {
+        Self {
+            cooldown,
+            muzzle_offset,
+            bullet_speed,
+            bullet_lifetime,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Weapon {
+    config: WeaponConfig,
     state: WeaponState,
 }
 
 impl Weapon {
-    pub fn new(cooldown: std::time::Duration) -> Self {
+    pub fn new(config: WeaponConfig) -> Self {
         Self {
-            cooldown,
+            config,
             state: WeaponState::Ready,
         }
     }
 
-    /// Fire if ready; starts the cooldown. Returns whether a shot was fired.
-    pub fn fire(&mut self) -> bool {
+    /// Try to fire: creates a bullet and consumes the cooldown when ready.
+    pub fn fire(&mut self, pose: FiringPose) -> Option<Bullet> {
         if !matches!(self.state, WeaponState::Ready) {
-            return false;
+            return None;
         }
+
         self.state = WeaponState::CoolingDown {
-            remaining: self.cooldown,
+            remaining: self.config.cooldown,
         };
-        true
+        Some(Bullet::new(
+            pose.origin + pose.direction * self.config.muzzle_offset,
+            pose.direction * self.config.bullet_speed,
+            self.config.bullet_lifetime,
+        ))
     }
 
     pub fn update(&mut self, dt: std::time::Duration) {
@@ -409,7 +439,12 @@ impl Player {
                 ship: Ship::spawn(screen),
                 remaining: ShipState::INVULNERABILITY_TIME,
             },
-            weapon: Weapon::new(std::time::Duration::from_millis(250)),
+            weapon: Weapon::new(WeaponConfig::new(
+                std::time::Duration::from_millis(250),
+                20.0,
+                520.0,
+                std::time::Duration::from_millis(1_100),
+            )),
         }
     }
 
@@ -461,9 +496,6 @@ impl Player {
     /// Fire a bullet, if a ship exists and the weapon is ready.
     pub fn fire(&mut self) -> Option<Bullet> {
         let ship = self.ship.ship()?;
-        if !self.weapon.fire() {
-            return None;
-        }
-        Some(ship.fire())
+        self.weapon.fire(FiringPose::from(ship))
     }
 }

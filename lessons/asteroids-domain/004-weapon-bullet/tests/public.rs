@@ -1,22 +1,29 @@
 use std::time::Duration;
 
-use rust_daily_lesson::domain::{Bullet, Weapon};
+use rust_daily_lesson::domain::{Bullet, FiringPose, Ship, Weapon, WeaponConfig};
 use rust_daily_lesson::{Screen, Vec2};
 
 const SCREEN: Screen = Screen::new(800.0, 600.0);
 
 #[test]
 fn weapon_fires_when_ready_and_respects_cooldown() {
-    let mut weapon = Weapon::new(Duration::from_millis(250));
+    let ship = Ship::spawn(SCREEN);
+    let pose = FiringPose::from(&ship);
+    let mut weapon = Weapon::new(WeaponConfig::new(
+        Duration::from_millis(250),
+        20.0,
+        520.0,
+        Duration::from_millis(1_100),
+    ));
 
-    assert!(weapon.fire());
-    assert!(!weapon.fire());
+    assert!(weapon.fire(pose).is_some());
+    assert!(weapon.fire(pose).is_none());
 
     weapon.update(Duration::from_millis(249));
-    assert!(!weapon.fire());
+    assert!(weapon.fire(pose).is_none());
 
     weapon.update(Duration::from_millis(1));
-    assert!(weapon.fire());
+    assert!(weapon.fire(pose).is_some());
 }
 
 #[test]
