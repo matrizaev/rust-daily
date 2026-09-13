@@ -343,7 +343,7 @@ impl AsteroidKind {
 
 /// Kinematic state shared by every asteroid, regardless of size.
 #[derive(Debug, Clone, Copy)]
-pub struct AsteroidBody {
+struct AsteroidBody {
     position: Vec2,
     velocity: Vec2,
 }
@@ -646,11 +646,11 @@ impl PlayingGame {
         let count = Self::STARTING_ASTEROIDS + (self.wave.value() as usize - 1);
         for _ in 0..count {
             let position = if rng.chance(0.5) {
-                let x = if rng.chance(0.5) { 0.0 } else { self.screen.width };
-                Vec2::new(x, rng.range(0.0, self.screen.height))
+                let x = if rng.chance(0.5) { 0.0 } else { self.screen.width() };
+                Vec2::new(x, rng.range(0.0, self.screen.height()))
             } else {
-                let y = if rng.chance(0.5) { 0.0 } else { self.screen.height };
-                Vec2::new(rng.range(0.0, self.screen.width), y)
+                let y = if rng.chance(0.5) { 0.0 } else { self.screen.height() };
+                Vec2::new(rng.range(0.0, self.screen.width()), y)
             };
             let angle = rng.range(0.0, std::f32::consts::TAU);
             let speed = rng.range(SPEED_MIN, SPEED_MAX);

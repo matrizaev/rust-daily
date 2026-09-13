@@ -46,6 +46,19 @@ fn asteroids_integrate_and_wrap() {
 }
 
 #[test]
+fn asteroids_wrap_multiple_crossings() {
+    let mut asteroid = Asteroid::new(
+        AsteroidKind::Large,
+        Vec2::new(50.0, 50.0),
+        Vec2::new(-1_001.0, 1_201.0),
+    );
+
+    asteroid.update(Duration::from_secs(1), SCREEN);
+
+    assert_eq!(asteroid.position(), Vec2::new(649.0, 51.0));
+}
+
+#[test]
 fn large_asteroids_split_into_two_mediums() {
     let asteroid = Asteroid::new(AsteroidKind::Large, Vec2::new(200.0, 200.0), Vec2::ZERO);
 

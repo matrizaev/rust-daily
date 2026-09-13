@@ -63,13 +63,21 @@ impl std::ops::MulAssign<f32> for Vec2 {
 /// The playfield in world units.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Screen {
-    pub width: f32,
-    pub height: f32,
+    width: f32,
+    height: f32,
 }
 
 impl Screen {
     pub const fn new(width: f32, height: f32) -> Self {
         Self { width, height }
+    }
+
+    pub const fn width(self) -> f32 {
+        self.width
+    }
+
+    pub const fn height(self) -> f32 {
+        self.height
     }
 
     /// Center of the playfield.
@@ -79,17 +87,11 @@ impl Screen {
 
     /// Re-enter a position from the opposite edge.
     pub fn wrap(self, mut pos: Vec2) -> Vec2 {
-        if pos.x < 0.0 {
-            pos.x += self.width;
+        if !(0.0..=self.width).contains(&pos.x) {
+            pos.x = pos.x.rem_euclid(self.width);
         }
-        if pos.x > self.width {
-            pos.x -= self.width;
-        }
-        if pos.y < 0.0 {
-            pos.y += self.height;
-        }
-        if pos.y > self.height {
-            pos.y -= self.height;
+        if !(0.0..=self.height).contains(&pos.y) {
+            pos.y = pos.y.rem_euclid(self.height);
         }
         pos
     }
