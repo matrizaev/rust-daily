@@ -307,7 +307,7 @@ impl Bullet {
 //
 // Define:
 //   - pub enum AsteroidKind { Large, Medium, Small }
-//   - pub struct AsteroidBody { position: Vec2, velocity: Vec2 }
+//   - struct AsteroidBody { position: Vec2, velocity: Vec2 }
 //   - pub struct Asteroid {
 //       kind: AsteroidKind,
 //       body: AsteroidBody,

@@ -343,7 +343,7 @@ impl AsteroidKind {
 
 /// Kinematic state shared by every asteroid, regardless of size.
 #[derive(Debug, Clone, Copy)]
-pub struct AsteroidBody {
+struct AsteroidBody {
     position: Vec2,
     velocity: Vec2,
 }
