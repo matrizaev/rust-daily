@@ -1935,5 +1935,110 @@
       "orchestration"
     ],
     "masteryThreshold": 3
+  },
+  {
+    "id": "validated-transfer-command",
+    "name": "Validated command boundary",
+    "description": "Convert a raw transfer request into an unforgeable command whose type records request-only invariants before application state is accessed.",
+    "prerequisites": [
+      "dto-tryfrom-validation"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "validated-transfer-command-098"
+    ],
+    "tags": [
+      "validation",
+      "newtypes",
+      "tryfrom",
+      "architecture"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "prepare-before-mutation",
+    "name": "Prepare before mutation",
+    "description": "Resolve state-dependent lookups and checked post-state before authoritative mutation so preparation failures leave state unchanged.",
+    "prerequisites": [
+      "validated-transfer-command"
+    ],
+    "difficulty": [
+      "medium"
+    ],
+    "lessonIds": [
+      "prepare-transfer-099"
+    ],
+    "tags": [
+      "transactions",
+      "validation",
+      "state",
+      "architecture"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "borrow-bound-preparation",
+    "name": "Borrow-bound prepared capability",
+    "description": "Bind prepared work to exclusive mutable references so state cannot drift between preparation and commit.",
+    "prerequisites": [
+      "prepare-before-mutation"
+    ],
+    "difficulty": [
+      "advanced"
+    ],
+    "lessonIds": [
+      "bind-prepared-transfer-100"
+    ],
+    "tags": [
+      "borrowing",
+      "lifetimes",
+      "capabilities",
+      "ownership"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "consuming-infallible-commit",
+    "name": "Consuming infallible commit",
+    "description": "Consume a prepared capability to perform only prevalidated mutation and return an outcome without a recoverable failure channel.",
+    "prerequisites": [
+      "borrow-bound-preparation"
+    ],
+    "difficulty": [
+      "advanced"
+    ],
+    "lessonIds": [
+      "commit-prepared-transfer-101"
+    ],
+    "tags": [
+      "ownership",
+      "state-transitions",
+      "api-design",
+      "transactions"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "staged-mutation-pipeline",
+    "name": "Staged mutation pipeline",
+    "description": "Compose validation, preparation, and consuming commit so expected failures occur before the authoritative mutation boundary.",
+    "prerequisites": [
+      "consuming-infallible-commit"
+    ],
+    "difficulty": [
+      "advanced"
+    ],
+    "lessonIds": [
+      "execute-transfer-pipeline-102"
+    ],
+    "tags": [
+      "architecture",
+      "orchestration",
+      "errors",
+      "transactions"
+    ],
+    "masteryThreshold": 3
   }
 ]

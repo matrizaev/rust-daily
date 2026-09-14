@@ -1,0 +1,103 @@
+{
+  "id": "validated-transfer-command-098",
+  "schemaVersion": 2,
+  "detail": {
+    "instructions": "In src/lib.rs, define a private TransferAmount(NonZeroU64) value and a TransferCommand whose private source, destination, and amount fields hold the validated data. Implement TryFrom<TransferRequest> so a same-account request or a zero amount is rejected with TransferRequestError, and add getters that expose the validated source, destination, and amount.",
+    "starterCode": "//! Ledger support types for the validate -> prepare -> commit arc.\n//!\n//! Account identity, money, and the account store are provided. The boundary\n//! that turns a raw transfer request into work the ledger is allowed to execute\n//! is the part that grows lesson by lesson in this file.\n\nuse std::collections::HashSet;\n\n/// Identifies one account held by the ledger.\n#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\npub struct AccountId(u32);\n\nimpl AccountId {\n    pub const fn new(value: u32) -> Self {\n        Self(value)\n    }\n\n    pub const fn value(self) -> u32 {\n        self.0\n    }\n}\n\n/// An amount in whole cents. Money carries no sign; direction comes from the\n/// transfer that moves it.\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]\npub struct Money(u64);\n\nimpl Money {\n    pub const fn from_cents(cents: u64) -> Self {\n        Self(cents)\n    }\n\n    pub const fn cents(self) -> u64 {\n        self.0\n    }\n}\n\n/// Returned when a ledger is built from entries that repeat an account ID.\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct DuplicateAccount(AccountId);\n\nimpl DuplicateAccount {\n    pub const fn id(self) -> AccountId {\n        self.0\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\nstruct Account {\n    id: AccountId,\n    balance: Money,\n}\n\n/// The in-memory account store that later lessons mutate.\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Ledger {\n    accounts: Vec<Account>,\n}\n\nimpl Ledger {\n    /// Build a ledger, rejecting an entry that repeats an account ID.\n    pub fn try_new(\n        entries: impl IntoIterator<Item = (AccountId, Money)>,\n    ) -> Result<Self, DuplicateAccount> {\n        let mut ids = HashSet::new();\n        let mut accounts = Vec::new();\n\n        for (id, balance) in entries {\n            if !ids.insert(id) {\n                return Err(DuplicateAccount(id));\n            }\n            accounts.push(Account { id, balance });\n        }\n\n        Ok(Self { accounts })\n    }\n\n    /// The balance of one account, if this ledger holds it.\n    pub fn balance(&self, id: AccountId) -> Option<Money> {\n        self.accounts\n            .iter()\n            .find(|account| account.id == id)\n            .map(|account| account.balance)\n    }\n}\n\n/// A transfer exactly as the caller supplied it.\n///\n/// A request can still describe work the domain must never execute: a transfer\n/// to the same account or a transfer of nothing.\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct TransferRequest {\n    source: AccountId,\n    destination: AccountId,\n    amount_cents: u64,\n}\n\nimpl TransferRequest {\n    pub const fn new(source: AccountId, destination: AccountId, amount_cents: u64) -> Self {\n        Self {\n            source,\n            destination,\n            amount_cents,\n        }\n    }\n}\n\n/// The request-only reasons a transfer must not be executed.\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum TransferRequestError {\n    SameAccount,\n    ZeroAmount,\n}\n\n// TODO: add the validated transfer command.\n//\n// Define a private `TransferAmount(NonZeroU64)` value, give `TransferCommand`\n// private `source`, `destination`, and `amount` fields, and implement\n// `TryFrom<TransferRequest>` so a zero amount or a same-account request is\n// rejected with `TransferRequestError` before any ledger state is read. Expose\n// the validated source, destination, and amount through getters.\n",
+    "files": [
+      {
+        "path": "src/lib.rs",
+        "role": "editable",
+        "content": "//! Ledger support types for the validate -> prepare -> commit arc.\n//!\n//! Account identity, money, and the account store are provided. The boundary\n//! that turns a raw transfer request into work the ledger is allowed to execute\n//! is the part that grows lesson by lesson in this file.\n\nuse std::collections::HashSet;\n\n/// Identifies one account held by the ledger.\n#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\npub struct AccountId(u32);\n\nimpl AccountId {\n    pub const fn new(value: u32) -> Self {\n        Self(value)\n    }\n\n    pub const fn value(self) -> u32 {\n        self.0\n    }\n}\n\n/// An amount in whole cents. Money carries no sign; direction comes from the\n/// transfer that moves it.\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]\npub struct Money(u64);\n\nimpl Money {\n    pub const fn from_cents(cents: u64) -> Self {\n        Self(cents)\n    }\n\n    pub const fn cents(self) -> u64 {\n        self.0\n    }\n}\n\n/// Returned when a ledger is built from entries that repeat an account ID.\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct DuplicateAccount(AccountId);\n\nimpl DuplicateAccount {\n    pub const fn id(self) -> AccountId {\n        self.0\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\nstruct Account {\n    id: AccountId,\n    balance: Money,\n}\n\n/// The in-memory account store that later lessons mutate.\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Ledger {\n    accounts: Vec<Account>,\n}\n\nimpl Ledger {\n    /// Build a ledger, rejecting an entry that repeats an account ID.\n    pub fn try_new(\n        entries: impl IntoIterator<Item = (AccountId, Money)>,\n    ) -> Result<Self, DuplicateAccount> {\n        let mut ids = HashSet::new();\n        let mut accounts = Vec::new();\n\n        for (id, balance) in entries {\n            if !ids.insert(id) {\n                return Err(DuplicateAccount(id));\n            }\n            accounts.push(Account { id, balance });\n        }\n\n        Ok(Self { accounts })\n    }\n\n    /// The balance of one account, if this ledger holds it.\n    pub fn balance(&self, id: AccountId) -> Option<Money> {\n        self.accounts\n            .iter()\n            .find(|account| account.id == id)\n            .map(|account| account.balance)\n    }\n}\n\n/// A transfer exactly as the caller supplied it.\n///\n/// A request can still describe work the domain must never execute: a transfer\n/// to the same account or a transfer of nothing.\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct TransferRequest {\n    source: AccountId,\n    destination: AccountId,\n    amount_cents: u64,\n}\n\nimpl TransferRequest {\n    pub const fn new(source: AccountId, destination: AccountId, amount_cents: u64) -> Self {\n        Self {\n            source,\n            destination,\n            amount_cents,\n        }\n    }\n}\n\n/// The request-only reasons a transfer must not be executed.\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum TransferRequestError {\n    SameAccount,\n    ZeroAmount,\n}\n\n// TODO: add the validated transfer command.\n//\n// Define a private `TransferAmount(NonZeroU64)` value, give `TransferCommand`\n// private `source`, `destination`, and `amount` fields, and implement\n// `TryFrom<TransferRequest>` so a zero amount or a same-account request is\n// rejected with `TransferRequestError` before any ledger state is read. Expose\n// the validated source, destination, and amount through getters.\n"
+      },
+      {
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{AccountId, Money, TransferCommand, TransferRequest, TransferRequestError};\n\nfn id(value: u32) -> AccountId {\n    AccountId::new(value)\n}\n\nfn money(cents: u64) -> Money {\n    Money::from_cents(cents)\n}\n\n#[test]\nfn accepts_a_positive_transfer_between_distinct_accounts() {\n    let request = TransferRequest::new(id(1), id(2), 250);\n\n    let command = TransferCommand::try_from(request).expect(\"a positive transfer is valid\");\n\n    assert_eq!(command.source(), id(1));\n    assert_eq!(command.destination(), id(2));\n    assert_eq!(command.amount(), money(250));\n}\n\n#[test]\nfn rejects_a_zero_amount() {\n    let request = TransferRequest::new(id(1), id(2), 0);\n\n    assert_eq!(\n        TransferCommand::try_from(request),\n        Err(TransferRequestError::ZeroAmount)\n    );\n}\n\n#[test]\nfn rejects_a_transfer_to_the_same_account() {\n    let request = TransferRequest::new(id(7), id(7), 500);\n\n    assert_eq!(\n        TransferCommand::try_from(request),\n        Err(TransferRequestError::SameAccount)\n    );\n}\n"
+      }
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "A request only records what the caller asked for. Separate \"the request was supplied\" from \"the request is legal to execute\" with a second type that the ledger accepts."
+      },
+      {
+        "level": 2,
+        "body": "NonZeroU64::new turns the zero check into a type invariant, and comparing the two account IDs rejects a self-transfer. Reject source == destination first, then build the command, and keep its fields private so no caller can skip the conversion."
+      },
+      {
+        "level": 3,
+        "body": "The reference approach for this lesson.",
+        "solutionCode": "//! Ledger support types for the validate -> prepare -> commit arc.\n//!\n//! Account identity, money, and the account store are provided. The boundary\n//! that turns a raw transfer request into work the ledger is allowed to execute\n//! is the part that grows lesson by lesson in this file.\n\nuse std::collections::HashSet;\nuse std::num::NonZeroU64;\n\n/// Identifies one account held by the ledger.\n#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\npub struct AccountId(u32);\n\nimpl AccountId {\n    pub const fn new(value: u32) -> Self {\n        Self(value)\n    }\n\n    pub const fn value(self) -> u32 {\n        self.0\n    }\n}\n\n/// An amount in whole cents. Money carries no sign; direction comes from the\n/// transfer that moves it.\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]\npub struct Money(u64);\n\nimpl Money {\n    pub const fn from_cents(cents: u64) -> Self {\n        Self(cents)\n    }\n\n    pub const fn cents(self) -> u64 {\n        self.0\n    }\n}\n\n/// Returned when a ledger is built from entries that repeat an account ID.\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct DuplicateAccount(AccountId);\n\nimpl DuplicateAccount {\n    pub const fn id(self) -> AccountId {\n        self.0\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\nstruct Account {\n    id: AccountId,\n    balance: Money,\n}\n\n/// The in-memory account store that later lessons mutate.\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Ledger {\n    accounts: Vec<Account>,\n}\n\nimpl Ledger {\n    /// Build a ledger, rejecting an entry that repeats an account ID.\n    pub fn try_new(\n        entries: impl IntoIterator<Item = (AccountId, Money)>,\n    ) -> Result<Self, DuplicateAccount> {\n        let mut ids = HashSet::new();\n        let mut accounts = Vec::new();\n\n        for (id, balance) in entries {\n            if !ids.insert(id) {\n                return Err(DuplicateAccount(id));\n            }\n            accounts.push(Account { id, balance });\n        }\n\n        Ok(Self { accounts })\n    }\n\n    /// The balance of one account, if this ledger holds it.\n    pub fn balance(&self, id: AccountId) -> Option<Money> {\n        self.accounts\n            .iter()\n            .find(|account| account.id == id)\n            .map(|account| account.balance)\n    }\n}\n\n/// A transfer exactly as the caller supplied it.\n///\n/// A request can still describe work the domain must never execute: a transfer\n/// to the same account or a transfer of nothing.\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct TransferRequest {\n    source: AccountId,\n    destination: AccountId,\n    amount_cents: u64,\n}\n\nimpl TransferRequest {\n    pub const fn new(source: AccountId, destination: AccountId, amount_cents: u64) -> Self {\n        Self {\n            source,\n            destination,\n            amount_cents,\n        }\n    }\n}\n\n/// The request-only reasons a transfer must not be executed.\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum TransferRequestError {\n    SameAccount,\n    ZeroAmount,\n}\n\n/// A transfer amount that cannot be zero.\n///\n/// The inner representation stays private so the only way to build one is the\n/// checked conversion in this module.\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\nstruct TransferAmount(NonZeroU64);\n\nimpl TransferAmount {\n    const fn as_money(self) -> Money {\n        Money::from_cents(self.0.get())\n    }\n}\n\n/// A transfer request that passed every request-only rule.\n///\n/// The fields are private: `TryFrom<TransferRequest>` is the only way for\n/// outside code to obtain a command, so a command is evidence that the request\n/// was legal and not merely well formed.\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct TransferCommand {\n    source: AccountId,\n    destination: AccountId,\n    amount: TransferAmount,\n}\n\nimpl TransferCommand {\n    pub const fn source(self) -> AccountId {\n        self.source\n    }\n\n    pub const fn destination(self) -> AccountId {\n        self.destination\n    }\n\n    pub const fn amount(self) -> Money {\n        self.amount.as_money()\n    }\n}\n\nimpl TryFrom<TransferRequest> for TransferCommand {\n    type Error = TransferRequestError;\n\n    fn try_from(request: TransferRequest) -> Result<Self, Self::Error> {\n        if request.source == request.destination {\n            return Err(TransferRequestError::SameAccount);\n        }\n\n        let Some(amount) = NonZeroU64::new(request.amount_cents) else {\n            return Err(TransferRequestError::ZeroAmount);\n        };\n\n        Ok(Self {\n            source: request.source,\n            destination: request.destination,\n            amount: TransferAmount(amount),\n        })\n    }\n}\n"
+      }
+    ],
+    "completionExplanation": "TransferCommand is evidence that the request-only rules already passed, so the later phases can accept a command instead of rechecking the zero-amount and same-account cases. The private fields matter as much as the conversion: a validated type is only trustworthy when external code cannot forge it, and TryFrom<TransferRequest> is now the only way to obtain one.",
+    "validation": {
+      "mode": "all",
+      "validations": [
+        {
+          "mode": "structural",
+          "timeoutMs": 10000,
+          "checks": [
+            {
+              "type": "tuple_struct_fields",
+              "structName": "TransferAmount",
+              "requiredTypes": [
+                "NonZeroU64"
+              ]
+            },
+            {
+              "type": "struct_fields",
+              "structName": "TransferCommand",
+              "requiredFields": [
+                {
+                  "name": "source",
+                  "typeIncludes": [
+                    "AccountId"
+                  ]
+                },
+                {
+                  "name": "destination",
+                  "typeIncludes": [
+                    "AccountId"
+                  ]
+                },
+                {
+                  "name": "amount",
+                  "typeIncludes": [
+                    "TransferAmount"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "impl_trait_for_type",
+              "traitName": "TryFrom<TransferRequest>",
+              "typeName": "TransferCommand"
+            }
+          ]
+        },
+        {
+          "mode": "backend-cargo-test",
+          "timeoutMs": 10000,
+          "dependencySet": "std"
+        },
+        {
+          "mode": "backend-compile-fail",
+          "timeoutMs": 10000,
+          "dependencySet": "std",
+          "cases": [
+            {
+              "name": "transfer-command-direct-construction",
+              "expectedDiagnostics": [
+                "private"
+              ],
+              "path": "compile_fail/transfer_command_direct_construction.rs",
+              "content": "use rust_daily_lesson::{AccountId, TransferCommand};\n\nfn main() {\n    let id = AccountId::new(1);\n    let _ = TransferCommand {\n        source: id,\n        destination: AccountId::new(2),\n        amount: todo!(),\n    };\n}\n"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -126,5 +126,13 @@
     "orderStart": 91,
     "targetLessonCount": 7,
     "description": "Model an Asteroids game domain with newtypes, state machines, typed entities, and a composed session update."
+  },
+  {
+    "id": "validate-prepare-commit",
+    "title": "Validate, prepare, then commit",
+    "pillar": "architecture",
+    "orderStart": 98,
+    "targetLessonCount": 5,
+    "description": "Stage a state-changing operation so raw input is validated, all state-dependent failures are resolved before mutation, prepared work holds the authority it needs, and commit is consuming and infallible."
   }
 ]
