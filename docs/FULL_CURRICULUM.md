@@ -2,7 +2,7 @@
 
 > Generated from the canonical files under `lessons/`. Do not edit this document as the curriculum source of truth.
 
-This document contains all 97 lessons across 16 arcs, ordered by global curriculum order. Each lesson includes its teaching context, complete starter project snapshot, hints, validation contract, compile-fail fixtures where applicable, authored solution, completion explanation, and author notes.
+This document contains all 102 lessons across 17 arcs, ordered by global curriculum order. Each lesson includes its teaching context, complete starter project snapshot, hints, validation contract, compile-fail fixtures where applicable, authored solution, completion explanation, and author notes.
 
 ## Curriculum arcs
 
@@ -24,6 +24,7 @@ This document contains all 97 lessons across 16 arcs, ordered by global curricul
 | Structured request logging (`structured-request-logging`) | logging | 6 | Represent logs as structured events with levels, request fields, spans, error kinds, and redaction. |
 | Table-driven domain tests (`table-driven-domain-tests`) | testing | 6 | Use table-driven tests, executable docs, and properties to protect bounded domain values used by pricing and rollout policy. |
 | Asteroids game domain (`asteroids-domain`) | domain | 7 | Model an Asteroids game domain with newtypes, state machines, typed entities, and a composed session update. |
+| Validate, prepare, then commit (`validate-prepare-commit`) | architecture | 5 | Stage a state-changing operation so raw input is validated, all state-dependent failures are resolved before mutation, prepared work holds the authority it needs, and commit is consuming and infallible. |
 
 ## Lesson index
 
@@ -124,6 +125,11 @@ This document contains all 97 lessons across 16 arcs, ordered by global curricul
 95. [Asteroid kinds, radii, scores, and splitting](#95-asteroid-kinds-radii-scores-and-splitting) — Asteroids game domain, step 5/7
 96. [Player composition facade](#96-player-composition-facade) — Asteroids game domain, step 6/7
 97. [Compose the session update loop](#97-compose-the-session-update-loop) — Asteroids game domain, step 7/7
+98. [Validate a request into a command](#98-validate-a-request-into-a-command) — Validate, prepare, then commit, step 1/5
+99. [Prepare a transfer without mutating](#99-prepare-a-transfer-without-mutating) — Validate, prepare, then commit, step 2/5
+100. [Bind prepared work to exclusive state](#100-bind-prepared-work-to-exclusive-state) — Validate, prepare, then commit, step 3/5
+101. [Commit prepared work infallibly](#101-commit-prepared-work-infallibly) — Validate, prepare, then commit, step 4/5
+102. [Compose the staged mutation pipeline](#102-compose-the-staged-mutation-pipeline) — Validate, prepare, then commit, step 5/5
 
 ---
 
@@ -21233,13 +21239,21 @@ impl std::ops::MulAssign<f32> for Vec2 {
 /// The playfield in world units.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Screen {
-    pub width: f32,
-    pub height: f32,
+    width: f32,
+    height: f32,
 }
 
 impl Screen {
     pub const fn new(width: f32, height: f32) -> Self {
         Self { width, height }
+    }
+
+    pub const fn width(self) -> f32 {
+        self.width
+    }
+
+    pub const fn height(self) -> f32 {
+        self.height
     }
 
     /// Center of the playfield.
@@ -21249,17 +21263,11 @@ impl Screen {
 
     /// Re-enter a position from the opposite edge.
     pub fn wrap(self, mut pos: Vec2) -> Vec2 {
-        if pos.x < 0.0 {
-            pos.x += self.width;
+        if !(0.0..=self.width).contains(&pos.x) {
+            pos.x = pos.x.rem_euclid(self.width);
         }
-        if pos.x > self.width {
-            pos.x -= self.width;
-        }
-        if pos.y < 0.0 {
-            pos.y += self.height;
-        }
-        if pos.y > self.height {
-            pos.y -= self.height;
+        if !(0.0..=self.height).contains(&pos.y) {
+            pos.y = pos.y.rem_euclid(self.height);
         }
         pos
     }
@@ -21590,13 +21598,21 @@ impl std::ops::MulAssign<f32> for Vec2 {
 /// The playfield in world units.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Screen {
-    pub width: f32,
-    pub height: f32,
+    width: f32,
+    height: f32,
 }
 
 impl Screen {
     pub const fn new(width: f32, height: f32) -> Self {
         Self { width, height }
+    }
+
+    pub const fn width(self) -> f32 {
+        self.width
+    }
+
+    pub const fn height(self) -> f32 {
+        self.height
     }
 
     /// Center of the playfield.
@@ -21606,17 +21622,11 @@ impl Screen {
 
     /// Re-enter a position from the opposite edge.
     pub fn wrap(self, mut pos: Vec2) -> Vec2 {
-        if pos.x < 0.0 {
-            pos.x += self.width;
+        if !(0.0..=self.width).contains(&pos.x) {
+            pos.x = pos.x.rem_euclid(self.width);
         }
-        if pos.x > self.width {
-            pos.x -= self.width;
-        }
-        if pos.y < 0.0 {
-            pos.y += self.height;
-        }
-        if pos.y > self.height {
-            pos.y -= self.height;
+        if !(0.0..=self.height).contains(&pos.y) {
+            pos.y = pos.y.rem_euclid(self.height);
         }
         pos
     }
@@ -22029,13 +22039,21 @@ impl std::ops::MulAssign<f32> for Vec2 {
 /// The playfield in world units.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Screen {
-    pub width: f32,
-    pub height: f32,
+    width: f32,
+    height: f32,
 }
 
 impl Screen {
     pub const fn new(width: f32, height: f32) -> Self {
         Self { width, height }
+    }
+
+    pub const fn width(self) -> f32 {
+        self.width
+    }
+
+    pub const fn height(self) -> f32 {
+        self.height
     }
 
     /// Center of the playfield.
@@ -22045,17 +22063,11 @@ impl Screen {
 
     /// Re-enter a position from the opposite edge.
     pub fn wrap(self, mut pos: Vec2) -> Vec2 {
-        if pos.x < 0.0 {
-            pos.x += self.width;
+        if !(0.0..=self.width).contains(&pos.x) {
+            pos.x = pos.x.rem_euclid(self.width);
         }
-        if pos.x > self.width {
-            pos.x -= self.width;
-        }
-        if pos.y < 0.0 {
-            pos.y += self.height;
-        }
-        if pos.y > self.height {
-            pos.y -= self.height;
+        if !(0.0..=self.height).contains(&pos.y) {
+            pos.y = pos.y.rem_euclid(self.height);
         }
         pos
     }
@@ -22178,6 +22190,56 @@ impl Wave {
     /// Advance to the next wave; `None` if it would overflow.
     pub fn next(self) -> Option<Self> {
         self.0.checked_add(1).map(Self)
+    }
+}
+
+/// The player's ship: kinematics are provided; the state machine is your task.
+#[derive(Debug, Clone, Copy)]
+pub struct Ship {
+    position: Vec2,
+    velocity: Vec2,
+    heading: f32,
+}
+
+impl Ship {
+    const ROTATION_SPEED: f32 = 3.5;
+    const THRUST: f32 = 220.0;
+    const MAX_SPEED: f32 = 380.0;
+
+    /// Spawn the ship at the center of the playfield.
+    pub fn spawn(screen: Screen) -> Self {
+        Self {
+            position: screen.center(),
+            velocity: Vec2::ZERO,
+            heading: 0.0,
+        }
+    }
+
+    pub fn position(&self) -> Vec2 {
+        self.position
+    }
+
+    pub fn heading(&self) -> f32 {
+        self.heading
+    }
+
+    /// Integrate motion and wrap around the playfield.
+    pub fn update(&mut self, dt: std::time::Duration, screen: Screen) {
+        self.position += self.velocity * dt.as_secs_f32();
+        self.position = screen.wrap(self.position);
+    }
+
+    pub fn rotate(&mut self, turn: Turn, dt: std::time::Duration) {
+        self.heading += turn.direction() * Self::ROTATION_SPEED * dt.as_secs_f32();
+    }
+
+    pub fn accelerate(&mut self, dt: std::time::Duration) {
+        let facing = Vec2::new(self.heading.sin(), -self.heading.cos());
+        self.velocity += facing * (Self::THRUST * dt.as_secs_f32());
+        let speed = self.velocity.length();
+        if speed > Self::MAX_SPEED {
+            self.velocity *= Self::MAX_SPEED / speed;
+        }
     }
 }
 
@@ -22529,7 +22591,7 @@ Firing is rate-limited by a cooldown timeout, and every bullet carries a lifetim
 
 ### Task
 
-In src/domain.rs define WeaponState (Ready / CoolingDown), Weapon with new, fire, and update, and Bullet with new, position, and update returning whether the bullet should be kept. Ship::fire is provided in the second impl block and expects your Bullet.
+In src/domain.rs define FiringPose from &Ship, WeaponConfig, WeaponState (Ready / CoolingDown), Weapon with new, fire taking a FiringPose and returning an optional Bullet, and update, and Bullet with new, position, and update returning whether the bullet should be kept.
 
 ### Concept context
 
@@ -22610,13 +22672,21 @@ impl std::ops::MulAssign<f32> for Vec2 {
 /// The playfield in world units.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Screen {
-    pub width: f32,
-    pub height: f32,
+    width: f32,
+    height: f32,
 }
 
 impl Screen {
     pub const fn new(width: f32, height: f32) -> Self {
         Self { width, height }
+    }
+
+    pub const fn width(self) -> f32 {
+        self.width
+    }
+
+    pub const fn height(self) -> f32 {
+        self.height
     }
 
     /// Center of the playfield.
@@ -22626,17 +22696,11 @@ impl Screen {
 
     /// Re-enter a position from the opposite edge.
     pub fn wrap(self, mut pos: Vec2) -> Vec2 {
-        if pos.x < 0.0 {
-            pos.x += self.width;
+        if !(0.0..=self.width).contains(&pos.x) {
+            pos.x = pos.x.rem_euclid(self.width);
         }
-        if pos.x > self.width {
-            pos.x -= self.width;
-        }
-        if pos.y < 0.0 {
-            pos.y += self.height;
-        }
-        if pos.y > self.height {
-            pos.y -= self.height;
+        if !(0.0..=self.height).contains(&pos.y) {
+            pos.y = pos.y.rem_euclid(self.height);
         }
         pos
     }
@@ -22878,19 +22942,23 @@ impl ShipState {
 }
 
 
+
 // TODO: Model the weapon cooldown and the bullet lifetime.
 //
-// `Ship::fire` is provided in the second `impl Ship` block; it expects Bullet.
 // Define:
-//   - `pub enum WeaponState { Ready, CoolingDown { remaining: Duration } }`
-//   - `pub struct Weapon { cooldown: Duration, state: WeaponState }`
-//       - `pub fn new(cooldown: Duration) -> Self` (starts Ready)
-//       - `pub fn fire(&mut self) -> bool` (true only when Ready; starts cooldown)
-//       - `pub fn update(&mut self, dt: Duration)` (tick; Ready when it ends)
-//   - `pub struct Bullet { position: Vec2, velocity: Vec2, remaining: Duration }`
-//       - `pub fn new(position: Vec2, velocity: Vec2, remaining: Duration) -> Self`
-//       - `pub fn position(&self) -> Vec2`
-//       - `pub fn update(&mut self, dt: Duration, screen: Screen) -> bool`
+//   - pub enum WeaponState { Ready, CoolingDown { remaining: Duration } }
+//   - pub struct FiringPose { origin: Vec2, direction: Vec2 }
+//       - impl From<&Ship> for FiringPose (this borrows the ship)
+//   - pub struct WeaponConfig { cooldown, muzzle_offset, bullet_speed, bullet_lifetime }
+//   - pub struct Weapon { config: WeaponConfig, state: WeaponState }
+//       - pub fn new(config: WeaponConfig) -> Self (starts Ready)
+//       - pub fn fire(&mut self, pose: FiringPose) -> Option<Bullet>
+//         create a bullet from the pose and return None while cooling down
+//       - pub fn update(&mut self, dt: Duration) (tick; Ready when it ends)
+//   - pub struct Bullet { position: Vec2, velocity: Vec2, remaining: Duration }
+//       - pub fn new(position: Vec2, velocity: Vec2, remaining: Duration) -> Self
+//       - pub fn position(&self) -> Vec2
+//       - pub fn update(&mut self, dt: Duration, screen: Screen) -> bool
 //         advance motion; return false when the bullet should be removed
 //         (lifetime expired or off-screen)
 ```
@@ -22902,23 +22970,30 @@ Source: `lessons/asteroids-domain/004-weapon-bullet/tests/public.rs`
 ```rust
 use std::time::Duration;
 
-use rust_daily_lesson::domain::{Bullet, Weapon};
+use rust_daily_lesson::domain::{Bullet, FiringPose, Ship, Weapon, WeaponConfig};
 use rust_daily_lesson::{Screen, Vec2};
 
 const SCREEN: Screen = Screen::new(800.0, 600.0);
 
 #[test]
 fn weapon_fires_when_ready_and_respects_cooldown() {
-    let mut weapon = Weapon::new(Duration::from_millis(250));
+    let ship = Ship::spawn(SCREEN);
+    let pose = FiringPose::from(&ship);
+    let mut weapon = Weapon::new(WeaponConfig::new(
+        Duration::from_millis(250),
+        20.0,
+        520.0,
+        Duration::from_millis(1_100),
+    ));
 
-    assert!(weapon.fire());
-    assert!(!weapon.fire());
+    assert!(weapon.fire(pose).is_some());
+    assert!(weapon.fire(pose).is_none());
 
     weapon.update(Duration::from_millis(249));
-    assert!(!weapon.fire());
+    assert!(weapon.fire(pose).is_none());
 
     weapon.update(Duration::from_millis(1));
-    assert!(weapon.fire());
+    assert!(weapon.fire(pose).is_some());
 }
 
 #[test]
@@ -22941,7 +23016,7 @@ fn bullet_is_culled_when_offscreen() {
 ### Progressive hints
 
 1. WeaponState::CoolingDown { remaining } is the cooldown countdown; Bullet::remaining is the lifetime countdown.
-2. Weapon::fire returns true only from Ready and starts the cooldown; Bullet::update returns false when remaining reaches zero or screen.contains(position) is false.
+2. FiringPose borrows only the ship's position and heading; Weapon::fire(pose) creates a bullet and starts the cooldown, returning None while cooling down. Bullet::update returns false when remaining reaches zero or the position leaves the screen.
 3. The reference approach for this lesson. The authored code is included in the Solution section.
 
 ### Validation contract
@@ -22967,7 +23042,8 @@ fn bullet_is_culled_when_offscreen() {
           "implFor": "Weapon",
           "methodName": "fire",
           "requiredSignatureIncludes": [
-            "bool"
+            "FiringPose",
+            "Option<Bullet>"
           ]
         },
         {
@@ -23187,19 +23263,20 @@ impl ShipState {
     }
 }
 
-impl Ship {
-    const SHIP_SIZE: f32 = 20.0;
-    const BULLET_SPEED: f32 = 520.0;
-    const BULLET_LIFETIME: std::time::Duration = std::time::Duration::from_millis(1_100);
 
-    /// Spawn a bullet at the ship's nose. Provided for you.
-    pub fn fire(&self) -> Bullet {
-        let facing = Vec2::new(self.heading.sin(), -self.heading.cos());
-        Bullet::new(
-            self.position + facing * Self::SHIP_SIZE,
-            facing * Self::BULLET_SPEED,
-            Self::BULLET_LIFETIME,
-        )
+/// The ship pose needed to create a bullet, without coupling Weapon to Ship.
+#[derive(Debug, Clone, Copy)]
+pub struct FiringPose {
+    origin: Vec2,
+    direction: Vec2,
+}
+
+impl From<&Ship> for FiringPose {
+    fn from(ship: &Ship) -> Self {
+        Self {
+            origin: ship.position,
+            direction: Vec2::new(ship.heading.sin(), -ship.heading.cos()),
+        }
     }
 }
 
@@ -23213,28 +23290,57 @@ pub enum WeaponState {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct Weapon {
+pub struct WeaponConfig {
     cooldown: std::time::Duration,
+    muzzle_offset: f32,
+    bullet_speed: f32,
+    bullet_lifetime: std::time::Duration,
+}
+
+impl WeaponConfig {
+    pub const fn new(
+        cooldown: std::time::Duration,
+        muzzle_offset: f32,
+        bullet_speed: f32,
+        bullet_lifetime: std::time::Duration,
+    ) -> Self {
+        Self {
+            cooldown,
+            muzzle_offset,
+            bullet_speed,
+            bullet_lifetime,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Weapon {
+    config: WeaponConfig,
     state: WeaponState,
 }
 
 impl Weapon {
-    pub fn new(cooldown: std::time::Duration) -> Self {
+    pub fn new(config: WeaponConfig) -> Self {
         Self {
-            cooldown,
+            config,
             state: WeaponState::Ready,
         }
     }
 
-    /// Fire if ready; starts the cooldown. Returns whether a shot was fired.
-    pub fn fire(&mut self) -> bool {
+    /// Try to fire: creates a bullet and consumes the cooldown when ready.
+    pub fn fire(&mut self, pose: FiringPose) -> Option<Bullet> {
         if !matches!(self.state, WeaponState::Ready) {
-            return false;
+            return None;
         }
+
         self.state = WeaponState::CoolingDown {
-            remaining: self.cooldown,
+            remaining: self.config.cooldown,
         };
-        true
+        Some(Bullet::new(
+            pose.origin + pose.direction * self.config.muzzle_offset,
+            pose.direction * self.config.bullet_speed,
+            self.config.bullet_lifetime,
+        ))
     }
 
     pub fn update(&mut self, dt: std::time::Duration) {
@@ -23308,7 +23414,7 @@ Every asteroid shares the same kinematic body, but its size kind decides the col
 
 ### Task
 
-In src/domain.rs define AsteroidKind, AsteroidBody, Asteroid (Large / Medium / Small), and AsteroidDestruction, with new, position, velocity, radius, score, update, and destroy taking the injected randomness.
+In src/domain.rs define AsteroidKind, a private AsteroidBody helper, Asteroid (with private kind and body fields), and AsteroidDestruction, with new, kind, position, velocity, radius, score, update, and destroy taking the injected randomness.
 
 ### Concept context
 
@@ -23389,13 +23495,21 @@ impl std::ops::MulAssign<f32> for Vec2 {
 /// The playfield in world units.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Screen {
-    pub width: f32,
-    pub height: f32,
+    width: f32,
+    height: f32,
 }
 
 impl Screen {
     pub const fn new(width: f32, height: f32) -> Self {
         Self { width, height }
+    }
+
+    pub const fn width(self) -> f32 {
+        self.width
+    }
+
+    pub const fn height(self) -> f32 {
+        self.height
     }
 
     /// Center of the playfield.
@@ -23405,17 +23519,11 @@ impl Screen {
 
     /// Re-enter a position from the opposite edge.
     pub fn wrap(self, mut pos: Vec2) -> Vec2 {
-        if pos.x < 0.0 {
-            pos.x += self.width;
+        if !(0.0..=self.width).contains(&pos.x) {
+            pos.x = pos.x.rem_euclid(self.width);
         }
-        if pos.x > self.width {
-            pos.x -= self.width;
-        }
-        if pos.y < 0.0 {
-            pos.y += self.height;
-        }
-        if pos.y > self.height {
-            pos.y -= self.height;
+        if !(0.0..=self.height).contains(&pos.y) {
+            pos.y = pos.y.rem_euclid(self.height);
         }
         pos
     }
@@ -23656,19 +23764,20 @@ impl ShipState {
     }
 }
 
-impl Ship {
-    const SHIP_SIZE: f32 = 20.0;
-    const BULLET_SPEED: f32 = 520.0;
-    const BULLET_LIFETIME: std::time::Duration = std::time::Duration::from_millis(1_100);
 
-    /// Spawn a bullet at the ship's nose. Provided for you.
-    pub fn fire(&self) -> Bullet {
-        let facing = Vec2::new(self.heading.sin(), -self.heading.cos());
-        Bullet::new(
-            self.position + facing * Self::SHIP_SIZE,
-            facing * Self::BULLET_SPEED,
-            Self::BULLET_LIFETIME,
-        )
+/// The ship pose needed to create a bullet, without coupling Weapon to Ship.
+#[derive(Debug, Clone, Copy)]
+pub struct FiringPose {
+    origin: Vec2,
+    direction: Vec2,
+}
+
+impl From<&Ship> for FiringPose {
+    fn from(ship: &Ship) -> Self {
+        Self {
+            origin: ship.position,
+            direction: Vec2::new(ship.heading.sin(), -ship.heading.cos()),
+        }
     }
 }
 
@@ -23682,28 +23791,57 @@ pub enum WeaponState {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct Weapon {
+pub struct WeaponConfig {
     cooldown: std::time::Duration,
+    muzzle_offset: f32,
+    bullet_speed: f32,
+    bullet_lifetime: std::time::Duration,
+}
+
+impl WeaponConfig {
+    pub const fn new(
+        cooldown: std::time::Duration,
+        muzzle_offset: f32,
+        bullet_speed: f32,
+        bullet_lifetime: std::time::Duration,
+    ) -> Self {
+        Self {
+            cooldown,
+            muzzle_offset,
+            bullet_speed,
+            bullet_lifetime,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Weapon {
+    config: WeaponConfig,
     state: WeaponState,
 }
 
 impl Weapon {
-    pub fn new(cooldown: std::time::Duration) -> Self {
+    pub fn new(config: WeaponConfig) -> Self {
         Self {
-            cooldown,
+            config,
             state: WeaponState::Ready,
         }
     }
 
-    /// Fire if ready; starts the cooldown. Returns whether a shot was fired.
-    pub fn fire(&mut self) -> bool {
+    /// Try to fire: creates a bullet and consumes the cooldown when ready.
+    pub fn fire(&mut self, pose: FiringPose) -> Option<Bullet> {
         if !matches!(self.state, WeaponState::Ready) {
-            return false;
+            return None;
         }
+
         self.state = WeaponState::CoolingDown {
-            remaining: self.cooldown,
+            remaining: self.config.cooldown,
         };
-        true
+        Some(Bullet::new(
+            pose.origin + pose.direction * self.config.muzzle_offset,
+            pose.direction * self.config.bullet_speed,
+            self.config.bullet_lifetime,
+        ))
     }
 
     pub fn update(&mut self, dt: std::time::Duration) {
@@ -23746,27 +23884,30 @@ impl Bullet {
         !self.remaining.is_zero() && screen.contains(self.position)
     }
 }
-
-
 // TODO: Model asteroid kinds and their destruction.
 //
 // Define:
-//   - `pub enum AsteroidKind { Large, Medium, Small }`
-//   - `pub struct AsteroidBody { position: Vec2, velocity: Vec2 }`
-//   - `pub enum Asteroid { Large(AsteroidBody), Medium(AsteroidBody), Small(AsteroidBody) }`
-//   - `pub enum AsteroidDestruction { Fragments([Asteroid; 2]), Destroyed }`
-//   - on `Asteroid`:
-//       - `pub fn new(kind: AsteroidKind, position: Vec2, velocity: Vec2) -> Self`
-//       - `pub fn position(&self) -> Vec2` / `pub fn velocity(&self) -> Vec2`
-//       - `pub fn radius(&self) -> f32`  (40.0 / 22.0 / 12.0)
-//       - `pub fn score(&self) -> Score` (20 / 50 / 100)
-//       - `pub fn update(&mut self, dt: Duration, screen: Screen)`
+//   - pub enum AsteroidKind { Large, Medium, Small }
+//   - struct AsteroidBody { position: Vec2, velocity: Vec2 }
+//   - pub struct Asteroid {
+//       kind: AsteroidKind,
+//       body: AsteroidBody,
+//     }
+//     with private fields so the kind and body stay coupled.
+//   - pub enum AsteroidDestruction { Fragments([Asteroid; 2]), Destroyed }
+//   - on Asteroid:
+//       - pub fn new(kind: AsteroidKind, position: Vec2, velocity: Vec2) -> Self
+//       - pub fn kind(&self) -> AsteroidKind
+//       - pub fn position(&self) -> Vec2 / pub fn velocity(&self) -> Vec2
+//       - pub fn radius(&self) -> f32  (40.0 / 22.0 / 12.0)
+//       - pub fn score(&self) -> Score (20 / 50 / 100)
+//       - pub fn update(&mut self, dt: Duration, screen: Screen)
 //         integrate motion and wrap around the playfield
-//       - `pub fn destroy(self, rng: &mut impl Random) -> AsteroidDestruction`
+//       - pub fn destroy(self, rng: &mut impl Random) -> AsteroidDestruction
 //         Large splits into two Mediums, Medium into two Smalls (both keep the
 //         parent's position and draw a random velocity from the injected rng:
 //         angle in 0..TAU, speed in 40..110); Small is destroyed outright.
-//   - module constants `SPEED_MIN` (40.0) and `SPEED_MAX` (110.0)
+//   - module constants SPEED_MIN (40.0) and SPEED_MAX (110.0)
 ```
 
 #### `tests/public.rs` — test
@@ -23822,13 +23963,26 @@ fn asteroids_integrate_and_wrap() {
 }
 
 #[test]
+fn asteroids_wrap_multiple_crossings() {
+    let mut asteroid = Asteroid::new(
+        AsteroidKind::Large,
+        Vec2::new(50.0, 50.0),
+        Vec2::new(-1_001.0, 1_201.0),
+    );
+
+    asteroid.update(Duration::from_secs(1), SCREEN);
+
+    assert_eq!(asteroid.position(), Vec2::new(649.0, 51.0));
+}
+
+#[test]
 fn large_asteroids_split_into_two_mediums() {
     let asteroid = Asteroid::new(AsteroidKind::Large, Vec2::new(200.0, 200.0), Vec2::ZERO);
 
     match asteroid.destroy(&mut TestRandom) {
         AsteroidDestruction::Fragments(parts) => {
             assert_eq!(parts.len(), 2);
-            assert!(parts.iter().all(|a| matches!(a, Asteroid::Medium(_))));
+            assert!(parts.iter().all(|a| a.kind() == AsteroidKind::Medium));
             assert_eq!(parts[0].position(), Vec2::new(200.0, 200.0));
             // TestRandom returns the minimum: angle 0, speed 40 -> (40, 0).
             assert_eq!(parts[0].velocity(), Vec2::new(40.0, 0.0));
@@ -23849,8 +24003,8 @@ fn small_asteroids_are_destroyed_outright() {
 
 ### Progressive hints
 
-1. Asteroid::new maps AsteroidKind onto the matching enum variant; radius and score match on the variant.
-2. destroy(self, rng) builds a fragment body at the parent's position with a random angle and speed from the injected rng; Large and Medium return Fragments of the next-smaller kind, Small returns Destroyed.
+1. Asteroid::new stores the AsteroidKind and AsteroidBody in private fields; kind(), radius(), and score() read from that shared representation.
+2. destroy(self, rng) builds two Asteroid values with the next-smaller kind at the parent's position and random velocities; Small returns Destroyed.
 3. The reference approach for this lesson. The authored code is included in the Solution section.
 
 ### Validation contract
@@ -23864,12 +24018,14 @@ fn small_asteroids_are_destroyed_outright() {
       "timeoutMs": 10000,
       "checks": [
         {
-          "type": "enum_unit_variants",
-          "enumName": "Asteroid",
-          "requiredVariants": [
-            "Large",
-            "Medium",
-            "Small"
+          "type": "source_includes",
+          "requiredSnippets": [
+            "pub struct Asteroid {",
+            "kind: AsteroidKind",
+            "body: AsteroidBody"
+          ],
+          "forbiddenSnippets": [
+            "pub enum Asteroid {"
           ]
         },
         {
@@ -23900,8 +24056,39 @@ fn small_asteroids_are_destroyed_outright() {
           "sourcePath": "tests/public.rs"
         }
       ]
+    },
+    {
+      "mode": "backend-compile-fail",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "cases": [
+        {
+          "name": "asteroid-body-private",
+          "expectedDiagnostics": [
+            "private"
+          ],
+          "forbiddenDiagnostics": [
+            "unresolved import"
+          ],
+          "sourcePath": "compile_fail/asteroid_body_private.rs"
+        }
+      ]
     }
   ]
+}
+```
+
+#### Compile-fail fixtures
+
+##### asteroid-body-private
+
+Source: `lessons/asteroids-domain/005-asteroid-kinds/compile_fail/asteroid_body_private.rs`
+
+```rust
+use rust_daily_lesson::domain::AsteroidBody;
+
+fn main() {
+    let _ = AsteroidBody;
 }
 ```
 
@@ -24097,19 +24284,20 @@ impl ShipState {
     }
 }
 
-impl Ship {
-    const SHIP_SIZE: f32 = 20.0;
-    const BULLET_SPEED: f32 = 520.0;
-    const BULLET_LIFETIME: std::time::Duration = std::time::Duration::from_millis(1_100);
 
-    /// Spawn a bullet at the ship's nose. Provided for you.
-    pub fn fire(&self) -> Bullet {
-        let facing = Vec2::new(self.heading.sin(), -self.heading.cos());
-        Bullet::new(
-            self.position + facing * Self::SHIP_SIZE,
-            facing * Self::BULLET_SPEED,
-            Self::BULLET_LIFETIME,
-        )
+/// The ship pose needed to create a bullet, without coupling Weapon to Ship.
+#[derive(Debug, Clone, Copy)]
+pub struct FiringPose {
+    origin: Vec2,
+    direction: Vec2,
+}
+
+impl From<&Ship> for FiringPose {
+    fn from(ship: &Ship) -> Self {
+        Self {
+            origin: ship.position,
+            direction: Vec2::new(ship.heading.sin(), -ship.heading.cos()),
+        }
     }
 }
 
@@ -24123,28 +24311,57 @@ pub enum WeaponState {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct Weapon {
+pub struct WeaponConfig {
     cooldown: std::time::Duration,
+    muzzle_offset: f32,
+    bullet_speed: f32,
+    bullet_lifetime: std::time::Duration,
+}
+
+impl WeaponConfig {
+    pub const fn new(
+        cooldown: std::time::Duration,
+        muzzle_offset: f32,
+        bullet_speed: f32,
+        bullet_lifetime: std::time::Duration,
+    ) -> Self {
+        Self {
+            cooldown,
+            muzzle_offset,
+            bullet_speed,
+            bullet_lifetime,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Weapon {
+    config: WeaponConfig,
     state: WeaponState,
 }
 
 impl Weapon {
-    pub fn new(cooldown: std::time::Duration) -> Self {
+    pub fn new(config: WeaponConfig) -> Self {
         Self {
-            cooldown,
+            config,
             state: WeaponState::Ready,
         }
     }
 
-    /// Fire if ready; starts the cooldown. Returns whether a shot was fired.
-    pub fn fire(&mut self) -> bool {
+    /// Try to fire: creates a bullet and consumes the cooldown when ready.
+    pub fn fire(&mut self, pose: FiringPose) -> Option<Bullet> {
         if !matches!(self.state, WeaponState::Ready) {
-            return false;
+            return None;
         }
+
         self.state = WeaponState::CoolingDown {
-            remaining: self.cooldown,
+            remaining: self.config.cooldown,
         };
-        true
+        Some(Bullet::new(
+            pose.origin + pose.direction * self.config.muzzle_offset,
+            pose.direction * self.config.bullet_speed,
+            self.config.bullet_lifetime,
+        ))
     }
 
     pub fn update(&mut self, dt: std::time::Duration) {
@@ -24199,19 +24416,44 @@ pub enum AsteroidKind {
     Small,
 }
 
+impl AsteroidKind {
+    fn radius(self) -> f32 {
+        match self {
+            Self::Large => 40.0,
+            Self::Medium => 22.0,
+            Self::Small => 12.0,
+        }
+    }
+
+    fn score(self) -> Score {
+        match self {
+            Self::Large => Score::new(20),
+            Self::Medium => Score::new(50),
+            Self::Small => Score::new(100),
+        }
+    }
+
+    fn next_smaller(self) -> Option<Self> {
+        match self {
+            Self::Large => Some(Self::Medium),
+            Self::Medium => Some(Self::Small),
+            Self::Small => None,
+        }
+    }
+}
+
 /// Kinematic state shared by every asteroid, regardless of size.
 #[derive(Debug, Clone, Copy)]
-pub struct AsteroidBody {
+struct AsteroidBody {
     position: Vec2,
     velocity: Vec2,
 }
 
-/// An asteroid of any size.
+/// An asteroid with a size kind and shared kinematic state.
 #[derive(Debug, Clone, Copy)]
-pub enum Asteroid {
-    Large(AsteroidBody),
-    Medium(AsteroidBody),
-    Small(AsteroidBody),
+pub struct Asteroid {
+    kind: AsteroidKind,
+    body: AsteroidBody,
 }
 
 /// The result of destroying an asteroid.
@@ -24225,81 +24467,58 @@ pub enum AsteroidDestruction {
 
 impl Asteroid {
     pub fn new(kind: AsteroidKind, position: Vec2, velocity: Vec2) -> Self {
-        let body = AsteroidBody { position, velocity };
-        match kind {
-            AsteroidKind::Large => Self::Large(body),
-            AsteroidKind::Medium => Self::Medium(body),
-            AsteroidKind::Small => Self::Small(body),
+        Self {
+            kind,
+            body: AsteroidBody { position, velocity },
         }
+    }
+
+    pub fn kind(&self) -> AsteroidKind {
+        self.kind
     }
 
     pub fn position(&self) -> Vec2 {
-        self.body().position
+        self.body.position
     }
 
     pub fn velocity(&self) -> Vec2 {
-        self.body().velocity
+        self.body.velocity
     }
 
     pub fn radius(&self) -> f32 {
-        match self {
-            Self::Large(_) => 40.0,
-            Self::Medium(_) => 22.0,
-            Self::Small(_) => 12.0,
-        }
+        self.kind.radius()
     }
 
     pub fn score(&self) -> Score {
-        match self {
-            Self::Large(_) => Score::new(20),
-            Self::Medium(_) => Score::new(50),
-            Self::Small(_) => Score::new(100),
-        }
+        self.kind.score()
     }
 
     /// Integrate motion and wrap around the playfield.
     pub fn update(&mut self, dt: std::time::Duration, screen: Screen) {
-        let body = self.body_mut();
-        body.position += body.velocity * dt.as_secs_f32();
-        body.position = screen.wrap(body.position);
+        self.body.position += self.body.velocity * dt.as_secs_f32();
+        self.body.position = screen.wrap(self.body.position);
     }
 
     /// Destroy the asteroid. Large and Medium split into two fragments of the
     /// next-smaller size at the parent's position, each with a random velocity
     /// drawn from the injected randomness; Small is destroyed outright.
     pub fn destroy(self, rng: &mut impl Random) -> AsteroidDestruction {
-        let mut fragment = |body: AsteroidBody| {
-            let angle = rng.range(0.0, std::f32::consts::TAU);
-            let speed = rng.range(SPEED_MIN, SPEED_MAX);
-            AsteroidBody {
-                position: body.position,
-                velocity: Vec2::new(angle.cos() * speed, angle.sin() * speed),
-            }
+        let Self { kind, body } = self;
+        let Some(fragment_kind) = kind.next_smaller() else {
+            return AsteroidDestruction::Destroyed;
         };
 
-        match self {
-            Self::Large(body) => AsteroidDestruction::Fragments([
-                Asteroid::Medium(fragment(body)),
-                Asteroid::Medium(fragment(body)),
-            ]),
-            Self::Medium(body) => AsteroidDestruction::Fragments([
-                Asteroid::Small(fragment(body)),
-                Asteroid::Small(fragment(body)),
-            ]),
-            Self::Small(_) => AsteroidDestruction::Destroyed,
-        }
-    }
+        let mut fragment = || {
+            let angle = rng.range(0.0, std::f32::consts::TAU);
+            let speed = rng.range(SPEED_MIN, SPEED_MAX);
+            Self::new(
+                fragment_kind,
+                body.position,
+                Vec2::new(angle.cos() * speed, angle.sin() * speed),
+            )
+        };
 
-    fn body(&self) -> &AsteroidBody {
-        match self {
-            Self::Large(body) | Self::Medium(body) | Self::Small(body) => body,
-        }
-    }
-
-    fn body_mut(&mut self) -> &mut AsteroidBody {
-        match self {
-            Self::Large(body) | Self::Medium(body) | Self::Small(body) => body,
-        }
+        AsteroidDestruction::Fragments([fragment(), fragment()])
     }
 }
 ```
@@ -24414,13 +24633,21 @@ impl std::ops::MulAssign<f32> for Vec2 {
 /// The playfield in world units.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Screen {
-    pub width: f32,
-    pub height: f32,
+    width: f32,
+    height: f32,
 }
 
 impl Screen {
     pub const fn new(width: f32, height: f32) -> Self {
         Self { width, height }
+    }
+
+    pub const fn width(self) -> f32 {
+        self.width
+    }
+
+    pub const fn height(self) -> f32 {
+        self.height
     }
 
     /// Center of the playfield.
@@ -24430,17 +24657,11 @@ impl Screen {
 
     /// Re-enter a position from the opposite edge.
     pub fn wrap(self, mut pos: Vec2) -> Vec2 {
-        if pos.x < 0.0 {
-            pos.x += self.width;
+        if !(0.0..=self.width).contains(&pos.x) {
+            pos.x = pos.x.rem_euclid(self.width);
         }
-        if pos.x > self.width {
-            pos.x -= self.width;
-        }
-        if pos.y < 0.0 {
-            pos.y += self.height;
-        }
-        if pos.y > self.height {
-            pos.y -= self.height;
+        if !(0.0..=self.height).contains(&pos.y) {
+            pos.y = pos.y.rem_euclid(self.height);
         }
         pos
     }
@@ -24681,19 +24902,20 @@ impl ShipState {
     }
 }
 
-impl Ship {
-    const SHIP_SIZE: f32 = 20.0;
-    const BULLET_SPEED: f32 = 520.0;
-    const BULLET_LIFETIME: std::time::Duration = std::time::Duration::from_millis(1_100);
 
-    /// Spawn a bullet at the ship's nose. Provided for you.
-    pub fn fire(&self) -> Bullet {
-        let facing = Vec2::new(self.heading.sin(), -self.heading.cos());
-        Bullet::new(
-            self.position + facing * Self::SHIP_SIZE,
-            facing * Self::BULLET_SPEED,
-            Self::BULLET_LIFETIME,
-        )
+/// The ship pose needed to create a bullet, without coupling Weapon to Ship.
+#[derive(Debug, Clone, Copy)]
+pub struct FiringPose {
+    origin: Vec2,
+    direction: Vec2,
+}
+
+impl From<&Ship> for FiringPose {
+    fn from(ship: &Ship) -> Self {
+        Self {
+            origin: ship.position,
+            direction: Vec2::new(ship.heading.sin(), -ship.heading.cos()),
+        }
     }
 }
 
@@ -24707,28 +24929,57 @@ pub enum WeaponState {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct Weapon {
+pub struct WeaponConfig {
     cooldown: std::time::Duration,
+    muzzle_offset: f32,
+    bullet_speed: f32,
+    bullet_lifetime: std::time::Duration,
+}
+
+impl WeaponConfig {
+    pub const fn new(
+        cooldown: std::time::Duration,
+        muzzle_offset: f32,
+        bullet_speed: f32,
+        bullet_lifetime: std::time::Duration,
+    ) -> Self {
+        Self {
+            cooldown,
+            muzzle_offset,
+            bullet_speed,
+            bullet_lifetime,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Weapon {
+    config: WeaponConfig,
     state: WeaponState,
 }
 
 impl Weapon {
-    pub fn new(cooldown: std::time::Duration) -> Self {
+    pub fn new(config: WeaponConfig) -> Self {
         Self {
-            cooldown,
+            config,
             state: WeaponState::Ready,
         }
     }
 
-    /// Fire if ready; starts the cooldown. Returns whether a shot was fired.
-    pub fn fire(&mut self) -> bool {
+    /// Try to fire: creates a bullet and consumes the cooldown when ready.
+    pub fn fire(&mut self, pose: FiringPose) -> Option<Bullet> {
         if !matches!(self.state, WeaponState::Ready) {
-            return false;
+            return None;
         }
+
         self.state = WeaponState::CoolingDown {
-            remaining: self.cooldown,
+            remaining: self.config.cooldown,
         };
-        true
+        Some(Bullet::new(
+            pose.origin + pose.direction * self.config.muzzle_offset,
+            pose.direction * self.config.bullet_speed,
+            self.config.bullet_lifetime,
+        ))
     }
 
     pub fn update(&mut self, dt: std::time::Duration) {
@@ -24783,19 +25034,44 @@ pub enum AsteroidKind {
     Small,
 }
 
+impl AsteroidKind {
+    fn radius(self) -> f32 {
+        match self {
+            Self::Large => 40.0,
+            Self::Medium => 22.0,
+            Self::Small => 12.0,
+        }
+    }
+
+    fn score(self) -> Score {
+        match self {
+            Self::Large => Score::new(20),
+            Self::Medium => Score::new(50),
+            Self::Small => Score::new(100),
+        }
+    }
+
+    fn next_smaller(self) -> Option<Self> {
+        match self {
+            Self::Large => Some(Self::Medium),
+            Self::Medium => Some(Self::Small),
+            Self::Small => None,
+        }
+    }
+}
+
 /// Kinematic state shared by every asteroid, regardless of size.
 #[derive(Debug, Clone, Copy)]
-pub struct AsteroidBody {
+struct AsteroidBody {
     position: Vec2,
     velocity: Vec2,
 }
 
-/// An asteroid of any size.
+/// An asteroid with a size kind and shared kinematic state.
 #[derive(Debug, Clone, Copy)]
-pub enum Asteroid {
-    Large(AsteroidBody),
-    Medium(AsteroidBody),
-    Small(AsteroidBody),
+pub struct Asteroid {
+    kind: AsteroidKind,
+    body: AsteroidBody,
 }
 
 /// The result of destroying an asteroid.
@@ -24809,85 +25085,60 @@ pub enum AsteroidDestruction {
 
 impl Asteroid {
     pub fn new(kind: AsteroidKind, position: Vec2, velocity: Vec2) -> Self {
-        let body = AsteroidBody { position, velocity };
-        match kind {
-            AsteroidKind::Large => Self::Large(body),
-            AsteroidKind::Medium => Self::Medium(body),
-            AsteroidKind::Small => Self::Small(body),
+        Self {
+            kind,
+            body: AsteroidBody { position, velocity },
         }
+    }
+
+    pub fn kind(&self) -> AsteroidKind {
+        self.kind
     }
 
     pub fn position(&self) -> Vec2 {
-        self.body().position
+        self.body.position
     }
 
     pub fn velocity(&self) -> Vec2 {
-        self.body().velocity
+        self.body.velocity
     }
 
     pub fn radius(&self) -> f32 {
-        match self {
-            Self::Large(_) => 40.0,
-            Self::Medium(_) => 22.0,
-            Self::Small(_) => 12.0,
-        }
+        self.kind.radius()
     }
 
     pub fn score(&self) -> Score {
-        match self {
-            Self::Large(_) => Score::new(20),
-            Self::Medium(_) => Score::new(50),
-            Self::Small(_) => Score::new(100),
-        }
+        self.kind.score()
     }
 
     /// Integrate motion and wrap around the playfield.
     pub fn update(&mut self, dt: std::time::Duration, screen: Screen) {
-        let body = self.body_mut();
-        body.position += body.velocity * dt.as_secs_f32();
-        body.position = screen.wrap(body.position);
+        self.body.position += self.body.velocity * dt.as_secs_f32();
+        self.body.position = screen.wrap(self.body.position);
     }
 
     /// Destroy the asteroid. Large and Medium split into two fragments of the
     /// next-smaller size at the parent's position, each with a random velocity
     /// drawn from the injected randomness; Small is destroyed outright.
     pub fn destroy(self, rng: &mut impl Random) -> AsteroidDestruction {
-        let mut fragment = |body: AsteroidBody| {
-            let angle = rng.range(0.0, std::f32::consts::TAU);
-            let speed = rng.range(SPEED_MIN, SPEED_MAX);
-            AsteroidBody {
-                position: body.position,
-                velocity: Vec2::new(angle.cos() * speed, angle.sin() * speed),
-            }
+        let Self { kind, body } = self;
+        let Some(fragment_kind) = kind.next_smaller() else {
+            return AsteroidDestruction::Destroyed;
         };
 
-        match self {
-            Self::Large(body) => AsteroidDestruction::Fragments([
-                Asteroid::Medium(fragment(body)),
-                Asteroid::Medium(fragment(body)),
-            ]),
-            Self::Medium(body) => AsteroidDestruction::Fragments([
-                Asteroid::Small(fragment(body)),
-                Asteroid::Small(fragment(body)),
-            ]),
-            Self::Small(_) => AsteroidDestruction::Destroyed,
-        }
-    }
+        let mut fragment = || {
+            let angle = rng.range(0.0, std::f32::consts::TAU);
+            let speed = rng.range(SPEED_MIN, SPEED_MAX);
+            Self::new(
+                fragment_kind,
+                body.position,
+                Vec2::new(angle.cos() * speed, angle.sin() * speed),
+            )
+        };
 
-    fn body(&self) -> &AsteroidBody {
-        match self {
-            Self::Large(body) | Self::Medium(body) | Self::Small(body) => body,
-        }
-    }
-
-    fn body_mut(&mut self) -> &mut AsteroidBody {
-        match self {
-            Self::Large(body) | Self::Medium(body) | Self::Small(body) => body,
-        }
+        AsteroidDestruction::Fragments([fragment(), fragment()])
     }
 }
-
-
 // TODO: Compose the player facade.
 //
 // Define `pub struct Player { lives: NonZeroLives, ship: ShipState, weapon: Weapon }`
@@ -24901,7 +25152,7 @@ impl Asteroid {
 //     (session over), otherwise the ship starts respawning
 //   - `pub fn rotate(&mut self, turn: Turn, dt: Duration)`
 //   - `pub fn accelerate(&mut self, dt: Duration)`
-//   - `pub fn fire(&mut self) -> Option<Bullet>` (None while no ship or cooldown)
+//   - `pub fn fire(&mut self) -> Option<Bullet>` (delegates to Weapon::fire while a ship exists)
 ```
 
 #### `tests/public.rs` — test
@@ -25215,19 +25466,20 @@ impl ShipState {
     }
 }
 
-impl Ship {
-    const SHIP_SIZE: f32 = 20.0;
-    const BULLET_SPEED: f32 = 520.0;
-    const BULLET_LIFETIME: std::time::Duration = std::time::Duration::from_millis(1_100);
 
-    /// Spawn a bullet at the ship's nose. Provided for you.
-    pub fn fire(&self) -> Bullet {
-        let facing = Vec2::new(self.heading.sin(), -self.heading.cos());
-        Bullet::new(
-            self.position + facing * Self::SHIP_SIZE,
-            facing * Self::BULLET_SPEED,
-            Self::BULLET_LIFETIME,
-        )
+/// The ship pose needed to create a bullet, without coupling Weapon to Ship.
+#[derive(Debug, Clone, Copy)]
+pub struct FiringPose {
+    origin: Vec2,
+    direction: Vec2,
+}
+
+impl From<&Ship> for FiringPose {
+    fn from(ship: &Ship) -> Self {
+        Self {
+            origin: ship.position,
+            direction: Vec2::new(ship.heading.sin(), -ship.heading.cos()),
+        }
     }
 }
 
@@ -25241,28 +25493,57 @@ pub enum WeaponState {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct Weapon {
+pub struct WeaponConfig {
     cooldown: std::time::Duration,
+    muzzle_offset: f32,
+    bullet_speed: f32,
+    bullet_lifetime: std::time::Duration,
+}
+
+impl WeaponConfig {
+    pub const fn new(
+        cooldown: std::time::Duration,
+        muzzle_offset: f32,
+        bullet_speed: f32,
+        bullet_lifetime: std::time::Duration,
+    ) -> Self {
+        Self {
+            cooldown,
+            muzzle_offset,
+            bullet_speed,
+            bullet_lifetime,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Weapon {
+    config: WeaponConfig,
     state: WeaponState,
 }
 
 impl Weapon {
-    pub fn new(cooldown: std::time::Duration) -> Self {
+    pub fn new(config: WeaponConfig) -> Self {
         Self {
-            cooldown,
+            config,
             state: WeaponState::Ready,
         }
     }
 
-    /// Fire if ready; starts the cooldown. Returns whether a shot was fired.
-    pub fn fire(&mut self) -> bool {
+    /// Try to fire: creates a bullet and consumes the cooldown when ready.
+    pub fn fire(&mut self, pose: FiringPose) -> Option<Bullet> {
         if !matches!(self.state, WeaponState::Ready) {
-            return false;
+            return None;
         }
+
         self.state = WeaponState::CoolingDown {
-            remaining: self.cooldown,
+            remaining: self.config.cooldown,
         };
-        true
+        Some(Bullet::new(
+            pose.origin + pose.direction * self.config.muzzle_offset,
+            pose.direction * self.config.bullet_speed,
+            self.config.bullet_lifetime,
+        ))
     }
 
     pub fn update(&mut self, dt: std::time::Duration) {
@@ -25317,19 +25598,44 @@ pub enum AsteroidKind {
     Small,
 }
 
+impl AsteroidKind {
+    fn radius(self) -> f32 {
+        match self {
+            Self::Large => 40.0,
+            Self::Medium => 22.0,
+            Self::Small => 12.0,
+        }
+    }
+
+    fn score(self) -> Score {
+        match self {
+            Self::Large => Score::new(20),
+            Self::Medium => Score::new(50),
+            Self::Small => Score::new(100),
+        }
+    }
+
+    fn next_smaller(self) -> Option<Self> {
+        match self {
+            Self::Large => Some(Self::Medium),
+            Self::Medium => Some(Self::Small),
+            Self::Small => None,
+        }
+    }
+}
+
 /// Kinematic state shared by every asteroid, regardless of size.
 #[derive(Debug, Clone, Copy)]
-pub struct AsteroidBody {
+struct AsteroidBody {
     position: Vec2,
     velocity: Vec2,
 }
 
-/// An asteroid of any size.
+/// An asteroid with a size kind and shared kinematic state.
 #[derive(Debug, Clone, Copy)]
-pub enum Asteroid {
-    Large(AsteroidBody),
-    Medium(AsteroidBody),
-    Small(AsteroidBody),
+pub struct Asteroid {
+    kind: AsteroidKind,
+    body: AsteroidBody,
 }
 
 /// The result of destroying an asteroid.
@@ -25343,81 +25649,58 @@ pub enum AsteroidDestruction {
 
 impl Asteroid {
     pub fn new(kind: AsteroidKind, position: Vec2, velocity: Vec2) -> Self {
-        let body = AsteroidBody { position, velocity };
-        match kind {
-            AsteroidKind::Large => Self::Large(body),
-            AsteroidKind::Medium => Self::Medium(body),
-            AsteroidKind::Small => Self::Small(body),
+        Self {
+            kind,
+            body: AsteroidBody { position, velocity },
         }
+    }
+
+    pub fn kind(&self) -> AsteroidKind {
+        self.kind
     }
 
     pub fn position(&self) -> Vec2 {
-        self.body().position
+        self.body.position
     }
 
     pub fn velocity(&self) -> Vec2 {
-        self.body().velocity
+        self.body.velocity
     }
 
     pub fn radius(&self) -> f32 {
-        match self {
-            Self::Large(_) => 40.0,
-            Self::Medium(_) => 22.0,
-            Self::Small(_) => 12.0,
-        }
+        self.kind.radius()
     }
 
     pub fn score(&self) -> Score {
-        match self {
-            Self::Large(_) => Score::new(20),
-            Self::Medium(_) => Score::new(50),
-            Self::Small(_) => Score::new(100),
-        }
+        self.kind.score()
     }
 
     /// Integrate motion and wrap around the playfield.
     pub fn update(&mut self, dt: std::time::Duration, screen: Screen) {
-        let body = self.body_mut();
-        body.position += body.velocity * dt.as_secs_f32();
-        body.position = screen.wrap(body.position);
+        self.body.position += self.body.velocity * dt.as_secs_f32();
+        self.body.position = screen.wrap(self.body.position);
     }
 
     /// Destroy the asteroid. Large and Medium split into two fragments of the
     /// next-smaller size at the parent's position, each with a random velocity
     /// drawn from the injected randomness; Small is destroyed outright.
     pub fn destroy(self, rng: &mut impl Random) -> AsteroidDestruction {
-        let mut fragment = |body: AsteroidBody| {
-            let angle = rng.range(0.0, std::f32::consts::TAU);
-            let speed = rng.range(SPEED_MIN, SPEED_MAX);
-            AsteroidBody {
-                position: body.position,
-                velocity: Vec2::new(angle.cos() * speed, angle.sin() * speed),
-            }
+        let Self { kind, body } = self;
+        let Some(fragment_kind) = kind.next_smaller() else {
+            return AsteroidDestruction::Destroyed;
         };
 
-        match self {
-            Self::Large(body) => AsteroidDestruction::Fragments([
-                Asteroid::Medium(fragment(body)),
-                Asteroid::Medium(fragment(body)),
-            ]),
-            Self::Medium(body) => AsteroidDestruction::Fragments([
-                Asteroid::Small(fragment(body)),
-                Asteroid::Small(fragment(body)),
-            ]),
-            Self::Small(_) => AsteroidDestruction::Destroyed,
-        }
-    }
+        let mut fragment = || {
+            let angle = rng.range(0.0, std::f32::consts::TAU);
+            let speed = rng.range(SPEED_MIN, SPEED_MAX);
+            Self::new(
+                fragment_kind,
+                body.position,
+                Vec2::new(angle.cos() * speed, angle.sin() * speed),
+            )
+        };
 
-    fn body(&self) -> &AsteroidBody {
-        match self {
-            Self::Large(body) | Self::Medium(body) | Self::Small(body) => body,
-        }
-    }
-
-    fn body_mut(&mut self) -> &mut AsteroidBody {
-        match self {
-            Self::Large(body) | Self::Medium(body) | Self::Small(body) => body,
-        }
+        AsteroidDestruction::Fragments([fragment(), fragment()])
     }
 }
 
@@ -25439,7 +25722,12 @@ impl Player {
                 ship: Ship::spawn(screen),
                 remaining: ShipState::INVULNERABILITY_TIME,
             },
-            weapon: Weapon::new(std::time::Duration::from_millis(250)),
+            weapon: Weapon::new(WeaponConfig::new(
+                std::time::Duration::from_millis(250),
+                20.0,
+                520.0,
+                std::time::Duration::from_millis(1_100),
+            )),
         }
     }
 
@@ -25491,10 +25779,7 @@ impl Player {
     /// Fire a bullet, if a ship exists and the weapon is ready.
     pub fn fire(&mut self) -> Option<Bullet> {
         let ship = self.ship.ship()?;
-        if !self.weapon.fire() {
-            return None;
-        }
-        Some(ship.fire())
+        self.weapon.fire(FiringPose::from(ship))
     }
 }
 ```
@@ -25609,13 +25894,21 @@ impl std::ops::MulAssign<f32> for Vec2 {
 /// The playfield in world units.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Screen {
-    pub width: f32,
-    pub height: f32,
+    width: f32,
+    height: f32,
 }
 
 impl Screen {
     pub const fn new(width: f32, height: f32) -> Self {
         Self { width, height }
+    }
+
+    pub const fn width(self) -> f32 {
+        self.width
+    }
+
+    pub const fn height(self) -> f32 {
+        self.height
     }
 
     /// Center of the playfield.
@@ -25625,17 +25918,11 @@ impl Screen {
 
     /// Re-enter a position from the opposite edge.
     pub fn wrap(self, mut pos: Vec2) -> Vec2 {
-        if pos.x < 0.0 {
-            pos.x += self.width;
+        if !(0.0..=self.width).contains(&pos.x) {
+            pos.x = pos.x.rem_euclid(self.width);
         }
-        if pos.x > self.width {
-            pos.x -= self.width;
-        }
-        if pos.y < 0.0 {
-            pos.y += self.height;
-        }
-        if pos.y > self.height {
-            pos.y -= self.height;
+        if !(0.0..=self.height).contains(&pos.y) {
+            pos.y = pos.y.rem_euclid(self.height);
         }
         pos
     }
@@ -25876,19 +26163,20 @@ impl ShipState {
     }
 }
 
-impl Ship {
-    const SHIP_SIZE: f32 = 20.0;
-    const BULLET_SPEED: f32 = 520.0;
-    const BULLET_LIFETIME: std::time::Duration = std::time::Duration::from_millis(1_100);
 
-    /// Spawn a bullet at the ship's nose. Provided for you.
-    pub fn fire(&self) -> Bullet {
-        let facing = Vec2::new(self.heading.sin(), -self.heading.cos());
-        Bullet::new(
-            self.position + facing * Self::SHIP_SIZE,
-            facing * Self::BULLET_SPEED,
-            Self::BULLET_LIFETIME,
-        )
+/// The ship pose needed to create a bullet, without coupling Weapon to Ship.
+#[derive(Debug, Clone, Copy)]
+pub struct FiringPose {
+    origin: Vec2,
+    direction: Vec2,
+}
+
+impl From<&Ship> for FiringPose {
+    fn from(ship: &Ship) -> Self {
+        Self {
+            origin: ship.position,
+            direction: Vec2::new(ship.heading.sin(), -ship.heading.cos()),
+        }
     }
 }
 
@@ -25902,28 +26190,57 @@ pub enum WeaponState {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct Weapon {
+pub struct WeaponConfig {
     cooldown: std::time::Duration,
+    muzzle_offset: f32,
+    bullet_speed: f32,
+    bullet_lifetime: std::time::Duration,
+}
+
+impl WeaponConfig {
+    pub const fn new(
+        cooldown: std::time::Duration,
+        muzzle_offset: f32,
+        bullet_speed: f32,
+        bullet_lifetime: std::time::Duration,
+    ) -> Self {
+        Self {
+            cooldown,
+            muzzle_offset,
+            bullet_speed,
+            bullet_lifetime,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Weapon {
+    config: WeaponConfig,
     state: WeaponState,
 }
 
 impl Weapon {
-    pub fn new(cooldown: std::time::Duration) -> Self {
+    pub fn new(config: WeaponConfig) -> Self {
         Self {
-            cooldown,
+            config,
             state: WeaponState::Ready,
         }
     }
 
-    /// Fire if ready; starts the cooldown. Returns whether a shot was fired.
-    pub fn fire(&mut self) -> bool {
+    /// Try to fire: creates a bullet and consumes the cooldown when ready.
+    pub fn fire(&mut self, pose: FiringPose) -> Option<Bullet> {
         if !matches!(self.state, WeaponState::Ready) {
-            return false;
+            return None;
         }
+
         self.state = WeaponState::CoolingDown {
-            remaining: self.cooldown,
+            remaining: self.config.cooldown,
         };
-        true
+        Some(Bullet::new(
+            pose.origin + pose.direction * self.config.muzzle_offset,
+            pose.direction * self.config.bullet_speed,
+            self.config.bullet_lifetime,
+        ))
     }
 
     pub fn update(&mut self, dt: std::time::Duration) {
@@ -25978,19 +26295,44 @@ pub enum AsteroidKind {
     Small,
 }
 
+impl AsteroidKind {
+    fn radius(self) -> f32 {
+        match self {
+            Self::Large => 40.0,
+            Self::Medium => 22.0,
+            Self::Small => 12.0,
+        }
+    }
+
+    fn score(self) -> Score {
+        match self {
+            Self::Large => Score::new(20),
+            Self::Medium => Score::new(50),
+            Self::Small => Score::new(100),
+        }
+    }
+
+    fn next_smaller(self) -> Option<Self> {
+        match self {
+            Self::Large => Some(Self::Medium),
+            Self::Medium => Some(Self::Small),
+            Self::Small => None,
+        }
+    }
+}
+
 /// Kinematic state shared by every asteroid, regardless of size.
 #[derive(Debug, Clone, Copy)]
-pub struct AsteroidBody {
+struct AsteroidBody {
     position: Vec2,
     velocity: Vec2,
 }
 
-/// An asteroid of any size.
+/// An asteroid with a size kind and shared kinematic state.
 #[derive(Debug, Clone, Copy)]
-pub enum Asteroid {
-    Large(AsteroidBody),
-    Medium(AsteroidBody),
-    Small(AsteroidBody),
+pub struct Asteroid {
+    kind: AsteroidKind,
+    body: AsteroidBody,
 }
 
 /// The result of destroying an asteroid.
@@ -26004,81 +26346,58 @@ pub enum AsteroidDestruction {
 
 impl Asteroid {
     pub fn new(kind: AsteroidKind, position: Vec2, velocity: Vec2) -> Self {
-        let body = AsteroidBody { position, velocity };
-        match kind {
-            AsteroidKind::Large => Self::Large(body),
-            AsteroidKind::Medium => Self::Medium(body),
-            AsteroidKind::Small => Self::Small(body),
+        Self {
+            kind,
+            body: AsteroidBody { position, velocity },
         }
+    }
+
+    pub fn kind(&self) -> AsteroidKind {
+        self.kind
     }
 
     pub fn position(&self) -> Vec2 {
-        self.body().position
+        self.body.position
     }
 
     pub fn velocity(&self) -> Vec2 {
-        self.body().velocity
+        self.body.velocity
     }
 
     pub fn radius(&self) -> f32 {
-        match self {
-            Self::Large(_) => 40.0,
-            Self::Medium(_) => 22.0,
-            Self::Small(_) => 12.0,
-        }
+        self.kind.radius()
     }
 
     pub fn score(&self) -> Score {
-        match self {
-            Self::Large(_) => Score::new(20),
-            Self::Medium(_) => Score::new(50),
-            Self::Small(_) => Score::new(100),
-        }
+        self.kind.score()
     }
 
     /// Integrate motion and wrap around the playfield.
     pub fn update(&mut self, dt: std::time::Duration, screen: Screen) {
-        let body = self.body_mut();
-        body.position += body.velocity * dt.as_secs_f32();
-        body.position = screen.wrap(body.position);
+        self.body.position += self.body.velocity * dt.as_secs_f32();
+        self.body.position = screen.wrap(self.body.position);
     }
 
     /// Destroy the asteroid. Large and Medium split into two fragments of the
     /// next-smaller size at the parent's position, each with a random velocity
     /// drawn from the injected randomness; Small is destroyed outright.
     pub fn destroy(self, rng: &mut impl Random) -> AsteroidDestruction {
-        let mut fragment = |body: AsteroidBody| {
-            let angle = rng.range(0.0, std::f32::consts::TAU);
-            let speed = rng.range(SPEED_MIN, SPEED_MAX);
-            AsteroidBody {
-                position: body.position,
-                velocity: Vec2::new(angle.cos() * speed, angle.sin() * speed),
-            }
+        let Self { kind, body } = self;
+        let Some(fragment_kind) = kind.next_smaller() else {
+            return AsteroidDestruction::Destroyed;
         };
 
-        match self {
-            Self::Large(body) => AsteroidDestruction::Fragments([
-                Asteroid::Medium(fragment(body)),
-                Asteroid::Medium(fragment(body)),
-            ]),
-            Self::Medium(body) => AsteroidDestruction::Fragments([
-                Asteroid::Small(fragment(body)),
-                Asteroid::Small(fragment(body)),
-            ]),
-            Self::Small(_) => AsteroidDestruction::Destroyed,
-        }
-    }
+        let mut fragment = || {
+            let angle = rng.range(0.0, std::f32::consts::TAU);
+            let speed = rng.range(SPEED_MIN, SPEED_MAX);
+            Self::new(
+                fragment_kind,
+                body.position,
+                Vec2::new(angle.cos() * speed, angle.sin() * speed),
+            )
+        };
 
-    fn body(&self) -> &AsteroidBody {
-        match self {
-            Self::Large(body) | Self::Medium(body) | Self::Small(body) => body,
-        }
-    }
-
-    fn body_mut(&mut self) -> &mut AsteroidBody {
-        match self {
-            Self::Large(body) | Self::Medium(body) | Self::Small(body) => body,
-        }
+        AsteroidDestruction::Fragments([fragment(), fragment()])
     }
 }
 
@@ -26100,7 +26419,12 @@ impl Player {
                 ship: Ship::spawn(screen),
                 remaining: ShipState::INVULNERABILITY_TIME,
             },
-            weapon: Weapon::new(std::time::Duration::from_millis(250)),
+            weapon: Weapon::new(WeaponConfig::new(
+                std::time::Duration::from_millis(250),
+                20.0,
+                520.0,
+                std::time::Duration::from_millis(1_100),
+            )),
         }
     }
 
@@ -26152,14 +26476,9 @@ impl Player {
     /// Fire a bullet, if a ship exists and the weapon is ready.
     pub fn fire(&mut self) -> Option<Bullet> {
         let ship = self.ship.ship()?;
-        if !self.weapon.fire() {
-            return None;
-        }
-        Some(ship.fire())
+        self.weapon.fire(FiringPose::from(ship))
     }
 }
-
-
 // TODO: Compose the session update loop.
 //
 // Define:
@@ -26556,19 +26875,20 @@ impl ShipState {
     }
 }
 
-impl Ship {
-    const SHIP_SIZE: f32 = 20.0;
-    const BULLET_SPEED: f32 = 520.0;
-    const BULLET_LIFETIME: std::time::Duration = std::time::Duration::from_millis(1_100);
 
-    /// Spawn a bullet at the ship's nose. Provided for you.
-    pub fn fire(&self) -> Bullet {
-        let facing = Vec2::new(self.heading.sin(), -self.heading.cos());
-        Bullet::new(
-            self.position + facing * Self::SHIP_SIZE,
-            facing * Self::BULLET_SPEED,
-            Self::BULLET_LIFETIME,
-        )
+/// The ship pose needed to create a bullet, without coupling Weapon to Ship.
+#[derive(Debug, Clone, Copy)]
+pub struct FiringPose {
+    origin: Vec2,
+    direction: Vec2,
+}
+
+impl From<&Ship> for FiringPose {
+    fn from(ship: &Ship) -> Self {
+        Self {
+            origin: ship.position,
+            direction: Vec2::new(ship.heading.sin(), -ship.heading.cos()),
+        }
     }
 }
 
@@ -26582,28 +26902,57 @@ pub enum WeaponState {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct Weapon {
+pub struct WeaponConfig {
     cooldown: std::time::Duration,
+    muzzle_offset: f32,
+    bullet_speed: f32,
+    bullet_lifetime: std::time::Duration,
+}
+
+impl WeaponConfig {
+    pub const fn new(
+        cooldown: std::time::Duration,
+        muzzle_offset: f32,
+        bullet_speed: f32,
+        bullet_lifetime: std::time::Duration,
+    ) -> Self {
+        Self {
+            cooldown,
+            muzzle_offset,
+            bullet_speed,
+            bullet_lifetime,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Weapon {
+    config: WeaponConfig,
     state: WeaponState,
 }
 
 impl Weapon {
-    pub fn new(cooldown: std::time::Duration) -> Self {
+    pub fn new(config: WeaponConfig) -> Self {
         Self {
-            cooldown,
+            config,
             state: WeaponState::Ready,
         }
     }
 
-    /// Fire if ready; starts the cooldown. Returns whether a shot was fired.
-    pub fn fire(&mut self) -> bool {
+    /// Try to fire: creates a bullet and consumes the cooldown when ready.
+    pub fn fire(&mut self, pose: FiringPose) -> Option<Bullet> {
         if !matches!(self.state, WeaponState::Ready) {
-            return false;
+            return None;
         }
+
         self.state = WeaponState::CoolingDown {
-            remaining: self.cooldown,
+            remaining: self.config.cooldown,
         };
-        true
+        Some(Bullet::new(
+            pose.origin + pose.direction * self.config.muzzle_offset,
+            pose.direction * self.config.bullet_speed,
+            self.config.bullet_lifetime,
+        ))
     }
 
     pub fn update(&mut self, dt: std::time::Duration) {
@@ -26658,19 +27007,44 @@ pub enum AsteroidKind {
     Small,
 }
 
+impl AsteroidKind {
+    fn radius(self) -> f32 {
+        match self {
+            Self::Large => 40.0,
+            Self::Medium => 22.0,
+            Self::Small => 12.0,
+        }
+    }
+
+    fn score(self) -> Score {
+        match self {
+            Self::Large => Score::new(20),
+            Self::Medium => Score::new(50),
+            Self::Small => Score::new(100),
+        }
+    }
+
+    fn next_smaller(self) -> Option<Self> {
+        match self {
+            Self::Large => Some(Self::Medium),
+            Self::Medium => Some(Self::Small),
+            Self::Small => None,
+        }
+    }
+}
+
 /// Kinematic state shared by every asteroid, regardless of size.
 #[derive(Debug, Clone, Copy)]
-pub struct AsteroidBody {
+struct AsteroidBody {
     position: Vec2,
     velocity: Vec2,
 }
 
-/// An asteroid of any size.
+/// An asteroid with a size kind and shared kinematic state.
 #[derive(Debug, Clone, Copy)]
-pub enum Asteroid {
-    Large(AsteroidBody),
-    Medium(AsteroidBody),
-    Small(AsteroidBody),
+pub struct Asteroid {
+    kind: AsteroidKind,
+    body: AsteroidBody,
 }
 
 /// The result of destroying an asteroid.
@@ -26684,81 +27058,58 @@ pub enum AsteroidDestruction {
 
 impl Asteroid {
     pub fn new(kind: AsteroidKind, position: Vec2, velocity: Vec2) -> Self {
-        let body = AsteroidBody { position, velocity };
-        match kind {
-            AsteroidKind::Large => Self::Large(body),
-            AsteroidKind::Medium => Self::Medium(body),
-            AsteroidKind::Small => Self::Small(body),
+        Self {
+            kind,
+            body: AsteroidBody { position, velocity },
         }
+    }
+
+    pub fn kind(&self) -> AsteroidKind {
+        self.kind
     }
 
     pub fn position(&self) -> Vec2 {
-        self.body().position
+        self.body.position
     }
 
     pub fn velocity(&self) -> Vec2 {
-        self.body().velocity
+        self.body.velocity
     }
 
     pub fn radius(&self) -> f32 {
-        match self {
-            Self::Large(_) => 40.0,
-            Self::Medium(_) => 22.0,
-            Self::Small(_) => 12.0,
-        }
+        self.kind.radius()
     }
 
     pub fn score(&self) -> Score {
-        match self {
-            Self::Large(_) => Score::new(20),
-            Self::Medium(_) => Score::new(50),
-            Self::Small(_) => Score::new(100),
-        }
+        self.kind.score()
     }
 
     /// Integrate motion and wrap around the playfield.
     pub fn update(&mut self, dt: std::time::Duration, screen: Screen) {
-        let body = self.body_mut();
-        body.position += body.velocity * dt.as_secs_f32();
-        body.position = screen.wrap(body.position);
+        self.body.position += self.body.velocity * dt.as_secs_f32();
+        self.body.position = screen.wrap(self.body.position);
     }
 
     /// Destroy the asteroid. Large and Medium split into two fragments of the
     /// next-smaller size at the parent's position, each with a random velocity
     /// drawn from the injected randomness; Small is destroyed outright.
     pub fn destroy(self, rng: &mut impl Random) -> AsteroidDestruction {
-        let mut fragment = |body: AsteroidBody| {
-            let angle = rng.range(0.0, std::f32::consts::TAU);
-            let speed = rng.range(SPEED_MIN, SPEED_MAX);
-            AsteroidBody {
-                position: body.position,
-                velocity: Vec2::new(angle.cos() * speed, angle.sin() * speed),
-            }
+        let Self { kind, body } = self;
+        let Some(fragment_kind) = kind.next_smaller() else {
+            return AsteroidDestruction::Destroyed;
         };
 
-        match self {
-            Self::Large(body) => AsteroidDestruction::Fragments([
-                Asteroid::Medium(fragment(body)),
-                Asteroid::Medium(fragment(body)),
-            ]),
-            Self::Medium(body) => AsteroidDestruction::Fragments([
-                Asteroid::Small(fragment(body)),
-                Asteroid::Small(fragment(body)),
-            ]),
-            Self::Small(_) => AsteroidDestruction::Destroyed,
-        }
-    }
+        let mut fragment = || {
+            let angle = rng.range(0.0, std::f32::consts::TAU);
+            let speed = rng.range(SPEED_MIN, SPEED_MAX);
+            Self::new(
+                fragment_kind,
+                body.position,
+                Vec2::new(angle.cos() * speed, angle.sin() * speed),
+            )
+        };
 
-    fn body(&self) -> &AsteroidBody {
-        match self {
-            Self::Large(body) | Self::Medium(body) | Self::Small(body) => body,
-        }
-    }
-
-    fn body_mut(&mut self) -> &mut AsteroidBody {
-        match self {
-            Self::Large(body) | Self::Medium(body) | Self::Small(body) => body,
-        }
+        AsteroidDestruction::Fragments([fragment(), fragment()])
     }
 }
 
@@ -26780,7 +27131,12 @@ impl Player {
                 ship: Ship::spawn(screen),
                 remaining: ShipState::INVULNERABILITY_TIME,
             },
-            weapon: Weapon::new(std::time::Duration::from_millis(250)),
+            weapon: Weapon::new(WeaponConfig::new(
+                std::time::Duration::from_millis(250),
+                20.0,
+                520.0,
+                std::time::Duration::from_millis(1_100),
+            )),
         }
     }
 
@@ -26832,10 +27188,7 @@ impl Player {
     /// Fire a bullet, if a ship exists and the weapon is ready.
     pub fn fire(&mut self) -> Option<Bullet> {
         let ship = self.ship.ship()?;
-        if !self.weapon.fire() {
-            return None;
-        }
-        Some(ship.fire())
+        self.weapon.fire(FiringPose::from(ship))
     }
 }
 
@@ -26985,11 +27338,11 @@ impl PlayingGame {
         let count = Self::STARTING_ASTEROIDS + (self.wave.value() as usize - 1);
         for _ in 0..count {
             let position = if rng.chance(0.5) {
-                let x = if rng.chance(0.5) { 0.0 } else { self.screen.width };
-                Vec2::new(x, rng.range(0.0, self.screen.height))
+                let x = if rng.chance(0.5) { 0.0 } else { self.screen.width() };
+                Vec2::new(x, rng.range(0.0, self.screen.height()))
             } else {
-                let y = if rng.chance(0.5) { 0.0 } else { self.screen.height };
-                Vec2::new(rng.range(0.0, self.screen.width), y)
+                let y = if rng.chance(0.5) { 0.0 } else { self.screen.height() };
+                Vec2::new(rng.range(0.0, self.screen.width()), y)
             };
             let angle = rng.range(0.0, std::f32::consts::TAU);
             let speed = rng.range(SPEED_MIN, SPEED_MAX);
@@ -27008,5 +27361,4429 @@ Your code matches the reference approach: the previous lesson's work stays activ
 ### Author notes
 
 Teaches: compose the session update loop.
+
+---
+
+## 98. Validate a request into a command
+
+Source: `lessons/validate-prepare-commit/098-validated-transfer-command`
+
+| Field | Value |
+| --- | --- |
+| Lesson ID | `validated-transfer-command-098` |
+| Production lesson | [Open lesson](https://borrowquest.site/#lesson/validated-transfer-command-098) |
+| Arc | Validate, prepare, then commit (step 1 of 5) |
+| Concept | Validated command boundary (`validated-transfer-command`) |
+| Difficulty | medium |
+| Estimated time | 8 minutes |
+
+### Scenario
+
+A transfer request arrives from an API boundary with a source account, a destination account, and an amount in cents. The request can still describe work the ledger must never execute: a transfer to the same account or a transfer of nothing. Those request-only rules should be settled before the ledger is borrowed at all.
+
+### Task
+
+In src/lib.rs, define a private TransferAmount(NonZeroU64) value and a TransferCommand whose private source, destination, and amount fields hold the validated data. Implement TryFrom<TransferRequest> so a same-account request or a zero amount is rejected with TransferRequestError, and add getters that expose the validated source, destination, and amount.
+
+### Concept context
+
+Convert a raw transfer request into an unforgeable command whose type records request-only invariants before application state is accessed.
+
+- Prerequisites: `dto-tryfrom-validation`
+- Tags: `validation`, `newtypes`, `tryfrom`, `architecture`
+
+### Starter project files
+
+#### `src/lib.rs` — editable
+
+Source: `lessons/validate-prepare-commit/098-validated-transfer-command/starter/src/lib.rs`
+
+```rust
+//! Ledger support types for the validate -> prepare -> commit arc.
+//!
+//! Account identity, money, and the account store are provided. The boundary
+//! that turns a raw transfer request into work the ledger is allowed to execute
+//! is the part that grows lesson by lesson in this file.
+
+use std::collections::HashSet;
+
+/// Identifies one account held by the ledger.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct AccountId(u32);
+
+impl AccountId {
+    pub const fn new(value: u32) -> Self {
+        Self(value)
+    }
+
+    pub const fn value(self) -> u32 {
+        self.0
+    }
+}
+
+/// An amount in whole cents. Money carries no sign; direction comes from the
+/// transfer that moves it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Money(u64);
+
+impl Money {
+    pub const fn from_cents(cents: u64) -> Self {
+        Self(cents)
+    }
+
+    pub const fn cents(self) -> u64 {
+        self.0
+    }
+}
+
+/// Returned when a ledger is built from entries that repeat an account ID.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DuplicateAccount(AccountId);
+
+impl DuplicateAccount {
+    pub const fn id(self) -> AccountId {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Account {
+    id: AccountId,
+    balance: Money,
+}
+
+/// The in-memory account store that later lessons mutate.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Ledger {
+    accounts: Vec<Account>,
+}
+
+impl Ledger {
+    /// Build a ledger, rejecting an entry that repeats an account ID.
+    pub fn try_new(
+        entries: impl IntoIterator<Item = (AccountId, Money)>,
+    ) -> Result<Self, DuplicateAccount> {
+        let mut ids = HashSet::new();
+        let mut accounts = Vec::new();
+
+        for (id, balance) in entries {
+            if !ids.insert(id) {
+                return Err(DuplicateAccount(id));
+            }
+            accounts.push(Account { id, balance });
+        }
+
+        Ok(Self { accounts })
+    }
+
+    /// The balance of one account, if this ledger holds it.
+    pub fn balance(&self, id: AccountId) -> Option<Money> {
+        self.accounts
+            .iter()
+            .find(|account| account.id == id)
+            .map(|account| account.balance)
+    }
+}
+
+/// A transfer exactly as the caller supplied it.
+///
+/// A request can still describe work the domain must never execute: a transfer
+/// to the same account or a transfer of nothing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TransferRequest {
+    source: AccountId,
+    destination: AccountId,
+    amount_cents: u64,
+}
+
+impl TransferRequest {
+    pub const fn new(source: AccountId, destination: AccountId, amount_cents: u64) -> Self {
+        Self {
+            source,
+            destination,
+            amount_cents,
+        }
+    }
+}
+
+/// The request-only reasons a transfer must not be executed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TransferRequestError {
+    SameAccount,
+    ZeroAmount,
+}
+
+// TODO: add the validated transfer command.
+//
+// Define a private `TransferAmount(NonZeroU64)` value, give `TransferCommand`
+// private `source`, `destination`, and `amount` fields, and implement
+// `TryFrom<TransferRequest>` so a zero amount or a same-account request is
+// rejected with `TransferRequestError` before any ledger state is read. Expose
+// the validated source, destination, and amount through getters.
+```
+
+#### `tests/public.rs` — test
+
+Source: `lessons/validate-prepare-commit/098-validated-transfer-command/tests/public.rs`
+
+```rust
+use rust_daily_lesson::{AccountId, Money, TransferCommand, TransferRequest, TransferRequestError};
+
+fn id(value: u32) -> AccountId {
+    AccountId::new(value)
+}
+
+fn money(cents: u64) -> Money {
+    Money::from_cents(cents)
+}
+
+#[test]
+fn accepts_a_positive_transfer_between_distinct_accounts() {
+    let request = TransferRequest::new(id(1), id(2), 250);
+
+    let command = TransferCommand::try_from(request).expect("a positive transfer is valid");
+
+    assert_eq!(command.source(), id(1));
+    assert_eq!(command.destination(), id(2));
+    assert_eq!(command.amount(), money(250));
+}
+
+#[test]
+fn rejects_a_zero_amount() {
+    let request = TransferRequest::new(id(1), id(2), 0);
+
+    assert_eq!(
+        TransferCommand::try_from(request),
+        Err(TransferRequestError::ZeroAmount)
+    );
+}
+
+#[test]
+fn rejects_a_transfer_to_the_same_account() {
+    let request = TransferRequest::new(id(7), id(7), 500);
+
+    assert_eq!(
+        TransferCommand::try_from(request),
+        Err(TransferRequestError::SameAccount)
+    );
+}
+```
+
+### Progressive hints
+
+1. A request only records what the caller asked for. Separate "the request was supplied" from "the request is legal to execute" with a second type that the ledger accepts.
+2. NonZeroU64::new turns the zero check into a type invariant, and comparing the two account IDs rejects a self-transfer. Reject source == destination first, then build the command, and keep its fields private so no caller can skip the conversion.
+3. The reference approach for this lesson. The authored code is included in the Solution section.
+
+### Validation contract
+
+```json
+{
+  "mode": "all",
+  "validations": [
+    {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "tuple_struct_fields",
+          "structName": "TransferAmount",
+          "requiredTypes": [
+            "NonZeroU64"
+          ]
+        },
+        {
+          "type": "struct_fields",
+          "structName": "TransferCommand",
+          "requiredFields": [
+            {
+              "name": "source",
+              "typeIncludes": [
+                "AccountId"
+              ]
+            },
+            {
+              "name": "destination",
+              "typeIncludes": [
+                "AccountId"
+              ]
+            },
+            {
+              "name": "amount",
+              "typeIncludes": [
+                "TransferAmount"
+              ]
+            }
+          ]
+        },
+        {
+          "type": "impl_trait_for_type",
+          "traitName": "TryFrom<TransferRequest>",
+          "typeName": "TransferCommand"
+        }
+      ]
+    },
+    {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "testFiles": [
+        {
+          "path": "tests/public.rs",
+          "sourcePath": "tests/public.rs"
+        }
+      ]
+    },
+    {
+      "mode": "backend-compile-fail",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "cases": [
+        {
+          "name": "transfer-command-direct-construction",
+          "expectedDiagnostics": [
+            "private"
+          ],
+          "sourcePath": "compile_fail/transfer_command_direct_construction.rs"
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### Compile-fail fixtures
+
+##### transfer-command-direct-construction
+
+Source: `lessons/validate-prepare-commit/098-validated-transfer-command/compile_fail/transfer_command_direct_construction.rs`
+
+```rust
+use rust_daily_lesson::{AccountId, TransferCommand};
+
+fn main() {
+    let id = AccountId::new(1);
+    let _ = TransferCommand {
+        source: id,
+        destination: AccountId::new(2),
+        amount: todo!(),
+    };
+}
+```
+
+### Authored solution
+
+#### `src/lib.rs`
+
+Source: `lessons/validate-prepare-commit/098-validated-transfer-command/solution/src/lib.rs`
+
+```rust
+//! Ledger support types for the validate -> prepare -> commit arc.
+//!
+//! Account identity, money, and the account store are provided. The boundary
+//! that turns a raw transfer request into work the ledger is allowed to execute
+//! is the part that grows lesson by lesson in this file.
+
+use std::collections::HashSet;
+use std::num::NonZeroU64;
+
+/// Identifies one account held by the ledger.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct AccountId(u32);
+
+impl AccountId {
+    pub const fn new(value: u32) -> Self {
+        Self(value)
+    }
+
+    pub const fn value(self) -> u32 {
+        self.0
+    }
+}
+
+/// An amount in whole cents. Money carries no sign; direction comes from the
+/// transfer that moves it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Money(u64);
+
+impl Money {
+    pub const fn from_cents(cents: u64) -> Self {
+        Self(cents)
+    }
+
+    pub const fn cents(self) -> u64 {
+        self.0
+    }
+}
+
+/// Returned when a ledger is built from entries that repeat an account ID.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DuplicateAccount(AccountId);
+
+impl DuplicateAccount {
+    pub const fn id(self) -> AccountId {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Account {
+    id: AccountId,
+    balance: Money,
+}
+
+/// The in-memory account store that later lessons mutate.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Ledger {
+    accounts: Vec<Account>,
+}
+
+impl Ledger {
+    /// Build a ledger, rejecting an entry that repeats an account ID.
+    pub fn try_new(
+        entries: impl IntoIterator<Item = (AccountId, Money)>,
+    ) -> Result<Self, DuplicateAccount> {
+        let mut ids = HashSet::new();
+        let mut accounts = Vec::new();
+
+        for (id, balance) in entries {
+            if !ids.insert(id) {
+                return Err(DuplicateAccount(id));
+            }
+            accounts.push(Account { id, balance });
+        }
+
+        Ok(Self { accounts })
+    }
+
+    /// The balance of one account, if this ledger holds it.
+    pub fn balance(&self, id: AccountId) -> Option<Money> {
+        self.accounts
+            .iter()
+            .find(|account| account.id == id)
+            .map(|account| account.balance)
+    }
+}
+
+/// A transfer exactly as the caller supplied it.
+///
+/// A request can still describe work the domain must never execute: a transfer
+/// to the same account or a transfer of nothing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TransferRequest {
+    source: AccountId,
+    destination: AccountId,
+    amount_cents: u64,
+}
+
+impl TransferRequest {
+    pub const fn new(source: AccountId, destination: AccountId, amount_cents: u64) -> Self {
+        Self {
+            source,
+            destination,
+            amount_cents,
+        }
+    }
+}
+
+/// The request-only reasons a transfer must not be executed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TransferRequestError {
+    SameAccount,
+    ZeroAmount,
+}
+
+/// A transfer amount that cannot be zero.
+///
+/// The inner representation stays private so the only way to build one is the
+/// checked conversion in this module.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct TransferAmount(NonZeroU64);
+
+impl TransferAmount {
+    const fn as_money(self) -> Money {
+        Money::from_cents(self.0.get())
+    }
+}
+
+/// A transfer request that passed every request-only rule.
+///
+/// The fields are private: `TryFrom<TransferRequest>` is the only way for
+/// outside code to obtain a command, so a command is evidence that the request
+/// was legal and not merely well formed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TransferCommand {
+    source: AccountId,
+    destination: AccountId,
+    amount: TransferAmount,
+}
+
+impl TransferCommand {
+    pub const fn source(self) -> AccountId {
+        self.source
+    }
+
+    pub const fn destination(self) -> AccountId {
+        self.destination
+    }
+
+    pub const fn amount(self) -> Money {
+        self.amount.as_money()
+    }
+}
+
+impl TryFrom<TransferRequest> for TransferCommand {
+    type Error = TransferRequestError;
+
+    fn try_from(request: TransferRequest) -> Result<Self, Self::Error> {
+        if request.source == request.destination {
+            return Err(TransferRequestError::SameAccount);
+        }
+
+        let Some(amount) = NonZeroU64::new(request.amount_cents) else {
+            return Err(TransferRequestError::ZeroAmount);
+        };
+
+        Ok(Self {
+            source: request.source,
+            destination: request.destination,
+            amount: TransferAmount(amount),
+        })
+    }
+}
+```
+
+### Completion explanation
+
+TransferCommand is evidence that the request-only rules already passed, so the later phases can accept a command instead of rechecking the zero-amount and same-account cases. The private fields matter as much as the conversion: a validated type is only trustworthy when external code cannot forge it, and TryFrom<TransferRequest> is now the only way to obtain one.
+
+### Author notes
+
+## Concept Boundary
+
+One concept: a raw request and a validated command are different types because
+they carry different guarantees. `TransferCommand` records that the
+request-only rules (no self-transfer, no zero amount) already passed. This
+lesson is not about `Result`, `TryFrom`, or `NonZeroU64` in isolation; those are
+established tools being composed into a validated boundary.
+
+## Intended Solution
+
+Keep `TransferRequest` as the shape the caller supplied and add a private
+`TransferAmount(NonZeroU64)` plus a `TransferCommand` whose `source`,
+`destination`, and `amount` fields stay private. `TryFrom<TransferRequest>` is
+the single construction path: it rejects a self-transfer, then rejects a zero
+amount through `NonZeroU64::new`, and only then builds the command. Getters
+expose the validated values as `AccountId` and `Money`, never the internal
+`TransferAmount`.
+
+## Validation Strategy
+
+Public tests prove that a positive distinct-account request converts and that
+both request-only failures return their exact typed error. The `tuple_struct_fields`
+and `struct_fields` checks protect the stable shape: the amount stays a
+non-zero newtype and the command keeps its three private fields. The compile-fail
+fixture proves external callers cannot bypass validation with a struct literal.
+Cargo tests remain authoritative for behavior; the checks never assert on local
+names or on the order of the checks inside `try_from`.
+
+## Common Wrong Solutions
+
+Reject storing the amount as a plain `u64` in `TransferCommand`, making the
+command fields public, adding a `TransferCommand::new` that accepts unchecked
+values, reading ledger state inside `TryFrom`, returning `String` or `&str`
+errors instead of `TransferRequestError`, and using `assert!` or `panic!` for
+zero or same-account validation.
+
+## Arc Continuity
+
+This is the first lesson of the arc, so the arc starts from the provided ledger
+support types: `AccountId`, `Money`, `DuplicateAccount`, `Account`, `Ledger`,
+and `TransferRequest`. Every later lesson starts from this authored solution and
+keeps `TryFrom<TransferRequest>` as the only way to produce a command.
+
+## Review Checklist
+
+Confirm the scenario and instructions describe the request-only invariants, the
+starter contains only the transfer command TODO, the public tests cover the
+accept path and both reject paths with exact errors, and hint 3 matches the
+authored solution.
+
+---
+
+## 99. Prepare a transfer without mutating
+
+Source: `lessons/validate-prepare-commit/099-prepare-transfer`
+
+| Field | Value |
+| --- | --- |
+| Lesson ID | `prepare-transfer-099` |
+| Production lesson | [Open lesson](https://borrowquest.site/#lesson/prepare-transfer-099) |
+| Arc | Validate, prepare, then commit (step 2 of 5) |
+| Concept | Prepare before mutation (`prepare-before-mutation`) |
+| Difficulty | medium |
+| Estimated time | 10 minutes |
+
+### Scenario
+
+A validated command can still fail against current state: the source or destination account may be missing, the source may not hold enough money, or crediting the destination may overflow its balance. Every one of those failures has to be resolved before a balance changes, so a rejected transfer leaves the ledger exactly as it was.
+
+### Task
+
+In src/lib.rs, add private checked_add and checked_sub helpers to Money and a TransferRejection enum with SourceNotFound, DestinationNotFound, InsufficientFunds, and DestinationOverflow. Add a value-only PreparedTransfer holding the source, destination, amount, source_after, and destination_after, and implement Ledger::prepare_transfer(&self, command) to resolve both accounts and both post-state balances with checked arithmetic without mutating the ledger.
+
+### Concept context
+
+Resolve state-dependent lookups and checked post-state before authoritative mutation so preparation failures leave state unchanged.
+
+- Prerequisites: `validated-transfer-command`
+- Tags: `transactions`, `validation`, `state`, `architecture`
+
+### Starter project files
+
+#### `src/lib.rs` — editable
+
+Source: `lessons/validate-prepare-commit/099-prepare-transfer/starter/src/lib.rs`
+
+```rust
+//! Ledger support types for the validate -> prepare -> commit arc.
+//!
+//! Account identity, money, and the account store are provided. The boundary
+//! that turns a raw transfer request into work the ledger is allowed to execute
+//! is the part that grows lesson by lesson in this file.
+
+use std::collections::HashSet;
+use std::num::NonZeroU64;
+
+/// Identifies one account held by the ledger.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct AccountId(u32);
+
+impl AccountId {
+    pub const fn new(value: u32) -> Self {
+        Self(value)
+    }
+
+    pub const fn value(self) -> u32 {
+        self.0
+    }
+}
+
+/// An amount in whole cents. Money carries no sign; direction comes from the
+/// transfer that moves it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Money(u64);
+
+impl Money {
+    pub const fn from_cents(cents: u64) -> Self {
+        Self(cents)
+    }
+
+    pub const fn cents(self) -> u64 {
+        self.0
+    }
+}
+
+/// Returned when a ledger is built from entries that repeat an account ID.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DuplicateAccount(AccountId);
+
+impl DuplicateAccount {
+    pub const fn id(self) -> AccountId {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Account {
+    id: AccountId,
+    balance: Money,
+}
+
+/// The in-memory account store that later lessons mutate.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Ledger {
+    accounts: Vec<Account>,
+}
+
+impl Ledger {
+    /// Build a ledger, rejecting an entry that repeats an account ID.
+    pub fn try_new(
+        entries: impl IntoIterator<Item = (AccountId, Money)>,
+    ) -> Result<Self, DuplicateAccount> {
+        let mut ids = HashSet::new();
+        let mut accounts = Vec::new();
+
+        for (id, balance) in entries {
+            if !ids.insert(id) {
+                return Err(DuplicateAccount(id));
+            }
+            accounts.push(Account { id, balance });
+        }
+
+        Ok(Self { accounts })
+    }
+
+    /// The balance of one account, if this ledger holds it.
+    pub fn balance(&self, id: AccountId) -> Option<Money> {
+        self.accounts
+            .iter()
+            .find(|account| account.id == id)
+            .map(|account| account.balance)
+    }
+}
+
+/// A transfer exactly as the caller supplied it.
+///
+/// A request can still describe work the domain must never execute: a transfer
+/// to the same account or a transfer of nothing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TransferRequest {
+    source: AccountId,
+    destination: AccountId,
+    amount_cents: u64,
+}
+
+impl TransferRequest {
+    pub const fn new(source: AccountId, destination: AccountId, amount_cents: u64) -> Self {
+        Self {
+            source,
+            destination,
+            amount_cents,
+        }
+    }
+}
+
+/// The request-only reasons a transfer must not be executed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TransferRequestError {
+    SameAccount,
+    ZeroAmount,
+}
+
+/// A transfer amount that cannot be zero.
+///
+/// The inner representation stays private so the only way to build one is the
+/// checked conversion in this module.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct TransferAmount(NonZeroU64);
+
+impl TransferAmount {
+    const fn as_money(self) -> Money {
+        Money::from_cents(self.0.get())
+    }
+}
+
+/// A transfer request that passed every request-only rule.
+///
+/// The fields are private: `TryFrom<TransferRequest>` is the only way for
+/// outside code to obtain a command, so a command is evidence that the request
+/// was legal and not merely well formed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TransferCommand {
+    source: AccountId,
+    destination: AccountId,
+    amount: TransferAmount,
+}
+
+impl TransferCommand {
+    pub const fn source(self) -> AccountId {
+        self.source
+    }
+
+    pub const fn destination(self) -> AccountId {
+        self.destination
+    }
+
+    pub const fn amount(self) -> Money {
+        self.amount.as_money()
+    }
+}
+
+impl TryFrom<TransferRequest> for TransferCommand {
+    type Error = TransferRequestError;
+
+    fn try_from(request: TransferRequest) -> Result<Self, Self::Error> {
+        if request.source == request.destination {
+            return Err(TransferRequestError::SameAccount);
+        }
+
+        let Some(amount) = NonZeroU64::new(request.amount_cents) else {
+            return Err(TransferRequestError::ZeroAmount);
+        };
+
+        Ok(Self {
+            source: request.source,
+            destination: request.destination,
+            amount: TransferAmount(amount),
+        })
+    }
+}
+
+// TODO: prepare the transfer before anything mutates.
+//
+// Add private `checked_add` and `checked_sub` helpers to `Money`, add a
+// `TransferRejection` enum with `SourceNotFound`, `DestinationNotFound`,
+// `InsufficientFunds`, and `DestinationOverflow`, and add a value-only
+// `PreparedTransfer` that stores the source, destination, amount, and both
+// post-transfer balances. Then implement `Ledger::prepare_transfer(&self,
+// command)` so it resolves both accounts and computes both post-state balances
+// with checked arithmetic, returning the prepared value without changing a
+// single balance. Rejected preparations must leave the ledger unchanged too,
+// and `commit` does not exist yet.
+```
+
+#### `tests/public.rs` — test
+
+Source: `lessons/validate-prepare-commit/099-prepare-transfer/tests/public.rs`
+
+```rust
+use rust_daily_lesson::{
+    AccountId, Ledger, Money, TransferCommand, TransferRejection, TransferRequest,
+    TransferRequestError,
+};
+
+fn id(value: u32) -> AccountId {
+    AccountId::new(value)
+}
+
+fn money(cents: u64) -> Money {
+    Money::from_cents(cents)
+}
+
+fn two_account_ledger(source: u64, destination: u64) -> Ledger {
+    Ledger::try_new([(id(1), money(source)), (id(2), money(destination))])
+        .expect("fixture account IDs are unique")
+}
+
+fn command(source: u32, destination: u32, amount_cents: u64) -> TransferCommand {
+    TransferCommand::try_from(TransferRequest::new(
+        id(source),
+        id(destination),
+        amount_cents,
+    ))
+    .expect("fixture requests are valid")
+}
+
+#[test]
+fn accepts_a_positive_transfer_between_distinct_accounts() {
+    let request = TransferRequest::new(id(1), id(2), 250);
+
+    let validated = TransferCommand::try_from(request).expect("a positive transfer is valid");
+
+    assert_eq!(validated.source(), id(1));
+    assert_eq!(validated.destination(), id(2));
+    assert_eq!(validated.amount(), money(250));
+}
+
+#[test]
+fn rejects_a_zero_amount() {
+    let request = TransferRequest::new(id(1), id(2), 0);
+
+    assert_eq!(
+        TransferCommand::try_from(request),
+        Err(TransferRequestError::ZeroAmount)
+    );
+}
+
+#[test]
+fn rejects_a_transfer_to_the_same_account() {
+    let request = TransferRequest::new(id(7), id(7), 500);
+
+    assert_eq!(
+        TransferCommand::try_from(request),
+        Err(TransferRequestError::SameAccount)
+    );
+}
+
+#[test]
+fn prepares_a_transfer_without_moving_money() {
+    let ledger = two_account_ledger(500, 100);
+
+    let prepared = ledger.prepare_transfer(command(1, 2, 250));
+
+    assert!(prepared.is_ok(), "the transfer should be preparable");
+    assert_eq!(ledger.balance(id(1)), Some(money(500)));
+    assert_eq!(ledger.balance(id(2)), Some(money(100)));
+}
+
+#[test]
+fn a_missing_source_is_rejected_without_touching_the_ledger() {
+    let ledger = two_account_ledger(500, 100);
+    let before = ledger.clone();
+
+    let result = ledger.prepare_transfer(command(9, 1, 250));
+
+    assert_eq!(result, Err(TransferRejection::SourceNotFound));
+    assert_eq!(ledger, before);
+}
+
+#[test]
+fn a_missing_destination_is_rejected_without_touching_the_ledger() {
+    let ledger = two_account_ledger(500, 100);
+    let before = ledger.clone();
+
+    let result = ledger.prepare_transfer(command(1, 9, 250));
+
+    assert_eq!(result, Err(TransferRejection::DestinationNotFound));
+    assert_eq!(ledger, before);
+}
+
+#[test]
+fn insufficient_funds_is_rejected_without_touching_the_ledger() {
+    let ledger = two_account_ledger(100, 100);
+    let before = ledger.clone();
+
+    let result = ledger.prepare_transfer(command(1, 2, 250));
+
+    assert_eq!(result, Err(TransferRejection::InsufficientFunds));
+    assert_eq!(ledger, before);
+}
+
+#[test]
+fn destination_overflow_is_rejected_without_touching_the_ledger() {
+    let ledger = two_account_ledger(500, u64::MAX);
+    let before = ledger.clone();
+
+    let result = ledger.prepare_transfer(command(1, 2, 250));
+
+    assert_eq!(result, Err(TransferRejection::DestinationOverflow));
+    assert_eq!(ledger, before);
+}
+```
+
+### Progressive hints
+
+1. Treat preparation as a calculation over the current ledger, not as a partial transfer. Nothing in this step is allowed to write.
+2. Use checked_sub for the source and checked_add for the destination, then store the successful results in PreparedTransfer. A failed lookup or a failed checked operation returns before anything is written, so the ledger is untouched on every rejection.
+3. The reference approach for this lesson. The authored code is included in the Solution section.
+
+### Validation contract
+
+```json
+{
+  "mode": "all",
+  "validations": [
+    {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "enum_unit_variants",
+          "enumName": "TransferRejection",
+          "requiredVariants": [
+            "SourceNotFound",
+            "DestinationNotFound",
+            "InsufficientFunds",
+            "DestinationOverflow"
+          ]
+        },
+        {
+          "type": "struct_fields",
+          "structName": "PreparedTransfer",
+          "requiredFields": [
+            {
+              "name": "source_after",
+              "typeIncludes": [
+                "Money"
+              ]
+            },
+            {
+              "name": "destination_after",
+              "typeIncludes": [
+                "Money"
+              ]
+            }
+          ]
+        },
+        {
+          "type": "impl_method",
+          "implFor": "Ledger",
+          "methodName": "prepare_transfer",
+          "requiredSignatureIncludes": [
+            "&self",
+            "TransferCommand",
+            "Result<PreparedTransfer",
+            "TransferRejection"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "testFiles": [
+        {
+          "path": "tests/public.rs",
+          "sourcePath": "tests/public.rs"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Authored solution
+
+#### `src/lib.rs`
+
+Source: `lessons/validate-prepare-commit/099-prepare-transfer/solution/src/lib.rs`
+
+```rust
+//! Ledger support types for the validate -> prepare -> commit arc.
+//!
+//! Account identity, money, and the account store are provided. The boundary
+//! that turns a raw transfer request into work the ledger is allowed to execute
+//! is the part that grows lesson by lesson in this file.
+
+use std::collections::HashSet;
+use std::num::NonZeroU64;
+
+/// Identifies one account held by the ledger.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct AccountId(u32);
+
+impl AccountId {
+    pub const fn new(value: u32) -> Self {
+        Self(value)
+    }
+
+    pub const fn value(self) -> u32 {
+        self.0
+    }
+}
+
+/// An amount in whole cents. Money carries no sign; direction comes from the
+/// transfer that moves it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Money(u64);
+
+impl Money {
+    pub const fn from_cents(cents: u64) -> Self {
+        Self(cents)
+    }
+
+    pub const fn cents(self) -> u64 {
+        self.0
+    }
+
+    fn checked_add(self, rhs: Self) -> Option<Self> {
+        self.0.checked_add(rhs.0).map(Self)
+    }
+
+    fn checked_sub(self, rhs: Self) -> Option<Self> {
+        self.0.checked_sub(rhs.0).map(Self)
+    }
+}
+
+/// Returned when a ledger is built from entries that repeat an account ID.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DuplicateAccount(AccountId);
+
+impl DuplicateAccount {
+    pub const fn id(self) -> AccountId {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Account {
+    id: AccountId,
+    balance: Money,
+}
+
+/// The in-memory account store that later lessons mutate.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Ledger {
+    accounts: Vec<Account>,
+}
+
+impl Ledger {
+    /// Build a ledger, rejecting an entry that repeats an account ID.
+    pub fn try_new(
+        entries: impl IntoIterator<Item = (AccountId, Money)>,
+    ) -> Result<Self, DuplicateAccount> {
+        let mut ids = HashSet::new();
+        let mut accounts = Vec::new();
+
+        for (id, balance) in entries {
+            if !ids.insert(id) {
+                return Err(DuplicateAccount(id));
+            }
+            accounts.push(Account { id, balance });
+        }
+
+        Ok(Self { accounts })
+    }
+
+    /// The balance of one account, if this ledger holds it.
+    pub fn balance(&self, id: AccountId) -> Option<Money> {
+        self.accounts
+            .iter()
+            .find(|account| account.id == id)
+            .map(|account| account.balance)
+    }
+}
+
+/// A transfer exactly as the caller supplied it.
+///
+/// A request can still describe work the domain must never execute: a transfer
+/// to the same account or a transfer of nothing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TransferRequest {
+    source: AccountId,
+    destination: AccountId,
+    amount_cents: u64,
+}
+
+impl TransferRequest {
+    pub const fn new(source: AccountId, destination: AccountId, amount_cents: u64) -> Self {
+        Self {
+            source,
+            destination,
+            amount_cents,
+        }
+    }
+}
+
+/// The request-only reasons a transfer must not be executed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TransferRequestError {
+    SameAccount,
+    ZeroAmount,
+}
+
+/// A transfer amount that cannot be zero.
+///
+/// The inner representation stays private so the only way to build one is the
+/// checked conversion in this module.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct TransferAmount(NonZeroU64);
+
+impl TransferAmount {
+    const fn as_money(self) -> Money {
+        Money::from_cents(self.0.get())
+    }
+}
+
+/// A transfer request that passed every request-only rule.
+///
+/// The fields are private: `TryFrom<TransferRequest>` is the only way for
+/// outside code to obtain a command, so a command is evidence that the request
+/// was legal and not merely well formed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TransferCommand {
+    source: AccountId,
+    destination: AccountId,
+    amount: TransferAmount,
+}
+
+impl TransferCommand {
+    pub const fn source(self) -> AccountId {
+        self.source
+    }
+
+    pub const fn destination(self) -> AccountId {
+        self.destination
+    }
+
+    pub const fn amount(self) -> Money {
+        self.amount.as_money()
+    }
+}
+
+impl TryFrom<TransferRequest> for TransferCommand {
+    type Error = TransferRequestError;
+
+    fn try_from(request: TransferRequest) -> Result<Self, Self::Error> {
+        if request.source == request.destination {
+            return Err(TransferRequestError::SameAccount);
+        }
+
+        let Some(amount) = NonZeroU64::new(request.amount_cents) else {
+            return Err(TransferRequestError::ZeroAmount);
+        };
+
+        Ok(Self {
+            source: request.source,
+            destination: request.destination,
+            amount: TransferAmount(amount),
+        })
+    }
+}
+
+/// The state-dependent reasons a validated command cannot be prepared.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TransferRejection {
+    SourceNotFound,
+    DestinationNotFound,
+    InsufficientFunds,
+    DestinationOverflow,
+}
+
+/// Everything a transfer needs once current ledger state has been resolved.
+///
+/// This is a plan, not a permission: it records which accounts are involved and
+/// which balances they should hold afterwards, but nothing here can reach the
+/// ledger.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PreparedTransfer {
+    source: AccountId,
+    destination: AccountId,
+    amount: Money,
+    source_after: Money,
+    destination_after: Money,
+}
+
+impl Ledger {
+    /// Resolve every state-dependent failure before anything is mutated.
+    pub fn prepare_transfer(
+        &self,
+        command: TransferCommand,
+    ) -> Result<PreparedTransfer, TransferRejection> {
+        let amount = command.amount();
+
+        let source_balance = self
+            .balance(command.source())
+            .ok_or(TransferRejection::SourceNotFound)?;
+        let destination_balance = self
+            .balance(command.destination())
+            .ok_or(TransferRejection::DestinationNotFound)?;
+
+        let source_after = source_balance
+            .checked_sub(amount)
+            .ok_or(TransferRejection::InsufficientFunds)?;
+        let destination_after = destination_balance
+            .checked_add(amount)
+            .ok_or(TransferRejection::DestinationOverflow)?;
+
+        Ok(PreparedTransfer {
+            source: command.source(),
+            destination: command.destination(),
+            amount,
+            source_after,
+            destination_after,
+        })
+    }
+}
+```
+
+### Completion explanation
+
+Preparation now resolves the account lookups and both pieces of checked arithmetic before any mutation, so every expected failure leaves the ledger untouched. Be careful about what the prepared value actually is, though: it is only a snapshot. It remembers account IDs and the balances they should hold, which means a later mutation could make the stored post-state stale before anyone uses it. The next lesson fixes that by having preparation keep exclusive authority over the two accounts instead of copying their state.
+
+### Author notes
+
+## Concept Boundary
+
+One concept: fallible work that depends on current state belongs before the
+mutation, not inside it. `prepare_transfer` performs every account lookup and
+both pieces of checked arithmetic, and returns a rejection instead of a
+partially applied transfer. This lesson is not about `Result`, `Option`, or
+error enums in isolation; those tools are being arranged around the mutation
+boundary.
+
+## Intended Solution
+
+Add private `Money::checked_add` and `Money::checked_sub` helpers, a
+`TransferRejection` enum with one variant per state-dependent failure, and a
+value-only `PreparedTransfer` that carries the account IDs, the amount, and both
+post-transfer balances. `Ledger::prepare_transfer(&self, command)` resolves the
+source balance, then the destination balance, then computes `source_after` with
+checked subtraction and `destination_after` with checked addition. Every failure
+returns before the function could write, and taking `&self` makes that guarantee
+visible in the signature.
+
+## Validation Strategy
+
+The public tests check the rejection variants and, just as importantly, compare
+the whole ledger against a clone taken before the call: an error that still
+moved money fails the lesson. The structural checks protect stable API shape
+only: the four rejection variants, the two `Money` post-state fields on
+`PreparedTransfer`, and a `prepare_transfer` that takes the command and returns
+`Result<PreparedTransfer, TransferRejection>`. Nothing checks local variable
+names or the order of the `checked_*` calls; the Cargo tests remain
+authoritative.
+
+## Common Wrong Solutions
+
+Reject decrementing the source before the destination overflow check, mutating
+and then restoring balances on error, using saturating arithmetic, using
+unchecked `+` or `-` for the post-state, taking `&mut self` while still storing
+only copied IDs and balances, and adding `commit` early.
+
+## Arc Continuity
+
+`TryFrom<TransferRequest>` remains the only way to obtain a `TransferCommand`,
+and its zero-amount and same-account tests stay active in this lesson's suite.
+The prepared type introduced here is deliberately value-only: the next lesson
+replaces it with a borrow-bound capability, and this lesson's completion text
+says so explicitly so the intermediate design is never mistaken for the target
+design.
+
+## Review Checklist
+
+Confirm the scenario and instructions describe state-dependent failures,
+preparation is described as a calculation rather than a partial transfer, the
+starter contains only the preparation TODO, every rejection test compares the
+ledger with its pre-call clone, and the completion text labels the value-only
+plan as intermediate.
+
+---
+
+## 100. Bind prepared work to exclusive state
+
+Source: `lessons/validate-prepare-commit/100-bind-prepared-transfer`
+
+| Field | Value |
+| --- | --- |
+| Lesson ID | `bind-prepared-transfer-100` |
+| Production lesson | [Open lesson](https://borrowquest.site/#lesson/bind-prepared-transfer-100) |
+| Arc | Validate, prepare, then commit (step 3 of 5) |
+| Concept | Borrow-bound prepared capability (`borrow-bound-preparation`) |
+| Difficulty | advanced |
+| Estimated time | 10 minutes |
+
+### Scenario
+
+The value-only plan from the previous lesson can outlive the state it was calculated from, so nothing stops the ledger from changing before the plan is applied. A version counter or a second validation pass would only paper over that. In a local, synchronous API the prepared operation can borrow the exact accounts it is authorized to change and hold those borrows until it is used.
+
+### Task
+
+In src/lib.rs, replace the value-only PreparedTransfer with PreparedTransfer<'a>, which holds &'a mut Account for the source and the destination. Change Ledger::prepare_transfer to take &mut self and return PreparedTransfer<'_>, keeping the same account lookups, the same checked post-state, and the same rejections, and take the two account references from the provided account_pair_mut helper. The prepared type must not derive or implement Clone or Copy.
+
+### Concept context
+
+Bind prepared work to exclusive mutable references so state cannot drift between preparation and commit.
+
+- Prerequisites: `prepare-before-mutation`
+- Tags: `borrowing`, `lifetimes`, `capabilities`, `ownership`
+
+### Starter project files
+
+#### `src/lib.rs` — editable
+
+Source: `lessons/validate-prepare-commit/100-bind-prepared-transfer/starter/src/lib.rs`
+
+```rust
+//! Ledger support types for the validate -> prepare -> commit arc.
+//!
+//! Account identity, money, and the account store are provided. The boundary
+//! that turns a raw transfer request into work the ledger is allowed to execute
+//! is the part that grows lesson by lesson in this file.
+
+use std::collections::HashSet;
+use std::num::NonZeroU64;
+
+/// Identifies one account held by the ledger.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct AccountId(u32);
+
+impl AccountId {
+    pub const fn new(value: u32) -> Self {
+        Self(value)
+    }
+
+    pub const fn value(self) -> u32 {
+        self.0
+    }
+}
+
+/// An amount in whole cents. Money carries no sign; direction comes from the
+/// transfer that moves it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Money(u64);
+
+impl Money {
+    pub const fn from_cents(cents: u64) -> Self {
+        Self(cents)
+    }
+
+    pub const fn cents(self) -> u64 {
+        self.0
+    }
+
+    fn checked_add(self, rhs: Self) -> Option<Self> {
+        self.0.checked_add(rhs.0).map(Self)
+    }
+
+    fn checked_sub(self, rhs: Self) -> Option<Self> {
+        self.0.checked_sub(rhs.0).map(Self)
+    }
+}
+
+/// Returned when a ledger is built from entries that repeat an account ID.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DuplicateAccount(AccountId);
+
+impl DuplicateAccount {
+    pub const fn id(self) -> AccountId {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Account {
+    id: AccountId,
+    balance: Money,
+}
+
+/// The in-memory account store that later lessons mutate.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Ledger {
+    accounts: Vec<Account>,
+}
+
+impl Ledger {
+    /// Build a ledger, rejecting an entry that repeats an account ID.
+    pub fn try_new(
+        entries: impl IntoIterator<Item = (AccountId, Money)>,
+    ) -> Result<Self, DuplicateAccount> {
+        let mut ids = HashSet::new();
+        let mut accounts = Vec::new();
+
+        for (id, balance) in entries {
+            if !ids.insert(id) {
+                return Err(DuplicateAccount(id));
+            }
+            accounts.push(Account { id, balance });
+        }
+
+        Ok(Self { accounts })
+    }
+
+    /// The balance of one account, if this ledger holds it.
+    pub fn balance(&self, id: AccountId) -> Option<Money> {
+        self.accounts
+            .iter()
+            .find(|account| account.id == id)
+            .map(|account| account.balance)
+    }
+}
+
+/// A transfer exactly as the caller supplied it.
+///
+/// A request can still describe work the domain must never execute: a transfer
+/// to the same account or a transfer of nothing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TransferRequest {
+    source: AccountId,
+    destination: AccountId,
+    amount_cents: u64,
+}
+
+impl TransferRequest {
+    pub const fn new(source: AccountId, destination: AccountId, amount_cents: u64) -> Self {
+        Self {
+            source,
+            destination,
+            amount_cents,
+        }
+    }
+}
+
+/// The request-only reasons a transfer must not be executed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TransferRequestError {
+    SameAccount,
+    ZeroAmount,
+}
+
+/// A transfer amount that cannot be zero.
+///
+/// The inner representation stays private so the only way to build one is the
+/// checked conversion in this module.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct TransferAmount(NonZeroU64);
+
+impl TransferAmount {
+    const fn as_money(self) -> Money {
+        Money::from_cents(self.0.get())
+    }
+}
+
+/// A transfer request that passed every request-only rule.
+///
+/// The fields are private: `TryFrom<TransferRequest>` is the only way for
+/// outside code to obtain a command, so a command is evidence that the request
+/// was legal and not merely well formed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TransferCommand {
+    source: AccountId,
+    destination: AccountId,
+    amount: TransferAmount,
+}
+
+impl TransferCommand {
+    pub const fn source(self) -> AccountId {
+        self.source
+    }
+
+    pub const fn destination(self) -> AccountId {
+        self.destination
+    }
+
+    pub const fn amount(self) -> Money {
+        self.amount.as_money()
+    }
+}
+
+impl TryFrom<TransferRequest> for TransferCommand {
+    type Error = TransferRequestError;
+
+    fn try_from(request: TransferRequest) -> Result<Self, Self::Error> {
+        if request.source == request.destination {
+            return Err(TransferRequestError::SameAccount);
+        }
+
+        let Some(amount) = NonZeroU64::new(request.amount_cents) else {
+            return Err(TransferRequestError::ZeroAmount);
+        };
+
+        Ok(Self {
+            source: request.source,
+            destination: request.destination,
+            amount: TransferAmount(amount),
+        })
+    }
+}
+
+/// The state-dependent reasons a validated command cannot be prepared.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TransferRejection {
+    SourceNotFound,
+    DestinationNotFound,
+    InsufficientFunds,
+    DestinationOverflow,
+}
+
+/// Everything a transfer needs once current ledger state has been resolved.
+///
+/// This is a plan, not a permission: it records which accounts are involved and
+/// which balances they should hold afterwards, but nothing here can reach the
+/// ledger.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PreparedTransfer {
+    source: AccountId,
+    destination: AccountId,
+    amount: Money,
+    source_after: Money,
+    destination_after: Money,
+}
+
+impl Ledger {
+    /// Resolve every state-dependent failure before anything is mutated.
+    pub fn prepare_transfer(
+        &self,
+        command: TransferCommand,
+    ) -> Result<PreparedTransfer, TransferRejection> {
+        let amount = command.amount();
+
+        let source_balance = self
+            .balance(command.source())
+            .ok_or(TransferRejection::SourceNotFound)?;
+        let destination_balance = self
+            .balance(command.destination())
+            .ok_or(TransferRejection::DestinationNotFound)?;
+
+        let source_after = source_balance
+            .checked_sub(amount)
+            .ok_or(TransferRejection::InsufficientFunds)?;
+        let destination_after = destination_balance
+            .checked_add(amount)
+            .ok_or(TransferRejection::DestinationOverflow)?;
+
+        Ok(PreparedTransfer {
+            source: command.source(),
+            destination: command.destination(),
+            amount,
+            source_after,
+            destination_after,
+        })
+    }
+}
+
+impl Ledger {
+    /// Borrow the source and the destination at the same time without `unsafe`
+    /// code or interior mutability. Provided support code: use it rather than
+    /// rebuilding it.
+    fn account_pair_mut(
+        &mut self,
+        source: AccountId,
+        destination: AccountId,
+    ) -> Option<(&mut Account, &mut Account)> {
+        if source == destination {
+            return None;
+        }
+
+        let source_index = self.accounts.iter().position(|account| account.id == source)?;
+        let destination_index = self
+            .accounts
+            .iter()
+            .position(|account| account.id == destination)?;
+
+        if source_index < destination_index {
+            let (before_destination, from_destination) =
+                self.accounts.split_at_mut(destination_index);
+            let source = before_destination.get_mut(source_index)?;
+            let destination = from_destination.first_mut()?;
+            Some((source, destination))
+        } else {
+            let (before_source, from_source) = self.accounts.split_at_mut(source_index);
+            let destination = before_source.get_mut(destination_index)?;
+            let source = from_source.first_mut()?;
+            Some((source, destination))
+        }
+    }
+}
+
+// TODO: bind the prepared transfer to the state it is allowed to change.
+//
+// Replace the value-only `PreparedTransfer` with `PreparedTransfer<'a>` holding
+// `&'a mut Account` for the source and the destination, and change
+// `Ledger::prepare_transfer` to take `&mut self` and return
+// `PreparedTransfer<'_>`. Resolve the account lookups and the checked
+// post-state exactly as before, then take the two distinct account references
+// from the provided `account_pair_mut` helper. Keep every rejection identical,
+// keep both balances unchanged during preparation, and do not derive or
+// implement `Clone` or `Copy` on the prepared type.
+```
+
+#### `tests/public.rs` — test
+
+Source: `lessons/validate-prepare-commit/100-bind-prepared-transfer/tests/public.rs`
+
+```rust
+use rust_daily_lesson::{
+    AccountId, Ledger, Money, TransferCommand, TransferRejection, TransferRequest,
+    TransferRequestError,
+};
+
+fn id(value: u32) -> AccountId {
+    AccountId::new(value)
+}
+
+fn money(cents: u64) -> Money {
+    Money::from_cents(cents)
+}
+
+fn two_account_ledger(source: u64, destination: u64) -> Ledger {
+    Ledger::try_new([(id(1), money(source)), (id(2), money(destination))])
+        .expect("fixture account IDs are unique")
+}
+
+fn command(source: u32, destination: u32, amount_cents: u64) -> TransferCommand {
+    TransferCommand::try_from(TransferRequest::new(
+        id(source),
+        id(destination),
+        amount_cents,
+    ))
+    .expect("fixture requests are valid")
+}
+
+#[test]
+fn accepts_a_positive_transfer_between_distinct_accounts() {
+    let request = TransferRequest::new(id(1), id(2), 250);
+
+    let validated = TransferCommand::try_from(request).expect("a positive transfer is valid");
+
+    assert_eq!(validated.source(), id(1));
+    assert_eq!(validated.destination(), id(2));
+    assert_eq!(validated.amount(), money(250));
+}
+
+#[test]
+fn rejects_a_zero_amount() {
+    let request = TransferRequest::new(id(1), id(2), 0);
+
+    assert_eq!(
+        TransferCommand::try_from(request),
+        Err(TransferRequestError::ZeroAmount)
+    );
+}
+
+#[test]
+fn rejects_a_transfer_to_the_same_account() {
+    let request = TransferRequest::new(id(7), id(7), 500);
+
+    assert_eq!(
+        TransferCommand::try_from(request),
+        Err(TransferRequestError::SameAccount)
+    );
+}
+
+#[test]
+fn prepares_a_transfer_without_moving_money() {
+    let mut ledger = two_account_ledger(500, 100);
+
+    let prepared = ledger.prepare_transfer(command(1, 2, 250));
+
+    assert!(prepared.is_ok(), "the transfer should be preparable");
+    drop(prepared);
+
+    assert_eq!(ledger.balance(id(1)), Some(money(500)));
+    assert_eq!(ledger.balance(id(2)), Some(money(100)));
+}
+
+#[test]
+fn a_missing_source_is_rejected_without_touching_the_ledger() {
+    let mut ledger = two_account_ledger(500, 100);
+    let before = ledger.clone();
+
+    let result = ledger.prepare_transfer(command(9, 1, 250));
+
+    assert!(matches!(result, Err(TransferRejection::SourceNotFound)));
+    assert_eq!(ledger, before);
+}
+
+#[test]
+fn a_missing_destination_is_rejected_without_touching_the_ledger() {
+    let mut ledger = two_account_ledger(500, 100);
+    let before = ledger.clone();
+
+    let result = ledger.prepare_transfer(command(1, 9, 250));
+
+    assert!(matches!(
+        result,
+        Err(TransferRejection::DestinationNotFound)
+    ));
+    assert_eq!(ledger, before);
+}
+
+#[test]
+fn insufficient_funds_is_rejected_without_touching_the_ledger() {
+    let mut ledger = two_account_ledger(100, 100);
+    let before = ledger.clone();
+
+    let result = ledger.prepare_transfer(command(1, 2, 250));
+
+    assert!(matches!(result, Err(TransferRejection::InsufficientFunds)));
+    assert_eq!(ledger, before);
+}
+
+#[test]
+fn destination_overflow_is_rejected_without_touching_the_ledger() {
+    let mut ledger = two_account_ledger(500, u64::MAX);
+    let before = ledger.clone();
+
+    let result = ledger.prepare_transfer(command(1, 2, 250));
+
+    assert!(matches!(
+        result,
+        Err(TransferRejection::DestinationOverflow)
+    ));
+    assert_eq!(ledger, before);
+}
+```
+
+### Progressive hints
+
+1. A prepared value does not have to describe authority. It can hold the authority itself as a borrow.
+2. Resolve both checked post-balances first, then take two distinct &mut Account references and store them in PreparedTransfer<'_>. The exclusive borrow is what stops the ledger from changing underneath the preparation, and it is also why the type cannot be Clone or Copy.
+3. The reference approach for this lesson. The authored code is included in the Solution section.
+
+### Validation contract
+
+```json
+{
+  "mode": "all",
+  "validations": [
+    {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "struct_fields",
+          "structName": "PreparedTransfer",
+          "requiredFields": [
+            {
+              "name": "source",
+              "typeIncludes": [
+                "mut Account"
+              ]
+            },
+            {
+              "name": "destination",
+              "typeIncludes": [
+                "mut Account"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "testFiles": [
+        {
+          "path": "tests/public.rs",
+          "sourcePath": "tests/public.rs"
+        }
+      ]
+    },
+    {
+      "mode": "backend-compile-fail",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "cases": [
+        {
+          "name": "prepared-blocks-ledger-reborrow",
+          "expectedDiagnostics": [
+            "cannot borrow"
+          ],
+          "sourcePath": "compile_fail/prepared_blocks_ledger_reborrow.rs"
+        },
+        {
+          "name": "prepared-not-copy",
+          "expectedDiagnostics": [
+            "moved"
+          ],
+          "sourcePath": "compile_fail/prepared_not_copy.rs"
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### Compile-fail fixtures
+
+##### prepared-blocks-ledger-reborrow
+
+Source: `lessons/validate-prepare-commit/100-bind-prepared-transfer/compile_fail/prepared_blocks_ledger_reborrow.rs`
+
+```rust
+use rust_daily_lesson::{AccountId, Ledger, Money, TransferCommand, TransferRequest};
+
+fn main() {
+    let mut ledger = Ledger::try_new([
+        (AccountId::new(1), Money::from_cents(500)),
+        (AccountId::new(2), Money::from_cents(100)),
+    ])
+    .unwrap();
+
+    let command = TransferCommand::try_from(TransferRequest::new(
+        AccountId::new(1),
+        AccountId::new(2),
+        250,
+    ))
+    .unwrap();
+
+    let prepared = ledger.prepare_transfer(command).unwrap();
+    let _balance = ledger.balance(AccountId::new(1));
+    let _keep_borrow_alive = prepared;
+}
+```
+
+##### prepared-not-copy
+
+Source: `lessons/validate-prepare-commit/100-bind-prepared-transfer/compile_fail/prepared_not_copy.rs`
+
+```rust
+use rust_daily_lesson::{AccountId, Ledger, Money, TransferCommand, TransferRequest};
+
+fn main() {
+    let mut ledger = Ledger::try_new([
+        (AccountId::new(1), Money::from_cents(500)),
+        (AccountId::new(2), Money::from_cents(100)),
+    ])
+    .unwrap();
+
+    let command = TransferCommand::try_from(TransferRequest::new(
+        AccountId::new(1),
+        AccountId::new(2),
+        250,
+    ))
+    .unwrap();
+
+    let prepared = ledger.prepare_transfer(command).unwrap();
+    let duplicate = prepared;
+    let _original = prepared;
+    let _ = duplicate;
+}
+```
+
+### Authored solution
+
+#### `src/lib.rs`
+
+Source: `lessons/validate-prepare-commit/100-bind-prepared-transfer/solution/src/lib.rs`
+
+```rust
+//! Ledger support types for the validate -> prepare -> commit arc.
+//!
+//! Account identity, money, and the account store are provided. The boundary
+//! that turns a raw transfer request into work the ledger is allowed to execute
+//! is the part that grows lesson by lesson in this file.
+
+use std::collections::HashSet;
+use std::num::NonZeroU64;
+
+/// Identifies one account held by the ledger.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct AccountId(u32);
+
+impl AccountId {
+    pub const fn new(value: u32) -> Self {
+        Self(value)
+    }
+
+    pub const fn value(self) -> u32 {
+        self.0
+    }
+}
+
+/// An amount in whole cents. Money carries no sign; direction comes from the
+/// transfer that moves it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Money(u64);
+
+impl Money {
+    pub const fn from_cents(cents: u64) -> Self {
+        Self(cents)
+    }
+
+    pub const fn cents(self) -> u64 {
+        self.0
+    }
+
+    fn checked_add(self, rhs: Self) -> Option<Self> {
+        self.0.checked_add(rhs.0).map(Self)
+    }
+
+    fn checked_sub(self, rhs: Self) -> Option<Self> {
+        self.0.checked_sub(rhs.0).map(Self)
+    }
+}
+
+/// Returned when a ledger is built from entries that repeat an account ID.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DuplicateAccount(AccountId);
+
+impl DuplicateAccount {
+    pub const fn id(self) -> AccountId {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Account {
+    id: AccountId,
+    balance: Money,
+}
+
+/// The in-memory account store that later lessons mutate.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Ledger {
+    accounts: Vec<Account>,
+}
+
+impl Ledger {
+    /// Build a ledger, rejecting an entry that repeats an account ID.
+    pub fn try_new(
+        entries: impl IntoIterator<Item = (AccountId, Money)>,
+    ) -> Result<Self, DuplicateAccount> {
+        let mut ids = HashSet::new();
+        let mut accounts = Vec::new();
+
+        for (id, balance) in entries {
+            if !ids.insert(id) {
+                return Err(DuplicateAccount(id));
+            }
+            accounts.push(Account { id, balance });
+        }
+
+        Ok(Self { accounts })
+    }
+
+    /// The balance of one account, if this ledger holds it.
+    pub fn balance(&self, id: AccountId) -> Option<Money> {
+        self.accounts
+            .iter()
+            .find(|account| account.id == id)
+            .map(|account| account.balance)
+    }
+}
+
+/// A transfer exactly as the caller supplied it.
+///
+/// A request can still describe work the domain must never execute: a transfer
+/// to the same account or a transfer of nothing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TransferRequest {
+    source: AccountId,
+    destination: AccountId,
+    amount_cents: u64,
+}
+
+impl TransferRequest {
+    pub const fn new(source: AccountId, destination: AccountId, amount_cents: u64) -> Self {
+        Self {
+            source,
+            destination,
+            amount_cents,
+        }
+    }
+}
+
+/// The request-only reasons a transfer must not be executed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TransferRequestError {
+    SameAccount,
+    ZeroAmount,
+}
+
+/// A transfer amount that cannot be zero.
+///
+/// The inner representation stays private so the only way to build one is the
+/// checked conversion in this module.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct TransferAmount(NonZeroU64);
+
+impl TransferAmount {
+    const fn as_money(self) -> Money {
+        Money::from_cents(self.0.get())
+    }
+}
+
+/// A transfer request that passed every request-only rule.
+///
+/// The fields are private: `TryFrom<TransferRequest>` is the only way for
+/// outside code to obtain a command, so a command is evidence that the request
+/// was legal and not merely well formed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TransferCommand {
+    source: AccountId,
+    destination: AccountId,
+    amount: TransferAmount,
+}
+
+impl TransferCommand {
+    pub const fn source(self) -> AccountId {
+        self.source
+    }
+
+    pub const fn destination(self) -> AccountId {
+        self.destination
+    }
+
+    pub const fn amount(self) -> Money {
+        self.amount.as_money()
+    }
+}
+
+impl TryFrom<TransferRequest> for TransferCommand {
+    type Error = TransferRequestError;
+
+    fn try_from(request: TransferRequest) -> Result<Self, Self::Error> {
+        if request.source == request.destination {
+            return Err(TransferRequestError::SameAccount);
+        }
+
+        let Some(amount) = NonZeroU64::new(request.amount_cents) else {
+            return Err(TransferRequestError::ZeroAmount);
+        };
+
+        Ok(Self {
+            source: request.source,
+            destination: request.destination,
+            amount: TransferAmount(amount),
+        })
+    }
+}
+
+/// The state-dependent reasons a validated command cannot be prepared.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TransferRejection {
+    SourceNotFound,
+    DestinationNotFound,
+    InsufficientFunds,
+    DestinationOverflow,
+}
+
+/// The two accounts a transfer has resolved, borrowed for the whole time the
+/// preparation is alive.
+///
+/// The exclusive borrows are the capability: while a `PreparedTransfer` exists,
+/// nothing else can read or write the two accounts, so the post-state it holds
+/// cannot go stale. The fields stay private and no constructor is public.
+#[derive(Debug)]
+pub struct PreparedTransfer<'a> {
+    source: &'a mut Account,
+    destination: &'a mut Account,
+    amount: Money,
+    source_after: Money,
+    destination_after: Money,
+}
+
+impl Ledger {
+    /// Borrow the source and the destination at the same time without `unsafe`
+    /// code or interior mutability. Provided support code: use it rather than
+    /// rebuilding it.
+    fn account_pair_mut(
+        &mut self,
+        source: AccountId,
+        destination: AccountId,
+    ) -> Option<(&mut Account, &mut Account)> {
+        if source == destination {
+            return None;
+        }
+
+        let source_index = self.accounts.iter().position(|account| account.id == source)?;
+        let destination_index = self
+            .accounts
+            .iter()
+            .position(|account| account.id == destination)?;
+
+        if source_index < destination_index {
+            let (before_destination, from_destination) =
+                self.accounts.split_at_mut(destination_index);
+            let source = before_destination.get_mut(source_index)?;
+            let destination = from_destination.first_mut()?;
+            Some((source, destination))
+        } else {
+            let (before_source, from_source) = self.accounts.split_at_mut(source_index);
+            let destination = before_source.get_mut(destination_index)?;
+            let source = from_source.first_mut()?;
+            Some((source, destination))
+        }
+    }
+
+    /// Resolve every state-dependent failure and keep exclusive authority over
+    /// the two accounts the transfer is allowed to change.
+    pub fn prepare_transfer(
+        &mut self,
+        command: TransferCommand,
+    ) -> Result<PreparedTransfer<'_>, TransferRejection> {
+        let amount = command.amount();
+
+        let source_balance = self
+            .balance(command.source())
+            .ok_or(TransferRejection::SourceNotFound)?;
+        let destination_balance = self
+            .balance(command.destination())
+            .ok_or(TransferRejection::DestinationNotFound)?;
+
+        let source_after = source_balance
+            .checked_sub(amount)
+            .ok_or(TransferRejection::InsufficientFunds)?;
+        let destination_after = destination_balance
+            .checked_add(amount)
+            .ok_or(TransferRejection::DestinationOverflow)?;
+
+        let Some((source, destination)) =
+            self.account_pair_mut(command.source(), command.destination())
+        else {
+            // Both accounts were resolved above and `TransferCommand` guarantees
+            // distinct account IDs, so this is a defensive preparation
+            // rejection rather than an assertion or a panic.
+            return Err(TransferRejection::SourceNotFound);
+        };
+
+        Ok(PreparedTransfer {
+            source,
+            destination,
+            amount,
+            source_after,
+            destination_after,
+        })
+    }
+}
+```
+
+### Completion explanation
+
+PreparedTransfer<'a> is a capability now, not a copy of state: while it exists, the ledger cannot be borrowed in any other way, so the post-state it carries cannot go stale and the borrow checker enforces that for free. The same exclusive borrows explain why the type cannot be Clone or Copy. Duplicating the preparation would duplicate authority over the same two accounts, which is exactly the guarantee this design is trying to keep.
+
+### Author notes
+
+## Concept Boundary
+
+One concept: prepared work can *hold* the authority it needs instead of merely
+describing it. `PreparedTransfer<'a>` borrows the two accounts exclusively, so
+the ledger cannot be read or written again until the preparation is consumed or
+dropped. This lesson is not about lifetimes in isolation; the lifetime is the
+mechanism that turns a stale-able plan into a capability.
+
+## Intended Solution
+
+Keep every lookup and every checked computation from the previous lesson, then
+change the prepared type to `PreparedTransfer<'a>` with `source: &'a mut Account`
+and `destination: &'a mut Account`, and change `Ledger::prepare_transfer` to
+take `&mut self` and return `PreparedTransfer<'_>`. The provided
+`account_pair_mut` helper yields both exclusive references without `unsafe` code
+or interior mutability. `Clone` and `Copy` disappear, because a capability that
+can be duplicated is not a capability.
+
+## Validation Strategy
+
+The Cargo tests keep lesson 99's behavior: successful preparation leaves both
+balances untouched, and each rejection leaves the entire ledger equal to its
+pre-call clone; only the fixture setup became `mut`, because preparation now
+takes `&mut self`. The compile-fail fixtures carry the architectural contract:
+`prepared_blocks_ledger_reborrow` proves the ledger cannot be borrowed while the
+preparation is alive, and `prepared_not_copy` proves the capability cannot be
+duplicated. The structural check only records that the prepared fields are
+mutable account references; it deliberately does not prescribe a lifetime name.
+
+## Common Wrong Solutions
+
+Reject `Rc<RefCell<Account>>`, raw pointers or `unsafe`, storing account IDs
+again while claiming stale-state protection, cloning accounts into the prepared
+value, adding a second revalidation step before use, deriving `Clone` or `Copy`,
+and holding a borrow of the whole ledger when two account references are enough.
+
+## Intermediate Warning
+
+Nothing consumes the prepared capability in this lesson, so the compiler reports
+the stored fields as never read. That is accurate for this snapshot: the
+consuming `commit` arrives in lesson 101, where every field becomes a read. Do
+not silence it with `#[allow(dead_code)]` or by adding an unused getter.
+
+## Arc Continuity
+
+The value-only plan from lesson 99 is replaced, not kept alongside: the
+rejections, the checked arithmetic, the command boundary, and the public tests
+from the earlier lessons all stay active. The next lesson adds `commit` on this
+borrow-bound type, and the final lesson composes the three phases.
+
+## Review Checklist
+
+Confirm the starter keeps the lesson 99 solution verbatim and adds only the
+provided helper plus the refactor TODO, `prepare_transfer` returns
+`PreparedTransfer<'_>` from `&mut self`, the prepared type derives neither
+`Clone` nor `Copy`, and both compile-fail fixtures fail for the documented
+reason.
+
+---
+
+## 101. Commit prepared work infallibly
+
+Source: `lessons/validate-prepare-commit/101-commit-prepared-transfer`
+
+| Field | Value |
+| --- | --- |
+| Lesson ID | `commit-prepared-transfer-101` |
+| Production lesson | [Open lesson](https://borrowquest.site/#lesson/commit-prepared-transfer-101) |
+| Arc | Validate, prepare, then commit (step 4 of 5) |
+| Concept | Consuming infallible commit (`consuming-infallible-commit`) |
+| Difficulty | advanced |
+| Estimated time | 9 minutes |
+
+### Scenario
+
+Preparation has already resolved existence, funds, and overflow, and it holds exclusive access to the two accounts. Commit should stop behaving like another validation function: it consumes the prepared capability, applies only the balances that were computed ahead of time, and reports the outcome.
+
+### Task
+
+In src/lib.rs, add a TransferReceipt with private source, destination, and amount fields plus getters, and implement PreparedTransfer::commit(self) -> TransferReceipt. Commit assigns the two precomputed post-balances to the borrowed accounts and builds the receipt. It must not return Result or Option, look an account up again, run checked arithmetic, or revalidate the request.
+
+### Concept context
+
+Consume a prepared capability to perform only prevalidated mutation and return an outcome without a recoverable failure channel.
+
+- Prerequisites: `borrow-bound-preparation`
+- Tags: `ownership`, `state-transitions`, `api-design`, `transactions`
+
+### Starter project files
+
+#### `src/lib.rs` — editable
+
+Source: `lessons/validate-prepare-commit/101-commit-prepared-transfer/starter/src/lib.rs`
+
+```rust
+//! Ledger support types for the validate -> prepare -> commit arc.
+//!
+//! Account identity, money, and the account store are provided. The boundary
+//! that turns a raw transfer request into work the ledger is allowed to execute
+//! is the part that grows lesson by lesson in this file.
+
+use std::collections::HashSet;
+use std::num::NonZeroU64;
+
+/// Identifies one account held by the ledger.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct AccountId(u32);
+
+impl AccountId {
+    pub const fn new(value: u32) -> Self {
+        Self(value)
+    }
+
+    pub const fn value(self) -> u32 {
+        self.0
+    }
+}
+
+/// An amount in whole cents. Money carries no sign; direction comes from the
+/// transfer that moves it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Money(u64);
+
+impl Money {
+    pub const fn from_cents(cents: u64) -> Self {
+        Self(cents)
+    }
+
+    pub const fn cents(self) -> u64 {
+        self.0
+    }
+
+    fn checked_add(self, rhs: Self) -> Option<Self> {
+        self.0.checked_add(rhs.0).map(Self)
+    }
+
+    fn checked_sub(self, rhs: Self) -> Option<Self> {
+        self.0.checked_sub(rhs.0).map(Self)
+    }
+}
+
+/// Returned when a ledger is built from entries that repeat an account ID.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DuplicateAccount(AccountId);
+
+impl DuplicateAccount {
+    pub const fn id(self) -> AccountId {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Account {
+    id: AccountId,
+    balance: Money,
+}
+
+/// The in-memory account store that later lessons mutate.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Ledger {
+    accounts: Vec<Account>,
+}
+
+impl Ledger {
+    /// Build a ledger, rejecting an entry that repeats an account ID.
+    pub fn try_new(
+        entries: impl IntoIterator<Item = (AccountId, Money)>,
+    ) -> Result<Self, DuplicateAccount> {
+        let mut ids = HashSet::new();
+        let mut accounts = Vec::new();
+
+        for (id, balance) in entries {
+            if !ids.insert(id) {
+                return Err(DuplicateAccount(id));
+            }
+            accounts.push(Account { id, balance });
+        }
+
+        Ok(Self { accounts })
+    }
+
+    /// The balance of one account, if this ledger holds it.
+    pub fn balance(&self, id: AccountId) -> Option<Money> {
+        self.accounts
+            .iter()
+            .find(|account| account.id == id)
+            .map(|account| account.balance)
+    }
+}
+
+/// A transfer exactly as the caller supplied it.
+///
+/// A request can still describe work the domain must never execute: a transfer
+/// to the same account or a transfer of nothing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TransferRequest {
+    source: AccountId,
+    destination: AccountId,
+    amount_cents: u64,
+}
+
+impl TransferRequest {
+    pub const fn new(source: AccountId, destination: AccountId, amount_cents: u64) -> Self {
+        Self {
+            source,
+            destination,
+            amount_cents,
+        }
+    }
+}
+
+/// The request-only reasons a transfer must not be executed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TransferRequestError {
+    SameAccount,
+    ZeroAmount,
+}
+
+/// A transfer amount that cannot be zero.
+///
+/// The inner representation stays private so the only way to build one is the
+/// checked conversion in this module.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct TransferAmount(NonZeroU64);
+
+impl TransferAmount {
+    const fn as_money(self) -> Money {
+        Money::from_cents(self.0.get())
+    }
+}
+
+/// A transfer request that passed every request-only rule.
+///
+/// The fields are private: `TryFrom<TransferRequest>` is the only way for
+/// outside code to obtain a command, so a command is evidence that the request
+/// was legal and not merely well formed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TransferCommand {
+    source: AccountId,
+    destination: AccountId,
+    amount: TransferAmount,
+}
+
+impl TransferCommand {
+    pub const fn source(self) -> AccountId {
+        self.source
+    }
+
+    pub const fn destination(self) -> AccountId {
+        self.destination
+    }
+
+    pub const fn amount(self) -> Money {
+        self.amount.as_money()
+    }
+}
+
+impl TryFrom<TransferRequest> for TransferCommand {
+    type Error = TransferRequestError;
+
+    fn try_from(request: TransferRequest) -> Result<Self, Self::Error> {
+        if request.source == request.destination {
+            return Err(TransferRequestError::SameAccount);
+        }
+
+        let Some(amount) = NonZeroU64::new(request.amount_cents) else {
+            return Err(TransferRequestError::ZeroAmount);
+        };
+
+        Ok(Self {
+            source: request.source,
+            destination: request.destination,
+            amount: TransferAmount(amount),
+        })
+    }
+}
+
+/// The state-dependent reasons a validated command cannot be prepared.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TransferRejection {
+    SourceNotFound,
+    DestinationNotFound,
+    InsufficientFunds,
+    DestinationOverflow,
+}
+
+/// The two accounts a transfer has resolved, borrowed for the whole time the
+/// preparation is alive.
+///
+/// The exclusive borrows are the capability: while a `PreparedTransfer` exists,
+/// nothing else can read or write the two accounts, so the post-state it holds
+/// cannot go stale. The fields stay private and no constructor is public.
+#[derive(Debug)]
+pub struct PreparedTransfer<'a> {
+    source: &'a mut Account,
+    destination: &'a mut Account,
+    amount: Money,
+    source_after: Money,
+    destination_after: Money,
+}
+
+impl Ledger {
+    /// Borrow the source and the destination at the same time without `unsafe`
+    /// code or interior mutability. Provided support code: use it rather than
+    /// rebuilding it.
+    fn account_pair_mut(
+        &mut self,
+        source: AccountId,
+        destination: AccountId,
+    ) -> Option<(&mut Account, &mut Account)> {
+        if source == destination {
+            return None;
+        }
+
+        let source_index = self.accounts.iter().position(|account| account.id == source)?;
+        let destination_index = self
+            .accounts
+            .iter()
+            .position(|account| account.id == destination)?;
+
+        if source_index < destination_index {
+            let (before_destination, from_destination) =
+                self.accounts.split_at_mut(destination_index);
+            let source = before_destination.get_mut(source_index)?;
+            let destination = from_destination.first_mut()?;
+            Some((source, destination))
+        } else {
+            let (before_source, from_source) = self.accounts.split_at_mut(source_index);
+            let destination = before_source.get_mut(destination_index)?;
+            let source = from_source.first_mut()?;
+            Some((source, destination))
+        }
+    }
+
+    /// Resolve every state-dependent failure and keep exclusive authority over
+    /// the two accounts the transfer is allowed to change.
+    pub fn prepare_transfer(
+        &mut self,
+        command: TransferCommand,
+    ) -> Result<PreparedTransfer<'_>, TransferRejection> {
+        let amount = command.amount();
+
+        let source_balance = self
+            .balance(command.source())
+            .ok_or(TransferRejection::SourceNotFound)?;
+        let destination_balance = self
+            .balance(command.destination())
+            .ok_or(TransferRejection::DestinationNotFound)?;
+
+        let source_after = source_balance
+            .checked_sub(amount)
+            .ok_or(TransferRejection::InsufficientFunds)?;
+        let destination_after = destination_balance
+            .checked_add(amount)
+            .ok_or(TransferRejection::DestinationOverflow)?;
+
+        let Some((source, destination)) =
+            self.account_pair_mut(command.source(), command.destination())
+        else {
+            // Both accounts were resolved above and `TransferCommand` guarantees
+            // distinct account IDs, so this is a defensive preparation
+            // rejection rather than an assertion or a panic.
+            return Err(TransferRejection::SourceNotFound);
+        };
+
+        Ok(PreparedTransfer {
+            source,
+            destination,
+            amount,
+            source_after,
+            destination_after,
+        })
+    }
+}
+
+// TODO: cross the authoritative boundary once.
+//
+// Add a `TransferReceipt` with private `source`, `destination`, and `amount`
+// fields plus getters for each, then implement
+// `PreparedTransfer::commit(self) -> TransferReceipt`. Commit assigns the two
+// balances that preparation already computed and builds the receipt from the
+// two account IDs and the amount. It must not return `Result` or `Option`, look
+// an account up again, run checked arithmetic, or revalidate the request: every
+// expected failure was consumed by preparation.
+```
+
+#### `tests/public.rs` — test
+
+Source: `lessons/validate-prepare-commit/101-commit-prepared-transfer/tests/public.rs`
+
+```rust
+use rust_daily_lesson::{
+    AccountId, Ledger, Money, PreparedTransfer, TransferCommand, TransferReceipt, TransferRejection,
+    TransferRequest, TransferRequestError,
+};
+
+fn id(value: u32) -> AccountId {
+    AccountId::new(value)
+}
+
+fn money(cents: u64) -> Money {
+    Money::from_cents(cents)
+}
+
+fn two_account_ledger(source: u64, destination: u64) -> Ledger {
+    Ledger::try_new([(id(1), money(source)), (id(2), money(destination))])
+        .expect("fixture account IDs are unique")
+}
+
+fn command(source: u32, destination: u32, amount_cents: u64) -> TransferCommand {
+    TransferCommand::try_from(TransferRequest::new(
+        id(source),
+        id(destination),
+        amount_cents,
+    ))
+    .expect("fixture requests are valid")
+}
+
+#[test]
+fn accepts_a_positive_transfer_between_distinct_accounts() {
+    let request = TransferRequest::new(id(1), id(2), 250);
+
+    let validated = TransferCommand::try_from(request).expect("a positive transfer is valid");
+
+    assert_eq!(validated.source(), id(1));
+    assert_eq!(validated.destination(), id(2));
+    assert_eq!(validated.amount(), money(250));
+}
+
+#[test]
+fn rejects_a_zero_amount() {
+    let request = TransferRequest::new(id(1), id(2), 0);
+
+    assert_eq!(
+        TransferCommand::try_from(request),
+        Err(TransferRequestError::ZeroAmount)
+    );
+}
+
+#[test]
+fn rejects_a_transfer_to_the_same_account() {
+    let request = TransferRequest::new(id(7), id(7), 500);
+
+    assert_eq!(
+        TransferCommand::try_from(request),
+        Err(TransferRequestError::SameAccount)
+    );
+}
+
+#[test]
+fn preparing_still_leaves_both_balances_unchanged() {
+    let mut ledger = two_account_ledger(500, 100);
+
+    let prepared = ledger.prepare_transfer(command(1, 2, 250));
+
+    assert!(prepared.is_ok(), "the transfer should be preparable");
+    drop(prepared);
+
+    assert_eq!(ledger.balance(id(1)), Some(money(500)));
+    assert_eq!(ledger.balance(id(2)), Some(money(100)));
+}
+
+#[test]
+fn a_missing_source_is_rejected_without_touching_the_ledger() {
+    let mut ledger = two_account_ledger(500, 100);
+    let before = ledger.clone();
+
+    let result = ledger.prepare_transfer(command(9, 1, 250));
+
+    assert!(matches!(result, Err(TransferRejection::SourceNotFound)));
+    assert_eq!(ledger, before);
+}
+
+#[test]
+fn a_missing_destination_is_rejected_without_touching_the_ledger() {
+    let mut ledger = two_account_ledger(500, 100);
+    let before = ledger.clone();
+
+    let result = ledger.prepare_transfer(command(1, 9, 250));
+
+    assert!(matches!(
+        result,
+        Err(TransferRejection::DestinationNotFound)
+    ));
+    assert_eq!(ledger, before);
+}
+
+#[test]
+fn insufficient_funds_is_rejected_without_touching_the_ledger() {
+    let mut ledger = two_account_ledger(100, 100);
+    let before = ledger.clone();
+
+    let result = ledger.prepare_transfer(command(1, 2, 250));
+
+    assert!(matches!(result, Err(TransferRejection::InsufficientFunds)));
+    assert_eq!(ledger, before);
+}
+
+#[test]
+fn destination_overflow_is_rejected_without_touching_the_ledger() {
+    let mut ledger = two_account_ledger(500, u64::MAX);
+    let before = ledger.clone();
+
+    let result = ledger.prepare_transfer(command(1, 2, 250));
+
+    assert!(matches!(
+        result,
+        Err(TransferRejection::DestinationOverflow)
+    ));
+    assert_eq!(ledger, before);
+}
+
+#[test]
+fn committing_applies_the_prepared_balances() {
+    let mut ledger = two_account_ledger(500, 100);
+
+    let receipt = ledger
+        .prepare_transfer(command(1, 2, 250))
+        .expect("the transfer should be preparable")
+        .commit();
+
+    assert_eq!(receipt.source(), id(1));
+    assert_eq!(receipt.destination(), id(2));
+    assert_eq!(receipt.amount(), money(250));
+    assert_eq!(ledger.balance(id(1)), Some(money(250)));
+    assert_eq!(ledger.balance(id(2)), Some(money(350)));
+}
+
+#[test]
+fn a_committed_transfer_preserves_the_combined_balance() {
+    let mut ledger = two_account_ledger(500, 100);
+
+    ledger
+        .prepare_transfer(command(1, 2, 250))
+        .expect("the transfer should be preparable")
+        .commit();
+
+    let source = ledger.balance(id(1)).expect("the source account exists");
+    let destination = ledger
+        .balance(id(2))
+        .expect("the destination account exists");
+
+    assert_eq!(source.cents() + destination.cents(), 600);
+}
+
+#[test]
+fn commit_is_consuming_and_infallible() {
+    // The parameter type forces a by-value receiver and an outcome return type,
+    // so a `&mut self` or `Result`-returning commit would not coerce here.
+    fn assert_signature<'a>(commit: fn(PreparedTransfer<'a>) -> TransferReceipt) {
+        let _ = commit;
+    }
+
+    assert_signature(PreparedTransfer::commit);
+}
+```
+
+### Progressive hints
+
+1. If commit still has to ask "can I?", preparation has not finished its job. The body should read as bookkeeping, not as a decision.
+2. Destructure self, capture the two account IDs before assigning, apply source_after and destination_after through the exclusive borrows, then build the receipt. There is no branch left that can fail, so the return type is a plain outcome.
+3. The reference approach for this lesson. The authored code is included in the Solution section.
+
+### Validation contract
+
+```json
+{
+  "mode": "all",
+  "validations": [
+    {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "struct_fields",
+          "structName": "TransferReceipt",
+          "requiredFields": [
+            {
+              "name": "source",
+              "typeIncludes": [
+                "AccountId"
+              ]
+            },
+            {
+              "name": "destination",
+              "typeIncludes": [
+                "AccountId"
+              ]
+            },
+            {
+              "name": "amount",
+              "typeIncludes": [
+                "Money"
+              ]
+            }
+          ]
+        },
+        {
+          "type": "impl_method",
+          "implFor": "PreparedTransfer",
+          "methodName": "commit",
+          "requiredSignatureIncludes": [
+            "self",
+            "TransferReceipt"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "testFiles": [
+        {
+          "path": "tests/public.rs",
+          "sourcePath": "tests/public.rs"
+        }
+      ]
+    },
+    {
+      "mode": "backend-compile-fail",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "cases": [
+        {
+          "name": "prepared-commit-twice",
+          "expectedDiagnostics": [
+            "moved"
+          ],
+          "sourcePath": "compile_fail/prepared_commit_twice.rs"
+        },
+        {
+          "name": "prepared-direct-construction",
+          "expectedDiagnostics": [
+            "private"
+          ],
+          "sourcePath": "compile_fail/prepared_direct_construction.rs"
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### Compile-fail fixtures
+
+##### prepared-commit-twice
+
+Source: `lessons/validate-prepare-commit/101-commit-prepared-transfer/compile_fail/prepared_commit_twice.rs`
+
+```rust
+use rust_daily_lesson::{AccountId, Ledger, Money, TransferCommand, TransferRequest};
+
+fn main() {
+    let mut ledger = Ledger::try_new([
+        (AccountId::new(1), Money::from_cents(500)),
+        (AccountId::new(2), Money::from_cents(100)),
+    ])
+    .unwrap();
+
+    let command = TransferCommand::try_from(TransferRequest::new(
+        AccountId::new(1),
+        AccountId::new(2),
+        250,
+    ))
+    .unwrap();
+
+    let prepared = ledger.prepare_transfer(command).unwrap();
+    let _first = prepared.commit();
+    let _second = prepared.commit();
+}
+```
+
+##### prepared-direct-construction
+
+Source: `lessons/validate-prepare-commit/101-commit-prepared-transfer/compile_fail/prepared_direct_construction.rs`
+
+```rust
+use rust_daily_lesson::PreparedTransfer;
+
+fn main() {
+    let _ = PreparedTransfer {
+        source: todo!(),
+        destination: todo!(),
+        amount: todo!(),
+        source_after: todo!(),
+        destination_after: todo!(),
+    };
+}
+```
+
+### Authored solution
+
+#### `src/lib.rs`
+
+Source: `lessons/validate-prepare-commit/101-commit-prepared-transfer/solution/src/lib.rs`
+
+```rust
+//! Ledger support types for the validate -> prepare -> commit arc.
+//!
+//! Account identity, money, and the account store are provided. The boundary
+//! that turns a raw transfer request into work the ledger is allowed to execute
+//! is the part that grows lesson by lesson in this file.
+
+use std::collections::HashSet;
+use std::num::NonZeroU64;
+
+/// Identifies one account held by the ledger.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct AccountId(u32);
+
+impl AccountId {
+    pub const fn new(value: u32) -> Self {
+        Self(value)
+    }
+
+    pub const fn value(self) -> u32 {
+        self.0
+    }
+}
+
+/// An amount in whole cents. Money carries no sign; direction comes from the
+/// transfer that moves it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Money(u64);
+
+impl Money {
+    pub const fn from_cents(cents: u64) -> Self {
+        Self(cents)
+    }
+
+    pub const fn cents(self) -> u64 {
+        self.0
+    }
+
+    fn checked_add(self, rhs: Self) -> Option<Self> {
+        self.0.checked_add(rhs.0).map(Self)
+    }
+
+    fn checked_sub(self, rhs: Self) -> Option<Self> {
+        self.0.checked_sub(rhs.0).map(Self)
+    }
+}
+
+/// Returned when a ledger is built from entries that repeat an account ID.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DuplicateAccount(AccountId);
+
+impl DuplicateAccount {
+    pub const fn id(self) -> AccountId {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Account {
+    id: AccountId,
+    balance: Money,
+}
+
+/// The in-memory account store that later lessons mutate.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Ledger {
+    accounts: Vec<Account>,
+}
+
+impl Ledger {
+    /// Build a ledger, rejecting an entry that repeats an account ID.
+    pub fn try_new(
+        entries: impl IntoIterator<Item = (AccountId, Money)>,
+    ) -> Result<Self, DuplicateAccount> {
+        let mut ids = HashSet::new();
+        let mut accounts = Vec::new();
+
+        for (id, balance) in entries {
+            if !ids.insert(id) {
+                return Err(DuplicateAccount(id));
+            }
+            accounts.push(Account { id, balance });
+        }
+
+        Ok(Self { accounts })
+    }
+
+    /// The balance of one account, if this ledger holds it.
+    pub fn balance(&self, id: AccountId) -> Option<Money> {
+        self.accounts
+            .iter()
+            .find(|account| account.id == id)
+            .map(|account| account.balance)
+    }
+}
+
+/// A transfer exactly as the caller supplied it.
+///
+/// A request can still describe work the domain must never execute: a transfer
+/// to the same account or a transfer of nothing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TransferRequest {
+    source: AccountId,
+    destination: AccountId,
+    amount_cents: u64,
+}
+
+impl TransferRequest {
+    pub const fn new(source: AccountId, destination: AccountId, amount_cents: u64) -> Self {
+        Self {
+            source,
+            destination,
+            amount_cents,
+        }
+    }
+}
+
+/// The request-only reasons a transfer must not be executed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TransferRequestError {
+    SameAccount,
+    ZeroAmount,
+}
+
+/// A transfer amount that cannot be zero.
+///
+/// The inner representation stays private so the only way to build one is the
+/// checked conversion in this module.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct TransferAmount(NonZeroU64);
+
+impl TransferAmount {
+    const fn as_money(self) -> Money {
+        Money::from_cents(self.0.get())
+    }
+}
+
+/// A transfer request that passed every request-only rule.
+///
+/// The fields are private: `TryFrom<TransferRequest>` is the only way for
+/// outside code to obtain a command, so a command is evidence that the request
+/// was legal and not merely well formed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TransferCommand {
+    source: AccountId,
+    destination: AccountId,
+    amount: TransferAmount,
+}
+
+impl TransferCommand {
+    pub const fn source(self) -> AccountId {
+        self.source
+    }
+
+    pub const fn destination(self) -> AccountId {
+        self.destination
+    }
+
+    pub const fn amount(self) -> Money {
+        self.amount.as_money()
+    }
+}
+
+impl TryFrom<TransferRequest> for TransferCommand {
+    type Error = TransferRequestError;
+
+    fn try_from(request: TransferRequest) -> Result<Self, Self::Error> {
+        if request.source == request.destination {
+            return Err(TransferRequestError::SameAccount);
+        }
+
+        let Some(amount) = NonZeroU64::new(request.amount_cents) else {
+            return Err(TransferRequestError::ZeroAmount);
+        };
+
+        Ok(Self {
+            source: request.source,
+            destination: request.destination,
+            amount: TransferAmount(amount),
+        })
+    }
+}
+
+/// The state-dependent reasons a validated command cannot be prepared.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TransferRejection {
+    SourceNotFound,
+    DestinationNotFound,
+    InsufficientFunds,
+    DestinationOverflow,
+}
+
+/// The two accounts a transfer has resolved, borrowed for the whole time the
+/// preparation is alive.
+///
+/// The exclusive borrows are the capability: while a `PreparedTransfer` exists,
+/// nothing else can read or write the two accounts, so the post-state it holds
+/// cannot go stale. The fields stay private and no constructor is public.
+#[derive(Debug)]
+pub struct PreparedTransfer<'a> {
+    source: &'a mut Account,
+    destination: &'a mut Account,
+    amount: Money,
+    source_after: Money,
+    destination_after: Money,
+}
+
+impl Ledger {
+    /// Borrow the source and the destination at the same time without `unsafe`
+    /// code or interior mutability. Provided support code: use it rather than
+    /// rebuilding it.
+    fn account_pair_mut(
+        &mut self,
+        source: AccountId,
+        destination: AccountId,
+    ) -> Option<(&mut Account, &mut Account)> {
+        if source == destination {
+            return None;
+        }
+
+        let source_index = self.accounts.iter().position(|account| account.id == source)?;
+        let destination_index = self
+            .accounts
+            .iter()
+            .position(|account| account.id == destination)?;
+
+        if source_index < destination_index {
+            let (before_destination, from_destination) =
+                self.accounts.split_at_mut(destination_index);
+            let source = before_destination.get_mut(source_index)?;
+            let destination = from_destination.first_mut()?;
+            Some((source, destination))
+        } else {
+            let (before_source, from_source) = self.accounts.split_at_mut(source_index);
+            let destination = before_source.get_mut(destination_index)?;
+            let source = from_source.first_mut()?;
+            Some((source, destination))
+        }
+    }
+
+    /// Resolve every state-dependent failure and keep exclusive authority over
+    /// the two accounts the transfer is allowed to change.
+    pub fn prepare_transfer(
+        &mut self,
+        command: TransferCommand,
+    ) -> Result<PreparedTransfer<'_>, TransferRejection> {
+        let amount = command.amount();
+
+        let source_balance = self
+            .balance(command.source())
+            .ok_or(TransferRejection::SourceNotFound)?;
+        let destination_balance = self
+            .balance(command.destination())
+            .ok_or(TransferRejection::DestinationNotFound)?;
+
+        let source_after = source_balance
+            .checked_sub(amount)
+            .ok_or(TransferRejection::InsufficientFunds)?;
+        let destination_after = destination_balance
+            .checked_add(amount)
+            .ok_or(TransferRejection::DestinationOverflow)?;
+
+        let Some((source, destination)) =
+            self.account_pair_mut(command.source(), command.destination())
+        else {
+            // Both accounts were resolved above and `TransferCommand` guarantees
+            // distinct account IDs, so this is a defensive preparation
+            // rejection rather than an assertion or a panic.
+            return Err(TransferRejection::SourceNotFound);
+        };
+
+        Ok(PreparedTransfer {
+            source,
+            destination,
+            amount,
+            source_after,
+            destination_after,
+        })
+    }
+}
+
+/// What a committed transfer did.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TransferReceipt {
+    source: AccountId,
+    destination: AccountId,
+    amount: Money,
+}
+
+impl TransferReceipt {
+    pub const fn source(self) -> AccountId {
+        self.source
+    }
+
+    pub const fn destination(self) -> AccountId {
+        self.destination
+    }
+
+    pub const fn amount(self) -> Money {
+        self.amount
+    }
+}
+
+impl PreparedTransfer<'_> {
+    /// Cross the authoritative boundary: apply the balances that preparation
+    /// already computed and report what happened.
+    ///
+    /// Consuming `self` makes the capability one-shot, and there is no failure
+    /// channel because nothing recoverable is left to discover.
+    pub fn commit(self) -> TransferReceipt {
+        let Self {
+            source,
+            destination,
+            amount,
+            source_after,
+            destination_after,
+        } = self;
+
+        let source_id = source.id;
+        let destination_id = destination.id;
+
+        source.balance = source_after;
+        destination.balance = destination_after;
+
+        TransferReceipt {
+            source: source_id,
+            destination: destination_id,
+            amount,
+        }
+    }
+}
+```
+
+### Completion explanation
+
+commit(self) is the authoritative boundary: it is the only place balances change, and because it consumes the prepared capability, the same preparation cannot be replayed. The return type is a receipt rather than a Result because every expected failure was consumed by validation and preparation; leaving a recoverable failure channel here would mean some check still had to happen after mutation. Note that the same argument does not apply to every operation, only to ones where the expected failures really can be resolved ahead of the mutation.
+
+### Author notes
+
+## Concept Boundary
+
+One concept: the authoritative boundary is a consuming, infallible method.
+`commit(self)` is the only place balances change, it can be called exactly once,
+and it has no recoverable failure channel because everything recoverable was
+already resolved. This lesson is not about `Result` or ownership in isolation;
+it is about where fallibility is allowed to live relative to mutation.
+
+## Intended Solution
+
+Add a `TransferReceipt` carrying the two account IDs and the amount with
+getters, then implement `PreparedTransfer::commit(self) -> TransferReceipt`:
+destructure the capability, capture the two account IDs, assign the two
+precomputed balances through the exclusive borrows, and build the receipt.
+Nothing in the body can fail, so the return type is an outcome rather than a
+`Result`.
+
+## Validation Strategy
+
+The Cargo tests keep every earlier behavior and add the commit contract:
+preparation still leaves both balances untouched, committing applies exactly the
+precomputed balances, the receipt reports the exact source, destination, and
+amount, and the combined balance is preserved. The signature test coerces
+`PreparedTransfer::commit` to `for<'a> fn(PreparedTransfer<'a>) ->
+TransferReceipt`, which proves consuming and infallible in one type-level
+assertion instead of a textual check. The compile-fail fixtures prove the
+capability cannot be replayed (`moved` after the first commit) and cannot be
+forged from outside the module (`private`).
+
+## Common Wrong Solutions
+
+Reject `commit(&mut self)`, `commit(&self)` with interior mutability,
+`Result<TransferReceipt, _>` from commit, checked arithmetic or account lookups
+inside commit, applying the source mutation before a remaining fallible
+destination step, and rollback logic added to compensate for a fallible commit.
+
+## Arc Continuity
+
+The borrow-bound preparation from lesson 100 is unchanged; commit is added on
+top of it, so the exclusive borrow now ends by being consumed rather than
+dropped. The dead-code report from the previous lesson disappears here because
+every stored field is read by commit.
+
+## Review Checklist
+
+Confirm the starter keeps the lesson 100 solution verbatim and adds only the
+commit TODO, commit takes `self` and returns `TransferReceipt`, the tests assert
+exact post-commit balances plus the receipt values, and both compile-fail
+fixtures fail for the documented reason.
+
+---
+
+## 102. Compose the staged mutation pipeline
+
+Source: `lessons/validate-prepare-commit/102-execute-transfer-pipeline`
+
+| Field | Value |
+| --- | --- |
+| Lesson ID | `execute-transfer-pipeline-102` |
+| Production lesson | [Open lesson](https://borrowquest.site/#lesson/execute-transfer-pipeline-102) |
+| Arc | Validate, prepare, then commit (step 5 of 5) |
+| Concept | Staged mutation pipeline (`staged-mutation-pipeline`) |
+| Difficulty | advanced |
+| Estimated time | 10 minutes |
+
+### Scenario
+
+The individual phases now have useful types and contracts, and the application needs one call that cannot be misused. The public operation should accept the raw request and the ledger, keep validation, preparation, and commit in that order, and report which phase refused the transfer when one of them does.
+
+### Task
+
+In src/lib.rs, add a TransferError enum with Invalid(TransferRequestError) and Rejected(TransferRejection) variants and implement From for both phase errors so ? keeps the phase distinction. Then add execute_transfer(&mut Ledger, TransferRequest) -> Result<TransferReceipt, TransferError>, whose body performs exactly three steps: validate the request into a TransferCommand, prepare it against the ledger, and commit the prepared transfer.
+
+### Concept context
+
+Compose validation, preparation, and consuming commit so expected failures occur before the authoritative mutation boundary.
+
+- Prerequisites: `consuming-infallible-commit`
+- Tags: `architecture`, `orchestration`, `errors`, `transactions`
+
+### Starter project files
+
+#### `src/lib.rs` — editable
+
+Source: `lessons/validate-prepare-commit/102-execute-transfer-pipeline/starter/src/lib.rs`
+
+```rust
+//! Ledger support types for the validate -> prepare -> commit arc.
+//!
+//! Account identity, money, and the account store are provided. The boundary
+//! that turns a raw transfer request into work the ledger is allowed to execute
+//! is the part that grows lesson by lesson in this file.
+
+use std::collections::HashSet;
+use std::num::NonZeroU64;
+
+/// Identifies one account held by the ledger.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct AccountId(u32);
+
+impl AccountId {
+    pub const fn new(value: u32) -> Self {
+        Self(value)
+    }
+
+    pub const fn value(self) -> u32 {
+        self.0
+    }
+}
+
+/// An amount in whole cents. Money carries no sign; direction comes from the
+/// transfer that moves it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Money(u64);
+
+impl Money {
+    pub const fn from_cents(cents: u64) -> Self {
+        Self(cents)
+    }
+
+    pub const fn cents(self) -> u64 {
+        self.0
+    }
+
+    fn checked_add(self, rhs: Self) -> Option<Self> {
+        self.0.checked_add(rhs.0).map(Self)
+    }
+
+    fn checked_sub(self, rhs: Self) -> Option<Self> {
+        self.0.checked_sub(rhs.0).map(Self)
+    }
+}
+
+/// Returned when a ledger is built from entries that repeat an account ID.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DuplicateAccount(AccountId);
+
+impl DuplicateAccount {
+    pub const fn id(self) -> AccountId {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Account {
+    id: AccountId,
+    balance: Money,
+}
+
+/// The in-memory account store that later lessons mutate.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Ledger {
+    accounts: Vec<Account>,
+}
+
+impl Ledger {
+    /// Build a ledger, rejecting an entry that repeats an account ID.
+    pub fn try_new(
+        entries: impl IntoIterator<Item = (AccountId, Money)>,
+    ) -> Result<Self, DuplicateAccount> {
+        let mut ids = HashSet::new();
+        let mut accounts = Vec::new();
+
+        for (id, balance) in entries {
+            if !ids.insert(id) {
+                return Err(DuplicateAccount(id));
+            }
+            accounts.push(Account { id, balance });
+        }
+
+        Ok(Self { accounts })
+    }
+
+    /// The balance of one account, if this ledger holds it.
+    pub fn balance(&self, id: AccountId) -> Option<Money> {
+        self.accounts
+            .iter()
+            .find(|account| account.id == id)
+            .map(|account| account.balance)
+    }
+}
+
+/// A transfer exactly as the caller supplied it.
+///
+/// A request can still describe work the domain must never execute: a transfer
+/// to the same account or a transfer of nothing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TransferRequest {
+    source: AccountId,
+    destination: AccountId,
+    amount_cents: u64,
+}
+
+impl TransferRequest {
+    pub const fn new(source: AccountId, destination: AccountId, amount_cents: u64) -> Self {
+        Self {
+            source,
+            destination,
+            amount_cents,
+        }
+    }
+}
+
+/// The request-only reasons a transfer must not be executed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TransferRequestError {
+    SameAccount,
+    ZeroAmount,
+}
+
+/// A transfer amount that cannot be zero.
+///
+/// The inner representation stays private so the only way to build one is the
+/// checked conversion in this module.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct TransferAmount(NonZeroU64);
+
+impl TransferAmount {
+    const fn as_money(self) -> Money {
+        Money::from_cents(self.0.get())
+    }
+}
+
+/// A transfer request that passed every request-only rule.
+///
+/// The fields are private: `TryFrom<TransferRequest>` is the only way for
+/// outside code to obtain a command, so a command is evidence that the request
+/// was legal and not merely well formed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TransferCommand {
+    source: AccountId,
+    destination: AccountId,
+    amount: TransferAmount,
+}
+
+impl TransferCommand {
+    pub const fn source(self) -> AccountId {
+        self.source
+    }
+
+    pub const fn destination(self) -> AccountId {
+        self.destination
+    }
+
+    pub const fn amount(self) -> Money {
+        self.amount.as_money()
+    }
+}
+
+impl TryFrom<TransferRequest> for TransferCommand {
+    type Error = TransferRequestError;
+
+    fn try_from(request: TransferRequest) -> Result<Self, Self::Error> {
+        if request.source == request.destination {
+            return Err(TransferRequestError::SameAccount);
+        }
+
+        let Some(amount) = NonZeroU64::new(request.amount_cents) else {
+            return Err(TransferRequestError::ZeroAmount);
+        };
+
+        Ok(Self {
+            source: request.source,
+            destination: request.destination,
+            amount: TransferAmount(amount),
+        })
+    }
+}
+
+/// The state-dependent reasons a validated command cannot be prepared.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TransferRejection {
+    SourceNotFound,
+    DestinationNotFound,
+    InsufficientFunds,
+    DestinationOverflow,
+}
+
+/// The two accounts a transfer has resolved, borrowed for the whole time the
+/// preparation is alive.
+///
+/// The exclusive borrows are the capability: while a `PreparedTransfer` exists,
+/// nothing else can read or write the two accounts, so the post-state it holds
+/// cannot go stale. The fields stay private and no constructor is public.
+#[derive(Debug)]
+pub struct PreparedTransfer<'a> {
+    source: &'a mut Account,
+    destination: &'a mut Account,
+    amount: Money,
+    source_after: Money,
+    destination_after: Money,
+}
+
+impl Ledger {
+    /// Borrow the source and the destination at the same time without `unsafe`
+    /// code or interior mutability. Provided support code: use it rather than
+    /// rebuilding it.
+    fn account_pair_mut(
+        &mut self,
+        source: AccountId,
+        destination: AccountId,
+    ) -> Option<(&mut Account, &mut Account)> {
+        if source == destination {
+            return None;
+        }
+
+        let source_index = self.accounts.iter().position(|account| account.id == source)?;
+        let destination_index = self
+            .accounts
+            .iter()
+            .position(|account| account.id == destination)?;
+
+        if source_index < destination_index {
+            let (before_destination, from_destination) =
+                self.accounts.split_at_mut(destination_index);
+            let source = before_destination.get_mut(source_index)?;
+            let destination = from_destination.first_mut()?;
+            Some((source, destination))
+        } else {
+            let (before_source, from_source) = self.accounts.split_at_mut(source_index);
+            let destination = before_source.get_mut(destination_index)?;
+            let source = from_source.first_mut()?;
+            Some((source, destination))
+        }
+    }
+
+    /// Resolve every state-dependent failure and keep exclusive authority over
+    /// the two accounts the transfer is allowed to change.
+    pub fn prepare_transfer(
+        &mut self,
+        command: TransferCommand,
+    ) -> Result<PreparedTransfer<'_>, TransferRejection> {
+        let amount = command.amount();
+
+        let source_balance = self
+            .balance(command.source())
+            .ok_or(TransferRejection::SourceNotFound)?;
+        let destination_balance = self
+            .balance(command.destination())
+            .ok_or(TransferRejection::DestinationNotFound)?;
+
+        let source_after = source_balance
+            .checked_sub(amount)
+            .ok_or(TransferRejection::InsufficientFunds)?;
+        let destination_after = destination_balance
+            .checked_add(amount)
+            .ok_or(TransferRejection::DestinationOverflow)?;
+
+        let Some((source, destination)) =
+            self.account_pair_mut(command.source(), command.destination())
+        else {
+            // Both accounts were resolved above and `TransferCommand` guarantees
+            // distinct account IDs, so this is a defensive preparation
+            // rejection rather than an assertion or a panic.
+            return Err(TransferRejection::SourceNotFound);
+        };
+
+        Ok(PreparedTransfer {
+            source,
+            destination,
+            amount,
+            source_after,
+            destination_after,
+        })
+    }
+}
+
+/// What a committed transfer did.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TransferReceipt {
+    source: AccountId,
+    destination: AccountId,
+    amount: Money,
+}
+
+impl TransferReceipt {
+    pub const fn source(self) -> AccountId {
+        self.source
+    }
+
+    pub const fn destination(self) -> AccountId {
+        self.destination
+    }
+
+    pub const fn amount(self) -> Money {
+        self.amount
+    }
+}
+
+impl PreparedTransfer<'_> {
+    /// Cross the authoritative boundary: apply the balances that preparation
+    /// already computed and report what happened.
+    ///
+    /// Consuming `self` makes the capability one-shot, and there is no failure
+    /// channel because nothing recoverable is left to discover.
+    pub fn commit(self) -> TransferReceipt {
+        let Self {
+            source,
+            destination,
+            amount,
+            source_after,
+            destination_after,
+        } = self;
+
+        let source_id = source.id;
+        let destination_id = destination.id;
+
+        source.balance = source_after;
+        destination.balance = destination_after;
+
+        TransferReceipt {
+            source: source_id,
+            destination: destination_id,
+            amount,
+        }
+    }
+}
+
+// TODO: compose the phases into one application-facing operation.
+//
+// Add a `TransferError` enum with an `Invalid(TransferRequestError)` variant and
+// a `Rejected(TransferRejection)` variant, and implement `From` for both
+// phase-specific errors so `?` keeps the phase visible. Then add
+// `execute_transfer(&mut Ledger, TransferRequest) -> Result<TransferReceipt, TransferError>`
+// whose body performs exactly three steps: validate the request into a
+// `TransferCommand`, prepare it against the ledger, and commit the prepared
+// transfer. Do not interleave checks with mutation.
+```
+
+#### `tests/public.rs` — test
+
+Source: `lessons/validate-prepare-commit/102-execute-transfer-pipeline/tests/public.rs`
+
+```rust
+use rust_daily_lesson::{
+    execute_transfer, AccountId, Ledger, Money, PreparedTransfer, TransferCommand, TransferError,
+    TransferReceipt, TransferRejection, TransferRequest, TransferRequestError,
+};
+
+fn id(value: u32) -> AccountId {
+    AccountId::new(value)
+}
+
+fn money(cents: u64) -> Money {
+    Money::from_cents(cents)
+}
+
+fn two_account_ledger(source: u64, destination: u64) -> Ledger {
+    Ledger::try_new([(id(1), money(source)), (id(2), money(destination))])
+        .expect("fixture account IDs are unique")
+}
+
+fn command(source: u32, destination: u32, amount_cents: u64) -> TransferCommand {
+    TransferCommand::try_from(TransferRequest::new(
+        id(source),
+        id(destination),
+        amount_cents,
+    ))
+    .expect("fixture requests are valid")
+}
+
+#[test]
+fn accepts_a_positive_transfer_between_distinct_accounts() {
+    let request = TransferRequest::new(id(1), id(2), 250);
+
+    let validated = TransferCommand::try_from(request).expect("a positive transfer is valid");
+
+    assert_eq!(validated.source(), id(1));
+    assert_eq!(validated.destination(), id(2));
+    assert_eq!(validated.amount(), money(250));
+}
+
+#[test]
+fn rejects_a_zero_amount() {
+    let request = TransferRequest::new(id(1), id(2), 0);
+
+    assert_eq!(
+        TransferCommand::try_from(request),
+        Err(TransferRequestError::ZeroAmount)
+    );
+}
+
+#[test]
+fn rejects_a_transfer_to_the_same_account() {
+    let request = TransferRequest::new(id(7), id(7), 500);
+
+    assert_eq!(
+        TransferCommand::try_from(request),
+        Err(TransferRequestError::SameAccount)
+    );
+}
+
+#[test]
+fn preparing_still_leaves_both_balances_unchanged() {
+    let mut ledger = two_account_ledger(500, 100);
+
+    let prepared = ledger.prepare_transfer(command(1, 2, 250));
+
+    assert!(prepared.is_ok(), "the transfer should be preparable");
+    drop(prepared);
+
+    assert_eq!(ledger.balance(id(1)), Some(money(500)));
+    assert_eq!(ledger.balance(id(2)), Some(money(100)));
+}
+
+#[test]
+fn execute_transfer_moves_money_and_reports_the_receipt() {
+    let mut ledger = two_account_ledger(500, 100);
+
+    let receipt = execute_transfer(&mut ledger, TransferRequest::new(id(1), id(2), 250))
+        .expect("the transfer should succeed");
+
+    assert_eq!(receipt.source(), id(1));
+    assert_eq!(receipt.destination(), id(2));
+    assert_eq!(receipt.amount(), money(250));
+    assert_eq!(ledger.balance(id(1)), Some(money(250)));
+    assert_eq!(ledger.balance(id(2)), Some(money(350)));
+}
+
+#[test]
+fn a_successful_transfer_preserves_the_combined_balance() {
+    let mut ledger = two_account_ledger(500, 100);
+
+    execute_transfer(&mut ledger, TransferRequest::new(id(1), id(2), 250))
+        .expect("the transfer should succeed");
+
+    let source = ledger.balance(id(1)).expect("the source account exists");
+    let destination = ledger
+        .balance(id(2))
+        .expect("the destination account exists");
+
+    assert_eq!(source.cents() + destination.cents(), 600);
+}
+
+#[test]
+fn a_zero_amount_is_invalid_and_leaves_the_ledger_unchanged() {
+    let mut ledger = two_account_ledger(500, 100);
+    let before = ledger.clone();
+
+    let result = execute_transfer(&mut ledger, TransferRequest::new(id(1), id(2), 0));
+
+    assert_eq!(
+        result,
+        Err(TransferError::Invalid(TransferRequestError::ZeroAmount))
+    );
+    assert_eq!(ledger, before);
+}
+
+#[test]
+fn a_same_account_transfer_is_invalid_and_leaves_the_ledger_unchanged() {
+    let mut ledger = two_account_ledger(500, 100);
+    let before = ledger.clone();
+
+    let result = execute_transfer(&mut ledger, TransferRequest::new(id(1), id(1), 250));
+
+    assert_eq!(
+        result,
+        Err(TransferError::Invalid(TransferRequestError::SameAccount))
+    );
+    assert_eq!(ledger, before);
+}
+
+#[test]
+fn a_missing_source_is_rejected_and_leaves_the_ledger_unchanged() {
+    let mut ledger = two_account_ledger(500, 100);
+    let before = ledger.clone();
+
+    let result = execute_transfer(&mut ledger, TransferRequest::new(id(9), id(1), 250));
+
+    assert_eq!(
+        result,
+        Err(TransferError::Rejected(TransferRejection::SourceNotFound))
+    );
+    assert_eq!(ledger, before);
+}
+
+#[test]
+fn a_missing_destination_is_rejected_and_leaves_the_ledger_unchanged() {
+    let mut ledger = two_account_ledger(500, 100);
+    let before = ledger.clone();
+
+    let result = execute_transfer(&mut ledger, TransferRequest::new(id(1), id(9), 250));
+
+    assert_eq!(
+        result,
+        Err(TransferError::Rejected(
+            TransferRejection::DestinationNotFound
+        ))
+    );
+    assert_eq!(ledger, before);
+}
+
+#[test]
+fn insufficient_funds_is_rejected_and_leaves_the_ledger_unchanged() {
+    let mut ledger = two_account_ledger(100, 100);
+    let before = ledger.clone();
+
+    let result = execute_transfer(&mut ledger, TransferRequest::new(id(1), id(2), 250));
+
+    assert_eq!(
+        result,
+        Err(TransferError::Rejected(TransferRejection::InsufficientFunds))
+    );
+    assert_eq!(ledger, before);
+}
+
+#[test]
+fn destination_overflow_is_rejected_and_leaves_the_ledger_unchanged() {
+    let mut ledger = two_account_ledger(500, u64::MAX);
+    let before = ledger.clone();
+
+    let result = execute_transfer(&mut ledger, TransferRequest::new(id(1), id(2), 250));
+
+    assert_eq!(
+        result,
+        Err(TransferError::Rejected(
+            TransferRejection::DestinationOverflow
+        ))
+    );
+    assert_eq!(ledger, before);
+}
+
+#[test]
+fn a_rejection_leaves_the_ledger_usable_for_a_later_transfer() {
+    let mut ledger = two_account_ledger(500, 100);
+
+    let rejected = execute_transfer(&mut ledger, TransferRequest::new(id(1), id(2), 900));
+    assert_eq!(
+        rejected,
+        Err(TransferError::Rejected(TransferRejection::InsufficientFunds))
+    );
+
+    let receipt = execute_transfer(&mut ledger, TransferRequest::new(id(1), id(2), 400))
+        .expect("the ledger still accepts a valid transfer");
+
+    assert_eq!(receipt.amount(), money(400));
+    assert_eq!(ledger.balance(id(1)), Some(money(100)));
+    assert_eq!(ledger.balance(id(2)), Some(money(500)));
+}
+
+#[test]
+fn commit_is_consuming_and_infallible() {
+    // The parameter type forces a by-value receiver and an outcome return type,
+    // so a `&mut self` or `Result`-returning commit would not coerce here.
+    fn assert_signature<'a>(commit: fn(PreparedTransfer<'a>) -> TransferReceipt) {
+        let _ = commit;
+    }
+
+    assert_signature(PreparedTransfer::commit);
+}
+```
+
+### Progressive hints
+
+1. The orchestration function should read like the phase diagram: raw request in, command, prepared capability, receipt out.
+2. Convert both phase-specific errors into TransferError and use ? for validation and preparation. Commit needs no ?, because the prepared capability already resolved every expected failure.
+3. The reference approach for this lesson. The authored code is included in the Solution section.
+
+### Validation contract
+
+```json
+{
+  "mode": "all",
+  "validations": [
+    {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "function_signature",
+          "functionName": "execute_transfer",
+          "requiredSignatureIncludes": [
+            "&mut Ledger",
+            "TransferRequest",
+            "Result<TransferReceipt, TransferError>"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "testFiles": [
+        {
+          "path": "tests/public.rs",
+          "sourcePath": "tests/public.rs"
+        }
+      ]
+    },
+    {
+      "mode": "backend-compile-fail",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "cases": [
+        {
+          "name": "transfer-command-direct-construction",
+          "expectedDiagnostics": [
+            "private"
+          ],
+          "sourcePath": "compile_fail/transfer_command_direct_construction.rs"
+        },
+        {
+          "name": "prepared-blocks-ledger-reborrow",
+          "expectedDiagnostics": [
+            "cannot borrow"
+          ],
+          "sourcePath": "compile_fail/prepared_blocks_ledger_reborrow.rs"
+        },
+        {
+          "name": "prepared-commit-twice",
+          "expectedDiagnostics": [
+            "moved"
+          ],
+          "sourcePath": "compile_fail/prepared_commit_twice.rs"
+        },
+        {
+          "name": "prepared-direct-construction",
+          "expectedDiagnostics": [
+            "private"
+          ],
+          "sourcePath": "compile_fail/prepared_direct_construction.rs"
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### Compile-fail fixtures
+
+##### transfer-command-direct-construction
+
+Source: `lessons/validate-prepare-commit/102-execute-transfer-pipeline/compile_fail/transfer_command_direct_construction.rs`
+
+```rust
+use rust_daily_lesson::{AccountId, TransferCommand};
+
+fn main() {
+    let id = AccountId::new(1);
+    let _ = TransferCommand {
+        source: id,
+        destination: AccountId::new(2),
+        amount: todo!(),
+    };
+}
+```
+
+##### prepared-blocks-ledger-reborrow
+
+Source: `lessons/validate-prepare-commit/102-execute-transfer-pipeline/compile_fail/prepared_blocks_ledger_reborrow.rs`
+
+```rust
+use rust_daily_lesson::{AccountId, Ledger, Money, TransferCommand, TransferRequest};
+
+fn main() {
+    let mut ledger = Ledger::try_new([
+        (AccountId::new(1), Money::from_cents(500)),
+        (AccountId::new(2), Money::from_cents(100)),
+    ])
+    .unwrap();
+
+    let command = TransferCommand::try_from(TransferRequest::new(
+        AccountId::new(1),
+        AccountId::new(2),
+        250,
+    ))
+    .unwrap();
+
+    let prepared = ledger.prepare_transfer(command).unwrap();
+    let _balance = ledger.balance(AccountId::new(1));
+    let _keep_borrow_alive = prepared;
+}
+```
+
+##### prepared-commit-twice
+
+Source: `lessons/validate-prepare-commit/102-execute-transfer-pipeline/compile_fail/prepared_commit_twice.rs`
+
+```rust
+use rust_daily_lesson::{AccountId, Ledger, Money, TransferCommand, TransferRequest};
+
+fn main() {
+    let mut ledger = Ledger::try_new([
+        (AccountId::new(1), Money::from_cents(500)),
+        (AccountId::new(2), Money::from_cents(100)),
+    ])
+    .unwrap();
+
+    let command = TransferCommand::try_from(TransferRequest::new(
+        AccountId::new(1),
+        AccountId::new(2),
+        250,
+    ))
+    .unwrap();
+
+    let prepared = ledger.prepare_transfer(command).unwrap();
+    let _first = prepared.commit();
+    let _second = prepared.commit();
+}
+```
+
+##### prepared-direct-construction
+
+Source: `lessons/validate-prepare-commit/102-execute-transfer-pipeline/compile_fail/prepared_direct_construction.rs`
+
+```rust
+use rust_daily_lesson::PreparedTransfer;
+
+fn main() {
+    let _ = PreparedTransfer {
+        source: todo!(),
+        destination: todo!(),
+        amount: todo!(),
+        source_after: todo!(),
+        destination_after: todo!(),
+    };
+}
+```
+
+### Authored solution
+
+#### `src/lib.rs`
+
+Source: `lessons/validate-prepare-commit/102-execute-transfer-pipeline/solution/src/lib.rs`
+
+```rust
+//! Ledger support types for the validate -> prepare -> commit arc.
+//!
+//! Account identity, money, and the account store are provided. The boundary
+//! that turns a raw transfer request into work the ledger is allowed to execute
+//! is the part that grows lesson by lesson in this file.
+
+use std::collections::HashSet;
+use std::num::NonZeroU64;
+
+/// Identifies one account held by the ledger.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct AccountId(u32);
+
+impl AccountId {
+    pub const fn new(value: u32) -> Self {
+        Self(value)
+    }
+
+    pub const fn value(self) -> u32 {
+        self.0
+    }
+}
+
+/// An amount in whole cents. Money carries no sign; direction comes from the
+/// transfer that moves it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Money(u64);
+
+impl Money {
+    pub const fn from_cents(cents: u64) -> Self {
+        Self(cents)
+    }
+
+    pub const fn cents(self) -> u64 {
+        self.0
+    }
+
+    fn checked_add(self, rhs: Self) -> Option<Self> {
+        self.0.checked_add(rhs.0).map(Self)
+    }
+
+    fn checked_sub(self, rhs: Self) -> Option<Self> {
+        self.0.checked_sub(rhs.0).map(Self)
+    }
+}
+
+/// Returned when a ledger is built from entries that repeat an account ID.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DuplicateAccount(AccountId);
+
+impl DuplicateAccount {
+    pub const fn id(self) -> AccountId {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Account {
+    id: AccountId,
+    balance: Money,
+}
+
+/// The in-memory account store that later lessons mutate.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Ledger {
+    accounts: Vec<Account>,
+}
+
+impl Ledger {
+    /// Build a ledger, rejecting an entry that repeats an account ID.
+    pub fn try_new(
+        entries: impl IntoIterator<Item = (AccountId, Money)>,
+    ) -> Result<Self, DuplicateAccount> {
+        let mut ids = HashSet::new();
+        let mut accounts = Vec::new();
+
+        for (id, balance) in entries {
+            if !ids.insert(id) {
+                return Err(DuplicateAccount(id));
+            }
+            accounts.push(Account { id, balance });
+        }
+
+        Ok(Self { accounts })
+    }
+
+    /// The balance of one account, if this ledger holds it.
+    pub fn balance(&self, id: AccountId) -> Option<Money> {
+        self.accounts
+            .iter()
+            .find(|account| account.id == id)
+            .map(|account| account.balance)
+    }
+}
+
+/// A transfer exactly as the caller supplied it.
+///
+/// A request can still describe work the domain must never execute: a transfer
+/// to the same account or a transfer of nothing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TransferRequest {
+    source: AccountId,
+    destination: AccountId,
+    amount_cents: u64,
+}
+
+impl TransferRequest {
+    pub const fn new(source: AccountId, destination: AccountId, amount_cents: u64) -> Self {
+        Self {
+            source,
+            destination,
+            amount_cents,
+        }
+    }
+}
+
+/// The request-only reasons a transfer must not be executed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TransferRequestError {
+    SameAccount,
+    ZeroAmount,
+}
+
+/// A transfer amount that cannot be zero.
+///
+/// The inner representation stays private so the only way to build one is the
+/// checked conversion in this module.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct TransferAmount(NonZeroU64);
+
+impl TransferAmount {
+    const fn as_money(self) -> Money {
+        Money::from_cents(self.0.get())
+    }
+}
+
+/// A transfer request that passed every request-only rule.
+///
+/// The fields are private: `TryFrom<TransferRequest>` is the only way for
+/// outside code to obtain a command, so a command is evidence that the request
+/// was legal and not merely well formed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TransferCommand {
+    source: AccountId,
+    destination: AccountId,
+    amount: TransferAmount,
+}
+
+impl TransferCommand {
+    pub const fn source(self) -> AccountId {
+        self.source
+    }
+
+    pub const fn destination(self) -> AccountId {
+        self.destination
+    }
+
+    pub const fn amount(self) -> Money {
+        self.amount.as_money()
+    }
+}
+
+impl TryFrom<TransferRequest> for TransferCommand {
+    type Error = TransferRequestError;
+
+    fn try_from(request: TransferRequest) -> Result<Self, Self::Error> {
+        if request.source == request.destination {
+            return Err(TransferRequestError::SameAccount);
+        }
+
+        let Some(amount) = NonZeroU64::new(request.amount_cents) else {
+            return Err(TransferRequestError::ZeroAmount);
+        };
+
+        Ok(Self {
+            source: request.source,
+            destination: request.destination,
+            amount: TransferAmount(amount),
+        })
+    }
+}
+
+/// The state-dependent reasons a validated command cannot be prepared.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TransferRejection {
+    SourceNotFound,
+    DestinationNotFound,
+    InsufficientFunds,
+    DestinationOverflow,
+}
+
+/// The two accounts a transfer has resolved, borrowed for the whole time the
+/// preparation is alive.
+///
+/// The exclusive borrows are the capability: while a `PreparedTransfer` exists,
+/// nothing else can read or write the two accounts, so the post-state it holds
+/// cannot go stale. The fields stay private and no constructor is public.
+#[derive(Debug)]
+pub struct PreparedTransfer<'a> {
+    source: &'a mut Account,
+    destination: &'a mut Account,
+    amount: Money,
+    source_after: Money,
+    destination_after: Money,
+}
+
+impl Ledger {
+    /// Borrow the source and the destination at the same time without `unsafe`
+    /// code or interior mutability. Provided support code: use it rather than
+    /// rebuilding it.
+    fn account_pair_mut(
+        &mut self,
+        source: AccountId,
+        destination: AccountId,
+    ) -> Option<(&mut Account, &mut Account)> {
+        if source == destination {
+            return None;
+        }
+
+        let source_index = self.accounts.iter().position(|account| account.id == source)?;
+        let destination_index = self
+            .accounts
+            .iter()
+            .position(|account| account.id == destination)?;
+
+        if source_index < destination_index {
+            let (before_destination, from_destination) =
+                self.accounts.split_at_mut(destination_index);
+            let source = before_destination.get_mut(source_index)?;
+            let destination = from_destination.first_mut()?;
+            Some((source, destination))
+        } else {
+            let (before_source, from_source) = self.accounts.split_at_mut(source_index);
+            let destination = before_source.get_mut(destination_index)?;
+            let source = from_source.first_mut()?;
+            Some((source, destination))
+        }
+    }
+
+    /// Resolve every state-dependent failure and keep exclusive authority over
+    /// the two accounts the transfer is allowed to change.
+    pub fn prepare_transfer(
+        &mut self,
+        command: TransferCommand,
+    ) -> Result<PreparedTransfer<'_>, TransferRejection> {
+        let amount = command.amount();
+
+        let source_balance = self
+            .balance(command.source())
+            .ok_or(TransferRejection::SourceNotFound)?;
+        let destination_balance = self
+            .balance(command.destination())
+            .ok_or(TransferRejection::DestinationNotFound)?;
+
+        let source_after = source_balance
+            .checked_sub(amount)
+            .ok_or(TransferRejection::InsufficientFunds)?;
+        let destination_after = destination_balance
+            .checked_add(amount)
+            .ok_or(TransferRejection::DestinationOverflow)?;
+
+        let Some((source, destination)) =
+            self.account_pair_mut(command.source(), command.destination())
+        else {
+            // Both accounts were resolved above and `TransferCommand` guarantees
+            // distinct account IDs, so this is a defensive preparation
+            // rejection rather than an assertion or a panic.
+            return Err(TransferRejection::SourceNotFound);
+        };
+
+        Ok(PreparedTransfer {
+            source,
+            destination,
+            amount,
+            source_after,
+            destination_after,
+        })
+    }
+}
+
+/// What a committed transfer did.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TransferReceipt {
+    source: AccountId,
+    destination: AccountId,
+    amount: Money,
+}
+
+impl TransferReceipt {
+    pub const fn source(self) -> AccountId {
+        self.source
+    }
+
+    pub const fn destination(self) -> AccountId {
+        self.destination
+    }
+
+    pub const fn amount(self) -> Money {
+        self.amount
+    }
+}
+
+impl PreparedTransfer<'_> {
+    /// Cross the authoritative boundary: apply the balances that preparation
+    /// already computed and report what happened.
+    ///
+    /// Consuming `self` makes the capability one-shot, and there is no failure
+    /// channel because nothing recoverable is left to discover.
+    pub fn commit(self) -> TransferReceipt {
+        let Self {
+            source,
+            destination,
+            amount,
+            source_after,
+            destination_after,
+        } = self;
+
+        let source_id = source.id;
+        let destination_id = destination.id;
+
+        source.balance = source_after;
+        destination.balance = destination_after;
+
+        TransferReceipt {
+            source: source_id,
+            destination: destination_id,
+            amount,
+        }
+    }
+}
+
+/// Everything that can stop a transfer before the authoritative boundary.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TransferError {
+    /// The request itself was not legal to execute.
+    Invalid(TransferRequestError),
+    /// The request was legal, but current ledger state rejected it.
+    Rejected(TransferRejection),
+}
+
+impl From<TransferRequestError> for TransferError {
+    fn from(error: TransferRequestError) -> Self {
+        Self::Invalid(error)
+    }
+}
+
+impl From<TransferRejection> for TransferError {
+    fn from(error: TransferRejection) -> Self {
+        Self::Rejected(error)
+    }
+}
+
+/// Validate the request, prepare it against the ledger, then commit.
+///
+/// The three phases stay visible on purpose: everything that can fail happens
+/// before `commit` is called, and `commit` itself has no `?` to write.
+pub fn execute_transfer(
+    ledger: &mut Ledger,
+    request: TransferRequest,
+) -> Result<TransferReceipt, TransferError> {
+    let command = TransferCommand::try_from(request)?;
+    let prepared = ledger.prepare_transfer(command)?;
+    Ok(prepared.commit())
+}
+```
+
+### Completion explanation
+
+The whole arc is visible in one function now: TryFrom establishes the request-only invariants, prepare_transfer resolves the current-state failures while taking exclusive authority over the two accounts, PreparedTransfer<'_> keeps that authority until it is used, commit(self) crosses the authoritative boundary exactly once, and execute_transfer makes the ordering reviewable at a glance. This structure is worth its cost when the mutation is authoritative and the expected failures can genuinely be resolved before it; it is not a shape every operation needs.
+
+### Author notes
+
+## Concept Boundary
+
+One concept: orchestration that keeps the phases visible. `execute_transfer`
+reads as validate, prepare, commit, and the `TransferError` variants keep the
+phase where a failure happened. The lesson is not an invitation to build a
+service framework: there is no trait, no generic pipeline, and no repository.
+
+## Intended Solution
+
+Add `TransferError` with `Invalid(TransferRequestError)` and
+`Rejected(TransferRejection)`, implement `From` for both phase errors so `?`
+works without losing the distinction, and write `execute_transfer` as three
+statements: `TransferCommand::try_from(request)?`,
+`ledger.prepare_transfer(command)?`, and `prepared.commit()`. The commit call
+has no `?` because it cannot fail.
+
+## Validation Strategy
+
+The public tests are the arc's final contract: the success path checks exact
+balances and the exact receipt, the combined balance is preserved, every
+invalid and rejected path compares the whole ledger against a pre-call clone,
+and a rejection is followed by a valid transfer to prove the ledger stays
+usable. The type-level signature check keeps `commit` consuming and infallible.
+The four compile-fail fixtures recreate the architectural contracts in the
+final snapshot: commands and prepared capabilities cannot be forged from
+outside the module, a live preparation blocks ledger access, and a committed
+preparation cannot be replayed.
+
+## Common Wrong Solutions
+
+Reject one giant `execute_transfer` that interleaves checks with mutation while
+producing the same output, a `Result` returned from commit, raw IDs or amounts
+flowing straight into commit, re-running validation after mutation has begun,
+mutate-then-rollback compensation, and `#[allow(dead_code)]` or assertions
+standing in for type or phase design.
+
+## Arc Continuity
+
+This lesson is the arc snapshot: `TryFrom<TransferRequest>` still guards the
+command, `prepare_transfer` still resolves every state-dependent failure while
+holding exclusive authority, and `PreparedTransfer<'_>` is unchanged. Do not
+extend the file into events, projections, persistence, or async work; that
+boundary belongs to a later arc.
+
+## Review Checklist
+
+Confirm the starter keeps the lesson 101 solution verbatim and adds only the
+orchestration TODO, `execute_transfer` performs exactly three steps, the error
+type keeps the phase distinction, and all four compile-fail fixtures fail for
+the documented reason.
 
 ---

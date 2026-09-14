@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 2,
+  "id": "prepare-transfer-099",
+  "arcId": "validate-prepare-commit",
+  "arcTitle": "Validate, prepare, then commit",
+  "order": 99,
+  "day": 2,
+  "arcLength": 5,
+  "title": "Prepare a transfer without mutating",
+  "conceptId": "prepare-before-mutation",
+  "difficulty": "medium",
+  "estimatedMinutes": 10,
+  "scenario": "A validated command can still fail against current state: the source or destination account may be missing, the source may not hold enough money, or crediting the destination may overflow its balance. Every one of those failures has to be resolved before a balance changes, so a rejected transfer leaves the ledger exactly as it was.",
+  "instructions": "In src/lib.rs, add private checked_add and checked_sub helpers to Money and a TransferRejection enum with SourceNotFound, DestinationNotFound, InsufficientFunds, and DestinationOverflow. Add a value-only PreparedTransfer holding the source, destination, amount, source_after, and destination_after, and implement Ledger::prepare_transfer(&self, command) to resolve both accounts and both post-state balances with checked arithmetic without mutating the ledger.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Treat preparation as a calculation over the current ledger, not as a partial transfer. Nothing in this step is allowed to write."
+    },
+    {
+      "level": 2,
+      "body": "Use checked_sub for the source and checked_add for the destination, then store the successful results in PreparedTransfer. A failed lookup or a failed checked operation returns before anything is written, so the ledger is untouched on every rejection."
+    },
+    {
+      "level": 3,
+      "body": "The reference approach for this lesson.",
+      "solutionCode": "//! Ledger support types for the validate -> prepare -> commit arc.\n//!\n//! Account identity, money, and the account store are provided. The boundary\n//! that turns a raw transfer request into work the ledger is allowed to execute\n//! is the part that grows lesson by lesson in this file.\n\nuse std::collections::HashSet;\nuse std::num::NonZeroU64;\n\n/// Identifies one account held by the ledger.\n#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\npub struct AccountId(u32);\n\nimpl AccountId {\n    pub const fn new(value: u32) -> Self {\n        Self(value)\n    }\n\n    pub const fn value(self) -> u32 {\n        self.0\n    }\n}\n\n/// An amount in whole cents. Money carries no sign; direction comes from the\n/// transfer that moves it.\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]\npub struct Money(u64);\n\nimpl Money {\n    pub const fn from_cents(cents: u64) -> Self {\n        Self(cents)\n    }\n\n    pub const fn cents(self) -> u64 {\n        self.0\n    }\n\n    fn checked_add(self, rhs: Self) -> Option<Self> {\n        self.0.checked_add(rhs.0).map(Self)\n    }\n\n    fn checked_sub(self, rhs: Self) -> Option<Self> {\n        self.0.checked_sub(rhs.0).map(Self)\n    }\n}\n\n/// Returned when a ledger is built from entries that repeat an account ID.\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct DuplicateAccount(AccountId);\n\nimpl DuplicateAccount {\n    pub const fn id(self) -> AccountId {\n        self.0\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\nstruct Account {\n    id: AccountId,\n    balance: Money,\n}\n\n/// The in-memory account store that later lessons mutate.\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Ledger {\n    accounts: Vec<Account>,\n}\n\nimpl Ledger {\n    /// Build a ledger, rejecting an entry that repeats an account ID.\n    pub fn try_new(\n        entries: impl IntoIterator<Item = (AccountId, Money)>,\n    ) -> Result<Self, DuplicateAccount> {\n        let mut ids = HashSet::new();\n        let mut accounts = Vec::new();\n\n        for (id, balance) in entries {\n            if !ids.insert(id) {\n                return Err(DuplicateAccount(id));\n            }\n            accounts.push(Account { id, balance });\n        }\n\n        Ok(Self { accounts })\n    }\n\n    /// The balance of one account, if this ledger holds it.\n    pub fn balance(&self, id: AccountId) -> Option<Money> {\n        self.accounts\n            .iter()\n            .find(|account| account.id == id)\n            .map(|account| account.balance)\n    }\n}\n\n/// A transfer exactly as the caller supplied it.\n///\n/// A request can still describe work the domain must never execute: a transfer\n/// to the same account or a transfer of nothing.\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct TransferRequest {\n    source: AccountId,\n    destination: AccountId,\n    amount_cents: u64,\n}\n\nimpl TransferRequest {\n    pub const fn new(source: AccountId, destination: AccountId, amount_cents: u64) -> Self {\n        Self {\n            source,\n            destination,\n            amount_cents,\n        }\n    }\n}\n\n/// The request-only reasons a transfer must not be executed.\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum TransferRequestError {\n    SameAccount,\n    ZeroAmount,\n}\n\n/// A transfer amount that cannot be zero.\n///\n/// The inner representation stays private so the only way to build one is the\n/// checked conversion in this module.\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\nstruct TransferAmount(NonZeroU64);\n\nimpl TransferAmount {\n    const fn as_money(self) -> Money {\n        Money::from_cents(self.0.get())\n    }\n}\n\n/// A transfer request that passed every request-only rule.\n///\n/// The fields are private: `TryFrom<TransferRequest>` is the only way for\n/// outside code to obtain a command, so a command is evidence that the request\n/// was legal and not merely well formed.\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct TransferCommand {\n    source: AccountId,\n    destination: AccountId,\n    amount: TransferAmount,\n}\n\nimpl TransferCommand {\n    pub const fn source(self) -> AccountId {\n        self.source\n    }\n\n    pub const fn destination(self) -> AccountId {\n        self.destination\n    }\n\n    pub const fn amount(self) -> Money {\n        self.amount.as_money()\n    }\n}\n\nimpl TryFrom<TransferRequest> for TransferCommand {\n    type Error = TransferRequestError;\n\n    fn try_from(request: TransferRequest) -> Result<Self, Self::Error> {\n        if request.source == request.destination {\n            return Err(TransferRequestError::SameAccount);\n        }\n\n        let Some(amount) = NonZeroU64::new(request.amount_cents) else {\n            return Err(TransferRequestError::ZeroAmount);\n        };\n\n        Ok(Self {\n            source: request.source,\n            destination: request.destination,\n            amount: TransferAmount(amount),\n        })\n    }\n}\n\n/// The state-dependent reasons a validated command cannot be prepared.\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum TransferRejection {\n    SourceNotFound,\n    DestinationNotFound,\n    InsufficientFunds,\n    DestinationOverflow,\n}\n\n/// Everything a transfer needs once current ledger state has been resolved.\n///\n/// This is a plan, not a permission: it records which accounts are involved and\n/// which balances they should hold afterwards, but nothing here can reach the\n/// ledger.\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct PreparedTransfer {\n    source: AccountId,\n    destination: AccountId,\n    amount: Money,\n    source_after: Money,\n    destination_after: Money,\n}\n\nimpl Ledger {\n    /// Resolve every state-dependent failure before anything is mutated.\n    pub fn prepare_transfer(\n        &self,\n        command: TransferCommand,\n    ) -> Result<PreparedTransfer, TransferRejection> {\n        let amount = command.amount();\n\n        let source_balance = self\n            .balance(command.source())\n            .ok_or(TransferRejection::SourceNotFound)?;\n        let destination_balance = self\n            .balance(command.destination())\n            .ok_or(TransferRejection::DestinationNotFound)?;\n\n        let source_after = source_balance\n            .checked_sub(amount)\n            .ok_or(TransferRejection::InsufficientFunds)?;\n        let destination_after = destination_balance\n            .checked_add(amount)\n            .ok_or(TransferRejection::DestinationOverflow)?;\n\n        Ok(PreparedTransfer {\n            source: command.source(),\n            destination: command.destination(),\n            amount,\n            source_after,\n            destination_after,\n        })\n    }\n}\n"
+    }
+  ],
+  "completionExplanation": "Preparation now resolves the account lookups and both pieces of checked arithmetic before any mutation, so every expected failure leaves the ledger untouched. Be careful about what the prepared value actually is, though: it is only a snapshot. It remembers account IDs and the balances they should hold, which means a later mutation could make the stored post-state stale before anyone uses it. The next lesson fixes that by having preparation keep exclusive authority over the two accounts instead of copying their state.",
+  "validation": {
+    "mode": "all",
+    "validations": [
+      {
+        "mode": "structural",
+        "timeoutMs": 10000,
+        "checks": [
+          {
+            "type": "enum_unit_variants",
+            "enumName": "TransferRejection",
+            "requiredVariants": [
+              "SourceNotFound",
+              "DestinationNotFound",
+              "InsufficientFunds",
+              "DestinationOverflow"
+            ]
+          },
+          {
+            "type": "struct_fields",
+            "structName": "PreparedTransfer",
+            "requiredFields": [
+              {
+                "name": "source_after",
+                "typeIncludes": [
+                  "Money"
+                ]
+              },
+              {
+                "name": "destination_after",
+                "typeIncludes": [
+                  "Money"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "impl_method",
+            "implFor": "Ledger",
+            "methodName": "prepare_transfer",
+            "requiredSignatureIncludes": [
+              "&self",
+              "TransferCommand",
+              "Result<PreparedTransfer",
+              "TransferRejection"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "backend-cargo-test",
+        "timeoutMs": 10000,
+        "dependencySet": "std",
+        "testFiles": [
+          {
+            "path": "tests/public.rs",
+            "sourcePath": "tests/public.rs"
+          }
+        ]
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}
