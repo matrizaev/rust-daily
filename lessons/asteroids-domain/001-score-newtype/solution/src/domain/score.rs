@@ -1,5 +1,3 @@
-use crate::{Vec2, Screen, Random, Input, Turn, circle_collide};
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct Score(u32);
 

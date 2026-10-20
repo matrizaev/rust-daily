@@ -11,7 +11,7 @@
   "difficulty": "easy",
   "estimatedMinutes": 6,
   "scenario": "The game service tracks the player's score, which accumulates from gameplay events such as destroyed asteroids. A raw u32 invites overflow and lets callers confuse the score with other amounts, so the service needs a dedicated Score value whose arithmetic saturates instead of overflowing.",
-  "instructions": "In src/domain.rs define a Score newtype wrapping u32 with a private field, a ZERO constant, new and value constructors, and a saturating AddAssign impl.",
+  "instructions": "In src/domain/score.rs define a Score newtype wrapping u32 with a private field, a ZERO constant, new and value constructors, and a saturating AddAssign impl.",
   "files": [
     {
       "path": "src/lib.rs",
@@ -20,8 +20,13 @@
     },
     {
       "path": "src/domain.rs",
-      "role": "editable",
+      "role": "readonly",
       "sourcePath": "starter/src/domain.rs"
+    },
+    {
+      "path": "src/domain/score.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/domain/score.rs"
     },
     {
       "path": "tests/public.rs",
@@ -41,7 +46,7 @@
     {
       "level": 3,
       "body": "The reference approach for this lesson.",
-      "solutionCode": "use crate::{Vec2, Screen, Random, Input, Turn, circle_collide};\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]\npub struct Score(u32);\n\nimpl Score {\n    pub const ZERO: Self = Self(0);\n\n    pub const fn new(value: u32) -> Self {\n        Self(value)\n    }\n\n    pub const fn value(self) -> u32 {\n        self.0\n    }\n}\n\nimpl std::ops::AddAssign for Score {\n    fn add_assign(&mut self, rhs: Self) {\n        self.0 = self.0.saturating_add(rhs.0);\n    }\n}\n"
+      "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]\npub struct Score(u32);\n\nimpl Score {\n    pub const ZERO: Self = Self(0);\n\n    pub const fn new(value: u32) -> Self {\n        Self(value)\n    }\n\n    pub const fn value(self) -> u32 {\n        self.0\n    }\n}\n\nimpl std::ops::AddAssign for Score {\n    fn add_assign(&mut self, rhs: Self) {\n        self.0 = self.0.saturating_add(rhs.0);\n    }\n}\n"
     }
   ],
   "completionExplanation": "Your code matches the reference approach: the previous lesson's work stays active, and the new types compile against the public tests.",

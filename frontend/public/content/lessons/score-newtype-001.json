@@ -2,8 +2,8 @@
   "id": "score-newtype-001",
   "schemaVersion": 2,
   "detail": {
-    "instructions": "In src/domain.rs define a Score newtype wrapping u32 with a private field, a ZERO constant, new and value constructors, and a saturating AddAssign impl.",
-    "starterCode": "// TODO: Model the score as a domain value.\n//\n// In src/domain.rs define:\n//   - `pub struct Score(u32)` with a PRIVATE field\n//   - `pub const ZERO: Self`\n//   - `pub const fn new(value: u32) -> Self` and `pub const fn value(self) -> u32`\n//   - `impl std::ops::AddAssign<Score>` that SATURATES at u32::MAX\n//\n// Derive at least Debug, Clone, Copy, PartialEq, Eq.\n",
+    "instructions": "In src/domain/score.rs define a Score newtype wrapping u32 with a private field, a ZERO constant, new and value constructors, and a saturating AddAssign impl.",
+    "starterCode": "// TODO: Model the score as a domain value.\n//\n// In src/domain/score.rs define:\n//   - `pub struct Score(u32)` with a PRIVATE field\n//   - `pub const ZERO: Self`\n//   - `pub const fn new(value: u32) -> Self` and `pub const fn value(self) -> u32`\n//   - `impl std::ops::AddAssign<Score>` that SATURATES at u32::MAX\n//\n// Derive at least Debug, Clone, Copy, PartialEq, Eq.\n",
     "files": [
       {
         "path": "src/lib.rs",
@@ -12,8 +12,13 @@
       },
       {
         "path": "src/domain.rs",
+        "role": "readonly",
+        "content": "mod score;\n\npub use score::Score;\n"
+      },
+      {
+        "path": "src/domain/score.rs",
         "role": "editable",
-        "content": "// TODO: Model the score as a domain value.\n//\n// In src/domain.rs define:\n//   - `pub struct Score(u32)` with a PRIVATE field\n//   - `pub const ZERO: Self`\n//   - `pub const fn new(value: u32) -> Self` and `pub const fn value(self) -> u32`\n//   - `impl std::ops::AddAssign<Score>` that SATURATES at u32::MAX\n//\n// Derive at least Debug, Clone, Copy, PartialEq, Eq.\n"
+        "content": "// TODO: Model the score as a domain value.\n//\n// In src/domain/score.rs define:\n//   - `pub struct Score(u32)` with a PRIVATE field\n//   - `pub const ZERO: Self`\n//   - `pub const fn new(value: u32) -> Self` and `pub const fn value(self) -> u32`\n//   - `impl std::ops::AddAssign<Score>` that SATURATES at u32::MAX\n//\n// Derive at least Debug, Clone, Copy, PartialEq, Eq.\n"
       },
       {
         "path": "tests/public.rs",
@@ -33,7 +38,7 @@
       {
         "level": 3,
         "body": "The reference approach for this lesson.",
-        "solutionCode": "use crate::{Vec2, Screen, Random, Input, Turn, circle_collide};\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]\npub struct Score(u32);\n\nimpl Score {\n    pub const ZERO: Self = Self(0);\n\n    pub const fn new(value: u32) -> Self {\n        Self(value)\n    }\n\n    pub const fn value(self) -> u32 {\n        self.0\n    }\n}\n\nimpl std::ops::AddAssign for Score {\n    fn add_assign(&mut self, rhs: Self) {\n        self.0 = self.0.saturating_add(rhs.0);\n    }\n}\n"
+        "solutionCode": "#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]\npub struct Score(u32);\n\nimpl Score {\n    pub const ZERO: Self = Self(0);\n\n    pub const fn new(value: u32) -> Self {\n        Self(value)\n    }\n\n    pub const fn value(self) -> u32 {\n        self.0\n    }\n}\n\nimpl std::ops::AddAssign for Score {\n    fn add_assign(&mut self, rhs: Self) {\n        self.0 = self.0.saturating_add(rhs.0);\n    }\n}\n"
       }
     ],
     "completionExplanation": "Your code matches the reference approach: the previous lesson's work stays active, and the new types compile against the public tests.",
