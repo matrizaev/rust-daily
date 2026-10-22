@@ -1,4 +1,4 @@
-import { CheckCircle2, Lightbulb, RotateCcw } from "lucide-react";
+import { ArrowRight, CheckCircle2, Lightbulb, RotateCcw } from "lucide-react";
 import type { ValidationStatus } from "../types/validation";
 
 type LessonActionsProps = {
@@ -6,7 +6,9 @@ type LessonActionsProps = {
   canCheck: boolean;
   checkStatus: ValidationStatus | null;
   isChecking: boolean;
+  nextLessonId: string | null;
   onCheck: () => void;
+  onOpenLesson: (lessonId: string) => void;
   onReset: () => void;
   onRevealHint: () => void;
 };
@@ -53,7 +55,9 @@ function LessonActions({
   canRevealHint,
   checkStatus,
   isChecking,
+  nextLessonId,
   onCheck,
+  onOpenLesson,
   onReset,
   onRevealHint,
 }: LessonActionsProps) {
@@ -79,19 +83,33 @@ function LessonActions({
         Hint
       </button>
 
-      <button
-        className={checkClassName}
-        type="button"
-        onClick={onCheck}
-        disabled={!canCheck || isChecking}
-        aria-busy={isChecking}
-      >
-        <CheckCircle2 size={19} aria-hidden="true" />
-        {checkLabel}
-        {checkStatusLabel ? (
-          <span className="visually-hidden">{checkStatusLabel}</span>
+      <div className="lesson-check-actions">
+        <button
+          className={checkClassName}
+          type="button"
+          onClick={onCheck}
+          disabled={!canCheck || isChecking}
+          aria-busy={isChecking}
+        >
+          <CheckCircle2 size={19} aria-hidden="true" />
+          {checkLabel}
+          {checkStatusLabel ? (
+            <span className="visually-hidden">{checkStatusLabel}</span>
+          ) : null}
+        </button>
+
+        {checkTone === "success" && nextLessonId ? (
+          <button
+            className="next-lesson-button"
+            type="button"
+            onClick={() => onOpenLesson(nextLessonId)}
+            aria-label="Go to next lesson"
+            title="Next lesson"
+          >
+            <ArrowRight size={19} aria-hidden="true" />
+          </button>
         ) : null}
-      </button>
+      </div>
     </div>
   );
 }

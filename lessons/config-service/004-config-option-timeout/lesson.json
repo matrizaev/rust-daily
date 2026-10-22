@@ -3,7 +3,7 @@
   "id": "config-option-timeout-004",
   "arcId": "config-service",
   "arcTitle": "Configure a small service",
-  "order": 16,
+  "order": 4,
   "day": 4,
   "arcLength": 6,
   "title": "Model an optional timeout",

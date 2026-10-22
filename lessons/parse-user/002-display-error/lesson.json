@@ -3,7 +3,7 @@
   "id": "display-parse-user-error-002",
   "arcId": "parse-user",
   "arcTitle": "Parse a user from text",
-  "order": 7,
+  "order": 8,
   "day": 2,
   "arcLength": 7,
   "title": "Format parse errors for people",

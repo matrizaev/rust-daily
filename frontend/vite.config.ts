@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import contentRevisionData from "./src/content/contentRevision.json";
+import contentRevisionData from "./src/content/contentRevision.json" with { type: "json" };
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 

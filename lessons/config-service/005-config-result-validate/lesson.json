@@ -3,7 +3,7 @@
   "id": "config-result-validate-005",
   "arcId": "config-service",
   "arcTitle": "Configure a small service",
-  "order": 21,
+  "order": 5,
   "day": 5,
   "arcLength": 6,
   "title": "Return validation errors with Result",
