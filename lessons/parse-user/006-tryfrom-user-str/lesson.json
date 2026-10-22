@@ -3,7 +3,7 @@
   "id": "tryfrom-user-str-006",
   "arcId": "parse-user",
   "arcTitle": "Parse a user from text",
-  "order": 29,
+  "order": 12,
   "day": 6,
   "arcLength": 7,
   "title": "Parse User with TryFrom",

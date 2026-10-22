@@ -3,7 +3,7 @@
   "id": "config-borrowed-key-006",
   "arcId": "config-service",
   "arcTitle": "Configure a small service",
-  "order": 26,
+  "order": 6,
   "day": 6,
   "arcLength": 6,
   "title": "Borrow config candidates",

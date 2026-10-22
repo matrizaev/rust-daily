@@ -3,7 +3,7 @@
   "id": "inventory-filter-map-002",
   "arcId": "inventory-summary",
   "arcTitle": "Summarize inventory",
-  "order": 8,
+  "order": 15,
   "day": 2,
   "arcLength": 6,
   "title": "Collect available item names",

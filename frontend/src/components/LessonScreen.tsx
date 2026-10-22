@@ -20,6 +20,8 @@ type LessonScreenProps = {
   concept: Concept | null;
   progress: ProgressStore;
   editorFontSize: number;
+  nextLessonId: string | null;
+  onOpenLesson: (lessonId: string) => void;
   onOpenSettings: () => void;
   onProgressChange: () => void;
   onReturnHome: () => void;
@@ -155,6 +157,8 @@ export function LessonScreen(props: LessonScreenProps) {
     concept,
     lesson,
     editorFontSize,
+    nextLessonId,
+    onOpenLesson,
     onOpenSettings,
     onProgressChange,
     onReturnHome,
@@ -197,7 +201,9 @@ export function LessonScreen(props: LessonScreenProps) {
             canRevealHint={draft.revealedHints < lesson.hints.length}
             checkStatus={checkStatus}
             isChecking={validation.isChecking}
+            nextLessonId={nextLessonId}
             onCheck={validation.handleCheck}
+            onOpenLesson={onOpenLesson}
             onReset={draft.handleReset}
             onRevealHint={draft.handleRevealHint}
           />

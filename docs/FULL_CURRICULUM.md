@@ -29,35 +29,35 @@ This document contains all 102 lessons across 17 arcs, ordered by global curricu
 ## Lesson index
 
 1. [Shape a service Config](#1-shape-a-service-config) — Configure a small service, step 1/6
-2. [Design a parse error enum](#2-design-a-parse-error-enum) — Parse a user from text, step 1/7
-3. [Define an inventory item](#3-define-an-inventory-item) — Summarize inventory, step 1/6
-4. [Borrow fields in a log entry](#4-borrow-fields-in-a-log-entry) — Inspect log lines, step 1/5
-5. [Define the Request surface](#5-define-the-request-surface) — Build a request API, step 1/6
-6. [Give Config sensible defaults](#6-give-config-sensible-defaults) — Configure a small service, step 2/6
-7. [Format parse errors for people](#7-format-parse-errors-for-people) — Parse a user from text, step 2/7
-8. [Collect available item names](#8-collect-available-item-names) — Summarize inventory, step 2/6
-9. [Create a lifetime-backed view](#9-create-a-lifetime-backed-view) — Inspect log lines, step 2/5
-10. [Add consuming builder setters](#10-add-consuming-builder-setters) — Build a request API, step 2/6
-11. [Add a small Config setter](#11-add-a-small-config-setter) — Configure a small service, step 3/6
-12. [Mark the parse error as an Error](#12-mark-the-parse-error-as-an-error) — Parse a user from text, step 3/7
-13. [Fold quantities into a total](#13-fold-quantities-into-a-total) — Summarize inventory, step 3/6
-14. [Map log levels with match](#14-map-log-levels-with-match) — Inspect log lines, step 3/5
-15. [Start the builder from Default](#15-start-the-builder-from-default) — Build a request API, step 3/6
-16. [Model an optional timeout](#16-model-an-optional-timeout) — Configure a small service, step 4/6
+2. [Give Config sensible defaults](#2-give-config-sensible-defaults) — Configure a small service, step 2/6
+3. [Add a small Config setter](#3-add-a-small-config-setter) — Configure a small service, step 3/6
+4. [Model an optional timeout](#4-model-an-optional-timeout) — Configure a small service, step 4/6
+5. [Return validation errors with Result](#5-return-validation-errors-with-result) — Configure a small service, step 5/6
+6. [Borrow config candidates](#6-borrow-config-candidates) — Configure a small service, step 6/6
+7. [Design a parse error enum](#7-design-a-parse-error-enum) — Parse a user from text, step 1/7
+8. [Format parse errors for people](#8-format-parse-errors-for-people) — Parse a user from text, step 2/7
+9. [Mark the parse error as an Error](#9-mark-the-parse-error-as-an-error) — Parse a user from text, step 3/7
+10. [Preserve the ID parse source](#10-preserve-the-id-parse-source) — Parse a user from text, step 4/7
+11. [Convert ParseIntError with From](#11-convert-parseinterror-with-from) — Parse a user from text, step 5/7
+12. [Parse User with TryFrom](#12-parse-user-with-tryfrom) — Parse a user from text, step 6/7
+13. [Write parser behavior checks](#13-write-parser-behavior-checks) — Parse a user from text, step 7/7
+14. [Define an inventory item](#14-define-an-inventory-item) — Summarize inventory, step 1/6
+15. [Collect available item names](#15-collect-available-item-names) — Summarize inventory, step 2/6
+16. [Fold quantities into a total](#16-fold-quantities-into-a-total) — Summarize inventory, step 3/6
 17. [Make restock alerts scan-friendly](#17-make-restock-alerts-scan-friendly) — Summarize inventory, step 4/6
-18. [Allow borrowed or owned messages](#18-allow-borrowed-or-owned-messages) — Inspect log lines, step 4/5
-19. [Validate builder output](#19-validate-builder-output) — Build a request API, step 4/6
-20. [Preserve the ID parse source](#20-preserve-the-id-parse-source) — Parse a user from text, step 4/7
-21. [Return validation errors with Result](#21-return-validation-errors-with-result) — Configure a small service, step 5/6
-22. [Convert ParseIntError with From](#22-convert-parseinterror-with-from) — Parse a user from text, step 5/7
-23. [Make Inventory iterable](#23-make-inventory-iterable) — Summarize inventory, step 5/6
+18. [Make Inventory iterable](#18-make-inventory-iterable) — Summarize inventory, step 5/6
+19. [Sort items by borrowed comparison](#19-sort-items-by-borrowed-comparison) — Summarize inventory, step 6/6
+20. [Borrow fields in a log entry](#20-borrow-fields-in-a-log-entry) — Inspect log lines, step 1/5
+21. [Create a lifetime-backed view](#21-create-a-lifetime-backed-view) — Inspect log lines, step 2/5
+22. [Map log levels with match](#22-map-log-levels-with-match) — Inspect log lines, step 3/5
+23. [Allow borrowed or owned messages](#23-allow-borrowed-or-owned-messages) — Inspect log lines, step 4/5
 24. [Check log filtering behavior](#24-check-log-filtering-behavior) — Inspect log lines, step 5/5
-25. [Convert RawRequest with TryFrom](#25-convert-rawrequest-with-tryfrom) — Build a request API, step 5/6
-26. [Borrow config candidates](#26-borrow-config-candidates) — Configure a small service, step 6/6
-27. [Sort items by borrowed comparison](#27-sort-items-by-borrowed-comparison) — Summarize inventory, step 6/6
-28. [Document the request builder](#28-document-the-request-builder) — Build a request API, step 6/6
-29. [Parse User with TryFrom](#29-parse-user-with-tryfrom) — Parse a user from text, step 6/7
-30. [Write parser behavior checks](#30-write-parser-behavior-checks) — Parse a user from text, step 7/7
+25. [Define the Request surface](#25-define-the-request-surface) — Build a request API, step 1/6
+26. [Add consuming builder setters](#26-add-consuming-builder-setters) — Build a request API, step 2/6
+27. [Start the builder from Default](#27-start-the-builder-from-default) — Build a request API, step 3/6
+28. [Validate builder output](#28-validate-builder-output) — Build a request API, step 4/6
+29. [Convert RawRequest with TryFrom](#29-convert-rawrequest-with-tryfrom) — Build a request API, step 5/6
+30. [Document the request builder](#30-document-the-request-builder) — Build a request API, step 6/6
 31. [Hide EmailAddress internals](#31-hide-emailaddress-internals) — Email address value object, step 1/6
 32. [Validate EmailAddress with TryFrom](#32-validate-emailaddress-with-tryfrom) — Email address value object, step 2/6
 33. [Name the missing domain case](#33-name-the-missing-domain-case) — Email address value object, step 3/6
@@ -274,635 +274,7 @@ Teaches struct-field-design through a focused, behavior-checked Rust micro-lesso
 
 ---
 
-## 2. Design a parse error enum
-
-Source: `lessons/parse-user/001-error-enum`
-
-| Field | Value |
-| --- | --- |
-| Lesson ID | `error-enum-parse-user-001` |
-| Production lesson | [Open lesson](https://borrowquest.site/#lesson/error-enum-parse-user-001) |
-| Arc | Parse a user from text (step 1 of 7) |
-| Concept | Error enum design (`error-enum-design`) |
-| Difficulty | easy |
-| Estimated time | 7 minutes |
-
-### Scenario
-
-A small user parser needs a typed error instead of string errors. Today you are defining the public error type that the rest of the parser arc will build on.
-
-### Task
-
-Replace the TODO with ParseUserError variants for the parser cases below: MissingId, MissingName, MissingEmail, and InvalidId.
-
-### Concept context
-
-Model distinct parser failure modes with a typed Rust enum instead of stringly typed errors.
-
-- Prerequisites: None
-- Tags: `enums`, `errors`, `api-design`, `parsing`
-
-### Starter project files
-
-#### `src/lib.rs` — editable
-
-Source: `lessons/parse-user/001-error-enum/starter/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct User {
-    pub id: u64,
-    pub name: String,
-    pub email: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseUserError {
-    // TODO: add one variant for each parser failure case.
-}
-
-pub fn parse_user(input: &str) -> Result<User, ParseUserError> {
-    let mut parts = input.split(',');
-
-    let id_text = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingId)?;
-    let id = id_text
-        .parse::<u64>()
-        .map_err(|_| ParseUserError::InvalidId)?;
-    let name = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingName)?;
-    let email = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingEmail)?;
-
-    Ok(User {
-        id,
-        name: name.to_owned(),
-        email: email.to_owned(),
-    })
-}
-```
-
-#### `tests/public.rs` — test
-
-Source: `lessons/parse-user/001-error-enum/tests/public.rs`
-
-```rust
-use rust_daily_lesson::{parse_user, ParseUserError, User};
-
-#[test]
-fn parses_valid_user() {
-    assert_eq!(
-        parse_user("42,Ada,ada@example.com"),
-        Ok(User {
-            id: 42,
-            name: "Ada".to_owned(),
-            email: "ada@example.com".to_owned(),
-        })
-    );
-}
-
-#[test]
-fn returns_named_parse_errors() {
-    assert_eq!(parse_user(""), Err(ParseUserError::MissingId));
-    assert_eq!(parse_user("42,,ada@example.com"), Err(ParseUserError::MissingName));
-    assert_eq!(parse_user("42,Ada"), Err(ParseUserError::MissingEmail));
-    assert_eq!(parse_user("nope,Ada,ada@example.com"), Err(ParseUserError::InvalidId));
-}
-```
-
-### Progressive hints
-
-1. The parser already names every failure case it wants to return.
-2. Each distinct failure mode should usually become its own enum variant.
-3. Keep these as programmatic enum variants; human-facing text comes later with Display. The authored code is included in the Solution section.
-
-### Validation contract
-
-```json
-{
-  "mode": "all",
-  "validations": [
-    {
-      "mode": "structural",
-      "timeoutMs": 10000,
-      "checks": [
-        {
-          "type": "enum_unit_variants",
-          "enumName": "ParseUserError",
-          "requiredVariants": [
-            "MissingId",
-            "MissingName",
-            "MissingEmail",
-            "InvalidId"
-          ]
-        }
-      ]
-    },
-    {
-      "mode": "backend-cargo-test",
-      "timeoutMs": 10000,
-      "dependencySet": "std",
-      "testFiles": [
-        {
-          "path": "tests/public.rs",
-          "sourcePath": "tests/public.rs"
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Authored solution
-
-#### `src/lib.rs`
-
-Source: `lessons/parse-user/001-error-enum/solution/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct User {
-    pub id: u64,
-    pub name: String,
-    pub email: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseUserError {
-    MissingId,
-    MissingName,
-    MissingEmail,
-    InvalidId,
-}
-
-pub fn parse_user(input: &str) -> Result<User, ParseUserError> {
-    let mut parts = input.split(',');
-
-    let id_text = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingId)?;
-    let id = id_text
-        .parse::<u64>()
-        .map_err(|_| ParseUserError::InvalidId)?;
-    let name = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingName)?;
-    let email = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingEmail)?;
-
-    Ok(User {
-        id,
-        name: name.to_owned(),
-        email: email.to_owned(),
-    })
-}
-```
-
-### Completion explanation
-
-Each parser failure now has a named enum variant. Empty fields and invalid IDs become typed results that callers can match on instead of parsing strings or comparing error messages.
-
-### Author notes
-
-Teaches error-enum-design through a focused, behavior-checked Rust micro-lesson.
-
----
-
-## 3. Define an inventory item
-
-Source: `lessons/inventory-summary/001-item-struct`
-
-| Field | Value |
-| --- | --- |
-| Lesson ID | `inventory-item-struct-001` |
-| Production lesson | [Open lesson](https://borrowquest.site/#lesson/inventory-item-struct-001) |
-| Arc | Summarize inventory (step 1 of 6) |
-| Concept | Domain structs (`domain-structs`) |
-| Difficulty | easy |
-| Estimated time | 5 minutes |
-
-### Scenario
-
-Inventory summaries need a small domain type before helpers can work with names and quantities.
-
-### Task
-
-Define Item with sku: String, name: String, quantity: u32, and reserved: u32.
-
-### Concept context
-
-Use named fields to model inventory data clearly.
-
-- Prerequisites: None
-- Tags: `structs`, `domain-modeling`
-
-### Starter project files
-
-#### `src/lib.rs` — editable
-
-Source: `lessons/inventory-summary/001-item-struct/starter/src/lib.rs`
-
-```rust
-// TODO: define the Item struct used by inventory summaries.
-```
-
-#### `tests/public.rs` — test
-
-Source: `lessons/inventory-summary/001-item-struct/tests/public.rs`
-
-```rust
-use rust_daily_lesson::Item;
-
-#[test]
-fn item_names_inventory_fields() {
-    let item = Item {
-        sku: "SKU-1".to_owned(),
-        name: "Keyboard".to_owned(),
-        quantity: 10,
-        reserved: 3,
-    };
-
-    assert_eq!(item.sku, "SKU-1");
-    assert_eq!(item.name, "Keyboard");
-    assert_eq!(item.quantity, 10);
-    assert_eq!(item.reserved, 3);
-}
-```
-
-### Progressive hints
-
-1. Use a struct when each value has a distinct role.
-2. The user-facing name and SKU are owned strings.
-3. Quantities are small non-negative counts, so u32 is enough here. The authored code is included in the Solution section.
-
-### Validation contract
-
-```json
-{
-  "mode": "all",
-  "validations": [
-    {
-      "mode": "structural",
-      "timeoutMs": 10000,
-      "checks": [
-        {
-          "type": "struct_fields",
-          "structName": "Item",
-          "requiredFields": [
-            {
-              "name": "sku",
-              "typeIncludes": [
-                "String"
-              ]
-            },
-            {
-              "name": "name",
-              "typeIncludes": [
-                "String"
-              ]
-            },
-            {
-              "name": "quantity",
-              "typeIncludes": [
-                "u32"
-              ]
-            },
-            {
-              "name": "reserved",
-              "typeIncludes": [
-                "u32"
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "mode": "backend-cargo-test",
-      "timeoutMs": 10000,
-      "dependencySet": "std",
-      "testFiles": [
-        {
-          "path": "tests/public.rs",
-          "sourcePath": "tests/public.rs"
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Authored solution
-
-#### `src/lib.rs`
-
-Source: `lessons/inventory-summary/001-item-struct/solution/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Item {
-    pub sku: String,
-    pub name: String,
-    pub quantity: u32,
-    pub reserved: u32,
-}
-```
-
-### Completion explanation
-
-The Item struct gives later helpers a clear vocabulary. Named fields make summary code easier to read than tuple positions.
-
-### Author notes
-
-Teaches domain-structs through a focused, behavior-checked Rust micro-lesson.
-
----
-
-## 4. Borrow fields in a log entry
-
-Source: `lessons/log-lines/001-entry-borrowed`
-
-| Field | Value |
-| --- | --- |
-| Lesson ID | `log-entry-borrowed-001` |
-| Production lesson | [Open lesson](https://borrowquest.site/#lesson/log-entry-borrowed-001) |
-| Arc | Inspect log lines (step 1 of 5) |
-| Concept | Borrowed fields (`borrowed-fields`) |
-| Difficulty | medium |
-| Estimated time | 7 minutes |
-
-### Scenario
-
-A log viewer often points into existing log text instead of allocating new strings for every parsed line.
-
-### Task
-
-Define LogEntry<'a> with borrowed level: &'a str and message: &'a str fields.
-
-### Concept context
-
-Use lifetimes to store borrowed string slices in a struct.
-
-- Prerequisites: `borrowing-api`
-- Tags: `lifetimes`, `borrowing`, `strings`
-
-### Starter project files
-
-#### `src/lib.rs` — editable
-
-Source: `lessons/log-lines/001-entry-borrowed/starter/src/lib.rs`
-
-```rust
-// TODO: define LogEntry with borrowed fields.
-```
-
-#### `tests/public.rs` — test
-
-Source: `lessons/log-lines/001-entry-borrowed/tests/public.rs`
-
-```rust
-use rust_daily_lesson::LogEntry;
-
-#[test]
-fn log_entry_borrows_text() {
-    let entry = LogEntry {
-        level: "INFO",
-        message: "started",
-    };
-
-    assert_eq!(entry.level, "INFO");
-    assert_eq!(entry.message, "started");
-}
-```
-
-### Progressive hints
-
-1. Borrowed struct fields need a lifetime parameter on the struct.
-2. Both fields can borrow string slices from the original log line.
-3. Use &'a str for each borrowed text field. The authored code is included in the Solution section.
-
-### Validation contract
-
-```json
-{
-  "mode": "all",
-  "validations": [
-    {
-      "mode": "structural",
-      "timeoutMs": 10000,
-      "checks": [
-        {
-          "type": "struct_fields",
-          "structName": "LogEntry",
-          "requiredFields": [
-            {
-              "name": "level",
-              "typeIncludes": [
-                "&'a str"
-              ]
-            },
-            {
-              "name": "message",
-              "typeIncludes": [
-                "&'a str"
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "mode": "backend-cargo-test",
-      "timeoutMs": 10000,
-      "dependencySet": "std",
-      "testFiles": [
-        {
-          "path": "tests/public.rs",
-          "sourcePath": "tests/public.rs"
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Authored solution
-
-#### `src/lib.rs`
-
-Source: `lessons/log-lines/001-entry-borrowed/solution/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LogEntry<'a> {
-    pub level: &'a str,
-    pub message: &'a str,
-}
-```
-
-### Completion explanation
-
-Borrowed fields let the entry view point into existing text. The lifetime parameter states that the entry cannot outlive the data it references.
-
-### Author notes
-
-Teaches borrowed-fields through a focused, behavior-checked Rust micro-lesson.
-
----
-
-## 5. Define the Request surface
-
-Source: `lessons/request-api/001-request-struct`
-
-| Field | Value |
-| --- | --- |
-| Lesson ID | `request-struct-001` |
-| Production lesson | [Open lesson](https://borrowquest.site/#lesson/request-struct-001) |
-| Arc | Build a request API (step 1 of 6) |
-| Concept | API surface structs (`api-structs`) |
-| Difficulty | easy |
-| Estimated time | 5 minutes |
-
-### Scenario
-
-A small client library needs a request type that can be passed around after setup.
-
-### Task
-
-Define Request with method: String, path: String, and body: Option<String>.
-
-### Concept context
-
-Define a small owned type that represents a completed API request.
-
-- Prerequisites: `struct-field-design`
-- Tags: `api-design`, `structs`, `ownership`
-
-### Starter project files
-
-#### `src/lib.rs` — editable
-
-Source: `lessons/request-api/001-request-struct/starter/src/lib.rs`
-
-```rust
-// TODO: define the Request type used by the client API.
-```
-
-#### `tests/public.rs` — test
-
-Source: `lessons/request-api/001-request-struct/tests/public.rs`
-
-```rust
-use rust_daily_lesson::Request;
-
-#[test]
-fn request_surface_owns_completed_request_data() {
-    let request = Request {
-        method: "POST".to_owned(),
-        path: "/users".to_owned(),
-        body: Some("{}".to_owned()),
-    };
-
-    assert_eq!(request.method, "POST");
-    assert_eq!(request.path, "/users");
-    assert_eq!(request.body, Some("{}".to_owned()));
-}
-```
-
-### Progressive hints
-
-1. Keep the request data owned so it can outlive the builder.
-2. The body may be absent, which makes Option a good fit.
-3. Use clear field names that match the API vocabulary. The authored code is included in the Solution section.
-
-### Validation contract
-
-```json
-{
-  "mode": "all",
-  "validations": [
-    {
-      "mode": "structural",
-      "timeoutMs": 10000,
-      "checks": [
-        {
-          "type": "struct_fields",
-          "structName": "Request",
-          "requiredFields": [
-            {
-              "name": "method",
-              "typeIncludes": [
-                "String"
-              ]
-            },
-            {
-              "name": "path",
-              "typeIncludes": [
-                "String"
-              ]
-            },
-            {
-              "name": "body",
-              "typeIncludes": [
-                "Option",
-                "String"
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "mode": "backend-cargo-test",
-      "timeoutMs": 10000,
-      "dependencySet": "std",
-      "testFiles": [
-        {
-          "path": "tests/public.rs",
-          "sourcePath": "tests/public.rs"
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Authored solution
-
-#### `src/lib.rs`
-
-Source: `lessons/request-api/001-request-struct/solution/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Request {
-    pub method: String,
-    pub path: String,
-    pub body: Option<String>,
-}
-```
-
-### Completion explanation
-
-A focused Request struct gives the API a stable output type. Owned fields keep the request independent from temporary builder input.
-
-### Author notes
-
-Teaches api-structs through a focused, behavior-checked Rust micro-lesson.
-
----
-
-## 6. Give Config sensible defaults
+## 2. Give Config sensible defaults
 
 Source: `lessons/config-service/002-config-default-impl`
 
@@ -1045,668 +417,7 @@ Teaches default-impl through a focused, behavior-checked Rust micro-lesson.
 
 ---
 
-## 7. Format parse errors for people
-
-Source: `lessons/parse-user/002-display-error`
-
-| Field | Value |
-| --- | --- |
-| Lesson ID | `display-parse-user-error-002` |
-| Production lesson | [Open lesson](https://borrowquest.site/#lesson/display-parse-user-error-002) |
-| Arc | Parse a user from text (step 2 of 7) |
-| Concept | Display for errors (`display-parse-error`) |
-| Difficulty | easy |
-| Estimated time | 8 minutes |
-
-### Scenario
-
-Callers can match on ParseUserError, but logs and command-line output still need clear human-readable messages.
-
-### Task
-
-Implement std::fmt::Display for ParseUserError. Use a match on self and write a short message for each variant.
-
-### Concept context
-
-Implement human-readable formatting while keeping the error type programmatic.
-
-- Prerequisites: `error-enum-design`
-- Tags: `display`, `errors`, `formatting`
-
-### Starter project files
-
-#### `src/lib.rs` — editable
-
-Source: `lessons/parse-user/002-display-error/starter/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct User {
-    pub id: u64,
-    pub name: String,
-    pub email: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseUserError {
-    MissingId,
-    MissingName,
-    MissingEmail,
-    InvalidId,
-}
-
-pub fn parse_user(input: &str) -> Result<User, ParseUserError> {
-    let mut parts = input.split(',');
-
-    let id_text = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingId)?;
-    let id = id_text
-        .parse::<u64>()
-        .map_err(|_| ParseUserError::InvalidId)?;
-    let name = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingName)?;
-    let email = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingEmail)?;
-
-    Ok(User {
-        id,
-        name: name.to_owned(),
-        email: email.to_owned(),
-    })
-}
-
-// Continue from the previous lesson.
-// TODO: implement std::fmt::Display for ParseUserError.
-```
-
-#### `tests/public.rs` — test
-
-Source: `lessons/parse-user/002-display-error/tests/public.rs`
-
-```rust
-use rust_daily_lesson::ParseUserError;
-
-#[test]
-fn formats_parse_errors_for_people() {
-    assert_eq!(ParseUserError::MissingId.to_string(), "missing id");
-    assert_eq!(ParseUserError::MissingName.to_string(), "missing name");
-    assert_eq!(ParseUserError::MissingEmail.to_string(), "missing email");
-    assert_eq!(ParseUserError::InvalidId.to_string(), "invalid id");
-}
-```
-
-### Progressive hints
-
-1. Display is implemented with fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result.
-2. A match on self keeps one message next to each error case.
-3. Use write!(f, "...") inside each match arm. The authored code is included in the Solution section.
-
-### Validation contract
-
-```json
-{
-  "mode": "all",
-  "validations": [
-    {
-      "mode": "structural",
-      "timeoutMs": 10000,
-      "checks": [
-        {
-          "type": "impl_trait_for_type",
-          "traitName": "std::fmt::Display",
-          "typeName": "ParseUserError"
-        },
-        {
-          "type": "source_includes",
-          "requiredSnippets": [
-            "fn fmt",
-            "match self"
-          ]
-        }
-      ]
-    },
-    {
-      "mode": "backend-cargo-test",
-      "timeoutMs": 10000,
-      "dependencySet": "std",
-      "testFiles": [
-        {
-          "path": "tests/public.rs",
-          "sourcePath": "tests/public.rs"
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Authored solution
-
-#### `src/lib.rs`
-
-Source: `lessons/parse-user/002-display-error/solution/src/lib.rs`
-
-```rust
-use std::fmt;
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct User {
-    pub id: u64,
-    pub name: String,
-    pub email: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseUserError {
-    MissingId,
-    MissingName,
-    MissingEmail,
-    InvalidId,
-}
-
-pub fn parse_user(input: &str) -> Result<User, ParseUserError> {
-    let mut parts = input.split(',');
-
-    let id_text = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingId)?;
-    let id = id_text
-        .parse::<u64>()
-        .map_err(|_| ParseUserError::InvalidId)?;
-    let name = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingName)?;
-    let email = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingEmail)?;
-
-    Ok(User {
-        id,
-        name: name.to_owned(),
-        email: email.to_owned(),
-    })
-}
-
-impl fmt::Display for ParseUserError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ParseUserError::MissingId => write!(f, "missing id"),
-            ParseUserError::MissingName => write!(f, "missing name"),
-            ParseUserError::MissingEmail => write!(f, "missing email"),
-            ParseUserError::InvalidId => write!(f, "invalid id"),
-        }
-    }
-}
-```
-
-### Completion explanation
-
-Display separates the typed error representation from the text shown to users. The enum stays useful for programs, while fmt gives each case a stable message.
-
-### Author notes
-
-Teaches display-parse-error through a focused, behavior-checked Rust micro-lesson.
-
----
-
-## 8. Collect available item names
-
-Source: `lessons/inventory-summary/002-filter-map`
-
-| Field | Value |
-| --- | --- |
-| Lesson ID | `inventory-filter-map-002` |
-| Production lesson | [Open lesson](https://borrowquest.site/#lesson/inventory-filter-map-002) |
-| Arc | Summarize inventory (step 2 of 6) |
-| Concept | filter_map (`filter-map`) |
-| Difficulty | medium |
-| Estimated time | 8 minutes |
-
-### Scenario
-
-A dashboard only needs names for items whose available count is above zero.
-
-### Task
-
-Implement available_names with filter_map. Include an item name only when quantity is greater than reserved.
-
-### Concept context
-
-Filter and transform collection items in one iterator step.
-
-- Prerequisites: `domain-structs`, `borrowing-api`
-- Tags: `iterators`, `borrowing`, `collections`
-
-### Starter project files
-
-#### `src/lib.rs` — editable
-
-Source: `lessons/inventory-summary/002-filter-map/starter/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Item {
-    pub sku: String,
-    pub name: String,
-    pub quantity: u32,
-    pub reserved: u32,
-}
-
-// Continue from the previous lesson.
-// TODO: use filter_map to collect names with available stock.
-```
-
-#### `tests/public.rs` — test
-
-Source: `lessons/inventory-summary/002-filter-map/tests/public.rs`
-
-```rust
-use rust_daily_lesson::{available_names, Item};
-
-#[test]
-fn collects_only_available_item_names() {
-    let items = vec![
-        Item {
-            name: "Keyboard".to_owned(),
-            sku: "1".to_owned(),
-            quantity: 10,
-            reserved: 2,
-        },
-        Item {
-            name: "Mouse".to_owned(),
-            sku: "2".to_owned(),
-            quantity: 4,
-            reserved: 4,
-        },
-    ];
-
-    assert_eq!(available_names(&items), vec!["Keyboard"]);
-}
-```
-
-### Progressive hints
-
-1. available stock is quantity minus reserved, but compare before subtracting.
-2. filter_map can return Some(name) for included items and None for skipped items.
-3. Borrow names with as_str instead of cloning them. The authored code is included in the Solution section.
-
-### Validation contract
-
-```json
-{
-  "mode": "all",
-  "validations": [
-    {
-      "mode": "structural",
-      "timeoutMs": 10000,
-      "checks": [
-        {
-          "type": "function_signature",
-          "functionName": "available_names",
-          "requiredSignatureIncludes": [
-            "Vec<&str>"
-          ]
-        },
-        {
-          "type": "source_includes",
-          "requiredSnippets": [
-            "filter_map",
-            "as_str"
-          ]
-        }
-      ]
-    },
-    {
-      "mode": "backend-cargo-test",
-      "timeoutMs": 10000,
-      "dependencySet": "std",
-      "testFiles": [
-        {
-          "path": "tests/public.rs",
-          "sourcePath": "tests/public.rs"
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Authored solution
-
-#### `src/lib.rs`
-
-Source: `lessons/inventory-summary/002-filter-map/solution/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Item {
-    pub sku: String,
-    pub name: String,
-    pub quantity: u32,
-    pub reserved: u32,
-}
-
-pub fn available_names(items: &[Item]) -> Vec<&str> {
-    items
-        .iter()
-        .filter_map(|item| {
-            if item.quantity > item.reserved {
-                Some(item.name.as_str())
-            } else {
-                None
-            }
-        })
-        .collect()
-}
-```
-
-### Completion explanation
-
-filter_map fits this helper because filtering and mapping happen together. It keeps the output borrowed from the input slice instead of allocating new strings.
-
-### Author notes
-
-Teaches filter-map through a focused, behavior-checked Rust micro-lesson.
-
----
-
-## 9. Create a lifetime-backed view
-
-Source: `lessons/log-lines/002-view-lifetime`
-
-| Field | Value |
-| --- | --- |
-| Lesson ID | `log-view-lifetime-002` |
-| Production lesson | [Open lesson](https://borrowquest.site/#lesson/log-view-lifetime-002) |
-| Arc | Inspect log lines (step 2 of 5) |
-| Concept | Lifetime-backed views (`lifetime-view`) |
-| Difficulty | medium |
-| Estimated time | 8 minutes |
-
-### Scenario
-
-A log view should borrow a slice of entries and expose helper methods without taking ownership.
-
-### Task
-
-Define LogView<'a> with entries: &'a [LogEntry<'a>].
-
-### Concept context
-
-Model a view type that borrows a slice of borrowed entries.
-
-- Prerequisites: `borrowed-fields`
-- Tags: `lifetimes`, `views`, `borrowing`
-
-### Starter project files
-
-#### `src/lib.rs` — editable
-
-Source: `lessons/log-lines/002-view-lifetime/starter/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LogEntry<'a> {
-    pub level: &'a str,
-    pub message: &'a str,
-}
-
-// Continue from the previous lesson.
-// TODO: define LogView that borrows a slice of entries.
-```
-
-#### `tests/public.rs` — test
-
-Source: `lessons/log-lines/002-view-lifetime/tests/public.rs`
-
-```rust
-use rust_daily_lesson::{LogEntry, LogView};
-
-#[test]
-fn view_borrows_slice_of_entries() {
-    let entries = [LogEntry {
-        level: "WARN",
-        message: "slow",
-    }];
-    let view = LogView { entries: &entries };
-
-    assert_eq!(view.entries.len(), 1);
-    assert_eq!(view.entries[0].message, "slow");
-}
-```
-
-### Progressive hints
-
-1. The view borrows the slice, so the field starts with &'a.
-2. The entries inside the slice also carry the same lifetime.
-3. This is a view type, not an owning collection. The authored code is included in the Solution section.
-
-### Validation contract
-
-```json
-{
-  "mode": "all",
-  "validations": [
-    {
-      "mode": "structural",
-      "timeoutMs": 10000,
-      "checks": [
-        {
-          "type": "struct_fields",
-          "structName": "LogView",
-          "requiredFields": [
-            {
-              "name": "entries",
-              "typeIncludes": [
-                "&'a",
-                "[LogEntry"
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "mode": "backend-cargo-test",
-      "timeoutMs": 10000,
-      "dependencySet": "std",
-      "testFiles": [
-        {
-          "path": "tests/public.rs",
-          "sourcePath": "tests/public.rs"
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Authored solution
-
-#### `src/lib.rs`
-
-Source: `lessons/log-lines/002-view-lifetime/solution/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LogEntry<'a> {
-    pub level: &'a str,
-    pub message: &'a str,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LogView<'a> {
-    pub entries: &'a [LogEntry<'a>],
-}
-```
-
-### Completion explanation
-
-The view type captures the relationship between the borrowed slice and the borrowed text inside each entry. The lifetime keeps those references tied together.
-
-### Author notes
-
-Teaches lifetime-view through a focused, behavior-checked Rust micro-lesson.
-
----
-
-## 10. Add consuming builder setters
-
-Source: `lessons/request-api/002-builder-setters`
-
-| Field | Value |
-| --- | --- |
-| Lesson ID | `request-builder-owned-setters-002` |
-| Production lesson | [Open lesson](https://borrowquest.site/#lesson/request-builder-owned-setters-002) |
-| Arc | Build a request API (step 2 of 6) |
-| Concept | Builder setters (`builder-setters`) |
-| Difficulty | medium |
-| Estimated time | 8 minutes |
-
-### Scenario
-
-A request builder should support chained calls without exposing all its intermediate fields.
-
-### Task
-
-Keep the Request type, then add RequestBuilder with optional method and path fields. Implement RequestBuilder::new() -> Self and RequestBuilder::method(mut self, method: impl Into<String>) -> Self.
-
-### Concept context
-
-Use consuming setters to make small builder APIs chainable.
-
-- Prerequisites: `api-structs`, `methods-basic`
-- Tags: `builder`, `methods`, `ownership`
-
-### Starter project files
-
-#### `src/lib.rs` — editable
-
-Source: `lessons/request-api/002-builder-setters/starter/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Request {
-    pub method: String,
-    pub path: String,
-    pub body: Option<String>,
-}
-
-// Continue from the previous lesson.
-// TODO: add a consuming method setter.
-```
-
-#### `tests/public.rs` — test
-
-Source: `lessons/request-api/002-builder-setters/tests/public.rs`
-
-```rust
-use rust_daily_lesson::RequestBuilder;
-
-#[test]
-fn method_setter_is_chainable() {
-    let _builder = RequestBuilder::new().method("GET");
-}
-```
-
-### Progressive hints
-
-1. Taking mut self works well for chainable builder setters.
-2. impl Into<String> accepts both borrowed and owned string inputs.
-3. Return self after updating the field. The authored code is included in the Solution section.
-
-### Validation contract
-
-```json
-{
-  "mode": "all",
-  "validations": [
-    {
-      "mode": "structural",
-      "timeoutMs": 10000,
-      "checks": [
-        {
-          "type": "impl_method",
-          "implFor": "RequestBuilder",
-          "methodName": "method",
-          "requiredSignatureIncludes": [
-            "mut self",
-            "impl Into<String>",
-            "Self"
-          ]
-        }
-      ]
-    },
-    {
-      "mode": "backend-cargo-test",
-      "timeoutMs": 10000,
-      "dependencySet": "std",
-      "testFiles": [
-        {
-          "path": "tests/public.rs",
-          "sourcePath": "tests/public.rs"
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Authored solution
-
-#### `src/lib.rs`
-
-Source: `lessons/request-api/002-builder-setters/solution/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Request {
-    pub method: String,
-    pub path: String,
-    pub body: Option<String>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RequestBuilder {
-    method: Option<String>,
-    path: Option<String>,
-}
-
-impl RequestBuilder {
-    pub fn new() -> Self {
-        Self {
-            method: None,
-            path: None,
-        }
-    }
-
-    pub fn method(mut self, method: impl Into<String>) -> Self {
-        self.method = Some(method.into());
-        self
-    }
-}
-```
-
-### Completion explanation
-
-Consuming setters make the builder ergonomic while preserving ownership. Each call returns the next builder state for the chain.
-
-### Author notes
-
-Teaches builder-setters through a focused, behavior-checked Rust micro-lesson.
-
----
-
-## 11. Add a small Config setter
+## 3. Add a small Config setter
 
 Source: `lessons/config-service/003-config-methods`
 
@@ -1864,723 +575,7 @@ Teaches methods-basic through a focused, behavior-checked Rust micro-lesson.
 
 ---
 
-## 12. Mark the parse error as an Error
-
-Source: `lessons/parse-user/003-error-trait`
-
-| Field | Value |
-| --- | --- |
-| Lesson ID | `error-trait-parse-user-error-003` |
-| Production lesson | [Open lesson](https://borrowquest.site/#lesson/error-trait-parse-user-error-003) |
-| Arc | Parse a user from text (step 3 of 7) |
-| Concept | Error trait (`error-trait`) |
-| Difficulty | easy |
-| Estimated time | 5 minutes |
-
-### Scenario
-
-The parser error now has Display. Implementing the standard Error trait lets it fit into normal Rust error handling APIs.
-
-### Task
-
-Add an implementation of std::error::Error for ParseUserError. No custom methods are needed yet.
-
-### Concept context
-
-Mark a displayable error type as a standard Rust error.
-
-- Prerequisites: `display-parse-error`
-- Tags: `errors`, `traits`
-
-### Starter project files
-
-#### `src/lib.rs` — editable
-
-Source: `lessons/parse-user/003-error-trait/starter/src/lib.rs`
-
-```rust
-use std::fmt;
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct User {
-    pub id: u64,
-    pub name: String,
-    pub email: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseUserError {
-    MissingId,
-    MissingName,
-    MissingEmail,
-    InvalidId,
-}
-
-pub fn parse_user(input: &str) -> Result<User, ParseUserError> {
-    let mut parts = input.split(',');
-
-    let id_text = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingId)?;
-    let id = id_text
-        .parse::<u64>()
-        .map_err(|_| ParseUserError::InvalidId)?;
-    let name = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingName)?;
-    let email = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingEmail)?;
-
-    Ok(User {
-        id,
-        name: name.to_owned(),
-        email: email.to_owned(),
-    })
-}
-
-impl fmt::Display for ParseUserError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ParseUserError::MissingId => write!(f, "missing id"),
-            ParseUserError::MissingName => write!(f, "missing name"),
-            ParseUserError::MissingEmail => write!(f, "missing email"),
-            ParseUserError::InvalidId => write!(f, "invalid id"),
-        }
-    }
-}
-
-// Continue from the previous lesson.
-// TODO: implement std::error::Error for ParseUserError.
-```
-
-#### `tests/public.rs` — test
-
-Source: `lessons/parse-user/003-error-trait/tests/public.rs`
-
-```rust
-use rust_daily_lesson::ParseUserError;
-
-fn assert_error<E: std::error::Error>() {}
-
-#[test]
-fn parse_user_error_is_standard_error() {
-    assert_error::<ParseUserError>();
-}
-```
-
-### Progressive hints
-
-1. Error is the standard marker trait for error values.
-2. Because Display and Debug already exist, this implementation can be empty.
-3. The form is impl std::error::Error for ParseUserError {}. The authored code is included in the Solution section.
-
-### Validation contract
-
-```json
-{
-  "mode": "all",
-  "validations": [
-    {
-      "mode": "structural",
-      "timeoutMs": 10000,
-      "checks": [
-        {
-          "type": "impl_trait_for_type",
-          "traitName": "std::error::Error",
-          "typeName": "ParseUserError"
-        }
-      ]
-    },
-    {
-      "mode": "backend-cargo-test",
-      "timeoutMs": 10000,
-      "dependencySet": "std",
-      "testFiles": [
-        {
-          "path": "tests/public.rs",
-          "sourcePath": "tests/public.rs"
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Authored solution
-
-#### `src/lib.rs`
-
-Source: `lessons/parse-user/003-error-trait/solution/src/lib.rs`
-
-```rust
-use std::fmt;
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct User {
-    pub id: u64,
-    pub name: String,
-    pub email: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseUserError {
-    MissingId,
-    MissingName,
-    MissingEmail,
-    InvalidId,
-}
-
-pub fn parse_user(input: &str) -> Result<User, ParseUserError> {
-    let mut parts = input.split(',');
-
-    let id_text = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingId)?;
-    let id = id_text
-        .parse::<u64>()
-        .map_err(|_| ParseUserError::InvalidId)?;
-    let name = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingName)?;
-    let email = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingEmail)?;
-
-    Ok(User {
-        id,
-        name: name.to_owned(),
-        email: email.to_owned(),
-    })
-}
-
-impl fmt::Display for ParseUserError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ParseUserError::MissingId => write!(f, "missing id"),
-            ParseUserError::MissingName => write!(f, "missing name"),
-            ParseUserError::MissingEmail => write!(f, "missing email"),
-            ParseUserError::InvalidId => write!(f, "invalid id"),
-        }
-    }
-}
-
-impl std::error::Error for ParseUserError {}
-```
-
-### Completion explanation
-
-Implementing Error makes ParseUserError compatible with APIs that accept standard Rust errors. Empty implementations are common when there is no source error to expose.
-
-### Author notes
-
-Teaches error-trait through a focused, behavior-checked Rust micro-lesson.
-
----
-
-## 13. Fold quantities into a total
-
-Source: `lessons/inventory-summary/003-fold-total`
-
-| Field | Value |
-| --- | --- |
-| Lesson ID | `inventory-fold-total-003` |
-| Production lesson | [Open lesson](https://borrowquest.site/#lesson/inventory-fold-total-003) |
-| Arc | Summarize inventory (step 3 of 6) |
-| Concept | fold (`fold-sum`) |
-| Difficulty | easy |
-| Estimated time | 6 minutes |
-
-### Scenario
-
-Inventory reporting often needs a single total count across many items.
-
-### Task
-
-Implement total_quantity with iter().fold. Add each item quantity into the accumulator.
-
-### Concept context
-
-Accumulate values across a collection with an explicit reducer.
-
-- Prerequisites: `domain-structs`
-- Tags: `iterators`, `accumulation`
-
-### Starter project files
-
-#### `src/lib.rs` — editable
-
-Source: `lessons/inventory-summary/003-fold-total/starter/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Item {
-    pub sku: String,
-    pub name: String,
-    pub quantity: u32,
-    pub reserved: u32,
-}
-
-pub fn available_names(items: &[Item]) -> Vec<&str> {
-    items
-        .iter()
-        .filter_map(|item| {
-            if item.quantity > item.reserved {
-                Some(item.name.as_str())
-            } else {
-                None
-            }
-        })
-        .collect()
-}
-
-// Continue from the previous lesson.
-// TODO: fold item quantities into one total.
-```
-
-#### `tests/public.rs` — test
-
-Source: `lessons/inventory-summary/003-fold-total/tests/public.rs`
-
-```rust
-use rust_daily_lesson::{total_quantity, Item};
-
-#[test]
-fn folds_quantities_into_total() {
-    let items = vec![
-        Item {
-            sku: "a".to_owned(),
-            name: "A".to_owned(),
-            quantity: 2,
-            reserved: 0,
-        },
-        Item {
-            sku: "b".to_owned(),
-            name: "B".to_owned(),
-            quantity: 5,
-            reserved: 0,
-        },
-    ];
-
-    assert_eq!(total_quantity(&items), 7);
-    assert_eq!(total_quantity(&[]), 0);
-}
-```
-
-### Progressive hints
-
-1. fold starts with an initial accumulator value.
-2. The accumulator and the item reference are the closure arguments.
-3. The initial total should be 0. The authored code is included in the Solution section.
-
-### Validation contract
-
-```json
-{
-  "mode": "all",
-  "validations": [
-    {
-      "mode": "structural",
-      "timeoutMs": 10000,
-      "checks": [
-        {
-          "type": "function_signature",
-          "functionName": "total_quantity",
-          "requiredSignatureIncludes": [
-            "u32"
-          ]
-        },
-        {
-          "type": "source_includes",
-          "requiredSnippets": [
-            "fold"
-          ]
-        }
-      ]
-    },
-    {
-      "mode": "backend-cargo-test",
-      "timeoutMs": 10000,
-      "dependencySet": "std",
-      "testFiles": [
-        {
-          "path": "tests/public.rs",
-          "sourcePath": "tests/public.rs"
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Authored solution
-
-#### `src/lib.rs`
-
-Source: `lessons/inventory-summary/003-fold-total/solution/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Item {
-    pub sku: String,
-    pub name: String,
-    pub quantity: u32,
-    pub reserved: u32,
-}
-
-pub fn available_names(items: &[Item]) -> Vec<&str> {
-    items
-        .iter()
-        .filter_map(|item| {
-            if item.quantity > item.reserved {
-                Some(item.name.as_str())
-            } else {
-                None
-            }
-        })
-        .collect()
-}
-
-pub fn total_quantity(items: &[Item]) -> u32 {
-    items.iter().fold(0, |total, item| total + item.quantity)
-}
-```
-
-### Completion explanation
-
-fold makes the accumulator mechanics explicit: start at zero, visit each item, and return the next total. That gives later reducer logic a clear place to grow.
-
-### Author notes
-
-Teaches fold-sum through a focused, behavior-checked Rust micro-lesson.
-
----
-
-## 14. Map log levels with match
-
-Source: `lessons/log-lines/003-level-match`
-
-| Field | Value |
-| --- | --- |
-| Lesson ID | `log-level-match-003` |
-| Production lesson | [Open lesson](https://borrowquest.site/#lesson/log-level-match-003) |
-| Arc | Inspect log lines (step 3 of 5) |
-| Concept | Pattern matching (`pattern-matching`) |
-| Difficulty | easy |
-| Estimated time | 6 minutes |
-
-### Scenario
-
-An operations view sorts alert rows by log level, keeping routine info below warnings and errors.
-
-### Task
-
-Keep the borrowed log entry and view code, then add LogLevel variants Info, Warn, and Error. Implement alert_priority with a match on level.
-
-### Concept context
-
-Map enum variants to behavior with a clear match expression.
-
-- Prerequisites: `error-enum-design`
-- Tags: `match`, `enums`, `control-flow`
-
-### Starter project files
-
-#### `src/lib.rs` — editable
-
-Source: `lessons/log-lines/003-level-match/starter/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LogEntry<'a> {
-    pub level: &'a str,
-    pub message: &'a str,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LogView<'a> {
-    pub entries: &'a [LogEntry<'a>],
-}
-
-// Continue from the previous lesson.
-// TODO: add the supported log levels.
-// TODO: map Info, Warn, and Error to alert queue priority values.
-```
-
-#### `tests/public.rs` — test
-
-Source: `lessons/log-lines/003-level-match/tests/public.rs`
-
-```rust
-use rust_daily_lesson::{alert_priority, LogLevel};
-
-#[test]
-fn maps_log_levels_to_alert_priority() {
-    assert_eq!(alert_priority(LogLevel::Info), 0);
-    assert_eq!(alert_priority(LogLevel::Warn), 1);
-    assert_eq!(alert_priority(LogLevel::Error), 2);
-}
-```
-
-### Progressive hints
-
-1. Enums pair well with match because every known case can be handled directly.
-2. The alert_priority function should return 0 for Info, 1 for Warn, and 2 for Error.
-3. A match expression is clearer than string comparisons for typed log levels. The authored code is included in the Solution section.
-
-### Validation contract
-
-```json
-{
-  "mode": "all",
-  "validations": [
-    {
-      "mode": "structural",
-      "timeoutMs": 10000,
-      "checks": [
-        {
-          "type": "enum_unit_variants",
-          "enumName": "LogLevel",
-          "requiredVariants": [
-            "Info",
-            "Warn",
-            "Error"
-          ]
-        },
-        {
-          "type": "source_includes",
-          "requiredSnippets": [
-            "pub fn alert_priority",
-            "match level"
-          ]
-        }
-      ]
-    },
-    {
-      "mode": "backend-cargo-test",
-      "timeoutMs": 10000,
-      "dependencySet": "std",
-      "testFiles": [
-        {
-          "path": "tests/public.rs",
-          "sourcePath": "tests/public.rs"
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Authored solution
-
-#### `src/lib.rs`
-
-Source: `lessons/log-lines/003-level-match/solution/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LogEntry<'a> {
-    pub level: &'a str,
-    pub message: &'a str,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LogView<'a> {
-    pub entries: &'a [LogEntry<'a>],
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LogLevel {
-    Info,
-    Warn,
-    Error,
-}
-
-pub fn alert_priority(level: LogLevel) -> u8 {
-    match level {
-        LogLevel::Info => 0,
-        LogLevel::Warn => 1,
-        LogLevel::Error => 2,
-    }
-}
-```
-
-### Completion explanation
-
-Pattern matching keeps the alert queue policy exhaustive and visible. Adding a new log level later will naturally point maintainers at this decision.
-
-### Author notes
-
-Teaches pattern-matching through a focused, behavior-checked Rust micro-lesson.
-
----
-
-## 15. Start the builder from Default
-
-Source: `lessons/request-api/003-builder-default`
-
-| Field | Value |
-| --- | --- |
-| Lesson ID | `request-builder-default-003` |
-| Production lesson | [Open lesson](https://borrowquest.site/#lesson/request-builder-default-003) |
-| Arc | Build a request API (step 3 of 6) |
-| Concept | Builder default state (`builder-default`) |
-| Difficulty | easy |
-| Estimated time | 6 minutes |
-
-### Scenario
-
-Callers should be able to create an empty builder using the standard Default trait.
-
-### Task
-
-Derive Default for RequestBuilder. Option fields already default to None, so the empty builder does not need a manual impl.
-
-### Concept context
-
-Create an empty builder with the standard Default trait.
-
-- Prerequisites: `builder-setters`, `default-impl`
-- Tags: `builder`, `default`, `traits`
-
-### Starter project files
-
-#### `src/lib.rs` — editable
-
-Source: `lessons/request-api/003-builder-default/starter/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Request {
-    pub method: String,
-    pub path: String,
-    pub body: Option<String>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RequestBuilder {
-    method: Option<String>,
-    path: Option<String>,
-}
-
-impl RequestBuilder {
-    pub fn new() -> Self {
-        Self {
-            method: None,
-            path: None,
-        }
-    }
-
-    pub fn method(mut self, method: impl Into<String>) -> Self {
-        self.method = Some(method.into());
-        self
-    }
-}
-
-// Continue from the previous lesson.
-// TODO: derive Default for RequestBuilder.
-```
-
-#### `tests/public.rs` — test
-
-Source: `lessons/request-api/003-builder-default/tests/public.rs`
-
-```rust
-use rust_daily_lesson::RequestBuilder;
-
-#[test]
-fn builder_has_default_empty_state() {
-    let _builder = RequestBuilder::default();
-}
-```
-
-### Progressive hints
-
-1. Default should produce the same empty state every time.
-2. Option<T> implements Default by returning None.
-3. Add Default to the derive list on RequestBuilder. The authored code is included in the Solution section.
-
-### Validation contract
-
-```json
-{
-  "mode": "all",
-  "validations": [
-    {
-      "mode": "structural",
-      "timeoutMs": 10000,
-      "checks": [
-        {
-          "type": "derived_trait_for_type",
-          "traitName": "Default",
-          "typeName": "RequestBuilder"
-        }
-      ]
-    },
-    {
-      "mode": "backend-cargo-test",
-      "timeoutMs": 10000,
-      "dependencySet": "std",
-      "testFiles": [
-        {
-          "path": "tests/public.rs",
-          "sourcePath": "tests/public.rs"
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Authored solution
-
-#### `src/lib.rs`
-
-Source: `lessons/request-api/003-builder-default/solution/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Request {
-    pub method: String,
-    pub path: String,
-    pub body: Option<String>,
-}
-
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct RequestBuilder {
-    method: Option<String>,
-    path: Option<String>,
-}
-
-impl RequestBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn method(mut self, method: impl Into<String>) -> Self {
-        self.method = Some(method.into());
-        self
-    }
-}
-```
-
-### Completion explanation
-
-Deriving Default is idiomatic when every field already has the desired default. Option fields make the empty builder state explicit by starting as None.
-
-### Author notes
-
-Teaches builder-default through a focused, behavior-checked Rust micro-lesson.
-
----
-
-## 16. Model an optional timeout
+## 4. Model an optional timeout
 
 Source: `lessons/config-service/004-config-option-timeout`
 
@@ -2760,890 +755,7 @@ Teaches option-modeling through a focused, behavior-checked Rust micro-lesson.
 
 ---
 
-## 17. Make restock alerts scan-friendly
-
-Source: `lessons/inventory-summary/004-clear-loop`
-
-| Field | Value |
-| --- | --- |
-| Lesson ID | `inventory-clear-loop-004` |
-| Production lesson | [Open lesson](https://borrowquest.site/#lesson/inventory-clear-loop-004) |
-| Arc | Summarize inventory (step 4 of 6) |
-| Concept | Iterator judgment (`iterator-judgment`) |
-| Difficulty | medium |
-| Estimated time | 8 minutes |
-
-### Scenario
-
-Inventory operators need a short list of normalized restock alerts before a purchasing review. A dense iterator chain hides which notes are actionable.
-
-### Task
-
-Refactor the existing priority_restock_notes helper into a clearer shape. Use a small loop and named intermediate values so the restock alert rule is obvious.
-
-### Concept context
-
-Choose between loops and iterator chains based on readability.
-
-- Prerequisites: `filter-map`, `fold-sum`
-- Tags: `iterators`, `readability`, `refactoring`
-
-### Starter project files
-
-#### `src/lib.rs` — editable
-
-Source: `lessons/inventory-summary/004-clear-loop/starter/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Item {
-    pub sku: String,
-    pub name: String,
-    pub quantity: u32,
-    pub reserved: u32,
-}
-
-pub fn available_names(items: &[Item]) -> Vec<&str> {
-    items
-        .iter()
-        .filter_map(|item| {
-            if item.quantity > item.reserved {
-                Some(item.name.as_str())
-            } else {
-                None
-            }
-        })
-        .collect()
-}
-
-pub fn total_quantity(items: &[Item]) -> u32 {
-    items.iter().fold(0, |total, item| total + item.quantity)
-}
-
-pub fn priority_restock_notes(notes: &[String]) -> Vec<String> {
-    notes
-        .iter()
-        .map(|note| note.trim().to_lowercase())
-        .filter(|note| !note.is_empty())
-        .filter(|note| note.contains("urgent") || note.contains("stock"))
-        .collect()
-}
-
-// Continue from the previous lesson.
-// TODO: refactor priority_restock_notes so the restock alert rule is easy to scan.
-```
-
-#### `tests/public.rs` — test
-
-Source: `lessons/inventory-summary/004-clear-loop/tests/public.rs`
-
-```rust
-use rust_daily_lesson::priority_restock_notes;
-
-#[test]
-fn keeps_restock_alert_notes_in_normalized_order() {
-    let notes = vec![
-        "  URGENT restock batteries ".to_owned(),
-        "".to_owned(),
-        "general reminder".to_owned(),
-        "low STOCK on cables".to_owned(),
-    ];
-
-    assert_eq!(
-        priority_restock_notes(&notes),
-        vec![
-            "urgent restock batteries".to_owned(),
-            "low stock on cables".to_owned(),
-        ]
-    );
-}
-```
-
-### Progressive hints
-
-1. The goal is not always fewer lines.
-2. Name booleans such as mentions_urgent, mentions_stock, and is_restock_alert if that makes the rule clearer.
-3. A loop is idiomatic when each step deserves a name. The authored code is included in the Solution section.
-
-### Validation contract
-
-```json
-{
-  "mode": "all",
-  "validations": [
-    {
-      "mode": "structural",
-      "timeoutMs": 10000,
-      "checks": [
-        {
-          "type": "function_signature",
-          "functionName": "priority_restock_notes",
-          "requiredSignatureIncludes": [
-            "Vec<String>"
-          ]
-        },
-        {
-          "type": "source_includes",
-          "requiredSnippets": [
-            "for note in notes",
-            "mentions_urgent",
-            "mentions_stock",
-            "is_restock_alert"
-          ],
-          "forbiddenSnippets": [
-            ".map(|note|",
-            ".filter(|note|"
-          ]
-        }
-      ]
-    },
-    {
-      "mode": "backend-cargo-test",
-      "timeoutMs": 10000,
-      "dependencySet": "std",
-      "testFiles": [
-        {
-          "path": "tests/public.rs",
-          "sourcePath": "tests/public.rs"
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Authored solution
-
-#### `src/lib.rs`
-
-Source: `lessons/inventory-summary/004-clear-loop/solution/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Item {
-    pub sku: String,
-    pub name: String,
-    pub quantity: u32,
-    pub reserved: u32,
-}
-
-pub fn available_names(items: &[Item]) -> Vec<&str> {
-    items
-        .iter()
-        .filter_map(|item| {
-            if item.quantity > item.reserved {
-                Some(item.name.as_str())
-            } else {
-                None
-            }
-        })
-        .collect()
-}
-
-pub fn total_quantity(items: &[Item]) -> u32 {
-    items.iter().fold(0, |total, item| total + item.quantity)
-}
-
-pub fn priority_restock_notes(notes: &[String]) -> Vec<String> {
-    let mut priority_notes = Vec::new();
-
-    for note in notes {
-        let normalized = note.trim().to_lowercase();
-        if normalized.is_empty() {
-            continue;
-        }
-
-        let mentions_urgent = normalized.contains("urgent");
-        let mentions_stock = normalized.contains("stock");
-        let is_restock_alert = mentions_urgent || mentions_stock;
-
-        if is_restock_alert {
-            priority_notes.push(normalized);
-        }
-    }
-
-    priority_notes
-}
-```
-
-### Completion explanation
-
-Idiomatic Rust values clarity over using an iterator chain everywhere. The best shape is the one that makes the inventory rule easiest to verify during a review.
-
-### Author notes
-
-Teaches iterator-judgment through a focused, behavior-checked Rust micro-lesson.
-
----
-
-## 18. Allow borrowed or owned messages
-
-Source: `lessons/log-lines/004-message-cow`
-
-| Field | Value |
-| --- | --- |
-| Lesson ID | `log-message-cow-004` |
-| Production lesson | [Open lesson](https://borrowquest.site/#lesson/log-message-cow-004) |
-| Arc | Inspect log lines (step 4 of 5) |
-| Concept | Cow strings (`cow-strings`) |
-| Difficulty | advanced |
-| Estimated time | 10 minutes |
-
-### Scenario
-
-Most log messages can be borrowed, but some normalized messages need owned text. Cow supports both without forcing allocation every time.
-
-### Task
-
-Keep the existing log view and level code, then define LogMessage<'a> with text: Cow<'a, str>. Import Cow from std::borrow.
-
-### Concept context
-
-Use Cow to support borrowed or owned string data.
-
-- Prerequisites: `borrowed-fields`
-- Tags: `cow`, `borrowing`, `ownership`
-
-### Starter project files
-
-#### `src/lib.rs` — editable
-
-Source: `lessons/log-lines/004-message-cow/starter/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LogEntry<'a> {
-    pub level: &'a str,
-    pub message: &'a str,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LogView<'a> {
-    pub entries: &'a [LogEntry<'a>],
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LogLevel {
-    Info,
-    Warn,
-    Error,
-}
-
-pub fn alert_priority(level: LogLevel) -> u8 {
-    match level {
-        LogLevel::Info => 0,
-        LogLevel::Warn => 1,
-        LogLevel::Error => 2,
-    }
-}
-
-// Continue from the previous lesson.
-// TODO: import Cow and define LogMessage with text that can be borrowed or owned.
-```
-
-#### `tests/public.rs` — test
-
-Source: `lessons/log-lines/004-message-cow/tests/public.rs`
-
-```rust
-use std::borrow::Cow;
-
-use rust_daily_lesson::LogMessage;
-
-#[test]
-fn log_message_can_borrow_or_own_text() {
-    let borrowed = LogMessage {
-        text: Cow::Borrowed("started"),
-    };
-    let owned = LogMessage {
-        text: Cow::Owned("normalized".to_owned()),
-    };
-
-    assert_eq!(borrowed.text, "started");
-    assert_eq!(owned.text, "normalized");
-}
-```
-
-### Progressive hints
-
-1. Cow means clone-on-write and lives in std::borrow.
-2. The borrowed form for text is str, so the field type is Cow<'a, str>.
-3. This is useful when most data can be borrowed but a few cases need ownership. The authored code is included in the Solution section.
-
-### Validation contract
-
-```json
-{
-  "mode": "all",
-  "validations": [
-    {
-      "mode": "structural",
-      "timeoutMs": 10000,
-      "checks": [
-        {
-          "type": "struct_fields",
-          "structName": "LogMessage",
-          "requiredFields": [
-            {
-              "name": "text",
-              "typeIncludes": [
-                "Cow",
-                "str"
-              ]
-            }
-          ]
-        },
-        {
-          "type": "source_includes",
-          "requiredSnippets": [
-            "std::borrow::Cow",
-            "Cow<'a, str>"
-          ]
-        }
-      ]
-    },
-    {
-      "mode": "backend-cargo-test",
-      "timeoutMs": 10000,
-      "dependencySet": "std",
-      "testFiles": [
-        {
-          "path": "tests/public.rs",
-          "sourcePath": "tests/public.rs"
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Authored solution
-
-#### `src/lib.rs`
-
-Source: `lessons/log-lines/004-message-cow/solution/src/lib.rs`
-
-```rust
-use std::borrow::Cow;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LogEntry<'a> {
-    pub level: &'a str,
-    pub message: &'a str,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LogView<'a> {
-    pub entries: &'a [LogEntry<'a>],
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LogLevel {
-    Info,
-    Warn,
-    Error,
-}
-
-pub fn alert_priority(level: LogLevel) -> u8 {
-    match level {
-        LogLevel::Info => 0,
-        LogLevel::Warn => 1,
-        LogLevel::Error => 2,
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LogMessage<'a> {
-    pub text: Cow<'a, str>,
-}
-```
-
-### Completion explanation
-
-Cow lets the API accept borrowed text by default while still supporting owned normalized messages. It avoids unnecessary allocation without giving up flexibility.
-
-### Author notes
-
-Teaches cow-strings through a focused, behavior-checked Rust micro-lesson.
-
----
-
-## 19. Validate builder output
-
-Source: `lessons/request-api/004-builder-result`
-
-| Field | Value |
-| --- | --- |
-| Lesson ID | `request-builder-result-004` |
-| Production lesson | [Open lesson](https://borrowquest.site/#lesson/request-builder-result-004) |
-| Arc | Build a request API (step 4 of 6) |
-| Concept | Builder Result output (`builder-result`) |
-| Difficulty | medium |
-| Estimated time | 9 minutes |
-
-### Scenario
-
-A builder can be incomplete. build should report missing required fields instead of creating a bad Request.
-
-### Task
-
-Add a path setter, define BuildError with MissingMethod and MissingPath, and implement build so missing required fields return the matching error. A built Request should keep body as None for now.
-
-### Concept context
-
-Return Result from builders so incomplete state becomes a typed, recoverable error.
-
-- Prerequisites: `builder-default`, `result-validation`
-- Tags: `builder`, `result`, `validation`
-
-### Starter project files
-
-#### `src/lib.rs` — editable
-
-Source: `lessons/request-api/004-builder-result/starter/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Request {
-    pub method: String,
-    pub path: String,
-    pub body: Option<String>,
-}
-
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct RequestBuilder {
-    method: Option<String>,
-    path: Option<String>,
-}
-
-impl RequestBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn method(mut self, method: impl Into<String>) -> Self {
-        self.method = Some(method.into());
-        self
-    }
-}
-
-// Continue from the previous lesson.
-// TODO: add path, build, and specific BuildError variants.
-```
-
-#### `tests/public.rs` — test
-
-Source: `lessons/request-api/004-builder-result/tests/public.rs`
-
-```rust
-use rust_daily_lesson::{BuildError, Request, RequestBuilder};
-
-#[test]
-fn builds_complete_request() {
-    assert_eq!(
-        RequestBuilder::new().method("GET").path("/health").build(),
-        Ok(Request {
-            method: "GET".to_owned(),
-            path: "/health".to_owned(),
-            body: None,
-        })
-    );
-}
-
-#[test]
-fn reports_missing_fields() {
-    assert_eq!(
-        RequestBuilder::new().path("/health").build(),
-        Err(BuildError::MissingMethod)
-    );
-    assert_eq!(
-        RequestBuilder::new().method("GET").build(),
-        Err(BuildError::MissingPath)
-    );
-}
-```
-
-### Progressive hints
-
-1. The build method is where optional builder state becomes required request state.
-2. ok_or can turn an Option into a Result with a specific missing-field error.
-3. Bind method and path first, then return Ok(Request { method, path, body: None }). The authored code is included in the Solution section.
-
-### Validation contract
-
-```json
-{
-  "mode": "all",
-  "validations": [
-    {
-      "mode": "structural",
-      "timeoutMs": 10000,
-      "checks": [
-        {
-          "type": "enum_unit_variants",
-          "enumName": "BuildError",
-          "requiredVariants": [
-            "MissingMethod",
-            "MissingPath"
-          ]
-        },
-        {
-          "type": "impl_method",
-          "implFor": "RequestBuilder",
-          "methodName": "build",
-          "requiredSignatureIncludes": [
-            "Result<Request, BuildError>"
-          ]
-        },
-        {
-          "type": "source_includes",
-          "requiredSnippets": [
-            "ok_or(BuildError::MissingMethod)",
-            "ok_or(BuildError::MissingPath)"
-          ],
-          "forbiddenSnippets": [
-            "Incomplete",
-            "unwrap",
-            "expect",
-            "panic!"
-          ]
-        }
-      ]
-    },
-    {
-      "mode": "backend-cargo-test",
-      "timeoutMs": 10000,
-      "dependencySet": "std",
-      "testFiles": [
-        {
-          "path": "tests/public.rs",
-          "sourcePath": "tests/public.rs"
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Authored solution
-
-#### `src/lib.rs`
-
-Source: `lessons/request-api/004-builder-result/solution/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Request {
-    pub method: String,
-    pub path: String,
-    pub body: Option<String>,
-}
-
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct RequestBuilder {
-    method: Option<String>,
-    path: Option<String>,
-}
-
-impl RequestBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn method(mut self, method: impl Into<String>) -> Self {
-        self.method = Some(method.into());
-        self
-    }
-
-    pub fn path(mut self, path: impl Into<String>) -> Self {
-        self.path = Some(path.into());
-        self
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum BuildError {
-    MissingMethod,
-    MissingPath,
-}
-
-impl RequestBuilder {
-    pub fn build(self) -> Result<Request, BuildError> {
-        let method = self.method.ok_or(BuildError::MissingMethod)?;
-        let path = self.path.ok_or(BuildError::MissingPath)?;
-
-        Ok(Request {
-            method,
-            path,
-            body: None,
-        })
-    }
-}
-```
-
-### Completion explanation
-
-Returning Result keeps invalid builder states from silently becoming invalid requests. Specific missing-field variants tell callers exactly what still needs to be set.
-
-### Author notes
-
-Teaches builder-result through a focused, behavior-checked Rust micro-lesson.
-
----
-
-## 20. Preserve the ID parse source
-
-Source: `lessons/parse-user/004-source-parse-int`
-
-| Field | Value |
-| --- | --- |
-| Lesson ID | `source-parse-int-error-004` |
-| Production lesson | [Open lesson](https://borrowquest.site/#lesson/source-parse-int-error-004) |
-| Arc | Parse a user from text (step 4 of 7) |
-| Concept | Source errors (`error-source`) |
-| Difficulty | medium |
-| Estimated time | 8 minutes |
-
-### Scenario
-
-Invalid IDs come from ParseIntError. Keeping that source error helps diagnostics without giving up the typed ParseUserError API.
-
-### Task
-
-Change InvalidId so it stores ParseIntError. Update parse_user to pass the parse error through map_err instead of discarding it, and expose it from Error::source.
-
-### Concept context
-
-Preserve lower-level error values inside higher-level domain errors.
-
-- Prerequisites: `error-trait`
-- Tags: `errors`, `parsing`, `diagnostics`
-
-### Starter project files
-
-#### `src/lib.rs` — editable
-
-Source: `lessons/parse-user/004-source-parse-int/starter/src/lib.rs`
-
-```rust
-use std::fmt;
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct User {
-    pub id: u64,
-    pub name: String,
-    pub email: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseUserError {
-    MissingId,
-    MissingName,
-    MissingEmail,
-    InvalidId,
-}
-
-pub fn parse_user(input: &str) -> Result<User, ParseUserError> {
-    let mut parts = input.split(',');
-
-    let id_text = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingId)?;
-    let id = id_text
-        .parse::<u64>()
-        .map_err(|_| ParseUserError::InvalidId)?;
-    let name = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingName)?;
-    let email = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingEmail)?;
-
-    Ok(User {
-        id,
-        name: name.to_owned(),
-        email: email.to_owned(),
-    })
-}
-
-impl fmt::Display for ParseUserError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ParseUserError::MissingId => write!(f, "missing id"),
-            ParseUserError::MissingName => write!(f, "missing name"),
-            ParseUserError::MissingEmail => write!(f, "missing email"),
-            ParseUserError::InvalidId => write!(f, "invalid id"),
-        }
-    }
-}
-
-impl std::error::Error for ParseUserError {}
-
-// Continue from the previous lesson.
-// TODO: store ParseIntError in InvalidId and preserve it in parse_user.
-```
-
-#### `tests/public.rs` — test
-
-Source: `lessons/parse-user/004-source-parse-int/tests/public.rs`
-
-```rust
-use std::error::Error;
-
-use rust_daily_lesson::{parse_user, ParseUserError};
-
-#[test]
-fn preserves_parse_int_error_source_value() -> Result<(), String> {
-    match parse_user("not-a-number,Ada,ada@example.com") {
-        Err(ParseUserError::InvalidId(source)) => {
-            assert!(source.to_string().contains("invalid digit"));
-            Ok(())
-        }
-        other => Err(format!("unexpected parse result: {other:?}")),
-    }
-}
-
-#[test]
-fn exposes_parse_int_error_as_source() {
-    let error = parse_user("not-a-number,Ada,ada@example.com").unwrap_err();
-
-    assert!(error.source().is_some());
-}
-```
-
-### Progressive hints
-
-1. Tuple variants can carry the original error value.
-2. map_err can pass a function or variant constructor when the types line up.
-3. After the change, InvalidId should look like InvalidId(ParseIntError), and Error::source should return that inner error. The authored code is included in the Solution section.
-
-### Validation contract
-
-```json
-{
-  "mode": "all",
-  "validations": [
-    {
-      "mode": "structural",
-      "timeoutMs": 10000,
-      "checks": [
-        {
-          "type": "source_includes",
-          "requiredSnippets": [
-            "InvalidId(ParseIntError)",
-            "map_err(ParseUserError::InvalidId)",
-            "fn source"
-          ],
-          "forbiddenSnippets": [
-            "|_error| ParseUserError::InvalidId"
-          ]
-        }
-      ]
-    },
-    {
-      "mode": "backend-cargo-test",
-      "timeoutMs": 10000,
-      "dependencySet": "std",
-      "testFiles": [
-        {
-          "path": "tests/public.rs",
-          "sourcePath": "tests/public.rs"
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Authored solution
-
-#### `src/lib.rs`
-
-Source: `lessons/parse-user/004-source-parse-int/solution/src/lib.rs`
-
-```rust
-use std::error::Error;
-use std::fmt;
-use std::num::ParseIntError;
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct User {
-    pub id: u64,
-    pub name: String,
-    pub email: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseUserError {
-    MissingId,
-    MissingName,
-    MissingEmail,
-    InvalidId(ParseIntError),
-}
-
-pub fn parse_user(input: &str) -> Result<User, ParseUserError> {
-    let mut parts = input.split(',');
-
-    let id_text = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingId)?;
-    let id = id_text
-        .parse::<u64>()
-        .map_err(ParseUserError::InvalidId)?;
-    let name = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingName)?;
-    let email = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingEmail)?;
-
-    Ok(User {
-        id,
-        name: name.to_owned(),
-        email: email.to_owned(),
-    })
-}
-
-impl fmt::Display for ParseUserError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ParseUserError::MissingId => write!(f, "missing id"),
-            ParseUserError::MissingName => write!(f, "missing name"),
-            ParseUserError::MissingEmail => write!(f, "missing email"),
-            ParseUserError::InvalidId(_) => write!(f, "invalid id"),
-        }
-    }
-}
-
-impl Error for ParseUserError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            ParseUserError::InvalidId(error) => Some(error),
-            ParseUserError::MissingId
-            | ParseUserError::MissingName
-            | ParseUserError::MissingEmail => None,
-        }
-    }
-}
-```
-
-### Completion explanation
-
-The parse error now keeps its original source and exposes it through Error::source. That keeps the high-level error useful while preserving details for logging and debugging.
-
-### Author notes
-
-Teaches error-source through a focused, behavior-checked Rust micro-lesson.
-
----
-
-## 21. Return validation errors with Result
+## 5. Return validation errors with Result
 
 Source: `lessons/config-service/005-config-result-validate`
 
@@ -3896,1095 +1008,7 @@ Teaches result-validation through a focused, behavior-checked Rust micro-lesson.
 
 ---
 
-## 22. Convert ParseIntError with From
-
-Source: `lessons/parse-user/005-from-parse-int`
-
-| Field | Value |
-| --- | --- |
-| Lesson ID | `from-parse-int-error-005` |
-| Production lesson | [Open lesson](https://borrowquest.site/#lesson/from-parse-int-error-005) |
-| Arc | Parse a user from text (step 5 of 7) |
-| Concept | From for errors (`from-error-conversion`) |
-| Difficulty | medium |
-| Estimated time | 7 minutes |
-
-### Scenario
-
-The parser has one low-level error that should become a ParseUserError. A From implementation makes that conversion reusable.
-
-### Task
-
-Implement From<ParseIntError> for ParseUserError by returning ParseUserError::InvalidId(error). Then use ? for the ID parse in parse_user.
-
-### Concept context
-
-Centralize conversion from a low-level error into a domain error.
-
-- Prerequisites: `error-source`
-- Tags: `from`, `errors`, `conversion`
-
-### Starter project files
-
-#### `src/lib.rs` — editable
-
-Source: `lessons/parse-user/005-from-parse-int/starter/src/lib.rs`
-
-```rust
-use std::error::Error;
-use std::fmt;
-use std::num::ParseIntError;
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct User {
-    pub id: u64,
-    pub name: String,
-    pub email: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseUserError {
-    MissingId,
-    MissingName,
-    MissingEmail,
-    InvalidId(ParseIntError),
-}
-
-pub fn parse_user(input: &str) -> Result<User, ParseUserError> {
-    let mut parts = input.split(',');
-
-    let id_text = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingId)?;
-    let id = id_text
-        .parse::<u64>()
-        .map_err(ParseUserError::InvalidId)?;
-    let name = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingName)?;
-    let email = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingEmail)?;
-
-    Ok(User {
-        id,
-        name: name.to_owned(),
-        email: email.to_owned(),
-    })
-}
-
-impl fmt::Display for ParseUserError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ParseUserError::MissingId => write!(f, "missing id"),
-            ParseUserError::MissingName => write!(f, "missing name"),
-            ParseUserError::MissingEmail => write!(f, "missing email"),
-            ParseUserError::InvalidId(_) => write!(f, "invalid id"),
-        }
-    }
-}
-
-impl Error for ParseUserError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            ParseUserError::InvalidId(error) => Some(error),
-            ParseUserError::MissingId
-            | ParseUserError::MissingName
-            | ParseUserError::MissingEmail => None,
-        }
-    }
-}
-
-// Continue from the previous lesson.
-// TODO: implement From<ParseIntError> and use ? for ID parsing.
-```
-
-#### `tests/public.rs` — test
-
-Source: `lessons/parse-user/005-from-parse-int/tests/public.rs`
-
-```rust
-use rust_daily_lesson::{parse_user, ParseUserError, User};
-
-#[test]
-fn parses_valid_user() {
-    assert_eq!(
-        parse_user("42,Ada,ada@example.com"),
-        Ok(User {
-            id: 42,
-            name: "Ada".to_owned(),
-            email: "ada@example.com".to_owned(),
-        })
-    );
-}
-
-#[test]
-fn converts_parse_int_error() {
-    assert!(matches!(
-        parse_user("nope,Ada,ada@example.com"),
-        Err(ParseUserError::InvalidId(_))
-    ));
-}
-```
-
-### Progressive hints
-
-1. From<T> defines fn from(value: T) -> Self.
-2. The body only needs to wrap the ParseIntError in the InvalidId variant.
-3. This conversion lets parse_user use ? instead of spelling out map_err at the call site. The authored code is included in the Solution section.
-
-### Validation contract
-
-```json
-{
-  "mode": "all",
-  "validations": [
-    {
-      "mode": "structural",
-      "timeoutMs": 10000,
-      "checks": [
-        {
-          "type": "impl_trait_for_type",
-          "traitName": "From<ParseIntError>",
-          "typeName": "ParseUserError"
-        },
-        {
-          "type": "source_includes",
-          "requiredSnippets": [
-            "fn from",
-            "ParseUserError::InvalidId",
-            ".parse::<u64>()?"
-          ]
-        }
-      ]
-    },
-    {
-      "mode": "backend-cargo-test",
-      "timeoutMs": 10000,
-      "dependencySet": "std",
-      "testFiles": [
-        {
-          "path": "tests/public.rs",
-          "sourcePath": "tests/public.rs"
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Authored solution
-
-#### `src/lib.rs`
-
-Source: `lessons/parse-user/005-from-parse-int/solution/src/lib.rs`
-
-```rust
-use std::error::Error;
-use std::fmt;
-use std::num::ParseIntError;
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct User {
-    pub id: u64,
-    pub name: String,
-    pub email: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseUserError {
-    MissingId,
-    MissingName,
-    MissingEmail,
-    InvalidId(ParseIntError),
-}
-
-impl From<ParseIntError> for ParseUserError {
-    fn from(error: ParseIntError) -> Self {
-        ParseUserError::InvalidId(error)
-    }
-}
-
-pub fn parse_user(input: &str) -> Result<User, ParseUserError> {
-    let mut parts = input.split(',');
-
-    let id_text = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingId)?;
-    let id = id_text.parse::<u64>()?;
-    let name = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingName)?;
-    let email = parts
-        .next()
-        .filter(|value| !value.is_empty())
-        .ok_or(ParseUserError::MissingEmail)?;
-
-    Ok(User {
-        id,
-        name: name.to_owned(),
-        email: email.to_owned(),
-    })
-}
-
-impl fmt::Display for ParseUserError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ParseUserError::MissingId => write!(f, "missing id"),
-            ParseUserError::MissingName => write!(f, "missing name"),
-            ParseUserError::MissingEmail => write!(f, "missing email"),
-            ParseUserError::InvalidId(_) => write!(f, "invalid id"),
-        }
-    }
-}
-
-impl Error for ParseUserError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            ParseUserError::InvalidId(error) => Some(error),
-            ParseUserError::MissingId
-            | ParseUserError::MissingName
-            | ParseUserError::MissingEmail => None,
-        }
-    }
-}
-```
-
-### Completion explanation
-
-From centralizes the low-level to high-level error conversion. Call sites can ask for ParseUserError without rewriting the wrapping logic each time.
-
-### Author notes
-
-Teaches from-error-conversion through a focused, behavior-checked Rust micro-lesson.
-
----
-
-## 23. Make Inventory iterable
-
-Source: `lessons/inventory-summary/005-intoiterator`
-
-| Field | Value |
-| --- | --- |
-| Lesson ID | `inventory-intoiterator-005` |
-| Production lesson | [Open lesson](https://borrowquest.site/#lesson/inventory-intoiterator-005) |
-| Arc | Summarize inventory (step 5 of 6) |
-| Concept | IntoIterator (`intoiterator-wrapper`) |
-| Difficulty | medium |
-| Estimated time | 8 minutes |
-
-### Scenario
-
-A wrapper type can expose natural iteration while still owning its internal Vec.
-
-### Task
-
-The starter already defines Inventory with a private Vec<Item>. Implement IntoIterator for Inventory so consuming the wrapper yields Item values.
-
-### Concept context
-
-Expose natural iteration for an owning wrapper type.
-
-- Prerequisites: `domain-structs`
-- Tags: `intoiterator`, `collections`, `traits`
-
-### Starter project files
-
-#### `src/lib.rs` — editable
-
-Source: `lessons/inventory-summary/005-intoiterator/starter/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Item {
-    pub sku: String,
-    pub name: String,
-    pub quantity: u32,
-    pub reserved: u32,
-}
-
-pub fn available_names(items: &[Item]) -> Vec<&str> {
-    items
-        .iter()
-        .filter_map(|item| {
-            if item.quantity > item.reserved {
-                Some(item.name.as_str())
-            } else {
-                None
-            }
-        })
-        .collect()
-}
-
-pub fn total_quantity(items: &[Item]) -> u32 {
-    items.iter().fold(0, |total, item| total + item.quantity)
-}
-
-pub fn priority_restock_notes(notes: &[String]) -> Vec<String> {
-    let mut priority_notes = Vec::new();
-
-    for note in notes {
-        let normalized = note.trim().to_lowercase();
-        if normalized.is_empty() {
-            continue;
-        }
-
-        let mentions_urgent = normalized.contains("urgent");
-        let mentions_stock = normalized.contains("stock");
-        let is_restock_alert = mentions_urgent || mentions_stock;
-
-        if is_restock_alert {
-            priority_notes.push(normalized);
-        }
-    }
-
-    priority_notes
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Inventory {
-    items: Vec<Item>,
-}
-
-impl Inventory {
-    pub fn new(items: Vec<Item>) -> Self {
-        Self { items }
-    }
-}
-
-// Continue from the previous lesson.
-// TODO: implement IntoIterator for Inventory.
-```
-
-#### `tests/public.rs` — test
-
-Source: `lessons/inventory-summary/005-intoiterator/tests/public.rs`
-
-```rust
-use rust_daily_lesson::{Inventory, Item};
-
-#[test]
-fn inventory_consumes_into_items() {
-    let inventory = Inventory::new(vec![
-        Item {
-            sku: "keyboard".to_owned(),
-            name: "Keyboard".to_owned(),
-            quantity: 10,
-            reserved: 0,
-        },
-        Item {
-            sku: "mouse".to_owned(),
-            name: "Mouse".to_owned(),
-            quantity: 4,
-            reserved: 0,
-        },
-    ]);
-    let names: Vec<_> = inventory.into_iter().map(|item| item.name).collect();
-
-    assert_eq!(names, vec!["Keyboard".to_owned(), "Mouse".to_owned()]);
-}
-```
-
-### Progressive hints
-
-1. Keep Inventory's items field private; the iterator can consume it from inside the impl.
-2. Vec<Item> already has an into_iter method that consumes the vector.
-3. The associated IntoIter type can reuse std::vec::IntoIter<Item>. The authored code is included in the Solution section.
-
-### Validation contract
-
-```json
-{
-  "mode": "all",
-  "validations": [
-    {
-      "mode": "structural",
-      "timeoutMs": 10000,
-      "checks": [
-        {
-          "type": "impl_trait_for_type",
-          "traitName": "IntoIterator",
-          "typeName": "Inventory"
-        },
-        {
-          "type": "source_includes",
-          "requiredSnippets": [
-            "type Item = Item",
-            "std::vec::IntoIter<Item>"
-          ]
-        }
-      ]
-    },
-    {
-      "mode": "backend-cargo-test",
-      "timeoutMs": 10000,
-      "dependencySet": "std",
-      "testFiles": [
-        {
-          "path": "tests/public.rs",
-          "sourcePath": "tests/public.rs"
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Authored solution
-
-#### `src/lib.rs`
-
-Source: `lessons/inventory-summary/005-intoiterator/solution/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Item {
-    pub sku: String,
-    pub name: String,
-    pub quantity: u32,
-    pub reserved: u32,
-}
-
-pub fn available_names(items: &[Item]) -> Vec<&str> {
-    items
-        .iter()
-        .filter_map(|item| {
-            if item.quantity > item.reserved {
-                Some(item.name.as_str())
-            } else {
-                None
-            }
-        })
-        .collect()
-}
-
-pub fn total_quantity(items: &[Item]) -> u32 {
-    items.iter().fold(0, |total, item| total + item.quantity)
-}
-
-pub fn priority_restock_notes(notes: &[String]) -> Vec<String> {
-    let mut priority_notes = Vec::new();
-
-    for note in notes {
-        let normalized = note.trim().to_lowercase();
-        if normalized.is_empty() {
-            continue;
-        }
-
-        let mentions_urgent = normalized.contains("urgent");
-        let mentions_stock = normalized.contains("stock");
-        let is_restock_alert = mentions_urgent || mentions_stock;
-
-        if is_restock_alert {
-            priority_notes.push(normalized);
-        }
-    }
-
-    priority_notes
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Inventory {
-    items: Vec<Item>,
-}
-
-impl Inventory {
-    pub fn new(items: Vec<Item>) -> Self {
-        Self { items }
-    }
-}
-
-impl IntoIterator for Inventory {
-    type Item = Item;
-    type IntoIter = std::vec::IntoIter<Item>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.items.into_iter()
-    }
-}
-```
-
-### Completion explanation
-
-IntoIterator lets Inventory participate in for loops and iterator adapters without exposing its internal field as public API.
-
-### Author notes
-
-Teaches intoiterator-wrapper through a focused, behavior-checked Rust micro-lesson.
-
----
-
-## 24. Check log filtering behavior
-
-Source: `lessons/log-lines/005-filter-tests`
-
-| Field | Value |
-| --- | --- |
-| Lesson ID | `log-filter-tests-005` |
-| Production lesson | [Open lesson](https://borrowquest.site/#lesson/log-filter-tests-005) |
-| Arc | Inspect log lines (step 5 of 5) |
-| Concept | Focused behavior checks (`focused-tests`) |
-| Difficulty | medium |
-| Estimated time | 8 minutes |
-
-### Scenario
-
-The log viewer should keep high-priority entries and discard routine information when asked for alerts.
-
-### Task
-
-The starter already defines AlertEntry and alert_messages. Fill in the two test TODO blocks with checks for keeping Error and Warn entries while excluding Info entries.
-
-### Concept context
-
-Write compact examples for important inclusion and exclusion behavior.
-
-- Prerequisites: `pattern-matching`, `filter-map`
-- Tags: `tests`, `examples`, `quality`
-
-### Starter project files
-
-#### `src/lib.rs` — editable
-
-Source: `lessons/log-lines/005-filter-tests/starter/src/lib.rs`
-
-```rust
-use std::borrow::Cow;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LogEntry<'a> {
-    pub level: &'a str,
-    pub message: &'a str,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LogView<'a> {
-    pub entries: &'a [LogEntry<'a>],
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LogLevel {
-    Info,
-    Warn,
-    Error,
-}
-
-pub fn alert_priority(level: LogLevel) -> u8 {
-    match level {
-        LogLevel::Info => 0,
-        LogLevel::Warn => 1,
-        LogLevel::Error => 2,
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LogMessage<'a> {
-    pub text: Cow<'a, str>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AlertEntry<'a> {
-    pub level: LogLevel,
-    pub message: LogMessage<'a>,
-}
-
-pub fn alert_messages<'a>(entries: &'a [AlertEntry<'a>]) -> Vec<&'a str> {
-    entries
-        .iter()
-        .filter_map(|entry| match entry.level {
-            LogLevel::Warn | LogLevel::Error => Some(entry.message.text.as_ref()),
-            LogLevel::Info => None,
-        })
-        .collect()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn entry(level: LogLevel, message: &'static str) -> AlertEntry<'static> {
-        AlertEntry {
-            level,
-            message: LogMessage {
-                text: message.into(),
-            },
-        }
-    }
-
-    #[test]
-    fn keeps_warning_and_error_messages() {
-        // TODO: assert that warning and error messages are returned in order.
-        todo!()
-    }
-
-    #[test]
-    fn skips_info_messages() {
-        // TODO: assert that info messages are not returned.
-        todo!()
-    }
-}
-
-// Continue from the previous lesson.
-// TODO: fill in the two focused alert filter checks above.
-```
-
-#### `tests/public.rs` — test
-
-Source: `lessons/log-lines/005-filter-tests/tests/public.rs`
-
-```rust
-use rust_daily_lesson::{alert_messages, AlertEntry, LogLevel, LogMessage};
-
-fn entry(level: LogLevel, message: &'static str) -> AlertEntry<'static> {
-    AlertEntry {
-        level,
-        message: LogMessage {
-            text: message.into(),
-        },
-    }
-}
-
-#[test]
-fn alert_filter_keeps_only_warnings_and_errors() {
-    let entries = [
-        entry(LogLevel::Info, "started"),
-        entry(LogLevel::Warn, "slow response"),
-        entry(LogLevel::Error, "write failed"),
-    ];
-
-    assert_eq!(
-        alert_messages(&entries),
-        vec!["slow response", "write failed"]
-    );
-}
-```
-
-### Progressive hints
-
-1. Use the provided entry helper to build a small array of alert entries.
-2. The first test should prove that warning and error messages are retained in order.
-3. The second test should make the Info exclusion explicit. The authored code is included in the Solution section.
-
-### Validation contract
-
-```json
-{
-  "mode": "all",
-  "validations": [
-    {
-      "mode": "structural",
-      "timeoutMs": 10000,
-      "checks": [
-        {
-          "type": "function_signature",
-          "functionName": "alert_messages",
-          "requiredSignatureIncludes": [
-            "Vec<&str>"
-          ]
-        },
-        {
-          "type": "source_includes",
-          "requiredSnippets": [
-            "assert_eq!",
-            "LogLevel::Warn",
-            "LogLevel::Error",
-            "LogLevel::Info"
-          ]
-        }
-      ]
-    },
-    {
-      "mode": "backend-cargo-test",
-      "timeoutMs": 10000,
-      "dependencySet": "std",
-      "testFiles": [
-        {
-          "path": "tests/public.rs",
-          "sourcePath": "tests/public.rs"
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Authored solution
-
-#### `src/lib.rs`
-
-Source: `lessons/log-lines/005-filter-tests/solution/src/lib.rs`
-
-```rust
-use std::borrow::Cow;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LogEntry<'a> {
-    pub level: &'a str,
-    pub message: &'a str,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LogView<'a> {
-    pub entries: &'a [LogEntry<'a>],
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LogLevel {
-    Info,
-    Warn,
-    Error,
-}
-
-pub fn alert_priority(level: LogLevel) -> u8 {
-    match level {
-        LogLevel::Info => 0,
-        LogLevel::Warn => 1,
-        LogLevel::Error => 2,
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LogMessage<'a> {
-    pub text: Cow<'a, str>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AlertEntry<'a> {
-    pub level: LogLevel,
-    pub message: LogMessage<'a>,
-}
-
-pub fn alert_messages<'a>(entries: &'a [AlertEntry<'a>]) -> Vec<&'a str> {
-    entries
-        .iter()
-        .filter_map(|entry| match entry.level {
-            LogLevel::Warn | LogLevel::Error => Some(entry.message.text.as_ref()),
-            LogLevel::Info => None,
-        })
-        .collect()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn entry(level: LogLevel, message: &'static str) -> AlertEntry<'static> {
-        AlertEntry {
-            level,
-            message: LogMessage {
-                text: message.into(),
-            },
-        }
-    }
-
-    #[test]
-    fn keeps_warning_and_error_messages() {
-        let entries = [
-            entry(LogLevel::Warn, "slow response"),
-            entry(LogLevel::Error, "write failed"),
-        ];
-
-        assert_eq!(
-            alert_messages(&entries),
-            vec!["slow response", "write failed"]
-        );
-    }
-
-    #[test]
-    fn skips_info_messages() {
-        let entries = [
-            entry(LogLevel::Info, "started"),
-            entry(LogLevel::Warn, "slow response"),
-        ];
-
-        assert_eq!(alert_messages(&entries), vec!["slow response"]);
-    }
-}
-```
-
-### Completion explanation
-
-Focused behavior checks document the alert filtering contract. They make the important inclusion and exclusion rules visible for the next reader.
-
-### Author notes
-
-Teaches focused-tests through a focused, behavior-checked Rust micro-lesson.
-
----
-
-## 25. Convert RawRequest with TryFrom
-
-Source: `lessons/request-api/005-builder-tryfrom`
-
-| Field | Value |
-| --- | --- |
-| Lesson ID | `request-builder-tryfrom-005` |
-| Production lesson | [Open lesson](https://borrowquest.site/#lesson/request-builder-tryfrom-005) |
-| Arc | Build a request API (step 5 of 6) |
-| Concept | TryFrom for request data (`tryfrom-request`) |
-| Difficulty | medium |
-| Estimated time | 8 minutes |
-
-### Scenario
-
-A small input DTO can be converted into a validated Request using the same fallible conversion pattern as parser code.
-
-### Task
-
-The starter defines RawRequest with optional method, path, and body. Implement TryFrom<RawRequest> for Request, use BuildError as the associated error type, and preserve the optional body.
-
-### Concept context
-
-Convert a raw input type into a validated request with TryFrom.
-
-- Prerequisites: `builder-result`, `tryfrom-user`
-- Tags: `tryfrom`, `api-design`, `conversion`
-
-### Starter project files
-
-#### `src/lib.rs` — editable
-
-Source: `lessons/request-api/005-builder-tryfrom/starter/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Request {
-    pub method: String,
-    pub path: String,
-    pub body: Option<String>,
-}
-
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct RequestBuilder {
-    method: Option<String>,
-    path: Option<String>,
-}
-
-impl RequestBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn method(mut self, method: impl Into<String>) -> Self {
-        self.method = Some(method.into());
-        self
-    }
-
-    pub fn path(mut self, path: impl Into<String>) -> Self {
-        self.path = Some(path.into());
-        self
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum BuildError {
-    MissingMethod,
-    MissingPath,
-}
-
-impl RequestBuilder {
-    pub fn build(self) -> Result<Request, BuildError> {
-        let method = self.method.ok_or(BuildError::MissingMethod)?;
-        let path = self.path.ok_or(BuildError::MissingPath)?;
-
-        Ok(Request {
-            method,
-            path,
-            body: None,
-        })
-    }
-}
-
-pub struct RawRequest {
-    pub method: Option<String>,
-    pub path: Option<String>,
-    pub body: Option<String>,
-}
-
-// Continue from the previous lesson.
-// TODO: implement TryFrom<RawRequest> for Request.
-```
-
-#### `tests/public.rs` — test
-
-Source: `lessons/request-api/005-builder-tryfrom/tests/public.rs`
-
-```rust
-use rust_daily_lesson::{BuildError, RawRequest, Request};
-
-#[test]
-fn converts_complete_raw_request() {
-    assert_eq!(
-        Request::try_from(RawRequest {
-            method: Some("GET".to_owned()),
-            path: Some("/health".to_owned()),
-            body: Some("{}".to_owned()),
-        }),
-        Ok(Request {
-            method: "GET".to_owned(),
-            path: "/health".to_owned(),
-            body: Some("{}".to_owned()),
-        })
-    );
-}
-
-#[test]
-fn reports_missing_request_fields() {
-    assert_eq!(
-        Request::try_from(RawRequest {
-            method: None,
-            path: Some("/health".to_owned()),
-            body: None,
-        }),
-        Err(BuildError::MissingMethod)
-    );
-    assert_eq!(
-        Request::try_from(RawRequest {
-            method: Some("GET".to_owned()),
-            path: None,
-            body: None,
-        }),
-        Err(BuildError::MissingPath)
-    );
-}
-```
-
-### Progressive hints
-
-1. TryFrom is appropriate because RawRequest may be missing required data.
-2. The associated Error type should be BuildError.
-3. Use ok_or to extract required fields, then move value.body into the Request. The authored code is included in the Solution section.
-
-### Validation contract
-
-```json
-{
-  "mode": "all",
-  "validations": [
-    {
-      "mode": "structural",
-      "timeoutMs": 10000,
-      "checks": [
-        {
-          "type": "impl_trait_for_type",
-          "traitName": "TryFrom<RawRequest>",
-          "typeName": "Request"
-        },
-        {
-          "type": "source_includes",
-          "requiredSnippets": [
-            "type Error = BuildError",
-            "fn try_from",
-            "value.body"
-          ]
-        }
-      ]
-    },
-    {
-      "mode": "backend-cargo-test",
-      "timeoutMs": 10000,
-      "dependencySet": "std",
-      "testFiles": [
-        {
-          "path": "tests/public.rs",
-          "sourcePath": "tests/public.rs"
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Authored solution
-
-#### `src/lib.rs`
-
-Source: `lessons/request-api/005-builder-tryfrom/solution/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Request {
-    pub method: String,
-    pub path: String,
-    pub body: Option<String>,
-}
-
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct RequestBuilder {
-    method: Option<String>,
-    path: Option<String>,
-}
-
-impl RequestBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn method(mut self, method: impl Into<String>) -> Self {
-        self.method = Some(method.into());
-        self
-    }
-
-    pub fn path(mut self, path: impl Into<String>) -> Self {
-        self.path = Some(path.into());
-        self
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BuildError {
-    MissingMethod,
-    MissingPath,
-}
-
-impl RequestBuilder {
-    pub fn build(self) -> Result<Request, BuildError> {
-        let method = self.method.ok_or(BuildError::MissingMethod)?;
-        let path = self.path.ok_or(BuildError::MissingPath)?;
-
-        Ok(Request {
-            method,
-            path,
-            body: None,
-        })
-    }
-}
-
-pub struct RawRequest {
-    pub method: Option<String>,
-    pub path: Option<String>,
-    pub body: Option<String>,
-}
-
-impl std::convert::TryFrom<RawRequest> for Request {
-    type Error = BuildError;
-
-    fn try_from(value: RawRequest) -> Result<Self, Self::Error> {
-        let method = value.method.ok_or(BuildError::MissingMethod)?;
-        let path = value.path.ok_or(BuildError::MissingPath)?;
-        let body = value.body;
-
-        Ok(Self { method, path, body })
-    }
-}
-```
-
-### Completion explanation
-
-TryFrom turns a possibly incomplete input type into a validated domain type. The conversion API clearly communicates that failure is possible.
-
-### Author notes
-
-Teaches tryfrom-request through a focused, behavior-checked Rust micro-lesson.
-
----
-
-## 26. Borrow config candidates
+## 6. Borrow config candidates
 
 Source: `lessons/config-service/006-config-borrowed-key`
 
@@ -5316,416 +1340,113 @@ candidates without consuming or cloning the candidate list.
 
 ---
 
-## 27. Sort items by borrowed comparison
+## 7. Design a parse error enum
 
-Source: `lessons/inventory-summary/006-sort-by-name`
-
-| Field | Value |
-| --- | --- |
-| Lesson ID | `inventory-sort-by-key-006` |
-| Production lesson | [Open lesson](https://borrowquest.site/#lesson/inventory-sort-by-key-006) |
-| Arc | Summarize inventory (step 6 of 6) |
-| Concept | Borrowed sort comparisons (`sort-by-key`) |
-| Difficulty | easy |
-| Estimated time | 5 minutes |
-
-### Scenario
-
-Before rendering an inventory table, the service wants stable alphabetical ordering by item name without allocating temporary sort keys.
-
-### Task
-
-Add sort_by_name without cloning item names. Sort the mutable slice by comparing each item's borrowed name.
-
-### Concept context
-
-Sort slices by comparing borrowed fields when cloning a key would be wasteful.
-
-- Prerequisites: `domain-structs`
-- Tags: `collections`, `sorting`, `borrowing`
-
-### Starter project files
-
-#### `src/lib.rs` — editable
-
-Source: `lessons/inventory-summary/006-sort-by-name/starter/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Item {
-    pub sku: String,
-    pub name: String,
-    pub quantity: u32,
-    pub reserved: u32,
-}
-
-pub fn available_names(items: &[Item]) -> Vec<&str> {
-    items
-        .iter()
-        .filter_map(|item| {
-            if item.quantity > item.reserved {
-                Some(item.name.as_str())
-            } else {
-                None
-            }
-        })
-        .collect()
-}
-
-pub fn total_quantity(items: &[Item]) -> u32 {
-    items.iter().fold(0, |total, item| total + item.quantity)
-}
-
-pub fn priority_restock_notes(notes: &[String]) -> Vec<String> {
-    let mut priority_notes = Vec::new();
-
-    for note in notes {
-        let normalized = note.trim().to_lowercase();
-        if normalized.is_empty() {
-            continue;
-        }
-
-        let mentions_urgent = normalized.contains("urgent");
-        let mentions_stock = normalized.contains("stock");
-        let is_restock_alert = mentions_urgent || mentions_stock;
-
-        if is_restock_alert {
-            priority_notes.push(normalized);
-        }
-    }
-
-    priority_notes
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Inventory {
-    items: Vec<Item>,
-}
-
-impl Inventory {
-    pub fn new(items: Vec<Item>) -> Self {
-        Self { items }
-    }
-}
-
-impl IntoIterator for Inventory {
-    type Item = Item;
-    type IntoIter = std::vec::IntoIter<Item>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.items.into_iter()
-    }
-}
-
-// Continue from the previous lesson.
-// TODO: sort by borrowed item names without cloning.
-```
-
-#### `tests/public.rs` — test
-
-Source: `lessons/inventory-summary/006-sort-by-name/tests/public.rs`
-
-```rust
-use rust_daily_lesson::{sort_by_name, Item};
-
-#[test]
-fn sorts_items_by_name() {
-    let mut items = vec![
-        Item {
-            sku: "mouse".to_owned(),
-            name: "Mouse".to_owned(),
-            quantity: 4,
-            reserved: 0,
-        },
-        Item {
-            sku: "keyboard".to_owned(),
-            name: "Keyboard".to_owned(),
-            quantity: 10,
-            reserved: 0,
-        },
-    ];
-
-    sort_by_name(&mut items);
-
-    assert_eq!(items[0].name, "Keyboard");
-    assert_eq!(items[1].name, "Mouse");
-}
-```
-
-### Progressive hints
-
-1. Slices expose in-place sorting methods.
-2. For String fields, sort_by with name.cmp(&other.name) avoids allocating cloned keys.
-3. The comparison closure receives two item references: left and right. The authored code is included in the Solution section.
-
-### Validation contract
-
-```json
-{
-  "mode": "all",
-  "validations": [
-    {
-      "mode": "structural",
-      "timeoutMs": 10000,
-      "checks": [
-        {
-          "type": "function_signature",
-          "functionName": "sort_by_name",
-          "requiredSignatureIncludes": [
-            "&mut [Item]"
-          ]
-        },
-        {
-          "type": "source_includes",
-          "requiredSnippets": [
-            "sort_by",
-            ".cmp(&"
-          ],
-          "forbiddenSnippets": [
-            "clone",
-            "to_owned",
-            "to_string",
-            "sort_by_key"
-          ]
-        }
-      ]
-    },
-    {
-      "mode": "backend-cargo-test",
-      "timeoutMs": 10000,
-      "dependencySet": "std",
-      "testFiles": [
-        {
-          "path": "tests/public.rs",
-          "sourcePath": "tests/public.rs"
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Authored solution
-
-#### `src/lib.rs`
-
-Source: `lessons/inventory-summary/006-sort-by-name/solution/src/lib.rs`
-
-```rust
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Item {
-    pub sku: String,
-    pub name: String,
-    pub quantity: u32,
-    pub reserved: u32,
-}
-
-pub fn available_names(items: &[Item]) -> Vec<&str> {
-    items
-        .iter()
-        .filter_map(|item| {
-            if item.quantity > item.reserved {
-                Some(item.name.as_str())
-            } else {
-                None
-            }
-        })
-        .collect()
-}
-
-pub fn total_quantity(items: &[Item]) -> u32 {
-    items.iter().fold(0, |total, item| total + item.quantity)
-}
-
-pub fn priority_restock_notes(notes: &[String]) -> Vec<String> {
-    let mut priority_notes = Vec::new();
-
-    for note in notes {
-        let normalized = note.trim().to_lowercase();
-        if normalized.is_empty() {
-            continue;
-        }
-
-        let mentions_urgent = normalized.contains("urgent");
-        let mentions_stock = normalized.contains("stock");
-        let is_restock_alert = mentions_urgent || mentions_stock;
-
-        if is_restock_alert {
-            priority_notes.push(normalized);
-        }
-    }
-
-    priority_notes
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Inventory {
-    items: Vec<Item>,
-}
-
-impl Inventory {
-    pub fn new(items: Vec<Item>) -> Self {
-        Self { items }
-    }
-}
-
-impl IntoIterator for Inventory {
-    type Item = Item;
-    type IntoIter = std::vec::IntoIter<Item>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.items.into_iter()
-    }
-}
-
-pub fn sort_by_name(items: &mut [Item]) {
-    items.sort_by(|left, right| left.name.cmp(&right.name));
-}
-```
-
-### Completion explanation
-
-Sorting by borrowed comparison keeps the ordering rule close to the sort call without cloning every String. That is usually the better API choice when the key is already stored in each item.
-
-### Author notes
-
-Teaches sort-by-key through a focused, behavior-checked Rust micro-lesson.
-
----
-
-## 28. Document the request builder
-
-Source: `lessons/request-api/006-doc-example`
+Source: `lessons/parse-user/001-error-enum`
 
 | Field | Value |
 | --- | --- |
-| Lesson ID | `request-doc-example-006` |
-| Production lesson | [Open lesson](https://borrowquest.site/#lesson/request-doc-example-006) |
-| Arc | Build a request API (step 6 of 6) |
-| Concept | Documentation examples (`doc-examples`) |
+| Lesson ID | `error-enum-parse-user-001` |
+| Production lesson | [Open lesson](https://borrowquest.site/#lesson/error-enum-parse-user-001) |
+| Arc | Parse a user from text (step 1 of 7) |
+| Concept | Error enum design (`error-enum-design`) |
 | Difficulty | easy |
 | Estimated time | 7 minutes |
 
 ### Scenario
 
-The request API is small enough that one doc example can show its intended usage better than a long paragraph.
+A small user parser needs a typed error instead of string errors. Today you are defining the public error type that the rest of the parser arc will build on.
 
 ### Task
 
-Add a short doc comment example above RequestBuilder. Show creating a builder, setting method and path, and checking the Result from build without unwrap or expect.
+Replace the TODO with ParseUserError variants for the parser cases below: MissingId, MissingName, MissingEmail, and InvalidId.
 
 ### Concept context
 
-Write doc examples that show fallible APIs without unwrap or expect.
+Model distinct parser failure modes with a typed Rust enum instead of stringly typed errors.
 
-- Prerequisites: `tryfrom-request`
-- Tags: `docs`, `examples`, `api-design`
+- Prerequisites: None
+- Tags: `enums`, `errors`, `api-design`, `parsing`
 
 ### Starter project files
 
 #### `src/lib.rs` — editable
 
-Source: `lessons/request-api/006-doc-example/starter/src/lib.rs`
+Source: `lessons/parse-user/001-error-enum/starter/src/lib.rs`
 
 ```rust
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Request {
-    pub method: String,
-    pub path: String,
-    pub body: Option<String>,
+pub struct User {
+    pub id: u64,
+    pub name: String,
+    pub email: String,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct RequestBuilder {
-    method: Option<String>,
-    path: Option<String>,
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ParseUserError {
+    // TODO: add one variant for each parser failure case.
 }
 
-impl RequestBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
+pub fn parse_user(input: &str) -> Result<User, ParseUserError> {
+    let mut parts = input.split(',');
 
-    pub fn method(mut self, method: impl Into<String>) -> Self {
-        self.method = Some(method.into());
-        self
-    }
+    let id_text = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingId)?;
+    let id = id_text
+        .parse::<u64>()
+        .map_err(|_| ParseUserError::InvalidId)?;
+    let name = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingName)?;
+    let email = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingEmail)?;
 
-    pub fn path(mut self, path: impl Into<String>) -> Self {
-        self.path = Some(path.into());
-        self
-    }
+    Ok(User {
+        id,
+        name: name.to_owned(),
+        email: email.to_owned(),
+    })
 }
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BuildError {
-    MissingMethod,
-    MissingPath,
-}
-
-impl RequestBuilder {
-    pub fn build(self) -> Result<Request, BuildError> {
-        let method = self.method.ok_or(BuildError::MissingMethod)?;
-        let path = self.path.ok_or(BuildError::MissingPath)?;
-
-        Ok(Request {
-            method,
-            path,
-            body: None,
-        })
-    }
-}
-
-pub struct RawRequest {
-    pub method: Option<String>,
-    pub path: Option<String>,
-    pub body: Option<String>,
-}
-
-impl std::convert::TryFrom<RawRequest> for Request {
-    type Error = BuildError;
-
-    fn try_from(value: RawRequest) -> Result<Self, Self::Error> {
-        let method = value.method.ok_or(BuildError::MissingMethod)?;
-        let path = value.path.ok_or(BuildError::MissingPath)?;
-        let body = value.body;
-
-        Ok(Self { method, path, body })
-    }
-}
-
-// Continue from the previous lesson.
-// TODO: add a doc comment example above RequestBuilder.
 ```
 
 #### `tests/public.rs` — test
 
-Source: `lessons/request-api/006-doc-example/tests/public.rs`
+Source: `lessons/parse-user/001-error-enum/tests/public.rs`
 
 ```rust
-use rust_daily_lesson::{Request, RequestBuilder};
+use rust_daily_lesson::{parse_user, ParseUserError, User};
 
 #[test]
-fn documented_builder_flow_works() {
+fn parses_valid_user() {
     assert_eq!(
-        RequestBuilder::default()
-            .method("GET")
-            .path("/health")
-            .build(),
-        Ok(Request {
-            method: "GET".to_owned(),
-            path: "/health".to_owned(),
-            body: None,
+        parse_user("42,Ada,ada@example.com"),
+        Ok(User {
+            id: 42,
+            name: "Ada".to_owned(),
+            email: "ada@example.com".to_owned(),
         })
     );
+}
+
+#[test]
+fn returns_named_parse_errors() {
+    assert_eq!(parse_user(""), Err(ParseUserError::MissingId));
+    assert_eq!(parse_user("42,,ada@example.com"), Err(ParseUserError::MissingName));
+    assert_eq!(parse_user("42,Ada"), Err(ParseUserError::MissingEmail));
+    assert_eq!(parse_user("nope,Ada,ada@example.com"), Err(ParseUserError::InvalidId));
 }
 ```
 
 ### Progressive hints
 
-1. Doc comments use /// before the item they describe.
-2. A compact example should show the normal path and assert on the Result instead of unwrapping it.
-3. Keep the example focused on how a caller should read the API. The authored code is included in the Solution section.
+1. The parser already names every failure case it wants to return.
+2. Each distinct failure mode should usually become its own enum variant.
+3. Keep these as programmatic enum variants; human-facing text comes later with Display. The authored code is included in the Solution section.
 
 ### Validation contract
 
@@ -5738,16 +1459,13 @@ fn documented_builder_flow_works() {
       "timeoutMs": 10000,
       "checks": [
         {
-          "type": "source_includes",
-          "requiredSnippets": [
-            "///",
-            "RequestBuilder::default()",
-            "assert_eq!"
-          ],
-          "forbiddenSnippets": [
-            ".unwrap()",
-            ".expect(",
-            "panic!"
+          "type": "enum_unit_variants",
+          "enumName": "ParseUserError",
+          "requiredVariants": [
+            "MissingId",
+            "MissingName",
+            "MissingEmail",
+            "InvalidId"
           ]
         }
       ]
@@ -5771,104 +1489,1016 @@ fn documented_builder_flow_works() {
 
 #### `src/lib.rs`
 
-Source: `lessons/request-api/006-doc-example/solution/src/lib.rs`
+Source: `lessons/parse-user/001-error-enum/solution/src/lib.rs`
 
-````rust
+```rust
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Request {
-    pub method: String,
-    pub path: String,
-    pub body: Option<String>,
+pub struct User {
+    pub id: u64,
+    pub name: String,
+    pub email: String,
 }
 
-/// Builds a request from chainable setters.
-///
-/// ```
-/// use rust_daily_lesson::{Request, RequestBuilder};
-///
-/// let request = RequestBuilder::default()
-///     .method("GET")
-///     .path("/health")
-///     .build();
-///
-/// assert_eq!(
-///     request,
-///     Ok(Request {
-///         method: "GET".to_owned(),
-///         path: "/health".to_owned(),
-///         body: None,
-///     })
-/// );
-/// ```
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct RequestBuilder {
-    method: Option<String>,
-    path: Option<String>,
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ParseUserError {
+    MissingId,
+    MissingName,
+    MissingEmail,
+    InvalidId,
 }
 
-impl RequestBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
+pub fn parse_user(input: &str) -> Result<User, ParseUserError> {
+    let mut parts = input.split(',');
 
-    pub fn method(mut self, method: impl Into<String>) -> Self {
-        self.method = Some(method.into());
-        self
-    }
+    let id_text = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingId)?;
+    let id = id_text
+        .parse::<u64>()
+        .map_err(|_| ParseUserError::InvalidId)?;
+    let name = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingName)?;
+    let email = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingEmail)?;
 
-    pub fn path(mut self, path: impl Into<String>) -> Self {
-        self.path = Some(path.into());
-        self
-    }
-
-    pub fn build(self) -> Result<Request, BuildError> {
-        let method = self.method.ok_or(BuildError::MissingMethod)?;
-        let path = self.path.ok_or(BuildError::MissingPath)?;
-
-        Ok(Request {
-            method,
-            path,
-            body: None,
-        })
-    }
+    Ok(User {
+        id,
+        name: name.to_owned(),
+        email: email.to_owned(),
+    })
 }
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BuildError {
-    MissingMethod,
-    MissingPath,
-}
-
-pub struct RawRequest {
-    pub method: Option<String>,
-    pub path: Option<String>,
-    pub body: Option<String>,
-}
-
-impl std::convert::TryFrom<RawRequest> for Request {
-    type Error = BuildError;
-
-    fn try_from(value: RawRequest) -> Result<Self, Self::Error> {
-        let method = value.method.ok_or(BuildError::MissingMethod)?;
-        let path = value.path.ok_or(BuildError::MissingPath)?;
-        let body = value.body;
-
-        Ok(Self { method, path, body })
-    }
-}
-````
+```
 
 ### Completion explanation
 
-A doc example teaches the API at the point of use. Showing Result-aware usage keeps the documentation aligned with fallible, production-style builder APIs.
+Each parser failure now has a named enum variant. Empty fields and invalid IDs become typed results that callers can match on instead of parsing strings or comparing error messages.
 
 ### Author notes
 
-Teaches doc-examples through a focused, behavior-checked Rust micro-lesson.
+Teaches error-enum-design through a focused, behavior-checked Rust micro-lesson.
 
 ---
 
-## 29. Parse User with TryFrom
+## 8. Format parse errors for people
+
+Source: `lessons/parse-user/002-display-error`
+
+| Field | Value |
+| --- | --- |
+| Lesson ID | `display-parse-user-error-002` |
+| Production lesson | [Open lesson](https://borrowquest.site/#lesson/display-parse-user-error-002) |
+| Arc | Parse a user from text (step 2 of 7) |
+| Concept | Display for errors (`display-parse-error`) |
+| Difficulty | easy |
+| Estimated time | 8 minutes |
+
+### Scenario
+
+Callers can match on ParseUserError, but logs and command-line output still need clear human-readable messages.
+
+### Task
+
+Implement std::fmt::Display for ParseUserError. Use a match on self and write a short message for each variant.
+
+### Concept context
+
+Implement human-readable formatting while keeping the error type programmatic.
+
+- Prerequisites: `error-enum-design`
+- Tags: `display`, `errors`, `formatting`
+
+### Starter project files
+
+#### `src/lib.rs` — editable
+
+Source: `lessons/parse-user/002-display-error/starter/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct User {
+    pub id: u64,
+    pub name: String,
+    pub email: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ParseUserError {
+    MissingId,
+    MissingName,
+    MissingEmail,
+    InvalidId,
+}
+
+pub fn parse_user(input: &str) -> Result<User, ParseUserError> {
+    let mut parts = input.split(',');
+
+    let id_text = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingId)?;
+    let id = id_text
+        .parse::<u64>()
+        .map_err(|_| ParseUserError::InvalidId)?;
+    let name = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingName)?;
+    let email = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingEmail)?;
+
+    Ok(User {
+        id,
+        name: name.to_owned(),
+        email: email.to_owned(),
+    })
+}
+
+// Continue from the previous lesson.
+// TODO: implement std::fmt::Display for ParseUserError.
+```
+
+#### `tests/public.rs` — test
+
+Source: `lessons/parse-user/002-display-error/tests/public.rs`
+
+```rust
+use rust_daily_lesson::ParseUserError;
+
+#[test]
+fn formats_parse_errors_for_people() {
+    assert_eq!(ParseUserError::MissingId.to_string(), "missing id");
+    assert_eq!(ParseUserError::MissingName.to_string(), "missing name");
+    assert_eq!(ParseUserError::MissingEmail.to_string(), "missing email");
+    assert_eq!(ParseUserError::InvalidId.to_string(), "invalid id");
+}
+```
+
+### Progressive hints
+
+1. Display is implemented with fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result.
+2. A match on self keeps one message next to each error case.
+3. Use write!(f, "...") inside each match arm. The authored code is included in the Solution section.
+
+### Validation contract
+
+```json
+{
+  "mode": "all",
+  "validations": [
+    {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "impl_trait_for_type",
+          "traitName": "std::fmt::Display",
+          "typeName": "ParseUserError"
+        },
+        {
+          "type": "source_includes",
+          "requiredSnippets": [
+            "fn fmt",
+            "match self"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "testFiles": [
+        {
+          "path": "tests/public.rs",
+          "sourcePath": "tests/public.rs"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Authored solution
+
+#### `src/lib.rs`
+
+Source: `lessons/parse-user/002-display-error/solution/src/lib.rs`
+
+```rust
+use std::fmt;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct User {
+    pub id: u64,
+    pub name: String,
+    pub email: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ParseUserError {
+    MissingId,
+    MissingName,
+    MissingEmail,
+    InvalidId,
+}
+
+pub fn parse_user(input: &str) -> Result<User, ParseUserError> {
+    let mut parts = input.split(',');
+
+    let id_text = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingId)?;
+    let id = id_text
+        .parse::<u64>()
+        .map_err(|_| ParseUserError::InvalidId)?;
+    let name = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingName)?;
+    let email = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingEmail)?;
+
+    Ok(User {
+        id,
+        name: name.to_owned(),
+        email: email.to_owned(),
+    })
+}
+
+impl fmt::Display for ParseUserError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ParseUserError::MissingId => write!(f, "missing id"),
+            ParseUserError::MissingName => write!(f, "missing name"),
+            ParseUserError::MissingEmail => write!(f, "missing email"),
+            ParseUserError::InvalidId => write!(f, "invalid id"),
+        }
+    }
+}
+```
+
+### Completion explanation
+
+Display separates the typed error representation from the text shown to users. The enum stays useful for programs, while fmt gives each case a stable message.
+
+### Author notes
+
+Teaches display-parse-error through a focused, behavior-checked Rust micro-lesson.
+
+---
+
+## 9. Mark the parse error as an Error
+
+Source: `lessons/parse-user/003-error-trait`
+
+| Field | Value |
+| --- | --- |
+| Lesson ID | `error-trait-parse-user-error-003` |
+| Production lesson | [Open lesson](https://borrowquest.site/#lesson/error-trait-parse-user-error-003) |
+| Arc | Parse a user from text (step 3 of 7) |
+| Concept | Error trait (`error-trait`) |
+| Difficulty | easy |
+| Estimated time | 5 minutes |
+
+### Scenario
+
+The parser error now has Display. Implementing the standard Error trait lets it fit into normal Rust error handling APIs.
+
+### Task
+
+Add an implementation of std::error::Error for ParseUserError. No custom methods are needed yet.
+
+### Concept context
+
+Mark a displayable error type as a standard Rust error.
+
+- Prerequisites: `display-parse-error`
+- Tags: `errors`, `traits`
+
+### Starter project files
+
+#### `src/lib.rs` — editable
+
+Source: `lessons/parse-user/003-error-trait/starter/src/lib.rs`
+
+```rust
+use std::fmt;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct User {
+    pub id: u64,
+    pub name: String,
+    pub email: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ParseUserError {
+    MissingId,
+    MissingName,
+    MissingEmail,
+    InvalidId,
+}
+
+pub fn parse_user(input: &str) -> Result<User, ParseUserError> {
+    let mut parts = input.split(',');
+
+    let id_text = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingId)?;
+    let id = id_text
+        .parse::<u64>()
+        .map_err(|_| ParseUserError::InvalidId)?;
+    let name = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingName)?;
+    let email = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingEmail)?;
+
+    Ok(User {
+        id,
+        name: name.to_owned(),
+        email: email.to_owned(),
+    })
+}
+
+impl fmt::Display for ParseUserError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ParseUserError::MissingId => write!(f, "missing id"),
+            ParseUserError::MissingName => write!(f, "missing name"),
+            ParseUserError::MissingEmail => write!(f, "missing email"),
+            ParseUserError::InvalidId => write!(f, "invalid id"),
+        }
+    }
+}
+
+// Continue from the previous lesson.
+// TODO: implement std::error::Error for ParseUserError.
+```
+
+#### `tests/public.rs` — test
+
+Source: `lessons/parse-user/003-error-trait/tests/public.rs`
+
+```rust
+use rust_daily_lesson::ParseUserError;
+
+fn assert_error<E: std::error::Error>() {}
+
+#[test]
+fn parse_user_error_is_standard_error() {
+    assert_error::<ParseUserError>();
+}
+```
+
+### Progressive hints
+
+1. Error is the standard marker trait for error values.
+2. Because Display and Debug already exist, this implementation can be empty.
+3. The form is impl std::error::Error for ParseUserError {}. The authored code is included in the Solution section.
+
+### Validation contract
+
+```json
+{
+  "mode": "all",
+  "validations": [
+    {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "impl_trait_for_type",
+          "traitName": "std::error::Error",
+          "typeName": "ParseUserError"
+        }
+      ]
+    },
+    {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "testFiles": [
+        {
+          "path": "tests/public.rs",
+          "sourcePath": "tests/public.rs"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Authored solution
+
+#### `src/lib.rs`
+
+Source: `lessons/parse-user/003-error-trait/solution/src/lib.rs`
+
+```rust
+use std::fmt;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct User {
+    pub id: u64,
+    pub name: String,
+    pub email: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ParseUserError {
+    MissingId,
+    MissingName,
+    MissingEmail,
+    InvalidId,
+}
+
+pub fn parse_user(input: &str) -> Result<User, ParseUserError> {
+    let mut parts = input.split(',');
+
+    let id_text = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingId)?;
+    let id = id_text
+        .parse::<u64>()
+        .map_err(|_| ParseUserError::InvalidId)?;
+    let name = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingName)?;
+    let email = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingEmail)?;
+
+    Ok(User {
+        id,
+        name: name.to_owned(),
+        email: email.to_owned(),
+    })
+}
+
+impl fmt::Display for ParseUserError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ParseUserError::MissingId => write!(f, "missing id"),
+            ParseUserError::MissingName => write!(f, "missing name"),
+            ParseUserError::MissingEmail => write!(f, "missing email"),
+            ParseUserError::InvalidId => write!(f, "invalid id"),
+        }
+    }
+}
+
+impl std::error::Error for ParseUserError {}
+```
+
+### Completion explanation
+
+Implementing Error makes ParseUserError compatible with APIs that accept standard Rust errors. Empty implementations are common when there is no source error to expose.
+
+### Author notes
+
+Teaches error-trait through a focused, behavior-checked Rust micro-lesson.
+
+---
+
+## 10. Preserve the ID parse source
+
+Source: `lessons/parse-user/004-source-parse-int`
+
+| Field | Value |
+| --- | --- |
+| Lesson ID | `source-parse-int-error-004` |
+| Production lesson | [Open lesson](https://borrowquest.site/#lesson/source-parse-int-error-004) |
+| Arc | Parse a user from text (step 4 of 7) |
+| Concept | Source errors (`error-source`) |
+| Difficulty | medium |
+| Estimated time | 8 minutes |
+
+### Scenario
+
+Invalid IDs come from ParseIntError. Keeping that source error helps diagnostics without giving up the typed ParseUserError API.
+
+### Task
+
+Change InvalidId so it stores ParseIntError. Update parse_user to pass the parse error through map_err instead of discarding it, and expose it from Error::source.
+
+### Concept context
+
+Preserve lower-level error values inside higher-level domain errors.
+
+- Prerequisites: `error-trait`
+- Tags: `errors`, `parsing`, `diagnostics`
+
+### Starter project files
+
+#### `src/lib.rs` — editable
+
+Source: `lessons/parse-user/004-source-parse-int/starter/src/lib.rs`
+
+```rust
+use std::fmt;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct User {
+    pub id: u64,
+    pub name: String,
+    pub email: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ParseUserError {
+    MissingId,
+    MissingName,
+    MissingEmail,
+    InvalidId,
+}
+
+pub fn parse_user(input: &str) -> Result<User, ParseUserError> {
+    let mut parts = input.split(',');
+
+    let id_text = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingId)?;
+    let id = id_text
+        .parse::<u64>()
+        .map_err(|_| ParseUserError::InvalidId)?;
+    let name = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingName)?;
+    let email = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingEmail)?;
+
+    Ok(User {
+        id,
+        name: name.to_owned(),
+        email: email.to_owned(),
+    })
+}
+
+impl fmt::Display for ParseUserError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ParseUserError::MissingId => write!(f, "missing id"),
+            ParseUserError::MissingName => write!(f, "missing name"),
+            ParseUserError::MissingEmail => write!(f, "missing email"),
+            ParseUserError::InvalidId => write!(f, "invalid id"),
+        }
+    }
+}
+
+impl std::error::Error for ParseUserError {}
+
+// Continue from the previous lesson.
+// TODO: store ParseIntError in InvalidId and preserve it in parse_user.
+```
+
+#### `tests/public.rs` — test
+
+Source: `lessons/parse-user/004-source-parse-int/tests/public.rs`
+
+```rust
+use std::error::Error;
+
+use rust_daily_lesson::{parse_user, ParseUserError};
+
+#[test]
+fn preserves_parse_int_error_source_value() -> Result<(), String> {
+    match parse_user("not-a-number,Ada,ada@example.com") {
+        Err(ParseUserError::InvalidId(source)) => {
+            assert!(source.to_string().contains("invalid digit"));
+            Ok(())
+        }
+        other => Err(format!("unexpected parse result: {other:?}")),
+    }
+}
+
+#[test]
+fn exposes_parse_int_error_as_source() {
+    let error = parse_user("not-a-number,Ada,ada@example.com").unwrap_err();
+
+    assert!(error.source().is_some());
+}
+```
+
+### Progressive hints
+
+1. Tuple variants can carry the original error value.
+2. map_err can pass a function or variant constructor when the types line up.
+3. After the change, InvalidId should look like InvalidId(ParseIntError), and Error::source should return that inner error. The authored code is included in the Solution section.
+
+### Validation contract
+
+```json
+{
+  "mode": "all",
+  "validations": [
+    {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "source_includes",
+          "requiredSnippets": [
+            "InvalidId(ParseIntError)",
+            "map_err(ParseUserError::InvalidId)",
+            "fn source"
+          ],
+          "forbiddenSnippets": [
+            "|_error| ParseUserError::InvalidId"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "testFiles": [
+        {
+          "path": "tests/public.rs",
+          "sourcePath": "tests/public.rs"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Authored solution
+
+#### `src/lib.rs`
+
+Source: `lessons/parse-user/004-source-parse-int/solution/src/lib.rs`
+
+```rust
+use std::error::Error;
+use std::fmt;
+use std::num::ParseIntError;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct User {
+    pub id: u64,
+    pub name: String,
+    pub email: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ParseUserError {
+    MissingId,
+    MissingName,
+    MissingEmail,
+    InvalidId(ParseIntError),
+}
+
+pub fn parse_user(input: &str) -> Result<User, ParseUserError> {
+    let mut parts = input.split(',');
+
+    let id_text = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingId)?;
+    let id = id_text
+        .parse::<u64>()
+        .map_err(ParseUserError::InvalidId)?;
+    let name = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingName)?;
+    let email = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingEmail)?;
+
+    Ok(User {
+        id,
+        name: name.to_owned(),
+        email: email.to_owned(),
+    })
+}
+
+impl fmt::Display for ParseUserError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ParseUserError::MissingId => write!(f, "missing id"),
+            ParseUserError::MissingName => write!(f, "missing name"),
+            ParseUserError::MissingEmail => write!(f, "missing email"),
+            ParseUserError::InvalidId(_) => write!(f, "invalid id"),
+        }
+    }
+}
+
+impl Error for ParseUserError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            ParseUserError::InvalidId(error) => Some(error),
+            ParseUserError::MissingId
+            | ParseUserError::MissingName
+            | ParseUserError::MissingEmail => None,
+        }
+    }
+}
+```
+
+### Completion explanation
+
+The parse error now keeps its original source and exposes it through Error::source. That keeps the high-level error useful while preserving details for logging and debugging.
+
+### Author notes
+
+Teaches error-source through a focused, behavior-checked Rust micro-lesson.
+
+---
+
+## 11. Convert ParseIntError with From
+
+Source: `lessons/parse-user/005-from-parse-int`
+
+| Field | Value |
+| --- | --- |
+| Lesson ID | `from-parse-int-error-005` |
+| Production lesson | [Open lesson](https://borrowquest.site/#lesson/from-parse-int-error-005) |
+| Arc | Parse a user from text (step 5 of 7) |
+| Concept | From for errors (`from-error-conversion`) |
+| Difficulty | medium |
+| Estimated time | 7 minutes |
+
+### Scenario
+
+The parser has one low-level error that should become a ParseUserError. A From implementation makes that conversion reusable.
+
+### Task
+
+Implement From<ParseIntError> for ParseUserError by returning ParseUserError::InvalidId(error). Then use ? for the ID parse in parse_user.
+
+### Concept context
+
+Centralize conversion from a low-level error into a domain error.
+
+- Prerequisites: `error-source`
+- Tags: `from`, `errors`, `conversion`
+
+### Starter project files
+
+#### `src/lib.rs` — editable
+
+Source: `lessons/parse-user/005-from-parse-int/starter/src/lib.rs`
+
+```rust
+use std::error::Error;
+use std::fmt;
+use std::num::ParseIntError;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct User {
+    pub id: u64,
+    pub name: String,
+    pub email: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ParseUserError {
+    MissingId,
+    MissingName,
+    MissingEmail,
+    InvalidId(ParseIntError),
+}
+
+pub fn parse_user(input: &str) -> Result<User, ParseUserError> {
+    let mut parts = input.split(',');
+
+    let id_text = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingId)?;
+    let id = id_text
+        .parse::<u64>()
+        .map_err(ParseUserError::InvalidId)?;
+    let name = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingName)?;
+    let email = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingEmail)?;
+
+    Ok(User {
+        id,
+        name: name.to_owned(),
+        email: email.to_owned(),
+    })
+}
+
+impl fmt::Display for ParseUserError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ParseUserError::MissingId => write!(f, "missing id"),
+            ParseUserError::MissingName => write!(f, "missing name"),
+            ParseUserError::MissingEmail => write!(f, "missing email"),
+            ParseUserError::InvalidId(_) => write!(f, "invalid id"),
+        }
+    }
+}
+
+impl Error for ParseUserError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            ParseUserError::InvalidId(error) => Some(error),
+            ParseUserError::MissingId
+            | ParseUserError::MissingName
+            | ParseUserError::MissingEmail => None,
+        }
+    }
+}
+
+// Continue from the previous lesson.
+// TODO: implement From<ParseIntError> and use ? for ID parsing.
+```
+
+#### `tests/public.rs` — test
+
+Source: `lessons/parse-user/005-from-parse-int/tests/public.rs`
+
+```rust
+use rust_daily_lesson::{parse_user, ParseUserError, User};
+
+#[test]
+fn parses_valid_user() {
+    assert_eq!(
+        parse_user("42,Ada,ada@example.com"),
+        Ok(User {
+            id: 42,
+            name: "Ada".to_owned(),
+            email: "ada@example.com".to_owned(),
+        })
+    );
+}
+
+#[test]
+fn converts_parse_int_error() {
+    assert!(matches!(
+        parse_user("nope,Ada,ada@example.com"),
+        Err(ParseUserError::InvalidId(_))
+    ));
+}
+```
+
+### Progressive hints
+
+1. From<T> defines fn from(value: T) -> Self.
+2. The body only needs to wrap the ParseIntError in the InvalidId variant.
+3. This conversion lets parse_user use ? instead of spelling out map_err at the call site. The authored code is included in the Solution section.
+
+### Validation contract
+
+```json
+{
+  "mode": "all",
+  "validations": [
+    {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "impl_trait_for_type",
+          "traitName": "From<ParseIntError>",
+          "typeName": "ParseUserError"
+        },
+        {
+          "type": "source_includes",
+          "requiredSnippets": [
+            "fn from",
+            "ParseUserError::InvalidId",
+            ".parse::<u64>()?"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "testFiles": [
+        {
+          "path": "tests/public.rs",
+          "sourcePath": "tests/public.rs"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Authored solution
+
+#### `src/lib.rs`
+
+Source: `lessons/parse-user/005-from-parse-int/solution/src/lib.rs`
+
+```rust
+use std::error::Error;
+use std::fmt;
+use std::num::ParseIntError;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct User {
+    pub id: u64,
+    pub name: String,
+    pub email: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ParseUserError {
+    MissingId,
+    MissingName,
+    MissingEmail,
+    InvalidId(ParseIntError),
+}
+
+impl From<ParseIntError> for ParseUserError {
+    fn from(error: ParseIntError) -> Self {
+        ParseUserError::InvalidId(error)
+    }
+}
+
+pub fn parse_user(input: &str) -> Result<User, ParseUserError> {
+    let mut parts = input.split(',');
+
+    let id_text = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingId)?;
+    let id = id_text.parse::<u64>()?;
+    let name = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingName)?;
+    let email = parts
+        .next()
+        .filter(|value| !value.is_empty())
+        .ok_or(ParseUserError::MissingEmail)?;
+
+    Ok(User {
+        id,
+        name: name.to_owned(),
+        email: email.to_owned(),
+    })
+}
+
+impl fmt::Display for ParseUserError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ParseUserError::MissingId => write!(f, "missing id"),
+            ParseUserError::MissingName => write!(f, "missing name"),
+            ParseUserError::MissingEmail => write!(f, "missing email"),
+            ParseUserError::InvalidId(_) => write!(f, "invalid id"),
+        }
+    }
+}
+
+impl Error for ParseUserError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            ParseUserError::InvalidId(error) => Some(error),
+            ParseUserError::MissingId
+            | ParseUserError::MissingName
+            | ParseUserError::MissingEmail => None,
+        }
+    }
+}
+```
+
+### Completion explanation
+
+From centralizes the low-level to high-level error conversion. Call sites can ask for ParseUserError without rewriting the wrapping logic each time.
+
+### Author notes
+
+Teaches from-error-conversion through a focused, behavior-checked Rust micro-lesson.
+
+---
+
+## 12. Parse User with TryFrom
 
 Source: `lessons/parse-user/006-tryfrom-user-str`
 
@@ -6153,7 +2783,7 @@ Teaches tryfrom-user through a focused, behavior-checked Rust micro-lesson.
 
 ---
 
-## 30. Write parser behavior checks
+## 13. Write parser behavior checks
 
 Source: `lessons/parse-user/007-public-tests`
 
@@ -6461,6 +3091,3376 @@ Focused behavior checks turn the parser contract into executable examples for hu
 ### Author notes
 
 Teaches basic-tests through a focused, behavior-checked Rust micro-lesson.
+
+---
+
+## 14. Define an inventory item
+
+Source: `lessons/inventory-summary/001-item-struct`
+
+| Field | Value |
+| --- | --- |
+| Lesson ID | `inventory-item-struct-001` |
+| Production lesson | [Open lesson](https://borrowquest.site/#lesson/inventory-item-struct-001) |
+| Arc | Summarize inventory (step 1 of 6) |
+| Concept | Domain structs (`domain-structs`) |
+| Difficulty | easy |
+| Estimated time | 5 minutes |
+
+### Scenario
+
+Inventory summaries need a small domain type before helpers can work with names and quantities.
+
+### Task
+
+Define Item with sku: String, name: String, quantity: u32, and reserved: u32.
+
+### Concept context
+
+Use named fields to model inventory data clearly.
+
+- Prerequisites: None
+- Tags: `structs`, `domain-modeling`
+
+### Starter project files
+
+#### `src/lib.rs` — editable
+
+Source: `lessons/inventory-summary/001-item-struct/starter/src/lib.rs`
+
+```rust
+// TODO: define the Item struct used by inventory summaries.
+```
+
+#### `tests/public.rs` — test
+
+Source: `lessons/inventory-summary/001-item-struct/tests/public.rs`
+
+```rust
+use rust_daily_lesson::Item;
+
+#[test]
+fn item_names_inventory_fields() {
+    let item = Item {
+        sku: "SKU-1".to_owned(),
+        name: "Keyboard".to_owned(),
+        quantity: 10,
+        reserved: 3,
+    };
+
+    assert_eq!(item.sku, "SKU-1");
+    assert_eq!(item.name, "Keyboard");
+    assert_eq!(item.quantity, 10);
+    assert_eq!(item.reserved, 3);
+}
+```
+
+### Progressive hints
+
+1. Use a struct when each value has a distinct role.
+2. The user-facing name and SKU are owned strings.
+3. Quantities are small non-negative counts, so u32 is enough here. The authored code is included in the Solution section.
+
+### Validation contract
+
+```json
+{
+  "mode": "all",
+  "validations": [
+    {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "struct_fields",
+          "structName": "Item",
+          "requiredFields": [
+            {
+              "name": "sku",
+              "typeIncludes": [
+                "String"
+              ]
+            },
+            {
+              "name": "name",
+              "typeIncludes": [
+                "String"
+              ]
+            },
+            {
+              "name": "quantity",
+              "typeIncludes": [
+                "u32"
+              ]
+            },
+            {
+              "name": "reserved",
+              "typeIncludes": [
+                "u32"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "testFiles": [
+        {
+          "path": "tests/public.rs",
+          "sourcePath": "tests/public.rs"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Authored solution
+
+#### `src/lib.rs`
+
+Source: `lessons/inventory-summary/001-item-struct/solution/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Item {
+    pub sku: String,
+    pub name: String,
+    pub quantity: u32,
+    pub reserved: u32,
+}
+```
+
+### Completion explanation
+
+The Item struct gives later helpers a clear vocabulary. Named fields make summary code easier to read than tuple positions.
+
+### Author notes
+
+Teaches domain-structs through a focused, behavior-checked Rust micro-lesson.
+
+---
+
+## 15. Collect available item names
+
+Source: `lessons/inventory-summary/002-filter-map`
+
+| Field | Value |
+| --- | --- |
+| Lesson ID | `inventory-filter-map-002` |
+| Production lesson | [Open lesson](https://borrowquest.site/#lesson/inventory-filter-map-002) |
+| Arc | Summarize inventory (step 2 of 6) |
+| Concept | filter_map (`filter-map`) |
+| Difficulty | medium |
+| Estimated time | 8 minutes |
+
+### Scenario
+
+A dashboard only needs names for items whose available count is above zero.
+
+### Task
+
+Implement available_names with filter_map. Include an item name only when quantity is greater than reserved.
+
+### Concept context
+
+Filter and transform collection items in one iterator step.
+
+- Prerequisites: `domain-structs`, `borrowing-api`
+- Tags: `iterators`, `borrowing`, `collections`
+
+### Starter project files
+
+#### `src/lib.rs` — editable
+
+Source: `lessons/inventory-summary/002-filter-map/starter/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Item {
+    pub sku: String,
+    pub name: String,
+    pub quantity: u32,
+    pub reserved: u32,
+}
+
+// Continue from the previous lesson.
+// TODO: use filter_map to collect names with available stock.
+```
+
+#### `tests/public.rs` — test
+
+Source: `lessons/inventory-summary/002-filter-map/tests/public.rs`
+
+```rust
+use rust_daily_lesson::{available_names, Item};
+
+#[test]
+fn collects_only_available_item_names() {
+    let items = vec![
+        Item {
+            name: "Keyboard".to_owned(),
+            sku: "1".to_owned(),
+            quantity: 10,
+            reserved: 2,
+        },
+        Item {
+            name: "Mouse".to_owned(),
+            sku: "2".to_owned(),
+            quantity: 4,
+            reserved: 4,
+        },
+    ];
+
+    assert_eq!(available_names(&items), vec!["Keyboard"]);
+}
+```
+
+### Progressive hints
+
+1. available stock is quantity minus reserved, but compare before subtracting.
+2. filter_map can return Some(name) for included items and None for skipped items.
+3. Borrow names with as_str instead of cloning them. The authored code is included in the Solution section.
+
+### Validation contract
+
+```json
+{
+  "mode": "all",
+  "validations": [
+    {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "function_signature",
+          "functionName": "available_names",
+          "requiredSignatureIncludes": [
+            "Vec<&str>"
+          ]
+        },
+        {
+          "type": "source_includes",
+          "requiredSnippets": [
+            "filter_map",
+            "as_str"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "testFiles": [
+        {
+          "path": "tests/public.rs",
+          "sourcePath": "tests/public.rs"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Authored solution
+
+#### `src/lib.rs`
+
+Source: `lessons/inventory-summary/002-filter-map/solution/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Item {
+    pub sku: String,
+    pub name: String,
+    pub quantity: u32,
+    pub reserved: u32,
+}
+
+pub fn available_names(items: &[Item]) -> Vec<&str> {
+    items
+        .iter()
+        .filter_map(|item| {
+            if item.quantity > item.reserved {
+                Some(item.name.as_str())
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+```
+
+### Completion explanation
+
+filter_map fits this helper because filtering and mapping happen together. It keeps the output borrowed from the input slice instead of allocating new strings.
+
+### Author notes
+
+Teaches filter-map through a focused, behavior-checked Rust micro-lesson.
+
+---
+
+## 16. Fold quantities into a total
+
+Source: `lessons/inventory-summary/003-fold-total`
+
+| Field | Value |
+| --- | --- |
+| Lesson ID | `inventory-fold-total-003` |
+| Production lesson | [Open lesson](https://borrowquest.site/#lesson/inventory-fold-total-003) |
+| Arc | Summarize inventory (step 3 of 6) |
+| Concept | fold (`fold-sum`) |
+| Difficulty | easy |
+| Estimated time | 6 minutes |
+
+### Scenario
+
+Inventory reporting often needs a single total count across many items.
+
+### Task
+
+Implement total_quantity with iter().fold. Add each item quantity into the accumulator.
+
+### Concept context
+
+Accumulate values across a collection with an explicit reducer.
+
+- Prerequisites: `domain-structs`
+- Tags: `iterators`, `accumulation`
+
+### Starter project files
+
+#### `src/lib.rs` — editable
+
+Source: `lessons/inventory-summary/003-fold-total/starter/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Item {
+    pub sku: String,
+    pub name: String,
+    pub quantity: u32,
+    pub reserved: u32,
+}
+
+pub fn available_names(items: &[Item]) -> Vec<&str> {
+    items
+        .iter()
+        .filter_map(|item| {
+            if item.quantity > item.reserved {
+                Some(item.name.as_str())
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
+// Continue from the previous lesson.
+// TODO: fold item quantities into one total.
+```
+
+#### `tests/public.rs` — test
+
+Source: `lessons/inventory-summary/003-fold-total/tests/public.rs`
+
+```rust
+use rust_daily_lesson::{total_quantity, Item};
+
+#[test]
+fn folds_quantities_into_total() {
+    let items = vec![
+        Item {
+            sku: "a".to_owned(),
+            name: "A".to_owned(),
+            quantity: 2,
+            reserved: 0,
+        },
+        Item {
+            sku: "b".to_owned(),
+            name: "B".to_owned(),
+            quantity: 5,
+            reserved: 0,
+        },
+    ];
+
+    assert_eq!(total_quantity(&items), 7);
+    assert_eq!(total_quantity(&[]), 0);
+}
+```
+
+### Progressive hints
+
+1. fold starts with an initial accumulator value.
+2. The accumulator and the item reference are the closure arguments.
+3. The initial total should be 0. The authored code is included in the Solution section.
+
+### Validation contract
+
+```json
+{
+  "mode": "all",
+  "validations": [
+    {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "function_signature",
+          "functionName": "total_quantity",
+          "requiredSignatureIncludes": [
+            "u32"
+          ]
+        },
+        {
+          "type": "source_includes",
+          "requiredSnippets": [
+            "fold"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "testFiles": [
+        {
+          "path": "tests/public.rs",
+          "sourcePath": "tests/public.rs"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Authored solution
+
+#### `src/lib.rs`
+
+Source: `lessons/inventory-summary/003-fold-total/solution/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Item {
+    pub sku: String,
+    pub name: String,
+    pub quantity: u32,
+    pub reserved: u32,
+}
+
+pub fn available_names(items: &[Item]) -> Vec<&str> {
+    items
+        .iter()
+        .filter_map(|item| {
+            if item.quantity > item.reserved {
+                Some(item.name.as_str())
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
+pub fn total_quantity(items: &[Item]) -> u32 {
+    items.iter().fold(0, |total, item| total + item.quantity)
+}
+```
+
+### Completion explanation
+
+fold makes the accumulator mechanics explicit: start at zero, visit each item, and return the next total. That gives later reducer logic a clear place to grow.
+
+### Author notes
+
+Teaches fold-sum through a focused, behavior-checked Rust micro-lesson.
+
+---
+
+## 17. Make restock alerts scan-friendly
+
+Source: `lessons/inventory-summary/004-clear-loop`
+
+| Field | Value |
+| --- | --- |
+| Lesson ID | `inventory-clear-loop-004` |
+| Production lesson | [Open lesson](https://borrowquest.site/#lesson/inventory-clear-loop-004) |
+| Arc | Summarize inventory (step 4 of 6) |
+| Concept | Iterator judgment (`iterator-judgment`) |
+| Difficulty | medium |
+| Estimated time | 8 minutes |
+
+### Scenario
+
+Inventory operators need a short list of normalized restock alerts before a purchasing review. A dense iterator chain hides which notes are actionable.
+
+### Task
+
+Refactor the existing priority_restock_notes helper into a clearer shape. Use a small loop and named intermediate values so the restock alert rule is obvious.
+
+### Concept context
+
+Choose between loops and iterator chains based on readability.
+
+- Prerequisites: `filter-map`, `fold-sum`
+- Tags: `iterators`, `readability`, `refactoring`
+
+### Starter project files
+
+#### `src/lib.rs` — editable
+
+Source: `lessons/inventory-summary/004-clear-loop/starter/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Item {
+    pub sku: String,
+    pub name: String,
+    pub quantity: u32,
+    pub reserved: u32,
+}
+
+pub fn available_names(items: &[Item]) -> Vec<&str> {
+    items
+        .iter()
+        .filter_map(|item| {
+            if item.quantity > item.reserved {
+                Some(item.name.as_str())
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
+pub fn total_quantity(items: &[Item]) -> u32 {
+    items.iter().fold(0, |total, item| total + item.quantity)
+}
+
+pub fn priority_restock_notes(notes: &[String]) -> Vec<String> {
+    notes
+        .iter()
+        .map(|note| note.trim().to_lowercase())
+        .filter(|note| !note.is_empty())
+        .filter(|note| note.contains("urgent") || note.contains("stock"))
+        .collect()
+}
+
+// Continue from the previous lesson.
+// TODO: refactor priority_restock_notes so the restock alert rule is easy to scan.
+```
+
+#### `tests/public.rs` — test
+
+Source: `lessons/inventory-summary/004-clear-loop/tests/public.rs`
+
+```rust
+use rust_daily_lesson::priority_restock_notes;
+
+#[test]
+fn keeps_restock_alert_notes_in_normalized_order() {
+    let notes = vec![
+        "  URGENT restock batteries ".to_owned(),
+        "".to_owned(),
+        "general reminder".to_owned(),
+        "low STOCK on cables".to_owned(),
+    ];
+
+    assert_eq!(
+        priority_restock_notes(&notes),
+        vec![
+            "urgent restock batteries".to_owned(),
+            "low stock on cables".to_owned(),
+        ]
+    );
+}
+```
+
+### Progressive hints
+
+1. The goal is not always fewer lines.
+2. Name booleans such as mentions_urgent, mentions_stock, and is_restock_alert if that makes the rule clearer.
+3. A loop is idiomatic when each step deserves a name. The authored code is included in the Solution section.
+
+### Validation contract
+
+```json
+{
+  "mode": "all",
+  "validations": [
+    {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "function_signature",
+          "functionName": "priority_restock_notes",
+          "requiredSignatureIncludes": [
+            "Vec<String>"
+          ]
+        },
+        {
+          "type": "source_includes",
+          "requiredSnippets": [
+            "for note in notes",
+            "mentions_urgent",
+            "mentions_stock",
+            "is_restock_alert"
+          ],
+          "forbiddenSnippets": [
+            ".map(|note|",
+            ".filter(|note|"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "testFiles": [
+        {
+          "path": "tests/public.rs",
+          "sourcePath": "tests/public.rs"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Authored solution
+
+#### `src/lib.rs`
+
+Source: `lessons/inventory-summary/004-clear-loop/solution/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Item {
+    pub sku: String,
+    pub name: String,
+    pub quantity: u32,
+    pub reserved: u32,
+}
+
+pub fn available_names(items: &[Item]) -> Vec<&str> {
+    items
+        .iter()
+        .filter_map(|item| {
+            if item.quantity > item.reserved {
+                Some(item.name.as_str())
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
+pub fn total_quantity(items: &[Item]) -> u32 {
+    items.iter().fold(0, |total, item| total + item.quantity)
+}
+
+pub fn priority_restock_notes(notes: &[String]) -> Vec<String> {
+    let mut priority_notes = Vec::new();
+
+    for note in notes {
+        let normalized = note.trim().to_lowercase();
+        if normalized.is_empty() {
+            continue;
+        }
+
+        let mentions_urgent = normalized.contains("urgent");
+        let mentions_stock = normalized.contains("stock");
+        let is_restock_alert = mentions_urgent || mentions_stock;
+
+        if is_restock_alert {
+            priority_notes.push(normalized);
+        }
+    }
+
+    priority_notes
+}
+```
+
+### Completion explanation
+
+Idiomatic Rust values clarity over using an iterator chain everywhere. The best shape is the one that makes the inventory rule easiest to verify during a review.
+
+### Author notes
+
+Teaches iterator-judgment through a focused, behavior-checked Rust micro-lesson.
+
+---
+
+## 18. Make Inventory iterable
+
+Source: `lessons/inventory-summary/005-intoiterator`
+
+| Field | Value |
+| --- | --- |
+| Lesson ID | `inventory-intoiterator-005` |
+| Production lesson | [Open lesson](https://borrowquest.site/#lesson/inventory-intoiterator-005) |
+| Arc | Summarize inventory (step 5 of 6) |
+| Concept | IntoIterator (`intoiterator-wrapper`) |
+| Difficulty | medium |
+| Estimated time | 8 minutes |
+
+### Scenario
+
+A wrapper type can expose natural iteration while still owning its internal Vec.
+
+### Task
+
+The starter already defines Inventory with a private Vec<Item>. Implement IntoIterator for Inventory so consuming the wrapper yields Item values.
+
+### Concept context
+
+Expose natural iteration for an owning wrapper type.
+
+- Prerequisites: `domain-structs`
+- Tags: `intoiterator`, `collections`, `traits`
+
+### Starter project files
+
+#### `src/lib.rs` — editable
+
+Source: `lessons/inventory-summary/005-intoiterator/starter/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Item {
+    pub sku: String,
+    pub name: String,
+    pub quantity: u32,
+    pub reserved: u32,
+}
+
+pub fn available_names(items: &[Item]) -> Vec<&str> {
+    items
+        .iter()
+        .filter_map(|item| {
+            if item.quantity > item.reserved {
+                Some(item.name.as_str())
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
+pub fn total_quantity(items: &[Item]) -> u32 {
+    items.iter().fold(0, |total, item| total + item.quantity)
+}
+
+pub fn priority_restock_notes(notes: &[String]) -> Vec<String> {
+    let mut priority_notes = Vec::new();
+
+    for note in notes {
+        let normalized = note.trim().to_lowercase();
+        if normalized.is_empty() {
+            continue;
+        }
+
+        let mentions_urgent = normalized.contains("urgent");
+        let mentions_stock = normalized.contains("stock");
+        let is_restock_alert = mentions_urgent || mentions_stock;
+
+        if is_restock_alert {
+            priority_notes.push(normalized);
+        }
+    }
+
+    priority_notes
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Inventory {
+    items: Vec<Item>,
+}
+
+impl Inventory {
+    pub fn new(items: Vec<Item>) -> Self {
+        Self { items }
+    }
+}
+
+// Continue from the previous lesson.
+// TODO: implement IntoIterator for Inventory.
+```
+
+#### `tests/public.rs` — test
+
+Source: `lessons/inventory-summary/005-intoiterator/tests/public.rs`
+
+```rust
+use rust_daily_lesson::{Inventory, Item};
+
+#[test]
+fn inventory_consumes_into_items() {
+    let inventory = Inventory::new(vec![
+        Item {
+            sku: "keyboard".to_owned(),
+            name: "Keyboard".to_owned(),
+            quantity: 10,
+            reserved: 0,
+        },
+        Item {
+            sku: "mouse".to_owned(),
+            name: "Mouse".to_owned(),
+            quantity: 4,
+            reserved: 0,
+        },
+    ]);
+    let names: Vec<_> = inventory.into_iter().map(|item| item.name).collect();
+
+    assert_eq!(names, vec!["Keyboard".to_owned(), "Mouse".to_owned()]);
+}
+```
+
+### Progressive hints
+
+1. Keep Inventory's items field private; the iterator can consume it from inside the impl.
+2. Vec<Item> already has an into_iter method that consumes the vector.
+3. The associated IntoIter type can reuse std::vec::IntoIter<Item>. The authored code is included in the Solution section.
+
+### Validation contract
+
+```json
+{
+  "mode": "all",
+  "validations": [
+    {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "impl_trait_for_type",
+          "traitName": "IntoIterator",
+          "typeName": "Inventory"
+        },
+        {
+          "type": "source_includes",
+          "requiredSnippets": [
+            "type Item = Item",
+            "std::vec::IntoIter<Item>"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "testFiles": [
+        {
+          "path": "tests/public.rs",
+          "sourcePath": "tests/public.rs"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Authored solution
+
+#### `src/lib.rs`
+
+Source: `lessons/inventory-summary/005-intoiterator/solution/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Item {
+    pub sku: String,
+    pub name: String,
+    pub quantity: u32,
+    pub reserved: u32,
+}
+
+pub fn available_names(items: &[Item]) -> Vec<&str> {
+    items
+        .iter()
+        .filter_map(|item| {
+            if item.quantity > item.reserved {
+                Some(item.name.as_str())
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
+pub fn total_quantity(items: &[Item]) -> u32 {
+    items.iter().fold(0, |total, item| total + item.quantity)
+}
+
+pub fn priority_restock_notes(notes: &[String]) -> Vec<String> {
+    let mut priority_notes = Vec::new();
+
+    for note in notes {
+        let normalized = note.trim().to_lowercase();
+        if normalized.is_empty() {
+            continue;
+        }
+
+        let mentions_urgent = normalized.contains("urgent");
+        let mentions_stock = normalized.contains("stock");
+        let is_restock_alert = mentions_urgent || mentions_stock;
+
+        if is_restock_alert {
+            priority_notes.push(normalized);
+        }
+    }
+
+    priority_notes
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Inventory {
+    items: Vec<Item>,
+}
+
+impl Inventory {
+    pub fn new(items: Vec<Item>) -> Self {
+        Self { items }
+    }
+}
+
+impl IntoIterator for Inventory {
+    type Item = Item;
+    type IntoIter = std::vec::IntoIter<Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.items.into_iter()
+    }
+}
+```
+
+### Completion explanation
+
+IntoIterator lets Inventory participate in for loops and iterator adapters without exposing its internal field as public API.
+
+### Author notes
+
+Teaches intoiterator-wrapper through a focused, behavior-checked Rust micro-lesson.
+
+---
+
+## 19. Sort items by borrowed comparison
+
+Source: `lessons/inventory-summary/006-sort-by-name`
+
+| Field | Value |
+| --- | --- |
+| Lesson ID | `inventory-sort-by-key-006` |
+| Production lesson | [Open lesson](https://borrowquest.site/#lesson/inventory-sort-by-key-006) |
+| Arc | Summarize inventory (step 6 of 6) |
+| Concept | Borrowed sort comparisons (`sort-by-key`) |
+| Difficulty | easy |
+| Estimated time | 5 minutes |
+
+### Scenario
+
+Before rendering an inventory table, the service wants stable alphabetical ordering by item name without allocating temporary sort keys.
+
+### Task
+
+Add sort_by_name without cloning item names. Sort the mutable slice by comparing each item's borrowed name.
+
+### Concept context
+
+Sort slices by comparing borrowed fields when cloning a key would be wasteful.
+
+- Prerequisites: `domain-structs`
+- Tags: `collections`, `sorting`, `borrowing`
+
+### Starter project files
+
+#### `src/lib.rs` — editable
+
+Source: `lessons/inventory-summary/006-sort-by-name/starter/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Item {
+    pub sku: String,
+    pub name: String,
+    pub quantity: u32,
+    pub reserved: u32,
+}
+
+pub fn available_names(items: &[Item]) -> Vec<&str> {
+    items
+        .iter()
+        .filter_map(|item| {
+            if item.quantity > item.reserved {
+                Some(item.name.as_str())
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
+pub fn total_quantity(items: &[Item]) -> u32 {
+    items.iter().fold(0, |total, item| total + item.quantity)
+}
+
+pub fn priority_restock_notes(notes: &[String]) -> Vec<String> {
+    let mut priority_notes = Vec::new();
+
+    for note in notes {
+        let normalized = note.trim().to_lowercase();
+        if normalized.is_empty() {
+            continue;
+        }
+
+        let mentions_urgent = normalized.contains("urgent");
+        let mentions_stock = normalized.contains("stock");
+        let is_restock_alert = mentions_urgent || mentions_stock;
+
+        if is_restock_alert {
+            priority_notes.push(normalized);
+        }
+    }
+
+    priority_notes
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Inventory {
+    items: Vec<Item>,
+}
+
+impl Inventory {
+    pub fn new(items: Vec<Item>) -> Self {
+        Self { items }
+    }
+}
+
+impl IntoIterator for Inventory {
+    type Item = Item;
+    type IntoIter = std::vec::IntoIter<Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.items.into_iter()
+    }
+}
+
+// Continue from the previous lesson.
+// TODO: sort by borrowed item names without cloning.
+```
+
+#### `tests/public.rs` — test
+
+Source: `lessons/inventory-summary/006-sort-by-name/tests/public.rs`
+
+```rust
+use rust_daily_lesson::{sort_by_name, Item};
+
+#[test]
+fn sorts_items_by_name() {
+    let mut items = vec![
+        Item {
+            sku: "mouse".to_owned(),
+            name: "Mouse".to_owned(),
+            quantity: 4,
+            reserved: 0,
+        },
+        Item {
+            sku: "keyboard".to_owned(),
+            name: "Keyboard".to_owned(),
+            quantity: 10,
+            reserved: 0,
+        },
+    ];
+
+    sort_by_name(&mut items);
+
+    assert_eq!(items[0].name, "Keyboard");
+    assert_eq!(items[1].name, "Mouse");
+}
+```
+
+### Progressive hints
+
+1. Slices expose in-place sorting methods.
+2. For String fields, sort_by with name.cmp(&other.name) avoids allocating cloned keys.
+3. The comparison closure receives two item references: left and right. The authored code is included in the Solution section.
+
+### Validation contract
+
+```json
+{
+  "mode": "all",
+  "validations": [
+    {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "function_signature",
+          "functionName": "sort_by_name",
+          "requiredSignatureIncludes": [
+            "&mut [Item]"
+          ]
+        },
+        {
+          "type": "source_includes",
+          "requiredSnippets": [
+            "sort_by",
+            ".cmp(&"
+          ],
+          "forbiddenSnippets": [
+            "clone",
+            "to_owned",
+            "to_string",
+            "sort_by_key"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "testFiles": [
+        {
+          "path": "tests/public.rs",
+          "sourcePath": "tests/public.rs"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Authored solution
+
+#### `src/lib.rs`
+
+Source: `lessons/inventory-summary/006-sort-by-name/solution/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Item {
+    pub sku: String,
+    pub name: String,
+    pub quantity: u32,
+    pub reserved: u32,
+}
+
+pub fn available_names(items: &[Item]) -> Vec<&str> {
+    items
+        .iter()
+        .filter_map(|item| {
+            if item.quantity > item.reserved {
+                Some(item.name.as_str())
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
+pub fn total_quantity(items: &[Item]) -> u32 {
+    items.iter().fold(0, |total, item| total + item.quantity)
+}
+
+pub fn priority_restock_notes(notes: &[String]) -> Vec<String> {
+    let mut priority_notes = Vec::new();
+
+    for note in notes {
+        let normalized = note.trim().to_lowercase();
+        if normalized.is_empty() {
+            continue;
+        }
+
+        let mentions_urgent = normalized.contains("urgent");
+        let mentions_stock = normalized.contains("stock");
+        let is_restock_alert = mentions_urgent || mentions_stock;
+
+        if is_restock_alert {
+            priority_notes.push(normalized);
+        }
+    }
+
+    priority_notes
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Inventory {
+    items: Vec<Item>,
+}
+
+impl Inventory {
+    pub fn new(items: Vec<Item>) -> Self {
+        Self { items }
+    }
+}
+
+impl IntoIterator for Inventory {
+    type Item = Item;
+    type IntoIter = std::vec::IntoIter<Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.items.into_iter()
+    }
+}
+
+pub fn sort_by_name(items: &mut [Item]) {
+    items.sort_by(|left, right| left.name.cmp(&right.name));
+}
+```
+
+### Completion explanation
+
+Sorting by borrowed comparison keeps the ordering rule close to the sort call without cloning every String. That is usually the better API choice when the key is already stored in each item.
+
+### Author notes
+
+Teaches sort-by-key through a focused, behavior-checked Rust micro-lesson.
+
+---
+
+## 20. Borrow fields in a log entry
+
+Source: `lessons/log-lines/001-entry-borrowed`
+
+| Field | Value |
+| --- | --- |
+| Lesson ID | `log-entry-borrowed-001` |
+| Production lesson | [Open lesson](https://borrowquest.site/#lesson/log-entry-borrowed-001) |
+| Arc | Inspect log lines (step 1 of 5) |
+| Concept | Borrowed fields (`borrowed-fields`) |
+| Difficulty | medium |
+| Estimated time | 7 minutes |
+
+### Scenario
+
+A log viewer often points into existing log text instead of allocating new strings for every parsed line.
+
+### Task
+
+Define LogEntry<'a> with borrowed level: &'a str and message: &'a str fields.
+
+### Concept context
+
+Use lifetimes to store borrowed string slices in a struct.
+
+- Prerequisites: `borrowing-api`
+- Tags: `lifetimes`, `borrowing`, `strings`
+
+### Starter project files
+
+#### `src/lib.rs` — editable
+
+Source: `lessons/log-lines/001-entry-borrowed/starter/src/lib.rs`
+
+```rust
+// TODO: define LogEntry with borrowed fields.
+```
+
+#### `tests/public.rs` — test
+
+Source: `lessons/log-lines/001-entry-borrowed/tests/public.rs`
+
+```rust
+use rust_daily_lesson::LogEntry;
+
+#[test]
+fn log_entry_borrows_text() {
+    let entry = LogEntry {
+        level: "INFO",
+        message: "started",
+    };
+
+    assert_eq!(entry.level, "INFO");
+    assert_eq!(entry.message, "started");
+}
+```
+
+### Progressive hints
+
+1. Borrowed struct fields need a lifetime parameter on the struct.
+2. Both fields can borrow string slices from the original log line.
+3. Use &'a str for each borrowed text field. The authored code is included in the Solution section.
+
+### Validation contract
+
+```json
+{
+  "mode": "all",
+  "validations": [
+    {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "struct_fields",
+          "structName": "LogEntry",
+          "requiredFields": [
+            {
+              "name": "level",
+              "typeIncludes": [
+                "&'a str"
+              ]
+            },
+            {
+              "name": "message",
+              "typeIncludes": [
+                "&'a str"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "testFiles": [
+        {
+          "path": "tests/public.rs",
+          "sourcePath": "tests/public.rs"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Authored solution
+
+#### `src/lib.rs`
+
+Source: `lessons/log-lines/001-entry-borrowed/solution/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LogEntry<'a> {
+    pub level: &'a str,
+    pub message: &'a str,
+}
+```
+
+### Completion explanation
+
+Borrowed fields let the entry view point into existing text. The lifetime parameter states that the entry cannot outlive the data it references.
+
+### Author notes
+
+Teaches borrowed-fields through a focused, behavior-checked Rust micro-lesson.
+
+---
+
+## 21. Create a lifetime-backed view
+
+Source: `lessons/log-lines/002-view-lifetime`
+
+| Field | Value |
+| --- | --- |
+| Lesson ID | `log-view-lifetime-002` |
+| Production lesson | [Open lesson](https://borrowquest.site/#lesson/log-view-lifetime-002) |
+| Arc | Inspect log lines (step 2 of 5) |
+| Concept | Lifetime-backed views (`lifetime-view`) |
+| Difficulty | medium |
+| Estimated time | 8 minutes |
+
+### Scenario
+
+A log view should borrow a slice of entries and expose helper methods without taking ownership.
+
+### Task
+
+Define LogView<'a> with entries: &'a [LogEntry<'a>].
+
+### Concept context
+
+Model a view type that borrows a slice of borrowed entries.
+
+- Prerequisites: `borrowed-fields`
+- Tags: `lifetimes`, `views`, `borrowing`
+
+### Starter project files
+
+#### `src/lib.rs` — editable
+
+Source: `lessons/log-lines/002-view-lifetime/starter/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LogEntry<'a> {
+    pub level: &'a str,
+    pub message: &'a str,
+}
+
+// Continue from the previous lesson.
+// TODO: define LogView that borrows a slice of entries.
+```
+
+#### `tests/public.rs` — test
+
+Source: `lessons/log-lines/002-view-lifetime/tests/public.rs`
+
+```rust
+use rust_daily_lesson::{LogEntry, LogView};
+
+#[test]
+fn view_borrows_slice_of_entries() {
+    let entries = [LogEntry {
+        level: "WARN",
+        message: "slow",
+    }];
+    let view = LogView { entries: &entries };
+
+    assert_eq!(view.entries.len(), 1);
+    assert_eq!(view.entries[0].message, "slow");
+}
+```
+
+### Progressive hints
+
+1. The view borrows the slice, so the field starts with &'a.
+2. The entries inside the slice also carry the same lifetime.
+3. This is a view type, not an owning collection. The authored code is included in the Solution section.
+
+### Validation contract
+
+```json
+{
+  "mode": "all",
+  "validations": [
+    {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "struct_fields",
+          "structName": "LogView",
+          "requiredFields": [
+            {
+              "name": "entries",
+              "typeIncludes": [
+                "&'a",
+                "[LogEntry"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "testFiles": [
+        {
+          "path": "tests/public.rs",
+          "sourcePath": "tests/public.rs"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Authored solution
+
+#### `src/lib.rs`
+
+Source: `lessons/log-lines/002-view-lifetime/solution/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LogEntry<'a> {
+    pub level: &'a str,
+    pub message: &'a str,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LogView<'a> {
+    pub entries: &'a [LogEntry<'a>],
+}
+```
+
+### Completion explanation
+
+The view type captures the relationship between the borrowed slice and the borrowed text inside each entry. The lifetime keeps those references tied together.
+
+### Author notes
+
+Teaches lifetime-view through a focused, behavior-checked Rust micro-lesson.
+
+---
+
+## 22. Map log levels with match
+
+Source: `lessons/log-lines/003-level-match`
+
+| Field | Value |
+| --- | --- |
+| Lesson ID | `log-level-match-003` |
+| Production lesson | [Open lesson](https://borrowquest.site/#lesson/log-level-match-003) |
+| Arc | Inspect log lines (step 3 of 5) |
+| Concept | Pattern matching (`pattern-matching`) |
+| Difficulty | easy |
+| Estimated time | 6 minutes |
+
+### Scenario
+
+An operations view sorts alert rows by log level, keeping routine info below warnings and errors.
+
+### Task
+
+Keep the borrowed log entry and view code, then add LogLevel variants Info, Warn, and Error. Implement alert_priority with a match on level.
+
+### Concept context
+
+Map enum variants to behavior with a clear match expression.
+
+- Prerequisites: `error-enum-design`
+- Tags: `match`, `enums`, `control-flow`
+
+### Starter project files
+
+#### `src/lib.rs` — editable
+
+Source: `lessons/log-lines/003-level-match/starter/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LogEntry<'a> {
+    pub level: &'a str,
+    pub message: &'a str,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LogView<'a> {
+    pub entries: &'a [LogEntry<'a>],
+}
+
+// Continue from the previous lesson.
+// TODO: add the supported log levels.
+// TODO: map Info, Warn, and Error to alert queue priority values.
+```
+
+#### `tests/public.rs` — test
+
+Source: `lessons/log-lines/003-level-match/tests/public.rs`
+
+```rust
+use rust_daily_lesson::{alert_priority, LogLevel};
+
+#[test]
+fn maps_log_levels_to_alert_priority() {
+    assert_eq!(alert_priority(LogLevel::Info), 0);
+    assert_eq!(alert_priority(LogLevel::Warn), 1);
+    assert_eq!(alert_priority(LogLevel::Error), 2);
+}
+```
+
+### Progressive hints
+
+1. Enums pair well with match because every known case can be handled directly.
+2. The alert_priority function should return 0 for Info, 1 for Warn, and 2 for Error.
+3. A match expression is clearer than string comparisons for typed log levels. The authored code is included in the Solution section.
+
+### Validation contract
+
+```json
+{
+  "mode": "all",
+  "validations": [
+    {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "enum_unit_variants",
+          "enumName": "LogLevel",
+          "requiredVariants": [
+            "Info",
+            "Warn",
+            "Error"
+          ]
+        },
+        {
+          "type": "source_includes",
+          "requiredSnippets": [
+            "pub fn alert_priority",
+            "match level"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "testFiles": [
+        {
+          "path": "tests/public.rs",
+          "sourcePath": "tests/public.rs"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Authored solution
+
+#### `src/lib.rs`
+
+Source: `lessons/log-lines/003-level-match/solution/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LogEntry<'a> {
+    pub level: &'a str,
+    pub message: &'a str,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LogView<'a> {
+    pub entries: &'a [LogEntry<'a>],
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LogLevel {
+    Info,
+    Warn,
+    Error,
+}
+
+pub fn alert_priority(level: LogLevel) -> u8 {
+    match level {
+        LogLevel::Info => 0,
+        LogLevel::Warn => 1,
+        LogLevel::Error => 2,
+    }
+}
+```
+
+### Completion explanation
+
+Pattern matching keeps the alert queue policy exhaustive and visible. Adding a new log level later will naturally point maintainers at this decision.
+
+### Author notes
+
+Teaches pattern-matching through a focused, behavior-checked Rust micro-lesson.
+
+---
+
+## 23. Allow borrowed or owned messages
+
+Source: `lessons/log-lines/004-message-cow`
+
+| Field | Value |
+| --- | --- |
+| Lesson ID | `log-message-cow-004` |
+| Production lesson | [Open lesson](https://borrowquest.site/#lesson/log-message-cow-004) |
+| Arc | Inspect log lines (step 4 of 5) |
+| Concept | Cow strings (`cow-strings`) |
+| Difficulty | advanced |
+| Estimated time | 10 minutes |
+
+### Scenario
+
+Most log messages can be borrowed, but some normalized messages need owned text. Cow supports both without forcing allocation every time.
+
+### Task
+
+Keep the existing log view and level code, then define LogMessage<'a> with text: Cow<'a, str>. Import Cow from std::borrow.
+
+### Concept context
+
+Use Cow to support borrowed or owned string data.
+
+- Prerequisites: `borrowed-fields`
+- Tags: `cow`, `borrowing`, `ownership`
+
+### Starter project files
+
+#### `src/lib.rs` — editable
+
+Source: `lessons/log-lines/004-message-cow/starter/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LogEntry<'a> {
+    pub level: &'a str,
+    pub message: &'a str,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LogView<'a> {
+    pub entries: &'a [LogEntry<'a>],
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LogLevel {
+    Info,
+    Warn,
+    Error,
+}
+
+pub fn alert_priority(level: LogLevel) -> u8 {
+    match level {
+        LogLevel::Info => 0,
+        LogLevel::Warn => 1,
+        LogLevel::Error => 2,
+    }
+}
+
+// Continue from the previous lesson.
+// TODO: import Cow and define LogMessage with text that can be borrowed or owned.
+```
+
+#### `tests/public.rs` — test
+
+Source: `lessons/log-lines/004-message-cow/tests/public.rs`
+
+```rust
+use std::borrow::Cow;
+
+use rust_daily_lesson::LogMessage;
+
+#[test]
+fn log_message_can_borrow_or_own_text() {
+    let borrowed = LogMessage {
+        text: Cow::Borrowed("started"),
+    };
+    let owned = LogMessage {
+        text: Cow::Owned("normalized".to_owned()),
+    };
+
+    assert_eq!(borrowed.text, "started");
+    assert_eq!(owned.text, "normalized");
+}
+```
+
+### Progressive hints
+
+1. Cow means clone-on-write and lives in std::borrow.
+2. The borrowed form for text is str, so the field type is Cow<'a, str>.
+3. This is useful when most data can be borrowed but a few cases need ownership. The authored code is included in the Solution section.
+
+### Validation contract
+
+```json
+{
+  "mode": "all",
+  "validations": [
+    {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "struct_fields",
+          "structName": "LogMessage",
+          "requiredFields": [
+            {
+              "name": "text",
+              "typeIncludes": [
+                "Cow",
+                "str"
+              ]
+            }
+          ]
+        },
+        {
+          "type": "source_includes",
+          "requiredSnippets": [
+            "std::borrow::Cow",
+            "Cow<'a, str>"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "testFiles": [
+        {
+          "path": "tests/public.rs",
+          "sourcePath": "tests/public.rs"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Authored solution
+
+#### `src/lib.rs`
+
+Source: `lessons/log-lines/004-message-cow/solution/src/lib.rs`
+
+```rust
+use std::borrow::Cow;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LogEntry<'a> {
+    pub level: &'a str,
+    pub message: &'a str,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LogView<'a> {
+    pub entries: &'a [LogEntry<'a>],
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LogLevel {
+    Info,
+    Warn,
+    Error,
+}
+
+pub fn alert_priority(level: LogLevel) -> u8 {
+    match level {
+        LogLevel::Info => 0,
+        LogLevel::Warn => 1,
+        LogLevel::Error => 2,
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LogMessage<'a> {
+    pub text: Cow<'a, str>,
+}
+```
+
+### Completion explanation
+
+Cow lets the API accept borrowed text by default while still supporting owned normalized messages. It avoids unnecessary allocation without giving up flexibility.
+
+### Author notes
+
+Teaches cow-strings through a focused, behavior-checked Rust micro-lesson.
+
+---
+
+## 24. Check log filtering behavior
+
+Source: `lessons/log-lines/005-filter-tests`
+
+| Field | Value |
+| --- | --- |
+| Lesson ID | `log-filter-tests-005` |
+| Production lesson | [Open lesson](https://borrowquest.site/#lesson/log-filter-tests-005) |
+| Arc | Inspect log lines (step 5 of 5) |
+| Concept | Focused behavior checks (`focused-tests`) |
+| Difficulty | medium |
+| Estimated time | 8 minutes |
+
+### Scenario
+
+The log viewer should keep high-priority entries and discard routine information when asked for alerts.
+
+### Task
+
+The starter already defines AlertEntry and alert_messages. Fill in the two test TODO blocks with checks for keeping Error and Warn entries while excluding Info entries.
+
+### Concept context
+
+Write compact examples for important inclusion and exclusion behavior.
+
+- Prerequisites: `pattern-matching`, `filter-map`
+- Tags: `tests`, `examples`, `quality`
+
+### Starter project files
+
+#### `src/lib.rs` — editable
+
+Source: `lessons/log-lines/005-filter-tests/starter/src/lib.rs`
+
+```rust
+use std::borrow::Cow;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LogEntry<'a> {
+    pub level: &'a str,
+    pub message: &'a str,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LogView<'a> {
+    pub entries: &'a [LogEntry<'a>],
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LogLevel {
+    Info,
+    Warn,
+    Error,
+}
+
+pub fn alert_priority(level: LogLevel) -> u8 {
+    match level {
+        LogLevel::Info => 0,
+        LogLevel::Warn => 1,
+        LogLevel::Error => 2,
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LogMessage<'a> {
+    pub text: Cow<'a, str>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AlertEntry<'a> {
+    pub level: LogLevel,
+    pub message: LogMessage<'a>,
+}
+
+pub fn alert_messages<'a>(entries: &'a [AlertEntry<'a>]) -> Vec<&'a str> {
+    entries
+        .iter()
+        .filter_map(|entry| match entry.level {
+            LogLevel::Warn | LogLevel::Error => Some(entry.message.text.as_ref()),
+            LogLevel::Info => None,
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn entry(level: LogLevel, message: &'static str) -> AlertEntry<'static> {
+        AlertEntry {
+            level,
+            message: LogMessage {
+                text: message.into(),
+            },
+        }
+    }
+
+    #[test]
+    fn keeps_warning_and_error_messages() {
+        // TODO: assert that warning and error messages are returned in order.
+        todo!()
+    }
+
+    #[test]
+    fn skips_info_messages() {
+        // TODO: assert that info messages are not returned.
+        todo!()
+    }
+}
+
+// Continue from the previous lesson.
+// TODO: fill in the two focused alert filter checks above.
+```
+
+#### `tests/public.rs` — test
+
+Source: `lessons/log-lines/005-filter-tests/tests/public.rs`
+
+```rust
+use rust_daily_lesson::{alert_messages, AlertEntry, LogLevel, LogMessage};
+
+fn entry(level: LogLevel, message: &'static str) -> AlertEntry<'static> {
+    AlertEntry {
+        level,
+        message: LogMessage {
+            text: message.into(),
+        },
+    }
+}
+
+#[test]
+fn alert_filter_keeps_only_warnings_and_errors() {
+    let entries = [
+        entry(LogLevel::Info, "started"),
+        entry(LogLevel::Warn, "slow response"),
+        entry(LogLevel::Error, "write failed"),
+    ];
+
+    assert_eq!(
+        alert_messages(&entries),
+        vec!["slow response", "write failed"]
+    );
+}
+```
+
+### Progressive hints
+
+1. Use the provided entry helper to build a small array of alert entries.
+2. The first test should prove that warning and error messages are retained in order.
+3. The second test should make the Info exclusion explicit. The authored code is included in the Solution section.
+
+### Validation contract
+
+```json
+{
+  "mode": "all",
+  "validations": [
+    {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "function_signature",
+          "functionName": "alert_messages",
+          "requiredSignatureIncludes": [
+            "Vec<&str>"
+          ]
+        },
+        {
+          "type": "source_includes",
+          "requiredSnippets": [
+            "assert_eq!",
+            "LogLevel::Warn",
+            "LogLevel::Error",
+            "LogLevel::Info"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "testFiles": [
+        {
+          "path": "tests/public.rs",
+          "sourcePath": "tests/public.rs"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Authored solution
+
+#### `src/lib.rs`
+
+Source: `lessons/log-lines/005-filter-tests/solution/src/lib.rs`
+
+```rust
+use std::borrow::Cow;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LogEntry<'a> {
+    pub level: &'a str,
+    pub message: &'a str,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LogView<'a> {
+    pub entries: &'a [LogEntry<'a>],
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LogLevel {
+    Info,
+    Warn,
+    Error,
+}
+
+pub fn alert_priority(level: LogLevel) -> u8 {
+    match level {
+        LogLevel::Info => 0,
+        LogLevel::Warn => 1,
+        LogLevel::Error => 2,
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LogMessage<'a> {
+    pub text: Cow<'a, str>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AlertEntry<'a> {
+    pub level: LogLevel,
+    pub message: LogMessage<'a>,
+}
+
+pub fn alert_messages<'a>(entries: &'a [AlertEntry<'a>]) -> Vec<&'a str> {
+    entries
+        .iter()
+        .filter_map(|entry| match entry.level {
+            LogLevel::Warn | LogLevel::Error => Some(entry.message.text.as_ref()),
+            LogLevel::Info => None,
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn entry(level: LogLevel, message: &'static str) -> AlertEntry<'static> {
+        AlertEntry {
+            level,
+            message: LogMessage {
+                text: message.into(),
+            },
+        }
+    }
+
+    #[test]
+    fn keeps_warning_and_error_messages() {
+        let entries = [
+            entry(LogLevel::Warn, "slow response"),
+            entry(LogLevel::Error, "write failed"),
+        ];
+
+        assert_eq!(
+            alert_messages(&entries),
+            vec!["slow response", "write failed"]
+        );
+    }
+
+    #[test]
+    fn skips_info_messages() {
+        let entries = [
+            entry(LogLevel::Info, "started"),
+            entry(LogLevel::Warn, "slow response"),
+        ];
+
+        assert_eq!(alert_messages(&entries), vec!["slow response"]);
+    }
+}
+```
+
+### Completion explanation
+
+Focused behavior checks document the alert filtering contract. They make the important inclusion and exclusion rules visible for the next reader.
+
+### Author notes
+
+Teaches focused-tests through a focused, behavior-checked Rust micro-lesson.
+
+---
+
+## 25. Define the Request surface
+
+Source: `lessons/request-api/001-request-struct`
+
+| Field | Value |
+| --- | --- |
+| Lesson ID | `request-struct-001` |
+| Production lesson | [Open lesson](https://borrowquest.site/#lesson/request-struct-001) |
+| Arc | Build a request API (step 1 of 6) |
+| Concept | API surface structs (`api-structs`) |
+| Difficulty | easy |
+| Estimated time | 5 minutes |
+
+### Scenario
+
+A small client library needs a request type that can be passed around after setup.
+
+### Task
+
+Define Request with method: String, path: String, and body: Option<String>.
+
+### Concept context
+
+Define a small owned type that represents a completed API request.
+
+- Prerequisites: `struct-field-design`
+- Tags: `api-design`, `structs`, `ownership`
+
+### Starter project files
+
+#### `src/lib.rs` — editable
+
+Source: `lessons/request-api/001-request-struct/starter/src/lib.rs`
+
+```rust
+// TODO: define the Request type used by the client API.
+```
+
+#### `tests/public.rs` — test
+
+Source: `lessons/request-api/001-request-struct/tests/public.rs`
+
+```rust
+use rust_daily_lesson::Request;
+
+#[test]
+fn request_surface_owns_completed_request_data() {
+    let request = Request {
+        method: "POST".to_owned(),
+        path: "/users".to_owned(),
+        body: Some("{}".to_owned()),
+    };
+
+    assert_eq!(request.method, "POST");
+    assert_eq!(request.path, "/users");
+    assert_eq!(request.body, Some("{}".to_owned()));
+}
+```
+
+### Progressive hints
+
+1. Keep the request data owned so it can outlive the builder.
+2. The body may be absent, which makes Option a good fit.
+3. Use clear field names that match the API vocabulary. The authored code is included in the Solution section.
+
+### Validation contract
+
+```json
+{
+  "mode": "all",
+  "validations": [
+    {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "struct_fields",
+          "structName": "Request",
+          "requiredFields": [
+            {
+              "name": "method",
+              "typeIncludes": [
+                "String"
+              ]
+            },
+            {
+              "name": "path",
+              "typeIncludes": [
+                "String"
+              ]
+            },
+            {
+              "name": "body",
+              "typeIncludes": [
+                "Option",
+                "String"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "testFiles": [
+        {
+          "path": "tests/public.rs",
+          "sourcePath": "tests/public.rs"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Authored solution
+
+#### `src/lib.rs`
+
+Source: `lessons/request-api/001-request-struct/solution/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Request {
+    pub method: String,
+    pub path: String,
+    pub body: Option<String>,
+}
+```
+
+### Completion explanation
+
+A focused Request struct gives the API a stable output type. Owned fields keep the request independent from temporary builder input.
+
+### Author notes
+
+Teaches api-structs through a focused, behavior-checked Rust micro-lesson.
+
+---
+
+## 26. Add consuming builder setters
+
+Source: `lessons/request-api/002-builder-setters`
+
+| Field | Value |
+| --- | --- |
+| Lesson ID | `request-builder-owned-setters-002` |
+| Production lesson | [Open lesson](https://borrowquest.site/#lesson/request-builder-owned-setters-002) |
+| Arc | Build a request API (step 2 of 6) |
+| Concept | Builder setters (`builder-setters`) |
+| Difficulty | medium |
+| Estimated time | 8 minutes |
+
+### Scenario
+
+A request builder should support chained calls without exposing all its intermediate fields.
+
+### Task
+
+Keep the Request type, then add RequestBuilder with optional method and path fields. Implement RequestBuilder::new() -> Self and RequestBuilder::method(mut self, method: impl Into<String>) -> Self.
+
+### Concept context
+
+Use consuming setters to make small builder APIs chainable.
+
+- Prerequisites: `api-structs`, `methods-basic`
+- Tags: `builder`, `methods`, `ownership`
+
+### Starter project files
+
+#### `src/lib.rs` — editable
+
+Source: `lessons/request-api/002-builder-setters/starter/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Request {
+    pub method: String,
+    pub path: String,
+    pub body: Option<String>,
+}
+
+// Continue from the previous lesson.
+// TODO: add a consuming method setter.
+```
+
+#### `tests/public.rs` — test
+
+Source: `lessons/request-api/002-builder-setters/tests/public.rs`
+
+```rust
+use rust_daily_lesson::RequestBuilder;
+
+#[test]
+fn method_setter_is_chainable() {
+    let _builder = RequestBuilder::new().method("GET");
+}
+```
+
+### Progressive hints
+
+1. Taking mut self works well for chainable builder setters.
+2. impl Into<String> accepts both borrowed and owned string inputs.
+3. Return self after updating the field. The authored code is included in the Solution section.
+
+### Validation contract
+
+```json
+{
+  "mode": "all",
+  "validations": [
+    {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "impl_method",
+          "implFor": "RequestBuilder",
+          "methodName": "method",
+          "requiredSignatureIncludes": [
+            "mut self",
+            "impl Into<String>",
+            "Self"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "testFiles": [
+        {
+          "path": "tests/public.rs",
+          "sourcePath": "tests/public.rs"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Authored solution
+
+#### `src/lib.rs`
+
+Source: `lessons/request-api/002-builder-setters/solution/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Request {
+    pub method: String,
+    pub path: String,
+    pub body: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RequestBuilder {
+    method: Option<String>,
+    path: Option<String>,
+}
+
+impl RequestBuilder {
+    pub fn new() -> Self {
+        Self {
+            method: None,
+            path: None,
+        }
+    }
+
+    pub fn method(mut self, method: impl Into<String>) -> Self {
+        self.method = Some(method.into());
+        self
+    }
+}
+```
+
+### Completion explanation
+
+Consuming setters make the builder ergonomic while preserving ownership. Each call returns the next builder state for the chain.
+
+### Author notes
+
+Teaches builder-setters through a focused, behavior-checked Rust micro-lesson.
+
+---
+
+## 27. Start the builder from Default
+
+Source: `lessons/request-api/003-builder-default`
+
+| Field | Value |
+| --- | --- |
+| Lesson ID | `request-builder-default-003` |
+| Production lesson | [Open lesson](https://borrowquest.site/#lesson/request-builder-default-003) |
+| Arc | Build a request API (step 3 of 6) |
+| Concept | Builder default state (`builder-default`) |
+| Difficulty | easy |
+| Estimated time | 6 minutes |
+
+### Scenario
+
+Callers should be able to create an empty builder using the standard Default trait.
+
+### Task
+
+Derive Default for RequestBuilder. Option fields already default to None, so the empty builder does not need a manual impl.
+
+### Concept context
+
+Create an empty builder with the standard Default trait.
+
+- Prerequisites: `builder-setters`, `default-impl`
+- Tags: `builder`, `default`, `traits`
+
+### Starter project files
+
+#### `src/lib.rs` — editable
+
+Source: `lessons/request-api/003-builder-default/starter/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Request {
+    pub method: String,
+    pub path: String,
+    pub body: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RequestBuilder {
+    method: Option<String>,
+    path: Option<String>,
+}
+
+impl RequestBuilder {
+    pub fn new() -> Self {
+        Self {
+            method: None,
+            path: None,
+        }
+    }
+
+    pub fn method(mut self, method: impl Into<String>) -> Self {
+        self.method = Some(method.into());
+        self
+    }
+}
+
+// Continue from the previous lesson.
+// TODO: derive Default for RequestBuilder.
+```
+
+#### `tests/public.rs` — test
+
+Source: `lessons/request-api/003-builder-default/tests/public.rs`
+
+```rust
+use rust_daily_lesson::RequestBuilder;
+
+#[test]
+fn builder_has_default_empty_state() {
+    let _builder = RequestBuilder::default();
+}
+```
+
+### Progressive hints
+
+1. Default should produce the same empty state every time.
+2. Option<T> implements Default by returning None.
+3. Add Default to the derive list on RequestBuilder. The authored code is included in the Solution section.
+
+### Validation contract
+
+```json
+{
+  "mode": "all",
+  "validations": [
+    {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "derived_trait_for_type",
+          "traitName": "Default",
+          "typeName": "RequestBuilder"
+        }
+      ]
+    },
+    {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "testFiles": [
+        {
+          "path": "tests/public.rs",
+          "sourcePath": "tests/public.rs"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Authored solution
+
+#### `src/lib.rs`
+
+Source: `lessons/request-api/003-builder-default/solution/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Request {
+    pub method: String,
+    pub path: String,
+    pub body: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct RequestBuilder {
+    method: Option<String>,
+    path: Option<String>,
+}
+
+impl RequestBuilder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn method(mut self, method: impl Into<String>) -> Self {
+        self.method = Some(method.into());
+        self
+    }
+}
+```
+
+### Completion explanation
+
+Deriving Default is idiomatic when every field already has the desired default. Option fields make the empty builder state explicit by starting as None.
+
+### Author notes
+
+Teaches builder-default through a focused, behavior-checked Rust micro-lesson.
+
+---
+
+## 28. Validate builder output
+
+Source: `lessons/request-api/004-builder-result`
+
+| Field | Value |
+| --- | --- |
+| Lesson ID | `request-builder-result-004` |
+| Production lesson | [Open lesson](https://borrowquest.site/#lesson/request-builder-result-004) |
+| Arc | Build a request API (step 4 of 6) |
+| Concept | Builder Result output (`builder-result`) |
+| Difficulty | medium |
+| Estimated time | 9 minutes |
+
+### Scenario
+
+A builder can be incomplete. build should report missing required fields instead of creating a bad Request.
+
+### Task
+
+Add a path setter, define BuildError with MissingMethod and MissingPath, and implement build so missing required fields return the matching error. A built Request should keep body as None for now.
+
+### Concept context
+
+Return Result from builders so incomplete state becomes a typed, recoverable error.
+
+- Prerequisites: `builder-default`, `result-validation`
+- Tags: `builder`, `result`, `validation`
+
+### Starter project files
+
+#### `src/lib.rs` — editable
+
+Source: `lessons/request-api/004-builder-result/starter/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Request {
+    pub method: String,
+    pub path: String,
+    pub body: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct RequestBuilder {
+    method: Option<String>,
+    path: Option<String>,
+}
+
+impl RequestBuilder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn method(mut self, method: impl Into<String>) -> Self {
+        self.method = Some(method.into());
+        self
+    }
+}
+
+// Continue from the previous lesson.
+// TODO: add path, build, and specific BuildError variants.
+```
+
+#### `tests/public.rs` — test
+
+Source: `lessons/request-api/004-builder-result/tests/public.rs`
+
+```rust
+use rust_daily_lesson::{BuildError, Request, RequestBuilder};
+
+#[test]
+fn builds_complete_request() {
+    assert_eq!(
+        RequestBuilder::new().method("GET").path("/health").build(),
+        Ok(Request {
+            method: "GET".to_owned(),
+            path: "/health".to_owned(),
+            body: None,
+        })
+    );
+}
+
+#[test]
+fn reports_missing_fields() {
+    assert_eq!(
+        RequestBuilder::new().path("/health").build(),
+        Err(BuildError::MissingMethod)
+    );
+    assert_eq!(
+        RequestBuilder::new().method("GET").build(),
+        Err(BuildError::MissingPath)
+    );
+}
+```
+
+### Progressive hints
+
+1. The build method is where optional builder state becomes required request state.
+2. ok_or can turn an Option into a Result with a specific missing-field error.
+3. Bind method and path first, then return Ok(Request { method, path, body: None }). The authored code is included in the Solution section.
+
+### Validation contract
+
+```json
+{
+  "mode": "all",
+  "validations": [
+    {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "enum_unit_variants",
+          "enumName": "BuildError",
+          "requiredVariants": [
+            "MissingMethod",
+            "MissingPath"
+          ]
+        },
+        {
+          "type": "impl_method",
+          "implFor": "RequestBuilder",
+          "methodName": "build",
+          "requiredSignatureIncludes": [
+            "Result<Request, BuildError>"
+          ]
+        },
+        {
+          "type": "source_includes",
+          "requiredSnippets": [
+            "ok_or(BuildError::MissingMethod)",
+            "ok_or(BuildError::MissingPath)"
+          ],
+          "forbiddenSnippets": [
+            "Incomplete",
+            "unwrap",
+            "expect",
+            "panic!"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "testFiles": [
+        {
+          "path": "tests/public.rs",
+          "sourcePath": "tests/public.rs"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Authored solution
+
+#### `src/lib.rs`
+
+Source: `lessons/request-api/004-builder-result/solution/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Request {
+    pub method: String,
+    pub path: String,
+    pub body: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct RequestBuilder {
+    method: Option<String>,
+    path: Option<String>,
+}
+
+impl RequestBuilder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn method(mut self, method: impl Into<String>) -> Self {
+        self.method = Some(method.into());
+        self
+    }
+
+    pub fn path(mut self, path: impl Into<String>) -> Self {
+        self.path = Some(path.into());
+        self
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum BuildError {
+    MissingMethod,
+    MissingPath,
+}
+
+impl RequestBuilder {
+    pub fn build(self) -> Result<Request, BuildError> {
+        let method = self.method.ok_or(BuildError::MissingMethod)?;
+        let path = self.path.ok_or(BuildError::MissingPath)?;
+
+        Ok(Request {
+            method,
+            path,
+            body: None,
+        })
+    }
+}
+```
+
+### Completion explanation
+
+Returning Result keeps invalid builder states from silently becoming invalid requests. Specific missing-field variants tell callers exactly what still needs to be set.
+
+### Author notes
+
+Teaches builder-result through a focused, behavior-checked Rust micro-lesson.
+
+---
+
+## 29. Convert RawRequest with TryFrom
+
+Source: `lessons/request-api/005-builder-tryfrom`
+
+| Field | Value |
+| --- | --- |
+| Lesson ID | `request-builder-tryfrom-005` |
+| Production lesson | [Open lesson](https://borrowquest.site/#lesson/request-builder-tryfrom-005) |
+| Arc | Build a request API (step 5 of 6) |
+| Concept | TryFrom for request data (`tryfrom-request`) |
+| Difficulty | medium |
+| Estimated time | 8 minutes |
+
+### Scenario
+
+A small input DTO can be converted into a validated Request using the same fallible conversion pattern as parser code.
+
+### Task
+
+The starter defines RawRequest with optional method, path, and body. Implement TryFrom<RawRequest> for Request, use BuildError as the associated error type, and preserve the optional body.
+
+### Concept context
+
+Convert a raw input type into a validated request with TryFrom.
+
+- Prerequisites: `builder-result`, `tryfrom-user`
+- Tags: `tryfrom`, `api-design`, `conversion`
+
+### Starter project files
+
+#### `src/lib.rs` — editable
+
+Source: `lessons/request-api/005-builder-tryfrom/starter/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Request {
+    pub method: String,
+    pub path: String,
+    pub body: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct RequestBuilder {
+    method: Option<String>,
+    path: Option<String>,
+}
+
+impl RequestBuilder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn method(mut self, method: impl Into<String>) -> Self {
+        self.method = Some(method.into());
+        self
+    }
+
+    pub fn path(mut self, path: impl Into<String>) -> Self {
+        self.path = Some(path.into());
+        self
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum BuildError {
+    MissingMethod,
+    MissingPath,
+}
+
+impl RequestBuilder {
+    pub fn build(self) -> Result<Request, BuildError> {
+        let method = self.method.ok_or(BuildError::MissingMethod)?;
+        let path = self.path.ok_or(BuildError::MissingPath)?;
+
+        Ok(Request {
+            method,
+            path,
+            body: None,
+        })
+    }
+}
+
+pub struct RawRequest {
+    pub method: Option<String>,
+    pub path: Option<String>,
+    pub body: Option<String>,
+}
+
+// Continue from the previous lesson.
+// TODO: implement TryFrom<RawRequest> for Request.
+```
+
+#### `tests/public.rs` — test
+
+Source: `lessons/request-api/005-builder-tryfrom/tests/public.rs`
+
+```rust
+use rust_daily_lesson::{BuildError, RawRequest, Request};
+
+#[test]
+fn converts_complete_raw_request() {
+    assert_eq!(
+        Request::try_from(RawRequest {
+            method: Some("GET".to_owned()),
+            path: Some("/health".to_owned()),
+            body: Some("{}".to_owned()),
+        }),
+        Ok(Request {
+            method: "GET".to_owned(),
+            path: "/health".to_owned(),
+            body: Some("{}".to_owned()),
+        })
+    );
+}
+
+#[test]
+fn reports_missing_request_fields() {
+    assert_eq!(
+        Request::try_from(RawRequest {
+            method: None,
+            path: Some("/health".to_owned()),
+            body: None,
+        }),
+        Err(BuildError::MissingMethod)
+    );
+    assert_eq!(
+        Request::try_from(RawRequest {
+            method: Some("GET".to_owned()),
+            path: None,
+            body: None,
+        }),
+        Err(BuildError::MissingPath)
+    );
+}
+```
+
+### Progressive hints
+
+1. TryFrom is appropriate because RawRequest may be missing required data.
+2. The associated Error type should be BuildError.
+3. Use ok_or to extract required fields, then move value.body into the Request. The authored code is included in the Solution section.
+
+### Validation contract
+
+```json
+{
+  "mode": "all",
+  "validations": [
+    {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "impl_trait_for_type",
+          "traitName": "TryFrom<RawRequest>",
+          "typeName": "Request"
+        },
+        {
+          "type": "source_includes",
+          "requiredSnippets": [
+            "type Error = BuildError",
+            "fn try_from",
+            "value.body"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "testFiles": [
+        {
+          "path": "tests/public.rs",
+          "sourcePath": "tests/public.rs"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Authored solution
+
+#### `src/lib.rs`
+
+Source: `lessons/request-api/005-builder-tryfrom/solution/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Request {
+    pub method: String,
+    pub path: String,
+    pub body: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct RequestBuilder {
+    method: Option<String>,
+    path: Option<String>,
+}
+
+impl RequestBuilder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn method(mut self, method: impl Into<String>) -> Self {
+        self.method = Some(method.into());
+        self
+    }
+
+    pub fn path(mut self, path: impl Into<String>) -> Self {
+        self.path = Some(path.into());
+        self
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BuildError {
+    MissingMethod,
+    MissingPath,
+}
+
+impl RequestBuilder {
+    pub fn build(self) -> Result<Request, BuildError> {
+        let method = self.method.ok_or(BuildError::MissingMethod)?;
+        let path = self.path.ok_or(BuildError::MissingPath)?;
+
+        Ok(Request {
+            method,
+            path,
+            body: None,
+        })
+    }
+}
+
+pub struct RawRequest {
+    pub method: Option<String>,
+    pub path: Option<String>,
+    pub body: Option<String>,
+}
+
+impl std::convert::TryFrom<RawRequest> for Request {
+    type Error = BuildError;
+
+    fn try_from(value: RawRequest) -> Result<Self, Self::Error> {
+        let method = value.method.ok_or(BuildError::MissingMethod)?;
+        let path = value.path.ok_or(BuildError::MissingPath)?;
+        let body = value.body;
+
+        Ok(Self { method, path, body })
+    }
+}
+```
+
+### Completion explanation
+
+TryFrom turns a possibly incomplete input type into a validated domain type. The conversion API clearly communicates that failure is possible.
+
+### Author notes
+
+Teaches tryfrom-request through a focused, behavior-checked Rust micro-lesson.
+
+---
+
+## 30. Document the request builder
+
+Source: `lessons/request-api/006-doc-example`
+
+| Field | Value |
+| --- | --- |
+| Lesson ID | `request-doc-example-006` |
+| Production lesson | [Open lesson](https://borrowquest.site/#lesson/request-doc-example-006) |
+| Arc | Build a request API (step 6 of 6) |
+| Concept | Documentation examples (`doc-examples`) |
+| Difficulty | easy |
+| Estimated time | 7 minutes |
+
+### Scenario
+
+The request API is small enough that one doc example can show its intended usage better than a long paragraph.
+
+### Task
+
+Add a short doc comment example above RequestBuilder. Show creating a builder, setting method and path, and checking the Result from build without unwrap or expect.
+
+### Concept context
+
+Write doc examples that show fallible APIs without unwrap or expect.
+
+- Prerequisites: `tryfrom-request`
+- Tags: `docs`, `examples`, `api-design`
+
+### Starter project files
+
+#### `src/lib.rs` — editable
+
+Source: `lessons/request-api/006-doc-example/starter/src/lib.rs`
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Request {
+    pub method: String,
+    pub path: String,
+    pub body: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct RequestBuilder {
+    method: Option<String>,
+    path: Option<String>,
+}
+
+impl RequestBuilder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn method(mut self, method: impl Into<String>) -> Self {
+        self.method = Some(method.into());
+        self
+    }
+
+    pub fn path(mut self, path: impl Into<String>) -> Self {
+        self.path = Some(path.into());
+        self
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BuildError {
+    MissingMethod,
+    MissingPath,
+}
+
+impl RequestBuilder {
+    pub fn build(self) -> Result<Request, BuildError> {
+        let method = self.method.ok_or(BuildError::MissingMethod)?;
+        let path = self.path.ok_or(BuildError::MissingPath)?;
+
+        Ok(Request {
+            method,
+            path,
+            body: None,
+        })
+    }
+}
+
+pub struct RawRequest {
+    pub method: Option<String>,
+    pub path: Option<String>,
+    pub body: Option<String>,
+}
+
+impl std::convert::TryFrom<RawRequest> for Request {
+    type Error = BuildError;
+
+    fn try_from(value: RawRequest) -> Result<Self, Self::Error> {
+        let method = value.method.ok_or(BuildError::MissingMethod)?;
+        let path = value.path.ok_or(BuildError::MissingPath)?;
+        let body = value.body;
+
+        Ok(Self { method, path, body })
+    }
+}
+
+// Continue from the previous lesson.
+// TODO: add a doc comment example above RequestBuilder.
+```
+
+#### `tests/public.rs` — test
+
+Source: `lessons/request-api/006-doc-example/tests/public.rs`
+
+```rust
+use rust_daily_lesson::{Request, RequestBuilder};
+
+#[test]
+fn documented_builder_flow_works() {
+    assert_eq!(
+        RequestBuilder::default()
+            .method("GET")
+            .path("/health")
+            .build(),
+        Ok(Request {
+            method: "GET".to_owned(),
+            path: "/health".to_owned(),
+            body: None,
+        })
+    );
+}
+```
+
+### Progressive hints
+
+1. Doc comments use /// before the item they describe.
+2. A compact example should show the normal path and assert on the Result instead of unwrapping it.
+3. Keep the example focused on how a caller should read the API. The authored code is included in the Solution section.
+
+### Validation contract
+
+```json
+{
+  "mode": "all",
+  "validations": [
+    {
+      "mode": "structural",
+      "timeoutMs": 10000,
+      "checks": [
+        {
+          "type": "source_includes",
+          "requiredSnippets": [
+            "///",
+            "RequestBuilder::default()",
+            "assert_eq!"
+          ],
+          "forbiddenSnippets": [
+            ".unwrap()",
+            ".expect(",
+            "panic!"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "std",
+      "testFiles": [
+        {
+          "path": "tests/public.rs",
+          "sourcePath": "tests/public.rs"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Authored solution
+
+#### `src/lib.rs`
+
+Source: `lessons/request-api/006-doc-example/solution/src/lib.rs`
+
+````rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Request {
+    pub method: String,
+    pub path: String,
+    pub body: Option<String>,
+}
+
+/// Builds a request from chainable setters.
+///
+/// ```
+/// use rust_daily_lesson::{Request, RequestBuilder};
+///
+/// let request = RequestBuilder::default()
+///     .method("GET")
+///     .path("/health")
+///     .build();
+///
+/// assert_eq!(
+///     request,
+///     Ok(Request {
+///         method: "GET".to_owned(),
+///         path: "/health".to_owned(),
+///         body: None,
+///     })
+/// );
+/// ```
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct RequestBuilder {
+    method: Option<String>,
+    path: Option<String>,
+}
+
+impl RequestBuilder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn method(mut self, method: impl Into<String>) -> Self {
+        self.method = Some(method.into());
+        self
+    }
+
+    pub fn path(mut self, path: impl Into<String>) -> Self {
+        self.path = Some(path.into());
+        self
+    }
+
+    pub fn build(self) -> Result<Request, BuildError> {
+        let method = self.method.ok_or(BuildError::MissingMethod)?;
+        let path = self.path.ok_or(BuildError::MissingPath)?;
+
+        Ok(Request {
+            method,
+            path,
+            body: None,
+        })
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BuildError {
+    MissingMethod,
+    MissingPath,
+}
+
+pub struct RawRequest {
+    pub method: Option<String>,
+    pub path: Option<String>,
+    pub body: Option<String>,
+}
+
+impl std::convert::TryFrom<RawRequest> for Request {
+    type Error = BuildError;
+
+    fn try_from(value: RawRequest) -> Result<Self, Self::Error> {
+        let method = value.method.ok_or(BuildError::MissingMethod)?;
+        let path = value.path.ok_or(BuildError::MissingPath)?;
+        let body = value.body;
+
+        Ok(Self { method, path, body })
+    }
+}
+````
+
+### Completion explanation
+
+A doc example teaches the API at the point of use. Showing Result-aware usage keeps the documentation aligned with fallible, production-style builder APIs.
+
+### Author notes
+
+Teaches doc-examples through a focused, behavior-checked Rust micro-lesson.
 
 ---
 
@@ -21158,7 +21158,7 @@ The game service tracks the player's score, which accumulates from gameplay even
 
 ### Task
 
-In src/domain.rs define a Score newtype wrapping u32 with a private field, a ZERO constant, new and value constructors, and a saturating AddAssign impl.
+In src/domain/score.rs define a Score newtype wrapping u32 with a private field, a ZERO constant, new and value constructors, and a saturating AddAssign impl.
 
 ### Concept context
 
@@ -21318,14 +21318,24 @@ pub fn circle_collide(a: Vec2, radius_a: f32, b: Vec2, radius_b: f32) -> bool {
 }
 ```
 
-#### `src/domain.rs` — editable
+#### `src/domain.rs` — readonly
 
 Source: `lessons/asteroids-domain/001-score-newtype/starter/src/domain.rs`
 
 ```rust
+mod score;
+
+pub use score::Score;
+```
+
+#### `src/domain/score.rs` — editable
+
+Source: `lessons/asteroids-domain/001-score-newtype/starter/src/domain/score.rs`
+
+```rust
 // TODO: Model the score as a domain value.
 //
-// In src/domain.rs define:
+// In src/domain/score.rs define:
 //   - `pub struct Score(u32)` with a PRIVATE field
 //   - `pub const ZERO: Self`
 //   - `pub const fn new(value: u32) -> Self` and `pub const fn value(self) -> u32`
@@ -21459,13 +21469,11 @@ fn main() {
 
 ### Authored solution
 
-#### `src/domain.rs`
+#### `src/domain/score.rs`
 
-Source: `lessons/asteroids-domain/001-score-newtype/solution/src/domain.rs`
+Source: `lessons/asteroids-domain/001-score-newtype/solution/src/domain/score.rs`
 
 ```rust
-use crate::{Vec2, Screen, Random, Input, Turn, circle_collide};
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct Score(u32);
 
@@ -21517,7 +21525,7 @@ A player session counts remaining lives and the current wave. Losing the last li
 
 ### Task
 
-In src/domain.rs add NonZeroLives (wrapping std::num::NonZeroU8) with new, value, and lose_one returning LifeLoss, and Wave (wrapping std::num::NonZeroU32) with FIRST, new, value, and next.
+In src/domain/lives_wave.rs add NonZeroLives (wrapping std::num::NonZeroU8) with new, value, and lose_one returning LifeLoss, and Wave (wrapping std::num::NonZeroU32) with FIRST, new, value, and next.
 
 ### Concept context
 
@@ -21677,13 +21685,23 @@ pub fn circle_collide(a: Vec2, radius_a: f32, b: Vec2, radius_b: f32) -> bool {
 }
 ```
 
-#### `src/domain.rs` — editable
+#### `src/domain.rs` — readonly
 
 Source: `lessons/asteroids-domain/002-lives-wave/starter/src/domain.rs`
 
 ```rust
-use crate::{Vec2, Screen, Random, Input, Turn, circle_collide};
+mod lives_wave;
+mod score;
 
+pub use lives_wave::{LifeLoss, NonZeroLives, Wave};
+pub use score::Score;
+```
+
+#### `src/domain/score.rs` — readonly
+
+Source: `lessons/asteroids-domain/002-lives-wave/starter/src/domain/score.rs`
+
+```rust
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct Score(u32);
 
@@ -21704,8 +21722,13 @@ impl std::ops::AddAssign for Score {
         self.0 = self.0.saturating_add(rhs.0);
     }
 }
+```
 
+#### `src/domain/lives_wave.rs` — editable
 
+Source: `lessons/asteroids-domain/002-lives-wave/starter/src/domain/lives_wave.rs`
+
+```rust
 // TODO: Model lives and waves as non-zero counters.
 //
 // Define:
@@ -21853,34 +21876,11 @@ fn main() {
 
 ### Authored solution
 
-#### `src/domain.rs`
+#### `src/domain/lives_wave.rs`
 
-Source: `lessons/asteroids-domain/002-lives-wave/solution/src/domain.rs`
+Source: `lessons/asteroids-domain/002-lives-wave/solution/src/domain/lives_wave.rs`
 
 ```rust
-use crate::{Vec2, Screen, Random, Input, Turn, circle_collide};
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
-pub struct Score(u32);
-
-impl Score {
-    pub const ZERO: Self = Self(0);
-
-    pub const fn new(value: u32) -> Self {
-        Self(value)
-    }
-
-    pub const fn value(self) -> u32 {
-        self.0
-    }
-}
-
-impl std::ops::AddAssign for Score {
-    fn add_assign(&mut self, rhs: Self) {
-        self.0 = self.0.saturating_add(rhs.0);
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct NonZeroLives(std::num::NonZeroU8);
 
@@ -21958,7 +21958,7 @@ The ship is never simply alive or dead: after respawning it is invulnerable whil
 
 ### Task
 
-In src/domain.rs define ShipState with Active(Ship), Invulnerable { ship, remaining }, and Respawning { remaining }, plus update(dt, screen), ship(), ship_mut(), and the RESPAWN_TIME and INVULNERABILITY_TIME constants. The Ship kinematics are provided above.
+In src/domain/ship.rs define ShipState with Active(Ship), Invulnerable { ship, remaining }, and Respawning { remaining }, plus update(dt, screen), ship(), ship_mut(), and the RESPAWN_TIME and INVULNERABILITY_TIME constants. The Ship kinematics are provided above.
 
 ### Concept context
 
@@ -22118,13 +22118,25 @@ pub fn circle_collide(a: Vec2, radius_a: f32, b: Vec2, radius_b: f32) -> bool {
 }
 ```
 
-#### `src/domain.rs` — editable
+#### `src/domain.rs` — readonly
 
 Source: `lessons/asteroids-domain/003-ship-state/starter/src/domain.rs`
 
 ```rust
-use crate::{Vec2, Screen, Random, Input, Turn, circle_collide};
+mod lives_wave;
+mod score;
+mod ship;
 
+pub use lives_wave::{LifeLoss, NonZeroLives, Wave};
+pub use score::Score;
+pub use ship::{Ship, ShipState};
+```
+
+#### `src/domain/score.rs` — readonly
+
+Source: `lessons/asteroids-domain/003-ship-state/starter/src/domain/score.rs`
+
+```rust
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct Score(u32);
 
@@ -22145,7 +22157,13 @@ impl std::ops::AddAssign for Score {
         self.0 = self.0.saturating_add(rhs.0);
     }
 }
+```
 
+#### `src/domain/lives_wave.rs` — readonly
+
+Source: `lessons/asteroids-domain/003-ship-state/starter/src/domain/lives_wave.rs`
+
+```rust
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct NonZeroLives(std::num::NonZeroU8);
 
@@ -22192,6 +22210,14 @@ impl Wave {
         self.0.checked_add(1).map(Self)
     }
 }
+```
+
+#### `src/domain/ship.rs` — editable
+
+Source: `lessons/asteroids-domain/003-ship-state/starter/src/domain/ship.rs`
+
+```rust
+use crate::{Screen, Turn, Vec2};
 
 /// The player's ship: kinematics are provided; the state machine is your task.
 #[derive(Debug, Clone, Copy)]
@@ -22242,7 +22268,6 @@ impl Ship {
         }
     }
 }
-
 
 // TODO: Model the ship as a state machine.
 //
@@ -22371,80 +22396,12 @@ fn the_countdown_constants_match_the_game() {
 
 ### Authored solution
 
-#### `src/domain.rs`
+#### `src/domain/ship.rs`
 
-Source: `lessons/asteroids-domain/003-ship-state/solution/src/domain.rs`
+Source: `lessons/asteroids-domain/003-ship-state/solution/src/domain/ship.rs`
 
 ```rust
-use crate::{Vec2, Screen, Random, Input, Turn, circle_collide};
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
-pub struct Score(u32);
-
-impl Score {
-    pub const ZERO: Self = Self(0);
-
-    pub const fn new(value: u32) -> Self {
-        Self(value)
-    }
-
-    pub const fn value(self) -> u32 {
-        self.0
-    }
-}
-
-impl std::ops::AddAssign for Score {
-    fn add_assign(&mut self, rhs: Self) {
-        self.0 = self.0.saturating_add(rhs.0);
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct NonZeroLives(std::num::NonZeroU8);
-
-impl NonZeroLives {
-    pub fn new(value: u8) -> Option<Self> {
-        std::num::NonZeroU8::new(value).map(Self)
-    }
-
-    pub const fn value(self) -> u8 {
-        self.0.get()
-    }
-
-    /// Lose one life. The terminal case is `GameOver`, never a zero counter.
-    pub fn lose_one(self) -> LifeLoss {
-        std::num::NonZeroU8::new(self.0.get() - 1)
-            .map(Self)
-            .map_or(LifeLoss::GameOver, LifeLoss::Remaining)
-    }
-}
-
-/// The result of losing a life: either lives remain, or the session is over.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LifeLoss {
-    Remaining(NonZeroLives),
-    GameOver,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Wave(std::num::NonZeroU32);
-
-impl Wave {
-    pub const FIRST: Self = Self(std::num::NonZeroU32::MIN);
-
-    pub fn new(value: u32) -> Option<Self> {
-        std::num::NonZeroU32::new(value).map(Self)
-    }
-
-    pub const fn value(self) -> u32 {
-        self.0.get()
-    }
-
-    /// Advance to the next wave; `None` if it would overflow.
-    pub fn next(self) -> Option<Self> {
-        self.0.checked_add(1).map(Self)
-    }
-}
+use crate::{Screen, Turn, Vec2};
 
 /// The player's ship: kinematics are provided; the state machine is your task.
 #[derive(Debug, Clone, Copy)]
@@ -22591,7 +22548,7 @@ Firing is rate-limited by a cooldown timeout, and every bullet carries a lifetim
 
 ### Task
 
-In src/domain.rs define FiringPose from &Ship, WeaponConfig, WeaponState (Ready / CoolingDown), Weapon with new, fire taking a FiringPose and returning an optional Bullet, and update, and Bullet with new, position, and update returning whether the bullet should be kept.
+In src/domain/weapon.rs define FiringPose from &Ship, WeaponConfig, WeaponState (Ready / CoolingDown), Weapon with new, fire taking a FiringPose and returning an optional Bullet, and update, and Bullet with new, position, and update returning whether the bullet should be kept.
 
 ### Concept context
 
@@ -22751,13 +22708,27 @@ pub fn circle_collide(a: Vec2, radius_a: f32, b: Vec2, radius_b: f32) -> bool {
 }
 ```
 
-#### `src/domain.rs` — editable
+#### `src/domain.rs` — readonly
 
 Source: `lessons/asteroids-domain/004-weapon-bullet/starter/src/domain.rs`
 
 ```rust
-use crate::{Vec2, Screen, Random, Input, Turn, circle_collide};
+mod lives_wave;
+mod score;
+mod ship;
+mod weapon;
 
+pub use lives_wave::{LifeLoss, NonZeroLives, Wave};
+pub use score::Score;
+pub use ship::{Ship, ShipState};
+pub use weapon::{Bullet, FiringPose, Weapon, WeaponConfig, WeaponState};
+```
+
+#### `src/domain/score.rs` — readonly
+
+Source: `lessons/asteroids-domain/004-weapon-bullet/starter/src/domain/score.rs`
+
+```rust
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct Score(u32);
 
@@ -22778,7 +22749,13 @@ impl std::ops::AddAssign for Score {
         self.0 = self.0.saturating_add(rhs.0);
     }
 }
+```
 
+#### `src/domain/lives_wave.rs` — readonly
+
+Source: `lessons/asteroids-domain/004-weapon-bullet/starter/src/domain/lives_wave.rs`
+
+```rust
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct NonZeroLives(std::num::NonZeroU8);
 
@@ -22825,6 +22802,14 @@ impl Wave {
         self.0.checked_add(1).map(Self)
     }
 }
+```
+
+#### `src/domain/ship.rs` — readonly
+
+Source: `lessons/asteroids-domain/004-weapon-bullet/starter/src/domain/ship.rs`
+
+```rust
+use crate::{Screen, Turn, Vec2};
 
 /// The player's ship: kinematics are provided; the state machine is your task.
 #[derive(Debug, Clone, Copy)]
@@ -22940,8 +22925,15 @@ impl ShipState {
         }
     }
 }
+```
 
+#### `src/domain/weapon.rs` — editable
 
+Source: `lessons/asteroids-domain/004-weapon-bullet/starter/src/domain/weapon.rs`
+
+```rust
+use super::Ship;
+use crate::{Screen, Vec2};
 
 // TODO: Model the weapon cooldown and the bullet lifetime.
 //
@@ -23073,196 +23065,13 @@ fn bullet_is_culled_when_offscreen() {
 
 ### Authored solution
 
-#### `src/domain.rs`
+#### `src/domain/weapon.rs`
 
-Source: `lessons/asteroids-domain/004-weapon-bullet/solution/src/domain.rs`
+Source: `lessons/asteroids-domain/004-weapon-bullet/solution/src/domain/weapon.rs`
 
 ```rust
-use crate::{Vec2, Screen, Random, Input, Turn, circle_collide};
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
-pub struct Score(u32);
-
-impl Score {
-    pub const ZERO: Self = Self(0);
-
-    pub const fn new(value: u32) -> Self {
-        Self(value)
-    }
-
-    pub const fn value(self) -> u32 {
-        self.0
-    }
-}
-
-impl std::ops::AddAssign for Score {
-    fn add_assign(&mut self, rhs: Self) {
-        self.0 = self.0.saturating_add(rhs.0);
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct NonZeroLives(std::num::NonZeroU8);
-
-impl NonZeroLives {
-    pub fn new(value: u8) -> Option<Self> {
-        std::num::NonZeroU8::new(value).map(Self)
-    }
-
-    pub const fn value(self) -> u8 {
-        self.0.get()
-    }
-
-    /// Lose one life. The terminal case is `GameOver`, never a zero counter.
-    pub fn lose_one(self) -> LifeLoss {
-        std::num::NonZeroU8::new(self.0.get() - 1)
-            .map(Self)
-            .map_or(LifeLoss::GameOver, LifeLoss::Remaining)
-    }
-}
-
-/// The result of losing a life: either lives remain, or the session is over.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LifeLoss {
-    Remaining(NonZeroLives),
-    GameOver,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Wave(std::num::NonZeroU32);
-
-impl Wave {
-    pub const FIRST: Self = Self(std::num::NonZeroU32::MIN);
-
-    pub fn new(value: u32) -> Option<Self> {
-        std::num::NonZeroU32::new(value).map(Self)
-    }
-
-    pub const fn value(self) -> u32 {
-        self.0.get()
-    }
-
-    /// Advance to the next wave; `None` if it would overflow.
-    pub fn next(self) -> Option<Self> {
-        self.0.checked_add(1).map(Self)
-    }
-}
-
-/// The player's ship: kinematics are provided; the state machine is your task.
-#[derive(Debug, Clone, Copy)]
-pub struct Ship {
-    position: Vec2,
-    velocity: Vec2,
-    heading: f32,
-}
-
-impl Ship {
-    const ROTATION_SPEED: f32 = 3.5;
-    const THRUST: f32 = 220.0;
-    const MAX_SPEED: f32 = 380.0;
-
-    /// Spawn the ship at the center of the playfield.
-    pub fn spawn(screen: Screen) -> Self {
-        Self {
-            position: screen.center(),
-            velocity: Vec2::ZERO,
-            heading: 0.0,
-        }
-    }
-
-    pub fn position(&self) -> Vec2 {
-        self.position
-    }
-
-    pub fn heading(&self) -> f32 {
-        self.heading
-    }
-
-    /// Integrate motion and wrap around the playfield.
-    pub fn update(&mut self, dt: std::time::Duration, screen: Screen) {
-        self.position += self.velocity * dt.as_secs_f32();
-        self.position = screen.wrap(self.position);
-    }
-
-    pub fn rotate(&mut self, turn: Turn, dt: std::time::Duration) {
-        self.heading += turn.direction() * Self::ROTATION_SPEED * dt.as_secs_f32();
-    }
-
-    pub fn accelerate(&mut self, dt: std::time::Duration) {
-        let facing = Vec2::new(self.heading.sin(), -self.heading.cos());
-        self.velocity += facing * (Self::THRUST * dt.as_secs_f32());
-        let speed = self.velocity.length();
-        if speed > Self::MAX_SPEED {
-            self.velocity *= Self::MAX_SPEED / speed;
-        }
-    }
-}
-
-/// The three states a ship can be in. There is no "dead" state: a dead ship is
-/// either respawning or the session is over.
-#[derive(Debug, Clone, Copy)]
-pub enum ShipState {
-    Active(Ship),
-
-    /// Recently respawned; the ship exists but collisions are ignored.
-    Invulnerable {
-        ship: Ship,
-        remaining: std::time::Duration,
-    },
-
-    /// Waiting to respawn; there is no ship at all.
-    Respawning {
-        remaining: std::time::Duration,
-    },
-}
-
-impl ShipState {
-    pub const INVULNERABILITY_TIME: std::time::Duration = std::time::Duration::from_secs(2);
-    pub const RESPAWN_TIME: std::time::Duration = std::time::Duration::from_millis(1_500);
-
-    /// Advance one frame: the ship moves, countdowns tick, and expired
-    /// countdowns transition to the next state.
-    pub fn update(&mut self, dt: std::time::Duration, screen: Screen) {
-        match self {
-            Self::Active(ship) => {
-                ship.update(dt, screen);
-            }
-            Self::Invulnerable { ship, remaining } => {
-                ship.update(dt, screen);
-                *remaining = remaining.saturating_sub(dt);
-                if remaining.is_zero() {
-                    let ship = std::mem::replace(ship, Ship::spawn(screen));
-                    *self = Self::Active(ship);
-                }
-            }
-            Self::Respawning { remaining } => {
-                *remaining = remaining.saturating_sub(dt);
-                if remaining.is_zero() {
-                    *self = Self::Invulnerable {
-                        ship: Ship::spawn(screen),
-                        remaining: Self::INVULNERABILITY_TIME,
-                    };
-                }
-            }
-        }
-    }
-
-    /// The ship, if one currently exists.
-    pub fn ship(&self) -> Option<&Ship> {
-        match self {
-            Self::Active(ship) | Self::Invulnerable { ship, .. } => Some(ship),
-            Self::Respawning { .. } => None,
-        }
-    }
-
-    pub fn ship_mut(&mut self) -> Option<&mut Ship> {
-        match self {
-            Self::Active(ship) | Self::Invulnerable { ship, .. } => Some(ship),
-            Self::Respawning { .. } => None,
-        }
-    }
-}
-
+use super::Ship;
+use crate::{Screen, Vec2};
 
 /// The ship pose needed to create a bullet, without coupling Weapon to Ship.
 #[derive(Debug, Clone, Copy)]
@@ -23274,8 +23083,8 @@ pub struct FiringPose {
 impl From<&Ship> for FiringPose {
     fn from(ship: &Ship) -> Self {
         Self {
-            origin: ship.position,
-            direction: Vec2::new(ship.heading.sin(), -ship.heading.cos()),
+            origin: ship.position(),
+            direction: Vec2::new(ship.heading().sin(), -ship.heading().cos()),
         }
     }
 }
@@ -23284,9 +23093,7 @@ impl From<&Ship> for FiringPose {
 #[derive(Debug, Clone, Copy)]
 pub enum WeaponState {
     Ready,
-    CoolingDown {
-        remaining: std::time::Duration,
-    },
+    CoolingDown { remaining: std::time::Duration },
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -23414,7 +23221,7 @@ Every asteroid shares the same kinematic body, but its size kind decides the col
 
 ### Task
 
-In src/domain.rs define AsteroidKind, a private AsteroidBody helper, Asteroid (with private kind and body fields), and AsteroidDestruction, with new, kind, position, velocity, radius, score, update, and destroy taking the injected randomness.
+In src/domain/asteroid.rs define AsteroidKind, a private AsteroidBody helper, Asteroid (with private kind and body fields), and AsteroidDestruction, with new, kind, position, velocity, radius, score, update, and destroy taking the injected randomness.
 
 ### Concept context
 
@@ -23574,13 +23381,29 @@ pub fn circle_collide(a: Vec2, radius_a: f32, b: Vec2, radius_b: f32) -> bool {
 }
 ```
 
-#### `src/domain.rs` — editable
+#### `src/domain.rs` — readonly
 
 Source: `lessons/asteroids-domain/005-asteroid-kinds/starter/src/domain.rs`
 
 ```rust
-use crate::{Vec2, Screen, Random, Input, Turn, circle_collide};
+mod asteroid;
+mod lives_wave;
+mod score;
+mod ship;
+mod weapon;
 
+pub use asteroid::{Asteroid, AsteroidDestruction, AsteroidKind};
+pub use lives_wave::{LifeLoss, NonZeroLives, Wave};
+pub use score::Score;
+pub use ship::{Ship, ShipState};
+pub use weapon::{Bullet, FiringPose, Weapon, WeaponConfig, WeaponState};
+```
+
+#### `src/domain/score.rs` — readonly
+
+Source: `lessons/asteroids-domain/005-asteroid-kinds/starter/src/domain/score.rs`
+
+```rust
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct Score(u32);
 
@@ -23601,7 +23424,13 @@ impl std::ops::AddAssign for Score {
         self.0 = self.0.saturating_add(rhs.0);
     }
 }
+```
 
+#### `src/domain/lives_wave.rs` — readonly
+
+Source: `lessons/asteroids-domain/005-asteroid-kinds/starter/src/domain/lives_wave.rs`
+
+```rust
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct NonZeroLives(std::num::NonZeroU8);
 
@@ -23648,6 +23477,14 @@ impl Wave {
         self.0.checked_add(1).map(Self)
     }
 }
+```
+
+#### `src/domain/ship.rs` — readonly
+
+Source: `lessons/asteroids-domain/005-asteroid-kinds/starter/src/domain/ship.rs`
+
+```rust
+use crate::{Screen, Turn, Vec2};
 
 /// The player's ship: kinematics are provided; the state machine is your task.
 #[derive(Debug, Clone, Copy)]
@@ -23763,7 +23600,15 @@ impl ShipState {
         }
     }
 }
+```
 
+#### `src/domain/weapon.rs` — readonly
+
+Source: `lessons/asteroids-domain/005-asteroid-kinds/starter/src/domain/weapon.rs`
+
+```rust
+use super::Ship;
+use crate::{Screen, Vec2};
 
 /// The ship pose needed to create a bullet, without coupling Weapon to Ship.
 #[derive(Debug, Clone, Copy)]
@@ -23775,8 +23620,8 @@ pub struct FiringPose {
 impl From<&Ship> for FiringPose {
     fn from(ship: &Ship) -> Self {
         Self {
-            origin: ship.position,
-            direction: Vec2::new(ship.heading.sin(), -ship.heading.cos()),
+            origin: ship.position(),
+            direction: Vec2::new(ship.heading().sin(), -ship.heading().cos()),
         }
     }
 }
@@ -23785,9 +23630,7 @@ impl From<&Ship> for FiringPose {
 #[derive(Debug, Clone, Copy)]
 pub enum WeaponState {
     Ready,
-    CoolingDown {
-        remaining: std::time::Duration,
-    },
+    CoolingDown { remaining: std::time::Duration },
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -23884,6 +23727,16 @@ impl Bullet {
         !self.remaining.is_zero() && screen.contains(self.position)
     }
 }
+```
+
+#### `src/domain/asteroid.rs` — editable
+
+Source: `lessons/asteroids-domain/005-asteroid-kinds/starter/src/domain/asteroid.rs`
+
+```rust
+use super::Score;
+use crate::{Random, Screen, Vec2};
+
 // TODO: Model asteroid kinds and their destruction.
 //
 // Define:
@@ -24085,7 +23938,7 @@ fn small_asteroids_are_destroyed_outright() {
 Source: `lessons/asteroids-domain/005-asteroid-kinds/compile_fail/asteroid_body_private.rs`
 
 ```rust
-use rust_daily_lesson::domain::AsteroidBody;
+use rust_daily_lesson::domain::asteroid::AsteroidBody;
 
 fn main() {
     let _ = AsteroidBody;
@@ -24094,319 +23947,16 @@ fn main() {
 
 ### Authored solution
 
-#### `src/domain.rs`
+#### `src/domain/asteroid.rs`
 
-Source: `lessons/asteroids-domain/005-asteroid-kinds/solution/src/domain.rs`
+Source: `lessons/asteroids-domain/005-asteroid-kinds/solution/src/domain/asteroid.rs`
 
 ```rust
-use crate::{Vec2, Screen, Random, Input, Turn, circle_collide};
+use super::Score;
+use crate::{Random, Screen, Vec2};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
-pub struct Score(u32);
-
-impl Score {
-    pub const ZERO: Self = Self(0);
-
-    pub const fn new(value: u32) -> Self {
-        Self(value)
-    }
-
-    pub const fn value(self) -> u32 {
-        self.0
-    }
-}
-
-impl std::ops::AddAssign for Score {
-    fn add_assign(&mut self, rhs: Self) {
-        self.0 = self.0.saturating_add(rhs.0);
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct NonZeroLives(std::num::NonZeroU8);
-
-impl NonZeroLives {
-    pub fn new(value: u8) -> Option<Self> {
-        std::num::NonZeroU8::new(value).map(Self)
-    }
-
-    pub const fn value(self) -> u8 {
-        self.0.get()
-    }
-
-    /// Lose one life. The terminal case is `GameOver`, never a zero counter.
-    pub fn lose_one(self) -> LifeLoss {
-        std::num::NonZeroU8::new(self.0.get() - 1)
-            .map(Self)
-            .map_or(LifeLoss::GameOver, LifeLoss::Remaining)
-    }
-}
-
-/// The result of losing a life: either lives remain, or the session is over.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LifeLoss {
-    Remaining(NonZeroLives),
-    GameOver,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Wave(std::num::NonZeroU32);
-
-impl Wave {
-    pub const FIRST: Self = Self(std::num::NonZeroU32::MIN);
-
-    pub fn new(value: u32) -> Option<Self> {
-        std::num::NonZeroU32::new(value).map(Self)
-    }
-
-    pub const fn value(self) -> u32 {
-        self.0.get()
-    }
-
-    /// Advance to the next wave; `None` if it would overflow.
-    pub fn next(self) -> Option<Self> {
-        self.0.checked_add(1).map(Self)
-    }
-}
-
-/// The player's ship: kinematics are provided; the state machine is your task.
-#[derive(Debug, Clone, Copy)]
-pub struct Ship {
-    position: Vec2,
-    velocity: Vec2,
-    heading: f32,
-}
-
-impl Ship {
-    const ROTATION_SPEED: f32 = 3.5;
-    const THRUST: f32 = 220.0;
-    const MAX_SPEED: f32 = 380.0;
-
-    /// Spawn the ship at the center of the playfield.
-    pub fn spawn(screen: Screen) -> Self {
-        Self {
-            position: screen.center(),
-            velocity: Vec2::ZERO,
-            heading: 0.0,
-        }
-    }
-
-    pub fn position(&self) -> Vec2 {
-        self.position
-    }
-
-    pub fn heading(&self) -> f32 {
-        self.heading
-    }
-
-    /// Integrate motion and wrap around the playfield.
-    pub fn update(&mut self, dt: std::time::Duration, screen: Screen) {
-        self.position += self.velocity * dt.as_secs_f32();
-        self.position = screen.wrap(self.position);
-    }
-
-    pub fn rotate(&mut self, turn: Turn, dt: std::time::Duration) {
-        self.heading += turn.direction() * Self::ROTATION_SPEED * dt.as_secs_f32();
-    }
-
-    pub fn accelerate(&mut self, dt: std::time::Duration) {
-        let facing = Vec2::new(self.heading.sin(), -self.heading.cos());
-        self.velocity += facing * (Self::THRUST * dt.as_secs_f32());
-        let speed = self.velocity.length();
-        if speed > Self::MAX_SPEED {
-            self.velocity *= Self::MAX_SPEED / speed;
-        }
-    }
-}
-
-/// The three states a ship can be in. There is no "dead" state: a dead ship is
-/// either respawning or the session is over.
-#[derive(Debug, Clone, Copy)]
-pub enum ShipState {
-    Active(Ship),
-
-    /// Recently respawned; the ship exists but collisions are ignored.
-    Invulnerable {
-        ship: Ship,
-        remaining: std::time::Duration,
-    },
-
-    /// Waiting to respawn; there is no ship at all.
-    Respawning {
-        remaining: std::time::Duration,
-    },
-}
-
-impl ShipState {
-    pub const INVULNERABILITY_TIME: std::time::Duration = std::time::Duration::from_secs(2);
-    pub const RESPAWN_TIME: std::time::Duration = std::time::Duration::from_millis(1_500);
-
-    /// Advance one frame: the ship moves, countdowns tick, and expired
-    /// countdowns transition to the next state.
-    pub fn update(&mut self, dt: std::time::Duration, screen: Screen) {
-        match self {
-            Self::Active(ship) => {
-                ship.update(dt, screen);
-            }
-            Self::Invulnerable { ship, remaining } => {
-                ship.update(dt, screen);
-                *remaining = remaining.saturating_sub(dt);
-                if remaining.is_zero() {
-                    let ship = std::mem::replace(ship, Ship::spawn(screen));
-                    *self = Self::Active(ship);
-                }
-            }
-            Self::Respawning { remaining } => {
-                *remaining = remaining.saturating_sub(dt);
-                if remaining.is_zero() {
-                    *self = Self::Invulnerable {
-                        ship: Ship::spawn(screen),
-                        remaining: Self::INVULNERABILITY_TIME,
-                    };
-                }
-            }
-        }
-    }
-
-    /// The ship, if one currently exists.
-    pub fn ship(&self) -> Option<&Ship> {
-        match self {
-            Self::Active(ship) | Self::Invulnerable { ship, .. } => Some(ship),
-            Self::Respawning { .. } => None,
-        }
-    }
-
-    pub fn ship_mut(&mut self) -> Option<&mut Ship> {
-        match self {
-            Self::Active(ship) | Self::Invulnerable { ship, .. } => Some(ship),
-            Self::Respawning { .. } => None,
-        }
-    }
-}
-
-
-/// The ship pose needed to create a bullet, without coupling Weapon to Ship.
-#[derive(Debug, Clone, Copy)]
-pub struct FiringPose {
-    origin: Vec2,
-    direction: Vec2,
-}
-
-impl From<&Ship> for FiringPose {
-    fn from(ship: &Ship) -> Self {
-        Self {
-            origin: ship.position,
-            direction: Vec2::new(ship.heading.sin(), -ship.heading.cos()),
-        }
-    }
-}
-
-/// The weapon: ready to fire, or cooling down after a shot.
-#[derive(Debug, Clone, Copy)]
-pub enum WeaponState {
-    Ready,
-    CoolingDown {
-        remaining: std::time::Duration,
-    },
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct WeaponConfig {
-    cooldown: std::time::Duration,
-    muzzle_offset: f32,
-    bullet_speed: f32,
-    bullet_lifetime: std::time::Duration,
-}
-
-impl WeaponConfig {
-    pub const fn new(
-        cooldown: std::time::Duration,
-        muzzle_offset: f32,
-        bullet_speed: f32,
-        bullet_lifetime: std::time::Duration,
-    ) -> Self {
-        Self {
-            cooldown,
-            muzzle_offset,
-            bullet_speed,
-            bullet_lifetime,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct Weapon {
-    config: WeaponConfig,
-    state: WeaponState,
-}
-
-impl Weapon {
-    pub fn new(config: WeaponConfig) -> Self {
-        Self {
-            config,
-            state: WeaponState::Ready,
-        }
-    }
-
-    /// Try to fire: creates a bullet and consumes the cooldown when ready.
-    pub fn fire(&mut self, pose: FiringPose) -> Option<Bullet> {
-        if !matches!(self.state, WeaponState::Ready) {
-            return None;
-        }
-
-        self.state = WeaponState::CoolingDown {
-            remaining: self.config.cooldown,
-        };
-        Some(Bullet::new(
-            pose.origin + pose.direction * self.config.muzzle_offset,
-            pose.direction * self.config.bullet_speed,
-            self.config.bullet_lifetime,
-        ))
-    }
-
-    pub fn update(&mut self, dt: std::time::Duration) {
-        if let WeaponState::CoolingDown { remaining } = &mut self.state {
-            *remaining = remaining.saturating_sub(dt);
-            if remaining.is_zero() {
-                self.state = WeaponState::Ready;
-            }
-        }
-    }
-}
-
-/// A bullet in flight. Dies when its lifetime expires or it leaves the screen
-/// (bullets do not wrap).
-#[derive(Debug, Clone, Copy)]
-pub struct Bullet {
-    position: Vec2,
-    velocity: Vec2,
-    remaining: std::time::Duration,
-}
-
-impl Bullet {
-    pub fn new(position: Vec2, velocity: Vec2, remaining: std::time::Duration) -> Self {
-        Self {
-            position,
-            velocity,
-            remaining,
-        }
-    }
-
-    pub fn position(&self) -> Vec2 {
-        self.position
-    }
-
-    /// Advance one frame; returns false when the bullet should be removed
-    /// (lifetime expired or off-screen).
-    pub fn update(&mut self, dt: std::time::Duration, screen: Screen) -> bool {
-        self.position += self.velocity * dt.as_secs_f32();
-        self.remaining = self.remaining.saturating_sub(dt);
-        !self.remaining.is_zero() && screen.contains(self.position)
-    }
-}
-
-const SPEED_MIN: f32 = 40.0;
-const SPEED_MAX: f32 = 110.0;
+pub(super) const SPEED_MIN: f32 = 40.0;
+pub(super) const SPEED_MAX: f32 = 110.0;
 
 /// The size class of an asteroid; decides radius, score, and splitting.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -24552,7 +24102,7 @@ The game service drives the player through one facade that binds the lives count
 
 ### Task
 
-In src/domain.rs define Player with new(lives, screen), lives, ship, update(dt, screen), hit returning whether the session is over, rotate, accelerate, and fire returning an optional bullet.
+In src/domain/player.rs define Player with new(lives, screen), lives, ship, update(dt, screen), hit returning whether the session is over, rotate, accelerate, and fire returning an optional bullet.
 
 ### Concept context
 
@@ -24712,13 +24262,31 @@ pub fn circle_collide(a: Vec2, radius_a: f32, b: Vec2, radius_b: f32) -> bool {
 }
 ```
 
-#### `src/domain.rs` — editable
+#### `src/domain.rs` — readonly
 
 Source: `lessons/asteroids-domain/006-player-composition/starter/src/domain.rs`
 
 ```rust
-use crate::{Vec2, Screen, Random, Input, Turn, circle_collide};
+mod asteroid;
+mod lives_wave;
+mod player;
+mod score;
+mod ship;
+mod weapon;
 
+pub use asteroid::{Asteroid, AsteroidDestruction, AsteroidKind};
+pub use lives_wave::{LifeLoss, NonZeroLives, Wave};
+pub use player::Player;
+pub use score::Score;
+pub use ship::{Ship, ShipState};
+pub use weapon::{Bullet, FiringPose, Weapon, WeaponConfig, WeaponState};
+```
+
+#### `src/domain/score.rs` — readonly
+
+Source: `lessons/asteroids-domain/006-player-composition/starter/src/domain/score.rs`
+
+```rust
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct Score(u32);
 
@@ -24739,7 +24307,13 @@ impl std::ops::AddAssign for Score {
         self.0 = self.0.saturating_add(rhs.0);
     }
 }
+```
 
+#### `src/domain/lives_wave.rs` — readonly
+
+Source: `lessons/asteroids-domain/006-player-composition/starter/src/domain/lives_wave.rs`
+
+```rust
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct NonZeroLives(std::num::NonZeroU8);
 
@@ -24786,6 +24360,14 @@ impl Wave {
         self.0.checked_add(1).map(Self)
     }
 }
+```
+
+#### `src/domain/ship.rs` — readonly
+
+Source: `lessons/asteroids-domain/006-player-composition/starter/src/domain/ship.rs`
+
+```rust
+use crate::{Screen, Turn, Vec2};
 
 /// The player's ship: kinematics are provided; the state machine is your task.
 #[derive(Debug, Clone, Copy)]
@@ -24901,7 +24483,15 @@ impl ShipState {
         }
     }
 }
+```
 
+#### `src/domain/weapon.rs` — readonly
+
+Source: `lessons/asteroids-domain/006-player-composition/starter/src/domain/weapon.rs`
+
+```rust
+use super::Ship;
+use crate::{Screen, Vec2};
 
 /// The ship pose needed to create a bullet, without coupling Weapon to Ship.
 #[derive(Debug, Clone, Copy)]
@@ -24913,8 +24503,8 @@ pub struct FiringPose {
 impl From<&Ship> for FiringPose {
     fn from(ship: &Ship) -> Self {
         Self {
-            origin: ship.position,
-            direction: Vec2::new(ship.heading.sin(), -ship.heading.cos()),
+            origin: ship.position(),
+            direction: Vec2::new(ship.heading().sin(), -ship.heading().cos()),
         }
     }
 }
@@ -24923,9 +24513,7 @@ impl From<&Ship> for FiringPose {
 #[derive(Debug, Clone, Copy)]
 pub enum WeaponState {
     Ready,
-    CoolingDown {
-        remaining: std::time::Duration,
-    },
+    CoolingDown { remaining: std::time::Duration },
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -25022,9 +24610,18 @@ impl Bullet {
         !self.remaining.is_zero() && screen.contains(self.position)
     }
 }
+```
 
-const SPEED_MIN: f32 = 40.0;
-const SPEED_MAX: f32 = 110.0;
+#### `src/domain/asteroid.rs` — readonly
+
+Source: `lessons/asteroids-domain/006-player-composition/starter/src/domain/asteroid.rs`
+
+```rust
+use super::Score;
+use crate::{Random, Screen, Vec2};
+
+pub(super) const SPEED_MIN: f32 = 40.0;
+pub(super) const SPEED_MAX: f32 = 110.0;
 
 /// The size class of an asteroid; decides radius, score, and splitting.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -25139,6 +24736,16 @@ impl Asteroid {
         AsteroidDestruction::Fragments([fragment(), fragment()])
     }
 }
+```
+
+#### `src/domain/player.rs` — editable
+
+Source: `lessons/asteroids-domain/006-player-composition/starter/src/domain/player.rs`
+
+```rust
+use super::{Bullet, FiringPose, LifeLoss, NonZeroLives, ShipState, Weapon, WeaponConfig};
+use crate::{Screen, Turn};
+
 // TODO: Compose the player facade.
 //
 // Define `pub struct Player { lives: NonZeroLives, ship: ShipState, weapon: Weapon }`
@@ -25276,433 +24883,13 @@ fn firing_requires_a_ship_and_respects_cooldown() {
 
 ### Authored solution
 
-#### `src/domain.rs`
+#### `src/domain/player.rs`
 
-Source: `lessons/asteroids-domain/006-player-composition/solution/src/domain.rs`
+Source: `lessons/asteroids-domain/006-player-composition/solution/src/domain/player.rs`
 
 ```rust
-use crate::{Vec2, Screen, Random, Input, Turn, circle_collide};
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
-pub struct Score(u32);
-
-impl Score {
-    pub const ZERO: Self = Self(0);
-
-    pub const fn new(value: u32) -> Self {
-        Self(value)
-    }
-
-    pub const fn value(self) -> u32 {
-        self.0
-    }
-}
-
-impl std::ops::AddAssign for Score {
-    fn add_assign(&mut self, rhs: Self) {
-        self.0 = self.0.saturating_add(rhs.0);
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct NonZeroLives(std::num::NonZeroU8);
-
-impl NonZeroLives {
-    pub fn new(value: u8) -> Option<Self> {
-        std::num::NonZeroU8::new(value).map(Self)
-    }
-
-    pub const fn value(self) -> u8 {
-        self.0.get()
-    }
-
-    /// Lose one life. The terminal case is `GameOver`, never a zero counter.
-    pub fn lose_one(self) -> LifeLoss {
-        std::num::NonZeroU8::new(self.0.get() - 1)
-            .map(Self)
-            .map_or(LifeLoss::GameOver, LifeLoss::Remaining)
-    }
-}
-
-/// The result of losing a life: either lives remain, or the session is over.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LifeLoss {
-    Remaining(NonZeroLives),
-    GameOver,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Wave(std::num::NonZeroU32);
-
-impl Wave {
-    pub const FIRST: Self = Self(std::num::NonZeroU32::MIN);
-
-    pub fn new(value: u32) -> Option<Self> {
-        std::num::NonZeroU32::new(value).map(Self)
-    }
-
-    pub const fn value(self) -> u32 {
-        self.0.get()
-    }
-
-    /// Advance to the next wave; `None` if it would overflow.
-    pub fn next(self) -> Option<Self> {
-        self.0.checked_add(1).map(Self)
-    }
-}
-
-/// The player's ship: kinematics are provided; the state machine is your task.
-#[derive(Debug, Clone, Copy)]
-pub struct Ship {
-    position: Vec2,
-    velocity: Vec2,
-    heading: f32,
-}
-
-impl Ship {
-    const ROTATION_SPEED: f32 = 3.5;
-    const THRUST: f32 = 220.0;
-    const MAX_SPEED: f32 = 380.0;
-
-    /// Spawn the ship at the center of the playfield.
-    pub fn spawn(screen: Screen) -> Self {
-        Self {
-            position: screen.center(),
-            velocity: Vec2::ZERO,
-            heading: 0.0,
-        }
-    }
-
-    pub fn position(&self) -> Vec2 {
-        self.position
-    }
-
-    pub fn heading(&self) -> f32 {
-        self.heading
-    }
-
-    /// Integrate motion and wrap around the playfield.
-    pub fn update(&mut self, dt: std::time::Duration, screen: Screen) {
-        self.position += self.velocity * dt.as_secs_f32();
-        self.position = screen.wrap(self.position);
-    }
-
-    pub fn rotate(&mut self, turn: Turn, dt: std::time::Duration) {
-        self.heading += turn.direction() * Self::ROTATION_SPEED * dt.as_secs_f32();
-    }
-
-    pub fn accelerate(&mut self, dt: std::time::Duration) {
-        let facing = Vec2::new(self.heading.sin(), -self.heading.cos());
-        self.velocity += facing * (Self::THRUST * dt.as_secs_f32());
-        let speed = self.velocity.length();
-        if speed > Self::MAX_SPEED {
-            self.velocity *= Self::MAX_SPEED / speed;
-        }
-    }
-}
-
-/// The three states a ship can be in. There is no "dead" state: a dead ship is
-/// either respawning or the session is over.
-#[derive(Debug, Clone, Copy)]
-pub enum ShipState {
-    Active(Ship),
-
-    /// Recently respawned; the ship exists but collisions are ignored.
-    Invulnerable {
-        ship: Ship,
-        remaining: std::time::Duration,
-    },
-
-    /// Waiting to respawn; there is no ship at all.
-    Respawning {
-        remaining: std::time::Duration,
-    },
-}
-
-impl ShipState {
-    pub const INVULNERABILITY_TIME: std::time::Duration = std::time::Duration::from_secs(2);
-    pub const RESPAWN_TIME: std::time::Duration = std::time::Duration::from_millis(1_500);
-
-    /// Advance one frame: the ship moves, countdowns tick, and expired
-    /// countdowns transition to the next state.
-    pub fn update(&mut self, dt: std::time::Duration, screen: Screen) {
-        match self {
-            Self::Active(ship) => {
-                ship.update(dt, screen);
-            }
-            Self::Invulnerable { ship, remaining } => {
-                ship.update(dt, screen);
-                *remaining = remaining.saturating_sub(dt);
-                if remaining.is_zero() {
-                    let ship = std::mem::replace(ship, Ship::spawn(screen));
-                    *self = Self::Active(ship);
-                }
-            }
-            Self::Respawning { remaining } => {
-                *remaining = remaining.saturating_sub(dt);
-                if remaining.is_zero() {
-                    *self = Self::Invulnerable {
-                        ship: Ship::spawn(screen),
-                        remaining: Self::INVULNERABILITY_TIME,
-                    };
-                }
-            }
-        }
-    }
-
-    /// The ship, if one currently exists.
-    pub fn ship(&self) -> Option<&Ship> {
-        match self {
-            Self::Active(ship) | Self::Invulnerable { ship, .. } => Some(ship),
-            Self::Respawning { .. } => None,
-        }
-    }
-
-    pub fn ship_mut(&mut self) -> Option<&mut Ship> {
-        match self {
-            Self::Active(ship) | Self::Invulnerable { ship, .. } => Some(ship),
-            Self::Respawning { .. } => None,
-        }
-    }
-}
-
-
-/// The ship pose needed to create a bullet, without coupling Weapon to Ship.
-#[derive(Debug, Clone, Copy)]
-pub struct FiringPose {
-    origin: Vec2,
-    direction: Vec2,
-}
-
-impl From<&Ship> for FiringPose {
-    fn from(ship: &Ship) -> Self {
-        Self {
-            origin: ship.position,
-            direction: Vec2::new(ship.heading.sin(), -ship.heading.cos()),
-        }
-    }
-}
-
-/// The weapon: ready to fire, or cooling down after a shot.
-#[derive(Debug, Clone, Copy)]
-pub enum WeaponState {
-    Ready,
-    CoolingDown {
-        remaining: std::time::Duration,
-    },
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct WeaponConfig {
-    cooldown: std::time::Duration,
-    muzzle_offset: f32,
-    bullet_speed: f32,
-    bullet_lifetime: std::time::Duration,
-}
-
-impl WeaponConfig {
-    pub const fn new(
-        cooldown: std::time::Duration,
-        muzzle_offset: f32,
-        bullet_speed: f32,
-        bullet_lifetime: std::time::Duration,
-    ) -> Self {
-        Self {
-            cooldown,
-            muzzle_offset,
-            bullet_speed,
-            bullet_lifetime,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct Weapon {
-    config: WeaponConfig,
-    state: WeaponState,
-}
-
-impl Weapon {
-    pub fn new(config: WeaponConfig) -> Self {
-        Self {
-            config,
-            state: WeaponState::Ready,
-        }
-    }
-
-    /// Try to fire: creates a bullet and consumes the cooldown when ready.
-    pub fn fire(&mut self, pose: FiringPose) -> Option<Bullet> {
-        if !matches!(self.state, WeaponState::Ready) {
-            return None;
-        }
-
-        self.state = WeaponState::CoolingDown {
-            remaining: self.config.cooldown,
-        };
-        Some(Bullet::new(
-            pose.origin + pose.direction * self.config.muzzle_offset,
-            pose.direction * self.config.bullet_speed,
-            self.config.bullet_lifetime,
-        ))
-    }
-
-    pub fn update(&mut self, dt: std::time::Duration) {
-        if let WeaponState::CoolingDown { remaining } = &mut self.state {
-            *remaining = remaining.saturating_sub(dt);
-            if remaining.is_zero() {
-                self.state = WeaponState::Ready;
-            }
-        }
-    }
-}
-
-/// A bullet in flight. Dies when its lifetime expires or it leaves the screen
-/// (bullets do not wrap).
-#[derive(Debug, Clone, Copy)]
-pub struct Bullet {
-    position: Vec2,
-    velocity: Vec2,
-    remaining: std::time::Duration,
-}
-
-impl Bullet {
-    pub fn new(position: Vec2, velocity: Vec2, remaining: std::time::Duration) -> Self {
-        Self {
-            position,
-            velocity,
-            remaining,
-        }
-    }
-
-    pub fn position(&self) -> Vec2 {
-        self.position
-    }
-
-    /// Advance one frame; returns false when the bullet should be removed
-    /// (lifetime expired or off-screen).
-    pub fn update(&mut self, dt: std::time::Duration, screen: Screen) -> bool {
-        self.position += self.velocity * dt.as_secs_f32();
-        self.remaining = self.remaining.saturating_sub(dt);
-        !self.remaining.is_zero() && screen.contains(self.position)
-    }
-}
-
-const SPEED_MIN: f32 = 40.0;
-const SPEED_MAX: f32 = 110.0;
-
-/// The size class of an asteroid; decides radius, score, and splitting.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum AsteroidKind {
-    Large,
-    Medium,
-    Small,
-}
-
-impl AsteroidKind {
-    fn radius(self) -> f32 {
-        match self {
-            Self::Large => 40.0,
-            Self::Medium => 22.0,
-            Self::Small => 12.0,
-        }
-    }
-
-    fn score(self) -> Score {
-        match self {
-            Self::Large => Score::new(20),
-            Self::Medium => Score::new(50),
-            Self::Small => Score::new(100),
-        }
-    }
-
-    fn next_smaller(self) -> Option<Self> {
-        match self {
-            Self::Large => Some(Self::Medium),
-            Self::Medium => Some(Self::Small),
-            Self::Small => None,
-        }
-    }
-}
-
-/// Kinematic state shared by every asteroid, regardless of size.
-#[derive(Debug, Clone, Copy)]
-struct AsteroidBody {
-    position: Vec2,
-    velocity: Vec2,
-}
-
-/// An asteroid with a size kind and shared kinematic state.
-#[derive(Debug, Clone, Copy)]
-pub struct Asteroid {
-    kind: AsteroidKind,
-    body: AsteroidBody,
-}
-
-/// The result of destroying an asteroid.
-#[derive(Debug, Clone, Copy)]
-pub enum AsteroidDestruction {
-    /// The asteroid split into two fragments of the next-smaller size.
-    Fragments([Asteroid; 2]),
-    /// Small asteroids are destroyed outright.
-    Destroyed,
-}
-
-impl Asteroid {
-    pub fn new(kind: AsteroidKind, position: Vec2, velocity: Vec2) -> Self {
-        Self {
-            kind,
-            body: AsteroidBody { position, velocity },
-        }
-    }
-
-    pub fn kind(&self) -> AsteroidKind {
-        self.kind
-    }
-
-    pub fn position(&self) -> Vec2 {
-        self.body.position
-    }
-
-    pub fn velocity(&self) -> Vec2 {
-        self.body.velocity
-    }
-
-    pub fn radius(&self) -> f32 {
-        self.kind.radius()
-    }
-
-    pub fn score(&self) -> Score {
-        self.kind.score()
-    }
-
-    /// Integrate motion and wrap around the playfield.
-    pub fn update(&mut self, dt: std::time::Duration, screen: Screen) {
-        self.body.position += self.body.velocity * dt.as_secs_f32();
-        self.body.position = screen.wrap(self.body.position);
-    }
-
-    /// Destroy the asteroid. Large and Medium split into two fragments of the
-    /// next-smaller size at the parent's position, each with a random velocity
-    /// drawn from the injected randomness; Small is destroyed outright.
-    pub fn destroy(self, rng: &mut impl Random) -> AsteroidDestruction {
-        let Self { kind, body } = self;
-        let Some(fragment_kind) = kind.next_smaller() else {
-            return AsteroidDestruction::Destroyed;
-        };
-
-        let mut fragment = || {
-            let angle = rng.range(0.0, std::f32::consts::TAU);
-            let speed = rng.range(SPEED_MIN, SPEED_MAX);
-            Self::new(
-                fragment_kind,
-                body.position,
-                Vec2::new(angle.cos() * speed, angle.sin() * speed),
-            )
-        };
-
-        AsteroidDestruction::Fragments([fragment(), fragment()])
-    }
-}
+use super::{Bullet, FiringPose, LifeLoss, NonZeroLives, Ship, ShipState, Weapon, WeaponConfig};
+use crate::{Screen, Turn};
 
 /// The player: remaining lives, the ship (in whatever state it is in), and the
 /// ship's weapon, behind one facade the session drives.
@@ -25813,7 +25000,7 @@ The session service turns per-frame input commands and elapsed time into game ev
 
 ### Task
 
-In src/domain.rs define PlayOutcome and PlayingGame with new (screen, rng), asteroids, bullets, score, and wave getters, and update(input, dt, rng) implementing steering, movement, collisions, scoring, and wave progression.
+In src/domain/session.rs define PlayOutcome and PlayingGame with new (screen, rng), asteroids, bullets, score, and wave getters, and update(input, dt, rng) implementing steering, movement, collisions, scoring, and wave progression.
 
 ### Concept context
 
@@ -25973,13 +25160,33 @@ pub fn circle_collide(a: Vec2, radius_a: f32, b: Vec2, radius_b: f32) -> bool {
 }
 ```
 
-#### `src/domain.rs` — editable
+#### `src/domain.rs` — readonly
 
 Source: `lessons/asteroids-domain/007-game-session/starter/src/domain.rs`
 
 ```rust
-use crate::{Vec2, Screen, Random, Input, Turn, circle_collide};
+mod asteroid;
+mod lives_wave;
+mod player;
+mod score;
+mod session;
+mod ship;
+mod weapon;
 
+pub use asteroid::{Asteroid, AsteroidDestruction, AsteroidKind};
+pub use lives_wave::{LifeLoss, NonZeroLives, Wave};
+pub use player::Player;
+pub use score::Score;
+pub use session::{PlayOutcome, PlayingGame};
+pub use ship::{Ship, ShipState};
+pub use weapon::{Bullet, FiringPose, Weapon, WeaponConfig, WeaponState};
+```
+
+#### `src/domain/score.rs` — readonly
+
+Source: `lessons/asteroids-domain/007-game-session/starter/src/domain/score.rs`
+
+```rust
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct Score(u32);
 
@@ -26000,7 +25207,13 @@ impl std::ops::AddAssign for Score {
         self.0 = self.0.saturating_add(rhs.0);
     }
 }
+```
 
+#### `src/domain/lives_wave.rs` — readonly
+
+Source: `lessons/asteroids-domain/007-game-session/starter/src/domain/lives_wave.rs`
+
+```rust
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct NonZeroLives(std::num::NonZeroU8);
 
@@ -26047,6 +25260,14 @@ impl Wave {
         self.0.checked_add(1).map(Self)
     }
 }
+```
+
+#### `src/domain/ship.rs` — readonly
+
+Source: `lessons/asteroids-domain/007-game-session/starter/src/domain/ship.rs`
+
+```rust
+use crate::{Screen, Turn, Vec2};
 
 /// The player's ship: kinematics are provided; the state machine is your task.
 #[derive(Debug, Clone, Copy)]
@@ -26162,7 +25383,15 @@ impl ShipState {
         }
     }
 }
+```
 
+#### `src/domain/weapon.rs` — readonly
+
+Source: `lessons/asteroids-domain/007-game-session/starter/src/domain/weapon.rs`
+
+```rust
+use super::Ship;
+use crate::{Screen, Vec2};
 
 /// The ship pose needed to create a bullet, without coupling Weapon to Ship.
 #[derive(Debug, Clone, Copy)]
@@ -26174,8 +25403,8 @@ pub struct FiringPose {
 impl From<&Ship> for FiringPose {
     fn from(ship: &Ship) -> Self {
         Self {
-            origin: ship.position,
-            direction: Vec2::new(ship.heading.sin(), -ship.heading.cos()),
+            origin: ship.position(),
+            direction: Vec2::new(ship.heading().sin(), -ship.heading().cos()),
         }
     }
 }
@@ -26184,9 +25413,7 @@ impl From<&Ship> for FiringPose {
 #[derive(Debug, Clone, Copy)]
 pub enum WeaponState {
     Ready,
-    CoolingDown {
-        remaining: std::time::Duration,
-    },
+    CoolingDown { remaining: std::time::Duration },
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -26283,9 +25510,18 @@ impl Bullet {
         !self.remaining.is_zero() && screen.contains(self.position)
     }
 }
+```
 
-const SPEED_MIN: f32 = 40.0;
-const SPEED_MAX: f32 = 110.0;
+#### `src/domain/asteroid.rs` — readonly
+
+Source: `lessons/asteroids-domain/007-game-session/starter/src/domain/asteroid.rs`
+
+```rust
+use super::Score;
+use crate::{Random, Screen, Vec2};
+
+pub(super) const SPEED_MIN: f32 = 40.0;
+pub(super) const SPEED_MAX: f32 = 110.0;
 
 /// The size class of an asteroid; decides radius, score, and splitting.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -26400,6 +25636,15 @@ impl Asteroid {
         AsteroidDestruction::Fragments([fragment(), fragment()])
     }
 }
+```
+
+#### `src/domain/player.rs` — readonly
+
+Source: `lessons/asteroids-domain/007-game-session/starter/src/domain/player.rs`
+
+```rust
+use super::{Bullet, FiringPose, LifeLoss, NonZeroLives, Ship, ShipState, Weapon, WeaponConfig};
+use crate::{Screen, Turn};
 
 /// The player: remaining lives, the ship (in whatever state it is in), and the
 /// ship's weapon, behind one facade the session drives.
@@ -26479,6 +25724,19 @@ impl Player {
         self.weapon.fire(FiringPose::from(ship))
     }
 }
+```
+
+#### `src/domain/session.rs` — editable
+
+Source: `lessons/asteroids-domain/007-game-session/starter/src/domain/session.rs`
+
+```rust
+use super::asteroid::{SPEED_MAX, SPEED_MIN};
+use super::{
+    Asteroid, AsteroidDestruction, AsteroidKind, Bullet, NonZeroLives, Player, Score, Wave,
+};
+use crate::{circle_collide, Input, Random, Screen, Vec2};
+
 // TODO: Compose the session update loop.
 //
 // Define:
@@ -26685,512 +25943,16 @@ fn ship_collisions_ultimately_end_the_session() {
 
 ### Authored solution
 
-#### `src/domain.rs`
+#### `src/domain/session.rs`
 
-Source: `lessons/asteroids-domain/007-game-session/solution/src/domain.rs`
+Source: `lessons/asteroids-domain/007-game-session/solution/src/domain/session.rs`
 
 ```rust
-use crate::{Vec2, Screen, Random, Input, Turn, circle_collide};
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
-pub struct Score(u32);
-
-impl Score {
-    pub const ZERO: Self = Self(0);
-
-    pub const fn new(value: u32) -> Self {
-        Self(value)
-    }
-
-    pub const fn value(self) -> u32 {
-        self.0
-    }
-}
-
-impl std::ops::AddAssign for Score {
-    fn add_assign(&mut self, rhs: Self) {
-        self.0 = self.0.saturating_add(rhs.0);
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct NonZeroLives(std::num::NonZeroU8);
-
-impl NonZeroLives {
-    pub fn new(value: u8) -> Option<Self> {
-        std::num::NonZeroU8::new(value).map(Self)
-    }
-
-    pub const fn value(self) -> u8 {
-        self.0.get()
-    }
-
-    /// Lose one life. The terminal case is `GameOver`, never a zero counter.
-    pub fn lose_one(self) -> LifeLoss {
-        std::num::NonZeroU8::new(self.0.get() - 1)
-            .map(Self)
-            .map_or(LifeLoss::GameOver, LifeLoss::Remaining)
-    }
-}
-
-/// The result of losing a life: either lives remain, or the session is over.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LifeLoss {
-    Remaining(NonZeroLives),
-    GameOver,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Wave(std::num::NonZeroU32);
-
-impl Wave {
-    pub const FIRST: Self = Self(std::num::NonZeroU32::MIN);
-
-    pub fn new(value: u32) -> Option<Self> {
-        std::num::NonZeroU32::new(value).map(Self)
-    }
-
-    pub const fn value(self) -> u32 {
-        self.0.get()
-    }
-
-    /// Advance to the next wave; `None` if it would overflow.
-    pub fn next(self) -> Option<Self> {
-        self.0.checked_add(1).map(Self)
-    }
-}
-
-/// The player's ship: kinematics are provided; the state machine is your task.
-#[derive(Debug, Clone, Copy)]
-pub struct Ship {
-    position: Vec2,
-    velocity: Vec2,
-    heading: f32,
-}
-
-impl Ship {
-    const ROTATION_SPEED: f32 = 3.5;
-    const THRUST: f32 = 220.0;
-    const MAX_SPEED: f32 = 380.0;
-
-    /// Spawn the ship at the center of the playfield.
-    pub fn spawn(screen: Screen) -> Self {
-        Self {
-            position: screen.center(),
-            velocity: Vec2::ZERO,
-            heading: 0.0,
-        }
-    }
-
-    pub fn position(&self) -> Vec2 {
-        self.position
-    }
-
-    pub fn heading(&self) -> f32 {
-        self.heading
-    }
-
-    /// Integrate motion and wrap around the playfield.
-    pub fn update(&mut self, dt: std::time::Duration, screen: Screen) {
-        self.position += self.velocity * dt.as_secs_f32();
-        self.position = screen.wrap(self.position);
-    }
-
-    pub fn rotate(&mut self, turn: Turn, dt: std::time::Duration) {
-        self.heading += turn.direction() * Self::ROTATION_SPEED * dt.as_secs_f32();
-    }
-
-    pub fn accelerate(&mut self, dt: std::time::Duration) {
-        let facing = Vec2::new(self.heading.sin(), -self.heading.cos());
-        self.velocity += facing * (Self::THRUST * dt.as_secs_f32());
-        let speed = self.velocity.length();
-        if speed > Self::MAX_SPEED {
-            self.velocity *= Self::MAX_SPEED / speed;
-        }
-    }
-}
-
-/// The three states a ship can be in. There is no "dead" state: a dead ship is
-/// either respawning or the session is over.
-#[derive(Debug, Clone, Copy)]
-pub enum ShipState {
-    Active(Ship),
-
-    /// Recently respawned; the ship exists but collisions are ignored.
-    Invulnerable {
-        ship: Ship,
-        remaining: std::time::Duration,
-    },
-
-    /// Waiting to respawn; there is no ship at all.
-    Respawning {
-        remaining: std::time::Duration,
-    },
-}
-
-impl ShipState {
-    pub const INVULNERABILITY_TIME: std::time::Duration = std::time::Duration::from_secs(2);
-    pub const RESPAWN_TIME: std::time::Duration = std::time::Duration::from_millis(1_500);
-
-    /// Advance one frame: the ship moves, countdowns tick, and expired
-    /// countdowns transition to the next state.
-    pub fn update(&mut self, dt: std::time::Duration, screen: Screen) {
-        match self {
-            Self::Active(ship) => {
-                ship.update(dt, screen);
-            }
-            Self::Invulnerable { ship, remaining } => {
-                ship.update(dt, screen);
-                *remaining = remaining.saturating_sub(dt);
-                if remaining.is_zero() {
-                    let ship = std::mem::replace(ship, Ship::spawn(screen));
-                    *self = Self::Active(ship);
-                }
-            }
-            Self::Respawning { remaining } => {
-                *remaining = remaining.saturating_sub(dt);
-                if remaining.is_zero() {
-                    *self = Self::Invulnerable {
-                        ship: Ship::spawn(screen),
-                        remaining: Self::INVULNERABILITY_TIME,
-                    };
-                }
-            }
-        }
-    }
-
-    /// The ship, if one currently exists.
-    pub fn ship(&self) -> Option<&Ship> {
-        match self {
-            Self::Active(ship) | Self::Invulnerable { ship, .. } => Some(ship),
-            Self::Respawning { .. } => None,
-        }
-    }
-
-    pub fn ship_mut(&mut self) -> Option<&mut Ship> {
-        match self {
-            Self::Active(ship) | Self::Invulnerable { ship, .. } => Some(ship),
-            Self::Respawning { .. } => None,
-        }
-    }
-}
-
-
-/// The ship pose needed to create a bullet, without coupling Weapon to Ship.
-#[derive(Debug, Clone, Copy)]
-pub struct FiringPose {
-    origin: Vec2,
-    direction: Vec2,
-}
-
-impl From<&Ship> for FiringPose {
-    fn from(ship: &Ship) -> Self {
-        Self {
-            origin: ship.position,
-            direction: Vec2::new(ship.heading.sin(), -ship.heading.cos()),
-        }
-    }
-}
-
-/// The weapon: ready to fire, or cooling down after a shot.
-#[derive(Debug, Clone, Copy)]
-pub enum WeaponState {
-    Ready,
-    CoolingDown {
-        remaining: std::time::Duration,
-    },
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct WeaponConfig {
-    cooldown: std::time::Duration,
-    muzzle_offset: f32,
-    bullet_speed: f32,
-    bullet_lifetime: std::time::Duration,
-}
-
-impl WeaponConfig {
-    pub const fn new(
-        cooldown: std::time::Duration,
-        muzzle_offset: f32,
-        bullet_speed: f32,
-        bullet_lifetime: std::time::Duration,
-    ) -> Self {
-        Self {
-            cooldown,
-            muzzle_offset,
-            bullet_speed,
-            bullet_lifetime,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct Weapon {
-    config: WeaponConfig,
-    state: WeaponState,
-}
-
-impl Weapon {
-    pub fn new(config: WeaponConfig) -> Self {
-        Self {
-            config,
-            state: WeaponState::Ready,
-        }
-    }
-
-    /// Try to fire: creates a bullet and consumes the cooldown when ready.
-    pub fn fire(&mut self, pose: FiringPose) -> Option<Bullet> {
-        if !matches!(self.state, WeaponState::Ready) {
-            return None;
-        }
-
-        self.state = WeaponState::CoolingDown {
-            remaining: self.config.cooldown,
-        };
-        Some(Bullet::new(
-            pose.origin + pose.direction * self.config.muzzle_offset,
-            pose.direction * self.config.bullet_speed,
-            self.config.bullet_lifetime,
-        ))
-    }
-
-    pub fn update(&mut self, dt: std::time::Duration) {
-        if let WeaponState::CoolingDown { remaining } = &mut self.state {
-            *remaining = remaining.saturating_sub(dt);
-            if remaining.is_zero() {
-                self.state = WeaponState::Ready;
-            }
-        }
-    }
-}
-
-/// A bullet in flight. Dies when its lifetime expires or it leaves the screen
-/// (bullets do not wrap).
-#[derive(Debug, Clone, Copy)]
-pub struct Bullet {
-    position: Vec2,
-    velocity: Vec2,
-    remaining: std::time::Duration,
-}
-
-impl Bullet {
-    pub fn new(position: Vec2, velocity: Vec2, remaining: std::time::Duration) -> Self {
-        Self {
-            position,
-            velocity,
-            remaining,
-        }
-    }
-
-    pub fn position(&self) -> Vec2 {
-        self.position
-    }
-
-    /// Advance one frame; returns false when the bullet should be removed
-    /// (lifetime expired or off-screen).
-    pub fn update(&mut self, dt: std::time::Duration, screen: Screen) -> bool {
-        self.position += self.velocity * dt.as_secs_f32();
-        self.remaining = self.remaining.saturating_sub(dt);
-        !self.remaining.is_zero() && screen.contains(self.position)
-    }
-}
-
-const SPEED_MIN: f32 = 40.0;
-const SPEED_MAX: f32 = 110.0;
-
-/// The size class of an asteroid; decides radius, score, and splitting.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum AsteroidKind {
-    Large,
-    Medium,
-    Small,
-}
-
-impl AsteroidKind {
-    fn radius(self) -> f32 {
-        match self {
-            Self::Large => 40.0,
-            Self::Medium => 22.0,
-            Self::Small => 12.0,
-        }
-    }
-
-    fn score(self) -> Score {
-        match self {
-            Self::Large => Score::new(20),
-            Self::Medium => Score::new(50),
-            Self::Small => Score::new(100),
-        }
-    }
-
-    fn next_smaller(self) -> Option<Self> {
-        match self {
-            Self::Large => Some(Self::Medium),
-            Self::Medium => Some(Self::Small),
-            Self::Small => None,
-        }
-    }
-}
-
-/// Kinematic state shared by every asteroid, regardless of size.
-#[derive(Debug, Clone, Copy)]
-struct AsteroidBody {
-    position: Vec2,
-    velocity: Vec2,
-}
-
-/// An asteroid with a size kind and shared kinematic state.
-#[derive(Debug, Clone, Copy)]
-pub struct Asteroid {
-    kind: AsteroidKind,
-    body: AsteroidBody,
-}
-
-/// The result of destroying an asteroid.
-#[derive(Debug, Clone, Copy)]
-pub enum AsteroidDestruction {
-    /// The asteroid split into two fragments of the next-smaller size.
-    Fragments([Asteroid; 2]),
-    /// Small asteroids are destroyed outright.
-    Destroyed,
-}
-
-impl Asteroid {
-    pub fn new(kind: AsteroidKind, position: Vec2, velocity: Vec2) -> Self {
-        Self {
-            kind,
-            body: AsteroidBody { position, velocity },
-        }
-    }
-
-    pub fn kind(&self) -> AsteroidKind {
-        self.kind
-    }
-
-    pub fn position(&self) -> Vec2 {
-        self.body.position
-    }
-
-    pub fn velocity(&self) -> Vec2 {
-        self.body.velocity
-    }
-
-    pub fn radius(&self) -> f32 {
-        self.kind.radius()
-    }
-
-    pub fn score(&self) -> Score {
-        self.kind.score()
-    }
-
-    /// Integrate motion and wrap around the playfield.
-    pub fn update(&mut self, dt: std::time::Duration, screen: Screen) {
-        self.body.position += self.body.velocity * dt.as_secs_f32();
-        self.body.position = screen.wrap(self.body.position);
-    }
-
-    /// Destroy the asteroid. Large and Medium split into two fragments of the
-    /// next-smaller size at the parent's position, each with a random velocity
-    /// drawn from the injected randomness; Small is destroyed outright.
-    pub fn destroy(self, rng: &mut impl Random) -> AsteroidDestruction {
-        let Self { kind, body } = self;
-        let Some(fragment_kind) = kind.next_smaller() else {
-            return AsteroidDestruction::Destroyed;
-        };
-
-        let mut fragment = || {
-            let angle = rng.range(0.0, std::f32::consts::TAU);
-            let speed = rng.range(SPEED_MIN, SPEED_MAX);
-            Self::new(
-                fragment_kind,
-                body.position,
-                Vec2::new(angle.cos() * speed, angle.sin() * speed),
-            )
-        };
-
-        AsteroidDestruction::Fragments([fragment(), fragment()])
-    }
-}
-
-/// The player: remaining lives, the ship (in whatever state it is in), and the
-/// ship's weapon, behind one facade the session drives.
-#[derive(Debug)]
-pub struct Player {
-    lives: NonZeroLives,
-    ship: ShipState,
-    weapon: Weapon,
-}
-
-impl Player {
-    /// A fresh player whose ship spawns invulnerable (spawn protection).
-    pub fn new(lives: NonZeroLives, screen: Screen) -> Self {
-        Self {
-            lives,
-            ship: ShipState::Invulnerable {
-                ship: Ship::spawn(screen),
-                remaining: ShipState::INVULNERABILITY_TIME,
-            },
-            weapon: Weapon::new(WeaponConfig::new(
-                std::time::Duration::from_millis(250),
-                20.0,
-                520.0,
-                std::time::Duration::from_millis(1_100),
-            )),
-        }
-    }
-
-    pub fn lives(&self) -> NonZeroLives {
-        self.lives
-    }
-
-    pub fn ship(&self) -> &ShipState {
-        &self.ship
-    }
-
-    pub fn update(&mut self, dt: std::time::Duration, screen: Screen) {
-        self.ship.update(dt, screen);
-        self.weapon.update(dt);
-    }
-
-    /// The ship was hit. Only an active ship can be hit; invulnerable and
-    /// respawning ships are unaffected. Returns `true` when the player has no
-    /// lives left — the session is over.
-    pub fn hit(&mut self) -> bool {
-        if !matches!(self.ship, ShipState::Active(_)) {
-            return false;
-        }
-
-        match self.lives.lose_one() {
-            LifeLoss::Remaining(lives) => {
-                self.lives = lives;
-                self.ship = ShipState::Respawning {
-                    remaining: ShipState::RESPAWN_TIME,
-                };
-                false
-            }
-            LifeLoss::GameOver => true,
-        }
-    }
-
-    pub fn rotate(&mut self, turn: Turn, dt: std::time::Duration) {
-        if let Some(ship) = self.ship.ship_mut() {
-            ship.rotate(turn, dt);
-        }
-    }
-
-    pub fn accelerate(&mut self, dt: std::time::Duration) {
-        if let Some(ship) = self.ship.ship_mut() {
-            ship.accelerate(dt);
-        }
-    }
-
-    /// Fire a bullet, if a ship exists and the weapon is ready.
-    pub fn fire(&mut self) -> Option<Bullet> {
-        let ship = self.ship.ship()?;
-        self.weapon.fire(FiringPose::from(ship))
-    }
-}
+use super::asteroid::{SPEED_MAX, SPEED_MIN};
+use super::{
+    Asteroid, AsteroidDestruction, AsteroidKind, Bullet, NonZeroLives, Player, Score, Wave,
+};
+use crate::{circle_collide, Input, Random, Screen, Vec2};
 
 /// How a frame of play ended.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -27338,10 +26100,18 @@ impl PlayingGame {
         let count = Self::STARTING_ASTEROIDS + (self.wave.value() as usize - 1);
         for _ in 0..count {
             let position = if rng.chance(0.5) {
-                let x = if rng.chance(0.5) { 0.0 } else { self.screen.width() };
+                let x = if rng.chance(0.5) {
+                    0.0
+                } else {
+                    self.screen.width()
+                };
                 Vec2::new(x, rng.range(0.0, self.screen.height()))
             } else {
-                let y = if rng.chance(0.5) { 0.0 } else { self.screen.height() };
+                let y = if rng.chance(0.5) {
+                    0.0
+                } else {
+                    self.screen.height()
+                };
                 Vec2::new(rng.range(0.0, self.screen.width()), y)
             };
             let angle = rng.range(0.0, std::f32::consts::TAU);
@@ -27383,7 +26153,7 @@ A transfer request arrives from an API boundary with a source account, a destina
 
 ### Task
 
-In src/lib.rs, define a private TransferAmount(NonZeroU64) value and a TransferCommand whose private source, destination, and amount fields hold the validated data. Implement TryFrom<TransferRequest> so a same-account request or a zero amount is rejected with TransferRequestError, and add getters that expose the validated source, destination, and amount.
+In src/request.rs, define a private TransferAmount(NonZeroU64) value and a TransferCommand whose private source, destination, and amount fields hold the validated data. Implement TryFrom<TransferRequest> so a same-account request or a zero amount is rejected with TransferRequestError, and add getters that expose the validated source, destination, and amount.
 
 ### Concept context
 
@@ -27394,9 +26164,21 @@ Convert a raw transfer request into an unforgeable command whose type records re
 
 ### Starter project files
 
-#### `src/lib.rs` — editable
+#### `src/lib.rs` — readonly
 
 Source: `lessons/validate-prepare-commit/098-validated-transfer-command/starter/src/lib.rs`
+
+```rust
+mod account;
+mod request;
+
+pub use account::{AccountId, DuplicateAccount, Ledger, Money};
+pub use request::{TransferCommand, TransferRequest, TransferRequestError};
+```
+
+#### `src/account.rs` — readonly
+
+Source: `lessons/validate-prepare-commit/098-validated-transfer-command/starter/src/account.rs`
 
 ```rust
 //! Ledger support types for the validate -> prepare -> commit arc.
@@ -27447,15 +26229,15 @@ impl DuplicateAccount {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct Account {
-    id: AccountId,
-    balance: Money,
+pub(super) struct Account {
+    pub(super) id: AccountId,
+    pub(super) balance: Money,
 }
 
 /// The in-memory account store that later lessons mutate.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Ledger {
-    accounts: Vec<Account>,
+    pub(super) accounts: Vec<Account>,
 }
 
 impl Ledger {
@@ -27484,6 +26266,15 @@ impl Ledger {
             .map(|account| account.balance)
     }
 }
+```
+
+#### `src/request.rs` — editable
+
+Source: `lessons/validate-prepare-commit/098-validated-transfer-command/starter/src/request.rs`
+
+```rust
+use crate::{AccountId, Money};
+use std::num::NonZeroU64;
 
 /// A transfer exactly as the caller supplied it.
 ///
@@ -27673,97 +26464,13 @@ fn main() {
 
 ### Authored solution
 
-#### `src/lib.rs`
+#### `src/request.rs`
 
-Source: `lessons/validate-prepare-commit/098-validated-transfer-command/solution/src/lib.rs`
+Source: `lessons/validate-prepare-commit/098-validated-transfer-command/solution/src/request.rs`
 
 ```rust
-//! Ledger support types for the validate -> prepare -> commit arc.
-//!
-//! Account identity, money, and the account store are provided. The boundary
-//! that turns a raw transfer request into work the ledger is allowed to execute
-//! is the part that grows lesson by lesson in this file.
-
-use std::collections::HashSet;
+use crate::{AccountId, Money};
 use std::num::NonZeroU64;
-
-/// Identifies one account held by the ledger.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct AccountId(u32);
-
-impl AccountId {
-    pub const fn new(value: u32) -> Self {
-        Self(value)
-    }
-
-    pub const fn value(self) -> u32 {
-        self.0
-    }
-}
-
-/// An amount in whole cents. Money carries no sign; direction comes from the
-/// transfer that moves it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Money(u64);
-
-impl Money {
-    pub const fn from_cents(cents: u64) -> Self {
-        Self(cents)
-    }
-
-    pub const fn cents(self) -> u64 {
-        self.0
-    }
-}
-
-/// Returned when a ledger is built from entries that repeat an account ID.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct DuplicateAccount(AccountId);
-
-impl DuplicateAccount {
-    pub const fn id(self) -> AccountId {
-        self.0
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct Account {
-    id: AccountId,
-    balance: Money,
-}
-
-/// The in-memory account store that later lessons mutate.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Ledger {
-    accounts: Vec<Account>,
-}
-
-impl Ledger {
-    /// Build a ledger, rejecting an entry that repeats an account ID.
-    pub fn try_new(
-        entries: impl IntoIterator<Item = (AccountId, Money)>,
-    ) -> Result<Self, DuplicateAccount> {
-        let mut ids = HashSet::new();
-        let mut accounts = Vec::new();
-
-        for (id, balance) in entries {
-            if !ids.insert(id) {
-                return Err(DuplicateAccount(id));
-            }
-            accounts.push(Account { id, balance });
-        }
-
-        Ok(Self { accounts })
-    }
-
-    /// The balance of one account, if this ledger holds it.
-    pub fn balance(&self, id: AccountId) -> Option<Money> {
-        self.accounts
-            .iter()
-            .find(|account| account.id == id)
-            .map(|account| account.balance)
-    }
-}
 
 /// A transfer exactly as the caller supplied it.
 ///
@@ -27930,7 +26637,7 @@ A validated command can still fail against current state: the source or destinat
 
 ### Task
 
-In src/lib.rs, add private checked_add and checked_sub helpers to Money and a TransferRejection enum with SourceNotFound, DestinationNotFound, InsufficientFunds, and DestinationOverflow. Add a value-only PreparedTransfer holding the source, destination, amount, source_after, and destination_after, and implement Ledger::prepare_transfer(&self, command) to resolve both accounts and both post-state balances with checked arithmetic without mutating the ledger.
+In src/preparation.rs, add private checked_add and checked_sub helpers to Money and a TransferRejection enum with SourceNotFound, DestinationNotFound, InsufficientFunds, and DestinationOverflow. Add a value-only PreparedTransfer holding the source, destination, amount, source_after, and destination_after, and implement Ledger::prepare_transfer(&self, command) to resolve both accounts and both post-state balances with checked arithmetic without mutating the ledger.
 
 ### Concept context
 
@@ -27941,9 +26648,23 @@ Resolve state-dependent lookups and checked post-state before authoritative muta
 
 ### Starter project files
 
-#### `src/lib.rs` — editable
+#### `src/lib.rs` — readonly
 
 Source: `lessons/validate-prepare-commit/099-prepare-transfer/starter/src/lib.rs`
+
+```rust
+mod account;
+mod preparation;
+mod request;
+
+pub use account::{AccountId, DuplicateAccount, Ledger, Money};
+pub use preparation::{PreparedTransfer, TransferRejection};
+pub use request::{TransferCommand, TransferRequest, TransferRequestError};
+```
+
+#### `src/account.rs` — readonly
+
+Source: `lessons/validate-prepare-commit/099-prepare-transfer/starter/src/account.rs`
 
 ```rust
 //! Ledger support types for the validate -> prepare -> commit arc.
@@ -27953,7 +26674,6 @@ Source: `lessons/validate-prepare-commit/099-prepare-transfer/starter/src/lib.rs
 //! is the part that grows lesson by lesson in this file.
 
 use std::collections::HashSet;
-use std::num::NonZeroU64;
 
 /// Identifies one account held by the ledger.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -27995,15 +26715,15 @@ impl DuplicateAccount {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct Account {
-    id: AccountId,
-    balance: Money,
+pub(super) struct Account {
+    pub(super) id: AccountId,
+    pub(super) balance: Money,
 }
 
 /// The in-memory account store that later lessons mutate.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Ledger {
-    accounts: Vec<Account>,
+    pub(super) accounts: Vec<Account>,
 }
 
 impl Ledger {
@@ -28032,6 +26752,15 @@ impl Ledger {
             .map(|account| account.balance)
     }
 }
+```
+
+#### `src/request.rs` — readonly
+
+Source: `lessons/validate-prepare-commit/099-prepare-transfer/starter/src/request.rs`
+
+```rust
+use crate::{AccountId, Money};
+use std::num::NonZeroU64;
 
 /// A transfer exactly as the caller supplied it.
 ///
@@ -28119,6 +26848,14 @@ impl TryFrom<TransferRequest> for TransferCommand {
         })
     }
 }
+```
+
+#### `src/preparation.rs` — editable
+
+Source: `lessons/validate-prepare-commit/099-prepare-transfer/starter/src/preparation.rs`
+
+```rust
+use crate::{Ledger, Money, TransferCommand};
 
 // TODO: prepare the transfer before anything mutates.
 //
@@ -28326,190 +27063,20 @@ fn destination_overflow_is_rejected_without_touching_the_ledger() {
 
 ### Authored solution
 
-#### `src/lib.rs`
+#### `src/preparation.rs`
 
-Source: `lessons/validate-prepare-commit/099-prepare-transfer/solution/src/lib.rs`
+Source: `lessons/validate-prepare-commit/099-prepare-transfer/solution/src/preparation.rs`
 
 ```rust
-//! Ledger support types for the validate -> prepare -> commit arc.
-//!
-//! Account identity, money, and the account store are provided. The boundary
-//! that turns a raw transfer request into work the ledger is allowed to execute
-//! is the part that grows lesson by lesson in this file.
-
-use std::collections::HashSet;
-use std::num::NonZeroU64;
-
-/// Identifies one account held by the ledger.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct AccountId(u32);
-
-impl AccountId {
-    pub const fn new(value: u32) -> Self {
-        Self(value)
-    }
-
-    pub const fn value(self) -> u32 {
-        self.0
-    }
-}
-
-/// An amount in whole cents. Money carries no sign; direction comes from the
-/// transfer that moves it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Money(u64);
+use crate::{AccountId, Ledger, Money, TransferCommand};
 
 impl Money {
-    pub const fn from_cents(cents: u64) -> Self {
-        Self(cents)
-    }
-
-    pub const fn cents(self) -> u64 {
-        self.0
-    }
-
     fn checked_add(self, rhs: Self) -> Option<Self> {
-        self.0.checked_add(rhs.0).map(Self)
+        self.cents().checked_add(rhs.cents()).map(Self::from_cents)
     }
 
     fn checked_sub(self, rhs: Self) -> Option<Self> {
-        self.0.checked_sub(rhs.0).map(Self)
-    }
-}
-
-/// Returned when a ledger is built from entries that repeat an account ID.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct DuplicateAccount(AccountId);
-
-impl DuplicateAccount {
-    pub const fn id(self) -> AccountId {
-        self.0
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct Account {
-    id: AccountId,
-    balance: Money,
-}
-
-/// The in-memory account store that later lessons mutate.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Ledger {
-    accounts: Vec<Account>,
-}
-
-impl Ledger {
-    /// Build a ledger, rejecting an entry that repeats an account ID.
-    pub fn try_new(
-        entries: impl IntoIterator<Item = (AccountId, Money)>,
-    ) -> Result<Self, DuplicateAccount> {
-        let mut ids = HashSet::new();
-        let mut accounts = Vec::new();
-
-        for (id, balance) in entries {
-            if !ids.insert(id) {
-                return Err(DuplicateAccount(id));
-            }
-            accounts.push(Account { id, balance });
-        }
-
-        Ok(Self { accounts })
-    }
-
-    /// The balance of one account, if this ledger holds it.
-    pub fn balance(&self, id: AccountId) -> Option<Money> {
-        self.accounts
-            .iter()
-            .find(|account| account.id == id)
-            .map(|account| account.balance)
-    }
-}
-
-/// A transfer exactly as the caller supplied it.
-///
-/// A request can still describe work the domain must never execute: a transfer
-/// to the same account or a transfer of nothing.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct TransferRequest {
-    source: AccountId,
-    destination: AccountId,
-    amount_cents: u64,
-}
-
-impl TransferRequest {
-    pub const fn new(source: AccountId, destination: AccountId, amount_cents: u64) -> Self {
-        Self {
-            source,
-            destination,
-            amount_cents,
-        }
-    }
-}
-
-/// The request-only reasons a transfer must not be executed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TransferRequestError {
-    SameAccount,
-    ZeroAmount,
-}
-
-/// A transfer amount that cannot be zero.
-///
-/// The inner representation stays private so the only way to build one is the
-/// checked conversion in this module.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct TransferAmount(NonZeroU64);
-
-impl TransferAmount {
-    const fn as_money(self) -> Money {
-        Money::from_cents(self.0.get())
-    }
-}
-
-/// A transfer request that passed every request-only rule.
-///
-/// The fields are private: `TryFrom<TransferRequest>` is the only way for
-/// outside code to obtain a command, so a command is evidence that the request
-/// was legal and not merely well formed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct TransferCommand {
-    source: AccountId,
-    destination: AccountId,
-    amount: TransferAmount,
-}
-
-impl TransferCommand {
-    pub const fn source(self) -> AccountId {
-        self.source
-    }
-
-    pub const fn destination(self) -> AccountId {
-        self.destination
-    }
-
-    pub const fn amount(self) -> Money {
-        self.amount.as_money()
-    }
-}
-
-impl TryFrom<TransferRequest> for TransferCommand {
-    type Error = TransferRequestError;
-
-    fn try_from(request: TransferRequest) -> Result<Self, Self::Error> {
-        if request.source == request.destination {
-            return Err(TransferRequestError::SameAccount);
-        }
-
-        let Some(amount) = NonZeroU64::new(request.amount_cents) else {
-            return Err(TransferRequestError::ZeroAmount);
-        };
-
-        Ok(Self {
-            source: request.source,
-            destination: request.destination,
-            amount: TransferAmount(amount),
-        })
+        self.cents().checked_sub(rhs.cents()).map(Self::from_cents)
     }
 }
 
@@ -28651,7 +27218,7 @@ The value-only plan from the previous lesson can outlive the state it was calcul
 
 ### Task
 
-In src/lib.rs, replace the value-only PreparedTransfer with PreparedTransfer<'a>, which holds &'a mut Account for the source and the destination. Change Ledger::prepare_transfer to take &mut self and return PreparedTransfer<'_>, keeping the same account lookups, the same checked post-state, and the same rejections, and take the two account references from the provided account_pair_mut helper. The prepared type must not derive or implement Clone or Copy.
+In src/preparation.rs, replace the value-only PreparedTransfer with PreparedTransfer<'a>, which holds &'a mut Account for the source and the destination. Change Ledger::prepare_transfer to take &mut self and return PreparedTransfer<'_>, keeping the same account lookups, the same checked post-state, and the same rejections, and take the two account references from the provided account_pair_mut helper. The prepared type must not derive or implement Clone or Copy.
 
 ### Concept context
 
@@ -28662,9 +27229,23 @@ Bind prepared work to exclusive mutable references so state cannot drift between
 
 ### Starter project files
 
-#### `src/lib.rs` — editable
+#### `src/lib.rs` — readonly
 
 Source: `lessons/validate-prepare-commit/100-bind-prepared-transfer/starter/src/lib.rs`
+
+```rust
+mod account;
+mod preparation;
+mod request;
+
+pub use account::{AccountId, DuplicateAccount, Ledger, Money};
+pub use preparation::{PreparedTransfer, TransferRejection};
+pub use request::{TransferCommand, TransferRequest, TransferRequestError};
+```
+
+#### `src/account.rs` — readonly
+
+Source: `lessons/validate-prepare-commit/100-bind-prepared-transfer/starter/src/account.rs`
 
 ```rust
 //! Ledger support types for the validate -> prepare -> commit arc.
@@ -28674,7 +27255,6 @@ Source: `lessons/validate-prepare-commit/100-bind-prepared-transfer/starter/src/
 //! is the part that grows lesson by lesson in this file.
 
 use std::collections::HashSet;
-use std::num::NonZeroU64;
 
 /// Identifies one account held by the ledger.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -28703,14 +27283,6 @@ impl Money {
     pub const fn cents(self) -> u64 {
         self.0
     }
-
-    fn checked_add(self, rhs: Self) -> Option<Self> {
-        self.0.checked_add(rhs.0).map(Self)
-    }
-
-    fn checked_sub(self, rhs: Self) -> Option<Self> {
-        self.0.checked_sub(rhs.0).map(Self)
-    }
 }
 
 /// Returned when a ledger is built from entries that repeat an account ID.
@@ -28724,15 +27296,15 @@ impl DuplicateAccount {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct Account {
-    id: AccountId,
-    balance: Money,
+pub(super) struct Account {
+    pub(super) id: AccountId,
+    pub(super) balance: Money,
 }
 
 /// The in-memory account store that later lessons mutate.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Ledger {
-    accounts: Vec<Account>,
+    pub(super) accounts: Vec<Account>,
 }
 
 impl Ledger {
@@ -28761,6 +27333,15 @@ impl Ledger {
             .map(|account| account.balance)
     }
 }
+```
+
+#### `src/request.rs` — readonly
+
+Source: `lessons/validate-prepare-commit/100-bind-prepared-transfer/starter/src/request.rs`
+
+```rust
+use crate::{AccountId, Money};
+use std::num::NonZeroU64;
 
 /// A transfer exactly as the caller supplied it.
 ///
@@ -28848,6 +27429,24 @@ impl TryFrom<TransferRequest> for TransferCommand {
         })
     }
 }
+```
+
+#### `src/preparation.rs` — editable
+
+Source: `lessons/validate-prepare-commit/100-bind-prepared-transfer/starter/src/preparation.rs`
+
+```rust
+use crate::{AccountId, Ledger, Money, TransferCommand};
+
+impl Money {
+    fn checked_add(self, rhs: Self) -> Option<Self> {
+        self.cents().checked_add(rhs.cents()).map(Self::from_cents)
+    }
+
+    fn checked_sub(self, rhs: Self) -> Option<Self> {
+        self.cents().checked_sub(rhs.cents()).map(Self::from_cents)
+    }
+}
 
 /// The state-dependent reasons a validated command cannot be prepared.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -28912,12 +27511,15 @@ impl Ledger {
         &mut self,
         source: AccountId,
         destination: AccountId,
-    ) -> Option<(&mut Account, &mut Account)> {
+    ) -> Option<(&mut crate::account::Account, &mut crate::account::Account)> {
         if source == destination {
             return None;
         }
 
-        let source_index = self.accounts.iter().position(|account| account.id == source)?;
+        let source_index = self
+            .accounts
+            .iter()
+            .position(|account| account.id == source)?;
         let destination_index = self
             .accounts
             .iter()
@@ -29208,190 +27810,21 @@ fn main() {
 
 ### Authored solution
 
-#### `src/lib.rs`
+#### `src/preparation.rs`
 
-Source: `lessons/validate-prepare-commit/100-bind-prepared-transfer/solution/src/lib.rs`
+Source: `lessons/validate-prepare-commit/100-bind-prepared-transfer/solution/src/preparation.rs`
 
 ```rust
-//! Ledger support types for the validate -> prepare -> commit arc.
-//!
-//! Account identity, money, and the account store are provided. The boundary
-//! that turns a raw transfer request into work the ledger is allowed to execute
-//! is the part that grows lesson by lesson in this file.
-
-use std::collections::HashSet;
-use std::num::NonZeroU64;
-
-/// Identifies one account held by the ledger.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct AccountId(u32);
-
-impl AccountId {
-    pub const fn new(value: u32) -> Self {
-        Self(value)
-    }
-
-    pub const fn value(self) -> u32 {
-        self.0
-    }
-}
-
-/// An amount in whole cents. Money carries no sign; direction comes from the
-/// transfer that moves it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Money(u64);
+use crate::account::Account;
+use crate::{AccountId, Ledger, Money, TransferCommand};
 
 impl Money {
-    pub const fn from_cents(cents: u64) -> Self {
-        Self(cents)
-    }
-
-    pub const fn cents(self) -> u64 {
-        self.0
-    }
-
     fn checked_add(self, rhs: Self) -> Option<Self> {
-        self.0.checked_add(rhs.0).map(Self)
+        self.cents().checked_add(rhs.cents()).map(Self::from_cents)
     }
 
     fn checked_sub(self, rhs: Self) -> Option<Self> {
-        self.0.checked_sub(rhs.0).map(Self)
-    }
-}
-
-/// Returned when a ledger is built from entries that repeat an account ID.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct DuplicateAccount(AccountId);
-
-impl DuplicateAccount {
-    pub const fn id(self) -> AccountId {
-        self.0
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct Account {
-    id: AccountId,
-    balance: Money,
-}
-
-/// The in-memory account store that later lessons mutate.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Ledger {
-    accounts: Vec<Account>,
-}
-
-impl Ledger {
-    /// Build a ledger, rejecting an entry that repeats an account ID.
-    pub fn try_new(
-        entries: impl IntoIterator<Item = (AccountId, Money)>,
-    ) -> Result<Self, DuplicateAccount> {
-        let mut ids = HashSet::new();
-        let mut accounts = Vec::new();
-
-        for (id, balance) in entries {
-            if !ids.insert(id) {
-                return Err(DuplicateAccount(id));
-            }
-            accounts.push(Account { id, balance });
-        }
-
-        Ok(Self { accounts })
-    }
-
-    /// The balance of one account, if this ledger holds it.
-    pub fn balance(&self, id: AccountId) -> Option<Money> {
-        self.accounts
-            .iter()
-            .find(|account| account.id == id)
-            .map(|account| account.balance)
-    }
-}
-
-/// A transfer exactly as the caller supplied it.
-///
-/// A request can still describe work the domain must never execute: a transfer
-/// to the same account or a transfer of nothing.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct TransferRequest {
-    source: AccountId,
-    destination: AccountId,
-    amount_cents: u64,
-}
-
-impl TransferRequest {
-    pub const fn new(source: AccountId, destination: AccountId, amount_cents: u64) -> Self {
-        Self {
-            source,
-            destination,
-            amount_cents,
-        }
-    }
-}
-
-/// The request-only reasons a transfer must not be executed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TransferRequestError {
-    SameAccount,
-    ZeroAmount,
-}
-
-/// A transfer amount that cannot be zero.
-///
-/// The inner representation stays private so the only way to build one is the
-/// checked conversion in this module.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct TransferAmount(NonZeroU64);
-
-impl TransferAmount {
-    const fn as_money(self) -> Money {
-        Money::from_cents(self.0.get())
-    }
-}
-
-/// A transfer request that passed every request-only rule.
-///
-/// The fields are private: `TryFrom<TransferRequest>` is the only way for
-/// outside code to obtain a command, so a command is evidence that the request
-/// was legal and not merely well formed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct TransferCommand {
-    source: AccountId,
-    destination: AccountId,
-    amount: TransferAmount,
-}
-
-impl TransferCommand {
-    pub const fn source(self) -> AccountId {
-        self.source
-    }
-
-    pub const fn destination(self) -> AccountId {
-        self.destination
-    }
-
-    pub const fn amount(self) -> Money {
-        self.amount.as_money()
-    }
-}
-
-impl TryFrom<TransferRequest> for TransferCommand {
-    type Error = TransferRequestError;
-
-    fn try_from(request: TransferRequest) -> Result<Self, Self::Error> {
-        if request.source == request.destination {
-            return Err(TransferRequestError::SameAccount);
-        }
-
-        let Some(amount) = NonZeroU64::new(request.amount_cents) else {
-            return Err(TransferRequestError::ZeroAmount);
-        };
-
-        Ok(Self {
-            source: request.source,
-            destination: request.destination,
-            amount: TransferAmount(amount),
-        })
+        self.cents().checked_sub(rhs.cents()).map(Self::from_cents)
     }
 }
 
@@ -29412,11 +27845,11 @@ pub enum TransferRejection {
 /// cannot go stale. The fields stay private and no constructor is public.
 #[derive(Debug)]
 pub struct PreparedTransfer<'a> {
-    source: &'a mut Account,
-    destination: &'a mut Account,
-    amount: Money,
-    source_after: Money,
-    destination_after: Money,
+    pub(super) source: &'a mut Account,
+    pub(super) destination: &'a mut Account,
+    pub(super) amount: Money,
+    pub(super) source_after: Money,
+    pub(super) destination_after: Money,
 }
 
 impl Ledger {
@@ -29427,12 +27860,15 @@ impl Ledger {
         &mut self,
         source: AccountId,
         destination: AccountId,
-    ) -> Option<(&mut Account, &mut Account)> {
+    ) -> Option<(&mut crate::account::Account, &mut crate::account::Account)> {
         if source == destination {
             return None;
         }
 
-        let source_index = self.accounts.iter().position(|account| account.id == source)?;
+        let source_index = self
+            .accounts
+            .iter()
+            .position(|account| account.id == source)?;
         let destination_index = self
             .accounts
             .iter()
@@ -29579,7 +28015,7 @@ Preparation has already resolved existence, funds, and overflow, and it holds ex
 
 ### Task
 
-In src/lib.rs, add a TransferReceipt with private source, destination, and amount fields plus getters, and implement PreparedTransfer::commit(self) -> TransferReceipt. Commit assigns the two precomputed post-balances to the borrowed accounts and builds the receipt. It must not return Result or Option, look an account up again, run checked arithmetic, or revalidate the request.
+In src/commit.rs, add a TransferReceipt with private source, destination, and amount fields plus getters, and implement PreparedTransfer::commit(self) -> TransferReceipt. Commit assigns the two precomputed post-balances to the borrowed accounts and builds the receipt. It must not return Result or Option, look an account up again, run checked arithmetic, or revalidate the request.
 
 ### Concept context
 
@@ -29590,9 +28026,25 @@ Consume a prepared capability to perform only prevalidated mutation and return a
 
 ### Starter project files
 
-#### `src/lib.rs` — editable
+#### `src/lib.rs` — readonly
 
 Source: `lessons/validate-prepare-commit/101-commit-prepared-transfer/starter/src/lib.rs`
+
+```rust
+mod account;
+mod commit;
+mod preparation;
+mod request;
+
+pub use account::{AccountId, DuplicateAccount, Ledger, Money};
+pub use commit::TransferReceipt;
+pub use preparation::{PreparedTransfer, TransferRejection};
+pub use request::{TransferCommand, TransferRequest, TransferRequestError};
+```
+
+#### `src/account.rs` — readonly
+
+Source: `lessons/validate-prepare-commit/101-commit-prepared-transfer/starter/src/account.rs`
 
 ```rust
 //! Ledger support types for the validate -> prepare -> commit arc.
@@ -29602,7 +28054,6 @@ Source: `lessons/validate-prepare-commit/101-commit-prepared-transfer/starter/sr
 //! is the part that grows lesson by lesson in this file.
 
 use std::collections::HashSet;
-use std::num::NonZeroU64;
 
 /// Identifies one account held by the ledger.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -29631,14 +28082,6 @@ impl Money {
     pub const fn cents(self) -> u64 {
         self.0
     }
-
-    fn checked_add(self, rhs: Self) -> Option<Self> {
-        self.0.checked_add(rhs.0).map(Self)
-    }
-
-    fn checked_sub(self, rhs: Self) -> Option<Self> {
-        self.0.checked_sub(rhs.0).map(Self)
-    }
 }
 
 /// Returned when a ledger is built from entries that repeat an account ID.
@@ -29652,15 +28095,15 @@ impl DuplicateAccount {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct Account {
-    id: AccountId,
-    balance: Money,
+pub(super) struct Account {
+    pub(super) id: AccountId,
+    pub(super) balance: Money,
 }
 
 /// The in-memory account store that later lessons mutate.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Ledger {
-    accounts: Vec<Account>,
+    pub(super) accounts: Vec<Account>,
 }
 
 impl Ledger {
@@ -29689,6 +28132,15 @@ impl Ledger {
             .map(|account| account.balance)
     }
 }
+```
+
+#### `src/request.rs` — readonly
+
+Source: `lessons/validate-prepare-commit/101-commit-prepared-transfer/starter/src/request.rs`
+
+```rust
+use crate::{AccountId, Money};
+use std::num::NonZeroU64;
 
 /// A transfer exactly as the caller supplied it.
 ///
@@ -29776,6 +28228,25 @@ impl TryFrom<TransferRequest> for TransferCommand {
         })
     }
 }
+```
+
+#### `src/preparation.rs` — readonly
+
+Source: `lessons/validate-prepare-commit/101-commit-prepared-transfer/starter/src/preparation.rs`
+
+```rust
+use crate::account::Account;
+use crate::{AccountId, Ledger, Money, TransferCommand};
+
+impl Money {
+    fn checked_add(self, rhs: Self) -> Option<Self> {
+        self.cents().checked_add(rhs.cents()).map(Self::from_cents)
+    }
+
+    fn checked_sub(self, rhs: Self) -> Option<Self> {
+        self.cents().checked_sub(rhs.cents()).map(Self::from_cents)
+    }
+}
 
 /// The state-dependent reasons a validated command cannot be prepared.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -29794,11 +28265,11 @@ pub enum TransferRejection {
 /// cannot go stale. The fields stay private and no constructor is public.
 #[derive(Debug)]
 pub struct PreparedTransfer<'a> {
-    source: &'a mut Account,
-    destination: &'a mut Account,
-    amount: Money,
-    source_after: Money,
-    destination_after: Money,
+    pub(super) source: &'a mut Account,
+    pub(super) destination: &'a mut Account,
+    pub(super) amount: Money,
+    pub(super) source_after: Money,
+    pub(super) destination_after: Money,
 }
 
 impl Ledger {
@@ -29809,12 +28280,15 @@ impl Ledger {
         &mut self,
         source: AccountId,
         destination: AccountId,
-    ) -> Option<(&mut Account, &mut Account)> {
+    ) -> Option<(&mut crate::account::Account, &mut crate::account::Account)> {
         if source == destination {
             return None;
         }
 
-        let source_index = self.accounts.iter().position(|account| account.id == source)?;
+        let source_index = self
+            .accounts
+            .iter()
+            .position(|account| account.id == source)?;
         let destination_index = self
             .accounts
             .iter()
@@ -29874,6 +28348,14 @@ impl Ledger {
         })
     }
 }
+```
+
+#### `src/commit.rs` — editable
+
+Source: `lessons/validate-prepare-commit/101-commit-prepared-transfer/starter/src/commit.rs`
+
+```rust
+use crate::{AccountId, Money, PreparedTransfer};
 
 // TODO: cross the authoritative boundary once.
 //
@@ -30193,290 +28675,12 @@ fn main() {
 
 ### Authored solution
 
-#### `src/lib.rs`
+#### `src/commit.rs`
 
-Source: `lessons/validate-prepare-commit/101-commit-prepared-transfer/solution/src/lib.rs`
+Source: `lessons/validate-prepare-commit/101-commit-prepared-transfer/solution/src/commit.rs`
 
 ```rust
-//! Ledger support types for the validate -> prepare -> commit arc.
-//!
-//! Account identity, money, and the account store are provided. The boundary
-//! that turns a raw transfer request into work the ledger is allowed to execute
-//! is the part that grows lesson by lesson in this file.
-
-use std::collections::HashSet;
-use std::num::NonZeroU64;
-
-/// Identifies one account held by the ledger.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct AccountId(u32);
-
-impl AccountId {
-    pub const fn new(value: u32) -> Self {
-        Self(value)
-    }
-
-    pub const fn value(self) -> u32 {
-        self.0
-    }
-}
-
-/// An amount in whole cents. Money carries no sign; direction comes from the
-/// transfer that moves it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Money(u64);
-
-impl Money {
-    pub const fn from_cents(cents: u64) -> Self {
-        Self(cents)
-    }
-
-    pub const fn cents(self) -> u64 {
-        self.0
-    }
-
-    fn checked_add(self, rhs: Self) -> Option<Self> {
-        self.0.checked_add(rhs.0).map(Self)
-    }
-
-    fn checked_sub(self, rhs: Self) -> Option<Self> {
-        self.0.checked_sub(rhs.0).map(Self)
-    }
-}
-
-/// Returned when a ledger is built from entries that repeat an account ID.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct DuplicateAccount(AccountId);
-
-impl DuplicateAccount {
-    pub const fn id(self) -> AccountId {
-        self.0
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct Account {
-    id: AccountId,
-    balance: Money,
-}
-
-/// The in-memory account store that later lessons mutate.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Ledger {
-    accounts: Vec<Account>,
-}
-
-impl Ledger {
-    /// Build a ledger, rejecting an entry that repeats an account ID.
-    pub fn try_new(
-        entries: impl IntoIterator<Item = (AccountId, Money)>,
-    ) -> Result<Self, DuplicateAccount> {
-        let mut ids = HashSet::new();
-        let mut accounts = Vec::new();
-
-        for (id, balance) in entries {
-            if !ids.insert(id) {
-                return Err(DuplicateAccount(id));
-            }
-            accounts.push(Account { id, balance });
-        }
-
-        Ok(Self { accounts })
-    }
-
-    /// The balance of one account, if this ledger holds it.
-    pub fn balance(&self, id: AccountId) -> Option<Money> {
-        self.accounts
-            .iter()
-            .find(|account| account.id == id)
-            .map(|account| account.balance)
-    }
-}
-
-/// A transfer exactly as the caller supplied it.
-///
-/// A request can still describe work the domain must never execute: a transfer
-/// to the same account or a transfer of nothing.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct TransferRequest {
-    source: AccountId,
-    destination: AccountId,
-    amount_cents: u64,
-}
-
-impl TransferRequest {
-    pub const fn new(source: AccountId, destination: AccountId, amount_cents: u64) -> Self {
-        Self {
-            source,
-            destination,
-            amount_cents,
-        }
-    }
-}
-
-/// The request-only reasons a transfer must not be executed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TransferRequestError {
-    SameAccount,
-    ZeroAmount,
-}
-
-/// A transfer amount that cannot be zero.
-///
-/// The inner representation stays private so the only way to build one is the
-/// checked conversion in this module.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct TransferAmount(NonZeroU64);
-
-impl TransferAmount {
-    const fn as_money(self) -> Money {
-        Money::from_cents(self.0.get())
-    }
-}
-
-/// A transfer request that passed every request-only rule.
-///
-/// The fields are private: `TryFrom<TransferRequest>` is the only way for
-/// outside code to obtain a command, so a command is evidence that the request
-/// was legal and not merely well formed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct TransferCommand {
-    source: AccountId,
-    destination: AccountId,
-    amount: TransferAmount,
-}
-
-impl TransferCommand {
-    pub const fn source(self) -> AccountId {
-        self.source
-    }
-
-    pub const fn destination(self) -> AccountId {
-        self.destination
-    }
-
-    pub const fn amount(self) -> Money {
-        self.amount.as_money()
-    }
-}
-
-impl TryFrom<TransferRequest> for TransferCommand {
-    type Error = TransferRequestError;
-
-    fn try_from(request: TransferRequest) -> Result<Self, Self::Error> {
-        if request.source == request.destination {
-            return Err(TransferRequestError::SameAccount);
-        }
-
-        let Some(amount) = NonZeroU64::new(request.amount_cents) else {
-            return Err(TransferRequestError::ZeroAmount);
-        };
-
-        Ok(Self {
-            source: request.source,
-            destination: request.destination,
-            amount: TransferAmount(amount),
-        })
-    }
-}
-
-/// The state-dependent reasons a validated command cannot be prepared.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TransferRejection {
-    SourceNotFound,
-    DestinationNotFound,
-    InsufficientFunds,
-    DestinationOverflow,
-}
-
-/// The two accounts a transfer has resolved, borrowed for the whole time the
-/// preparation is alive.
-///
-/// The exclusive borrows are the capability: while a `PreparedTransfer` exists,
-/// nothing else can read or write the two accounts, so the post-state it holds
-/// cannot go stale. The fields stay private and no constructor is public.
-#[derive(Debug)]
-pub struct PreparedTransfer<'a> {
-    source: &'a mut Account,
-    destination: &'a mut Account,
-    amount: Money,
-    source_after: Money,
-    destination_after: Money,
-}
-
-impl Ledger {
-    /// Borrow the source and the destination at the same time without `unsafe`
-    /// code or interior mutability. Provided support code: use it rather than
-    /// rebuilding it.
-    fn account_pair_mut(
-        &mut self,
-        source: AccountId,
-        destination: AccountId,
-    ) -> Option<(&mut Account, &mut Account)> {
-        if source == destination {
-            return None;
-        }
-
-        let source_index = self.accounts.iter().position(|account| account.id == source)?;
-        let destination_index = self
-            .accounts
-            .iter()
-            .position(|account| account.id == destination)?;
-
-        if source_index < destination_index {
-            let (before_destination, from_destination) =
-                self.accounts.split_at_mut(destination_index);
-            let source = before_destination.get_mut(source_index)?;
-            let destination = from_destination.first_mut()?;
-            Some((source, destination))
-        } else {
-            let (before_source, from_source) = self.accounts.split_at_mut(source_index);
-            let destination = before_source.get_mut(destination_index)?;
-            let source = from_source.first_mut()?;
-            Some((source, destination))
-        }
-    }
-
-    /// Resolve every state-dependent failure and keep exclusive authority over
-    /// the two accounts the transfer is allowed to change.
-    pub fn prepare_transfer(
-        &mut self,
-        command: TransferCommand,
-    ) -> Result<PreparedTransfer<'_>, TransferRejection> {
-        let amount = command.amount();
-
-        let source_balance = self
-            .balance(command.source())
-            .ok_or(TransferRejection::SourceNotFound)?;
-        let destination_balance = self
-            .balance(command.destination())
-            .ok_or(TransferRejection::DestinationNotFound)?;
-
-        let source_after = source_balance
-            .checked_sub(amount)
-            .ok_or(TransferRejection::InsufficientFunds)?;
-        let destination_after = destination_balance
-            .checked_add(amount)
-            .ok_or(TransferRejection::DestinationOverflow)?;
-
-        let Some((source, destination)) =
-            self.account_pair_mut(command.source(), command.destination())
-        else {
-            // Both accounts were resolved above and `TransferCommand` guarantees
-            // distinct account IDs, so this is a defensive preparation
-            // rejection rather than an assertion or a panic.
-            return Err(TransferRejection::SourceNotFound);
-        };
-
-        Ok(PreparedTransfer {
-            source,
-            destination,
-            amount,
-            source_after,
-            destination_after,
-        })
-    }
-}
+use crate::{AccountId, Money, PreparedTransfer};
 
 /// What a committed transfer did.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -30607,7 +28811,7 @@ The individual phases now have useful types and contracts, and the application n
 
 ### Task
 
-In src/lib.rs, add a TransferError enum with Invalid(TransferRequestError) and Rejected(TransferRejection) variants and implement From for both phase errors so ? keeps the phase distinction. Then add execute_transfer(&mut Ledger, TransferRequest) -> Result<TransferReceipt, TransferError>, whose body performs exactly three steps: validate the request into a TransferCommand, prepare it against the ledger, and commit the prepared transfer.
+In src/pipeline.rs, add a TransferError enum with Invalid(TransferRequestError) and Rejected(TransferRejection) variants and implement From for both phase errors so ? keeps the phase distinction. Then add execute_transfer(&mut Ledger, TransferRequest) -> Result<TransferReceipt, TransferError>, whose body performs exactly three steps: validate the request into a TransferCommand, prepare it against the ledger, and commit the prepared transfer.
 
 ### Concept context
 
@@ -30618,9 +28822,27 @@ Compose validation, preparation, and consuming commit so expected failures occur
 
 ### Starter project files
 
-#### `src/lib.rs` — editable
+#### `src/lib.rs` — readonly
 
 Source: `lessons/validate-prepare-commit/102-execute-transfer-pipeline/starter/src/lib.rs`
+
+```rust
+mod account;
+mod commit;
+mod pipeline;
+mod preparation;
+mod request;
+
+pub use account::{AccountId, DuplicateAccount, Ledger, Money};
+pub use commit::TransferReceipt;
+pub use pipeline::{execute_transfer, TransferError};
+pub use preparation::{PreparedTransfer, TransferRejection};
+pub use request::{TransferCommand, TransferRequest, TransferRequestError};
+```
+
+#### `src/account.rs` — readonly
+
+Source: `lessons/validate-prepare-commit/102-execute-transfer-pipeline/starter/src/account.rs`
 
 ```rust
 //! Ledger support types for the validate -> prepare -> commit arc.
@@ -30630,7 +28852,6 @@ Source: `lessons/validate-prepare-commit/102-execute-transfer-pipeline/starter/s
 //! is the part that grows lesson by lesson in this file.
 
 use std::collections::HashSet;
-use std::num::NonZeroU64;
 
 /// Identifies one account held by the ledger.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -30659,14 +28880,6 @@ impl Money {
     pub const fn cents(self) -> u64 {
         self.0
     }
-
-    fn checked_add(self, rhs: Self) -> Option<Self> {
-        self.0.checked_add(rhs.0).map(Self)
-    }
-
-    fn checked_sub(self, rhs: Self) -> Option<Self> {
-        self.0.checked_sub(rhs.0).map(Self)
-    }
 }
 
 /// Returned when a ledger is built from entries that repeat an account ID.
@@ -30680,15 +28893,15 @@ impl DuplicateAccount {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct Account {
-    id: AccountId,
-    balance: Money,
+pub(super) struct Account {
+    pub(super) id: AccountId,
+    pub(super) balance: Money,
 }
 
 /// The in-memory account store that later lessons mutate.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Ledger {
-    accounts: Vec<Account>,
+    pub(super) accounts: Vec<Account>,
 }
 
 impl Ledger {
@@ -30717,6 +28930,15 @@ impl Ledger {
             .map(|account| account.balance)
     }
 }
+```
+
+#### `src/request.rs` — readonly
+
+Source: `lessons/validate-prepare-commit/102-execute-transfer-pipeline/starter/src/request.rs`
+
+```rust
+use crate::{AccountId, Money};
+use std::num::NonZeroU64;
 
 /// A transfer exactly as the caller supplied it.
 ///
@@ -30804,6 +29026,25 @@ impl TryFrom<TransferRequest> for TransferCommand {
         })
     }
 }
+```
+
+#### `src/preparation.rs` — readonly
+
+Source: `lessons/validate-prepare-commit/102-execute-transfer-pipeline/starter/src/preparation.rs`
+
+```rust
+use crate::account::Account;
+use crate::{AccountId, Ledger, Money, TransferCommand};
+
+impl Money {
+    fn checked_add(self, rhs: Self) -> Option<Self> {
+        self.cents().checked_add(rhs.cents()).map(Self::from_cents)
+    }
+
+    fn checked_sub(self, rhs: Self) -> Option<Self> {
+        self.cents().checked_sub(rhs.cents()).map(Self::from_cents)
+    }
+}
 
 /// The state-dependent reasons a validated command cannot be prepared.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -30822,11 +29063,11 @@ pub enum TransferRejection {
 /// cannot go stale. The fields stay private and no constructor is public.
 #[derive(Debug)]
 pub struct PreparedTransfer<'a> {
-    source: &'a mut Account,
-    destination: &'a mut Account,
-    amount: Money,
-    source_after: Money,
-    destination_after: Money,
+    pub(super) source: &'a mut Account,
+    pub(super) destination: &'a mut Account,
+    pub(super) amount: Money,
+    pub(super) source_after: Money,
+    pub(super) destination_after: Money,
 }
 
 impl Ledger {
@@ -30837,12 +29078,15 @@ impl Ledger {
         &mut self,
         source: AccountId,
         destination: AccountId,
-    ) -> Option<(&mut Account, &mut Account)> {
+    ) -> Option<(&mut crate::account::Account, &mut crate::account::Account)> {
         if source == destination {
             return None;
         }
 
-        let source_index = self.accounts.iter().position(|account| account.id == source)?;
+        let source_index = self
+            .accounts
+            .iter()
+            .position(|account| account.id == source)?;
         let destination_index = self
             .accounts
             .iter()
@@ -30902,6 +29146,14 @@ impl Ledger {
         })
     }
 }
+```
+
+#### `src/commit.rs` — readonly
+
+Source: `lessons/validate-prepare-commit/102-execute-transfer-pipeline/starter/src/commit.rs`
+
+```rust
+use crate::{AccountId, Money, PreparedTransfer};
 
 /// What a committed transfer did.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -30953,6 +29205,17 @@ impl PreparedTransfer<'_> {
         }
     }
 }
+```
+
+#### `src/pipeline.rs` — editable
+
+Source: `lessons/validate-prepare-commit/102-execute-transfer-pipeline/starter/src/pipeline.rs`
+
+```rust
+use crate::{
+    Ledger, TransferCommand, TransferReceipt, TransferRejection, TransferRequest,
+    TransferRequestError,
+};
 
 // TODO: compose the phases into one application-facing operation.
 //
@@ -31358,341 +29621,15 @@ fn main() {
 
 ### Authored solution
 
-#### `src/lib.rs`
+#### `src/pipeline.rs`
 
-Source: `lessons/validate-prepare-commit/102-execute-transfer-pipeline/solution/src/lib.rs`
+Source: `lessons/validate-prepare-commit/102-execute-transfer-pipeline/solution/src/pipeline.rs`
 
 ```rust
-//! Ledger support types for the validate -> prepare -> commit arc.
-//!
-//! Account identity, money, and the account store are provided. The boundary
-//! that turns a raw transfer request into work the ledger is allowed to execute
-//! is the part that grows lesson by lesson in this file.
-
-use std::collections::HashSet;
-use std::num::NonZeroU64;
-
-/// Identifies one account held by the ledger.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct AccountId(u32);
-
-impl AccountId {
-    pub const fn new(value: u32) -> Self {
-        Self(value)
-    }
-
-    pub const fn value(self) -> u32 {
-        self.0
-    }
-}
-
-/// An amount in whole cents. Money carries no sign; direction comes from the
-/// transfer that moves it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Money(u64);
-
-impl Money {
-    pub const fn from_cents(cents: u64) -> Self {
-        Self(cents)
-    }
-
-    pub const fn cents(self) -> u64 {
-        self.0
-    }
-
-    fn checked_add(self, rhs: Self) -> Option<Self> {
-        self.0.checked_add(rhs.0).map(Self)
-    }
-
-    fn checked_sub(self, rhs: Self) -> Option<Self> {
-        self.0.checked_sub(rhs.0).map(Self)
-    }
-}
-
-/// Returned when a ledger is built from entries that repeat an account ID.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct DuplicateAccount(AccountId);
-
-impl DuplicateAccount {
-    pub const fn id(self) -> AccountId {
-        self.0
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct Account {
-    id: AccountId,
-    balance: Money,
-}
-
-/// The in-memory account store that later lessons mutate.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Ledger {
-    accounts: Vec<Account>,
-}
-
-impl Ledger {
-    /// Build a ledger, rejecting an entry that repeats an account ID.
-    pub fn try_new(
-        entries: impl IntoIterator<Item = (AccountId, Money)>,
-    ) -> Result<Self, DuplicateAccount> {
-        let mut ids = HashSet::new();
-        let mut accounts = Vec::new();
-
-        for (id, balance) in entries {
-            if !ids.insert(id) {
-                return Err(DuplicateAccount(id));
-            }
-            accounts.push(Account { id, balance });
-        }
-
-        Ok(Self { accounts })
-    }
-
-    /// The balance of one account, if this ledger holds it.
-    pub fn balance(&self, id: AccountId) -> Option<Money> {
-        self.accounts
-            .iter()
-            .find(|account| account.id == id)
-            .map(|account| account.balance)
-    }
-}
-
-/// A transfer exactly as the caller supplied it.
-///
-/// A request can still describe work the domain must never execute: a transfer
-/// to the same account or a transfer of nothing.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct TransferRequest {
-    source: AccountId,
-    destination: AccountId,
-    amount_cents: u64,
-}
-
-impl TransferRequest {
-    pub const fn new(source: AccountId, destination: AccountId, amount_cents: u64) -> Self {
-        Self {
-            source,
-            destination,
-            amount_cents,
-        }
-    }
-}
-
-/// The request-only reasons a transfer must not be executed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TransferRequestError {
-    SameAccount,
-    ZeroAmount,
-}
-
-/// A transfer amount that cannot be zero.
-///
-/// The inner representation stays private so the only way to build one is the
-/// checked conversion in this module.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct TransferAmount(NonZeroU64);
-
-impl TransferAmount {
-    const fn as_money(self) -> Money {
-        Money::from_cents(self.0.get())
-    }
-}
-
-/// A transfer request that passed every request-only rule.
-///
-/// The fields are private: `TryFrom<TransferRequest>` is the only way for
-/// outside code to obtain a command, so a command is evidence that the request
-/// was legal and not merely well formed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct TransferCommand {
-    source: AccountId,
-    destination: AccountId,
-    amount: TransferAmount,
-}
-
-impl TransferCommand {
-    pub const fn source(self) -> AccountId {
-        self.source
-    }
-
-    pub const fn destination(self) -> AccountId {
-        self.destination
-    }
-
-    pub const fn amount(self) -> Money {
-        self.amount.as_money()
-    }
-}
-
-impl TryFrom<TransferRequest> for TransferCommand {
-    type Error = TransferRequestError;
-
-    fn try_from(request: TransferRequest) -> Result<Self, Self::Error> {
-        if request.source == request.destination {
-            return Err(TransferRequestError::SameAccount);
-        }
-
-        let Some(amount) = NonZeroU64::new(request.amount_cents) else {
-            return Err(TransferRequestError::ZeroAmount);
-        };
-
-        Ok(Self {
-            source: request.source,
-            destination: request.destination,
-            amount: TransferAmount(amount),
-        })
-    }
-}
-
-/// The state-dependent reasons a validated command cannot be prepared.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TransferRejection {
-    SourceNotFound,
-    DestinationNotFound,
-    InsufficientFunds,
-    DestinationOverflow,
-}
-
-/// The two accounts a transfer has resolved, borrowed for the whole time the
-/// preparation is alive.
-///
-/// The exclusive borrows are the capability: while a `PreparedTransfer` exists,
-/// nothing else can read or write the two accounts, so the post-state it holds
-/// cannot go stale. The fields stay private and no constructor is public.
-#[derive(Debug)]
-pub struct PreparedTransfer<'a> {
-    source: &'a mut Account,
-    destination: &'a mut Account,
-    amount: Money,
-    source_after: Money,
-    destination_after: Money,
-}
-
-impl Ledger {
-    /// Borrow the source and the destination at the same time without `unsafe`
-    /// code or interior mutability. Provided support code: use it rather than
-    /// rebuilding it.
-    fn account_pair_mut(
-        &mut self,
-        source: AccountId,
-        destination: AccountId,
-    ) -> Option<(&mut Account, &mut Account)> {
-        if source == destination {
-            return None;
-        }
-
-        let source_index = self.accounts.iter().position(|account| account.id == source)?;
-        let destination_index = self
-            .accounts
-            .iter()
-            .position(|account| account.id == destination)?;
-
-        if source_index < destination_index {
-            let (before_destination, from_destination) =
-                self.accounts.split_at_mut(destination_index);
-            let source = before_destination.get_mut(source_index)?;
-            let destination = from_destination.first_mut()?;
-            Some((source, destination))
-        } else {
-            let (before_source, from_source) = self.accounts.split_at_mut(source_index);
-            let destination = before_source.get_mut(destination_index)?;
-            let source = from_source.first_mut()?;
-            Some((source, destination))
-        }
-    }
-
-    /// Resolve every state-dependent failure and keep exclusive authority over
-    /// the two accounts the transfer is allowed to change.
-    pub fn prepare_transfer(
-        &mut self,
-        command: TransferCommand,
-    ) -> Result<PreparedTransfer<'_>, TransferRejection> {
-        let amount = command.amount();
-
-        let source_balance = self
-            .balance(command.source())
-            .ok_or(TransferRejection::SourceNotFound)?;
-        let destination_balance = self
-            .balance(command.destination())
-            .ok_or(TransferRejection::DestinationNotFound)?;
-
-        let source_after = source_balance
-            .checked_sub(amount)
-            .ok_or(TransferRejection::InsufficientFunds)?;
-        let destination_after = destination_balance
-            .checked_add(amount)
-            .ok_or(TransferRejection::DestinationOverflow)?;
-
-        let Some((source, destination)) =
-            self.account_pair_mut(command.source(), command.destination())
-        else {
-            // Both accounts were resolved above and `TransferCommand` guarantees
-            // distinct account IDs, so this is a defensive preparation
-            // rejection rather than an assertion or a panic.
-            return Err(TransferRejection::SourceNotFound);
-        };
-
-        Ok(PreparedTransfer {
-            source,
-            destination,
-            amount,
-            source_after,
-            destination_after,
-        })
-    }
-}
-
-/// What a committed transfer did.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct TransferReceipt {
-    source: AccountId,
-    destination: AccountId,
-    amount: Money,
-}
-
-impl TransferReceipt {
-    pub const fn source(self) -> AccountId {
-        self.source
-    }
-
-    pub const fn destination(self) -> AccountId {
-        self.destination
-    }
-
-    pub const fn amount(self) -> Money {
-        self.amount
-    }
-}
-
-impl PreparedTransfer<'_> {
-    /// Cross the authoritative boundary: apply the balances that preparation
-    /// already computed and report what happened.
-    ///
-    /// Consuming `self` makes the capability one-shot, and there is no failure
-    /// channel because nothing recoverable is left to discover.
-    pub fn commit(self) -> TransferReceipt {
-        let Self {
-            source,
-            destination,
-            amount,
-            source_after,
-            destination_after,
-        } = self;
-
-        let source_id = source.id;
-        let destination_id = destination.id;
-
-        source.balance = source_after;
-        destination.balance = destination_after;
-
-        TransferReceipt {
-            source: source_id,
-            destination: destination_id,
-            amount,
-        }
-    }
-}
+use crate::{
+    Ledger, TransferCommand, TransferReceipt, TransferRejection, TransferRequest,
+    TransferRequestError,
+};
 
 /// Everything that can stop a transfer before the authoritative boundary.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

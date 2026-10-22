@@ -3,7 +3,7 @@
   "id": "log-level-match-003",
   "arcId": "log-lines",
   "arcTitle": "Inspect log lines",
-  "order": 14,
+  "order": 22,
   "day": 3,
   "arcLength": 5,
   "title": "Map log levels with match",

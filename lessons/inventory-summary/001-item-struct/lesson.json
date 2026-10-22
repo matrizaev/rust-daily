@@ -3,7 +3,7 @@
   "id": "inventory-item-struct-001",
   "arcId": "inventory-summary",
   "arcTitle": "Summarize inventory",
-  "order": 3,
+  "order": 14,
   "day": 1,
   "arcLength": 6,
   "title": "Define an inventory item",

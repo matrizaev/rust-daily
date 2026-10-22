@@ -26,8 +26,16 @@ import type { AppRoute } from "./app/routes";
 const LessonScreen = lazy(loadLessonScreen);
 const SettingsScreen = lazy(loadSettingsScreen);
 
-const lessons = getLessonIndex();
+const lessons = [...getLessonIndex()].sort(
+  (left, right) => left.order - right.order,
+);
 const concepts = conceptsData as Concept[];
+
+const nextLessonId = (lessonId: string) => {
+  const currentIndex = lessons.findIndex((lesson) => lesson.id === lessonId);
+
+  return currentIndex < 0 ? null : lessons[currentIndex + 1]?.id ?? null;
+};
 
 const RouteLoadingScreen = ({
   title,
@@ -159,6 +167,8 @@ const LessonRoute = ({
         concept={activeConcept}
         editorFontSize={settings.editorFontSize}
         lesson={activeLesson}
+        nextLessonId={nextLessonId(activeLesson.id)}
+        onOpenLesson={navigation.handleOpenLesson}
         onOpenSettings={navigation.handleOpenSettings}
         onProgressChange={progressState.handleProgressChange}
         onReturnHome={navigation.handleReturnHome}

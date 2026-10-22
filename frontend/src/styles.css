@@ -958,12 +958,33 @@ p {
   background: var(--surface-strong);
 }
 
+.lesson-check-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-left: auto;
+}
+
 .check-button {
   padding: 0 16px;
   border: 1px solid var(--button-secondary-hover-border);
-  margin-left: auto;
   background: var(--button-secondary);
   color: var(--ink);
+}
+
+.next-lesson-button {
+  display: inline-grid;
+  width: 44px;
+  min-width: 44px;
+  padding: 0;
+  border: 1px solid var(--button-secondary-hover-border);
+  place-items: center;
+  background: var(--button-secondary);
+  color: var(--ink);
+}
+
+.next-lesson-button:hover {
+  background: var(--button-secondary-hover);
 }
 
 .check-button:hover:not(:disabled) {
@@ -1524,9 +1545,15 @@ p {
     white-space: normal;
   }
 
-  .check-button {
+  .lesson-check-actions {
     grid-column: 1 / -1;
+    width: 100%;
     margin-left: 0;
+  }
+
+  .check-button {
+    flex: 1;
+    min-width: 0;
     white-space: normal;
   }
 
