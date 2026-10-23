@@ -329,6 +329,13 @@ const cases = [
     expectPass: true,
   },
   {
+    name: "advanced-db dependency set passes source validation",
+    expectPass: true,
+    mutate: (state) => {
+      state.lessons[0].lesson.validation.validations[1].dependencySet = "advanced-db";
+    },
+  },
+  {
     name: "contrived scenario fails",
     expectPass: false,
     expectedOutput: "fixture-001 scenario must describe plausible project work",

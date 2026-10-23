@@ -106,6 +106,11 @@ new lessons.
 | 391-450 | Performance and unsafe boundaries | Optimize from evidence and encapsulate systems-level invariants |
 | 451-500 | Integration capstones | Refactor and complete larger systems while preserving behavior and boundaries |
 
+The focused `intent-to-durable-outcome` arc is scheduled at lessons 103–109,
+immediately after `validate-prepare-commit`. It introduces SQLite transaction
+boundaries early; the later persistence and service-integration range remains
+reserved for broader ecosystem composition.
+
 ## Phase 1: Advanced Ownership and API Design
 
 Lessons 91-150 should deepen ownership rather than repeat basic borrowing,

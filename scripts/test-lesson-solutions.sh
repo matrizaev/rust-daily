@@ -239,19 +239,12 @@ append_dependencies() {
     std)
       ;;
     advanced)
-      cat >> "$crate_dir/Cargo.toml" <<'TOML'
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-thiserror = "2"
-anyhow = "1"
-tokio = { version = "1", features = ["macros", "rt", "sync", "time"] }
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["fmt"] }
-actix-web = { version = "4", default-features = false }
-actix-rt = "2"
-http = "1"
-proptest = { version = "1", default-features = false, features = ["std"] }
-TOML
+      cp "$repo_root/docker/dependency-cache/Cargo.toml" "$crate_dir/Cargo.toml"
+      return
+      ;;
+    advanced-db)
+      cp "$repo_root/docker/dependency-cache/advanced-db/Cargo.toml" "$crate_dir/Cargo.toml"
+      return
       ;;
     *)
       echo "Unknown dependencySet '$dependency_set' in $crate_dir" >&2

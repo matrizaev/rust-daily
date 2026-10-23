@@ -2040,5 +2040,152 @@
       "transactions"
     ],
     "masteryThreshold": 3
+  },
+  {
+    "id": "intent-pure-policy",
+    "name": "Decide from immutable inventory facts",
+    "description": "Keep business decisions deterministic by evaluating a validated command against an immutable observation and returning an intent or rejection.",
+    "prerequisites": [
+      "consuming-infallible-commit"
+    ],
+    "difficulty": [
+      "advanced"
+    ],
+    "lessonIds": [
+      "decide-inventory-facts-103"
+    ],
+    "tags": [
+      "domain-policy",
+      "immutability",
+      "validation",
+      "business-rules"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "intent-usecase-orchestration",
+    "name": "Orchestrate a reservation use case",
+    "description": "Coordinate observation, pure policy, and one commit call through an application-owned repository port with explicit semantic error mapping.",
+    "prerequisites": [
+      "intent-pure-policy"
+    ],
+    "difficulty": [
+      "advanced"
+    ],
+    "lessonIds": [
+      "orchestrate-reservation-104"
+    ],
+    "tags": [
+      "application-service",
+      "async-traits",
+      "error-propagation",
+      "repository-port"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "intent-commit-time-authority",
+    "name": "Recheck availability at commit",
+    "description": "Treat observed stock as decision input, then let commit-time state determine whether an accepted intent can still succeed.",
+    "prerequisites": [
+      "intent-usecase-orchestration"
+    ],
+    "difficulty": [
+      "advanced"
+    ],
+    "lessonIds": [
+      "recheck-at-commit-105"
+    ],
+    "tags": [
+      "consistency",
+      "repository",
+      "state-changes",
+      "commit-boundary"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "intent-sqlite-row-decoding",
+    "name": "Decode persisted inventory safely",
+    "description": "Keep SQLx rows private to infrastructure and validate signed database values before constructing domain observations.",
+    "prerequisites": [
+      "intent-commit-time-authority"
+    ],
+    "difficulty": [
+      "advanced"
+    ],
+    "lessonIds": [
+      "decode-inventory-row-106"
+    ],
+    "tags": [
+      "sqlx",
+      "row-mapping",
+      "validation",
+      "persistence"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "intent-atomic-sqlite-commit",
+    "name": "Commit reservation with SQLite",
+    "description": "Use a conditional stock update and reservation insert in one transaction; return a receipt only after commit.",
+    "prerequisites": [
+      "intent-sqlite-row-decoding"
+    ],
+    "difficulty": [
+      "advanced"
+    ],
+    "lessonIds": [
+      "commit-with-sqlite-107"
+    ],
+    "tags": [
+      "sqlite",
+      "transactions",
+      "atomicity",
+      "persistence"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "intent-transaction-error-semantics",
+    "name": "Classify transaction failures",
+    "description": "Map statement failures only after confirmed rollback, while representing commit failures as unknown when durable outcome cannot be established.",
+    "prerequisites": [
+      "intent-atomic-sqlite-commit"
+    ],
+    "difficulty": [
+      "advanced"
+    ],
+    "lessonIds": [
+      "classify-commit-failures-108"
+    ],
+    "tags": [
+      "transactions",
+      "error-taxonomy",
+      "rollback",
+      "reliability"
+    ],
+    "masteryThreshold": 3
+  },
+  {
+    "id": "intent-response-publication-boundary",
+    "name": "Map the response after commit",
+    "description": "Map semantic outcomes to protocol responses after persistence; distinguish durable commit from response delivery and avoid replay after output failure.",
+    "prerequisites": [
+      "intent-transaction-error-semantics"
+    ],
+    "difficulty": [
+      "advanced"
+    ],
+    "lessonIds": [
+      "map-the-response-boundary-109"
+    ],
+    "tags": [
+      "http",
+      "error-mapping",
+      "publication",
+      "transactions"
+    ],
+    "masteryThreshold": 3
   }
 ]

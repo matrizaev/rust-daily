@@ -4,7 +4,7 @@ export const placeholder = (text) => `${PLACEHOLDER_MARKER} ${text}`;
 
 const unique = (values) => [...new Set(values)];
 
-const allDependencySets = ["std", "advanced"];
+const allDependencySets = ["std", "advanced", "advanced-db"];
 
 const defaultStarterTemplate = () => `pub fn todo_lesson() {
     todo!("${placeholder("replace starter code")}");

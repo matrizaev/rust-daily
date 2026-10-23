@@ -8898,5 +8898,711 @@
         }
       ]
     }
+  },
+  {
+    "schemaVersion": 2,
+    "id": "decide-inventory-facts-103",
+    "arcId": "intent-to-durable-outcome",
+    "arcTitle": "Intent to durable outcome",
+    "order": 103,
+    "day": 1,
+    "arcLength": 7,
+    "title": "Decide from immutable inventory facts",
+    "conceptId": "intent-pure-policy",
+    "difficulty": "advanced",
+    "estimatedMinutes": 8,
+    "scenario": "The warehouse fulfillment desk has 5 units of catalog item 1; a customer order asks for 3. A stock read can go stale before the write, so first isolate what policy can promise: approval against observed facts, not a completed reservation.",
+    "instructions": "In src/domain/policy.rs implement decide. Compare command and observation item IDs first; return ObservationMismatch when they differ. Otherwise reject a requested quantity above observed availability with InsufficientObservedInventory. For sufficient matching stock, return an intent containing the command item and quantity. Do not perform I/O or mutate either input.",
+    "files": [
+      {
+        "path": "src/lib.rs",
+        "role": "readonly",
+        "content": "pub mod adapter;\npub mod application;\npub mod domain;\npub mod infrastructure;\n"
+      },
+      {
+        "path": "src/domain.rs",
+        "role": "readonly",
+        "content": "use std::num::{NonZeroI64, NonZeroU32};\n\npub mod policy;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ItemId(NonZeroI64);\n\nimpl ItemId {\n    pub fn new(value: i64) -> Option<Self> {\n        NonZeroI64::new(value).filter(|value| value.get() > 0).map(Self)\n    }\n\n    pub fn value(self) -> i64 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Quantity(NonZeroU32);\n\nimpl Quantity {\n    pub fn new(value: u32) -> Option<Self> {\n        NonZeroU32::new(value).map(Self)\n    }\n\n    pub fn value(self) -> u32 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationRequest {\n    pub item_id: i64,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ReservationRequestError {\n    InvalidItemId,\n    ZeroQuantity,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationCommand {\n    item_id: ItemId,\n    quantity: Quantity,\n}\n\nimpl ReservationCommand {\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn quantity(&self) -> Quantity {\n        self.quantity\n    }\n}\n\nimpl TryFrom<ReservationRequest> for ReservationCommand {\n    type Error = ReservationRequestError;\n\n    fn try_from(request: ReservationRequest) -> Result<Self, Self::Error> {\n        let item_id = ItemId::new(request.item_id).ok_or(ReservationRequestError::InvalidItemId)?;\n        let quantity = Quantity::new(request.quantity).ok_or(ReservationRequestError::ZeroQuantity)?;\n        Ok(Self { item_id, quantity })\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct InventoryObservation {\n    item_id: ItemId,\n    available: u32,\n}\n\nimpl InventoryObservation {\n    pub fn new(item_id: ItemId, available: u32) -> Self {\n        Self { item_id, available }\n    }\n\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn available(&self) -> u32 {\n        self.available\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationIntent {\n    item_id: ItemId,\n    quantity: Quantity,\n}\n\nimpl ReservationIntent {\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn quantity(&self) -> Quantity {\n        self.quantity\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PolicyRejection {\n    ObservationMismatch,\n    InsufficientObservedInventory,\n}\n"
+      },
+      {
+        "path": "src/domain/policy.rs",
+        "role": "editable",
+        "content": "use super::{InventoryObservation, PolicyRejection, ReservationCommand, ReservationIntent};\n\npub fn decide(\n    command: &ReservationCommand,\n    observation: &InventoryObservation,\n) -> Result<ReservationIntent, PolicyRejection> {\n    todo!(\"decide from immutable inventory facts\")\n}\n"
+      },
+      {
+        "path": "src/application.rs",
+        "role": "readonly",
+        "content": "use std::{future::Future, num::NonZeroI64};\n\nuse crate::domain::{\n    InventoryObservation, ItemId, PolicyRejection, Quantity, ReservationIntent,\n};\n\npub mod reservations;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationId(NonZeroI64);\n\nimpl ReservationId {\n    pub fn new(value: i64) -> Option<Self> {\n        NonZeroI64::new(value).filter(|value| value.get() > 0).map(Self)\n    }\n\n    pub fn value(self) -> i64 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationReceipt {\n    reservation_id: ReservationId,\n    item_id: ItemId,\n    quantity: Quantity,\n}\n\nimpl ReservationReceipt {\n    pub fn new(\n        reservation_id: ReservationId,\n        item_id: ItemId,\n        quantity: Quantity,\n    ) -> Self {\n        Self {\n            reservation_id,\n            item_id,\n            quantity,\n        }\n    }\n\n    pub fn reservation_id(&self) -> ReservationId {\n        self.reservation_id\n    }\n\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn quantity(&self) -> Quantity {\n        self.quantity\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum StorageFailure {\n    Database,\n    InvalidStoredData,\n    CommitOutcomeUnknown,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CommitOutcome {\n    Committed(ReservationReceipt),\n    UnavailableAtCommit,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ReservationError {\n    ItemNotFound,\n    PolicyRejected(PolicyRejection),\n    UnavailableAtCommit,\n    Storage(StorageFailure),\n}\n\npub trait ReservationRepository: Send + Sync {\n    fn observe(\n        &self,\n        item_id: ItemId,\n    ) -> impl Future<Output = Result<Option<InventoryObservation>, StorageFailure>> + Send;\n\n    fn commit(\n        &self,\n        intent: ReservationIntent,\n    ) -> impl Future<Output = Result<CommitOutcome, StorageFailure>> + Send;\n}\n"
+      },
+      {
+        "path": "src/application/reservations.rs",
+        "role": "readonly",
+        "content": "use crate::{\n    application::{ReservationError, ReservationRepository},\n    domain::ReservationCommand,\n};\n\npub async fn reserve(\n    repository: &impl ReservationRepository,\n    command: ReservationCommand,\n) -> Result<crate::application::ReservationReceipt, ReservationError> {\n    let _ = (repository, command);\n    todo!(\"orchestrate observe, decide, and commit\")\n}\n"
+      },
+      {
+        "path": "src/infrastructure.rs",
+        "role": "readonly",
+        "content": "pub mod controlled_repository;\npub mod inventory_row;\npub mod sqlite_repository;\n"
+      },
+      {
+        "path": "src/infrastructure/controlled_repository.rs",
+        "role": "readonly",
+        "content": "// The controlled repository is implemented in a later lesson.\n"
+      },
+      {
+        "path": "src/infrastructure/inventory_row.rs",
+        "role": "readonly",
+        "content": "// The SQLx row adapter is implemented in a later lesson.\n"
+      },
+      {
+        "path": "src/infrastructure/sqlite_repository.rs",
+        "role": "readonly",
+        "content": "// The SQLite repository is implemented in later lessons.\n"
+      },
+      {
+        "path": "src/adapter.rs",
+        "role": "readonly",
+        "content": "pub mod reservation_response;\n"
+      },
+      {
+        "path": "src/adapter/reservation_response.rs",
+        "role": "readonly",
+        "content": "// Response mapping is implemented in a later lesson.\n"
+      },
+      {
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::domain::{\n    InventoryObservation, ItemId, PolicyRejection, Quantity, ReservationCommand,\n    ReservationRequest, policy::decide,\n};\n\nfn command(item_id: i64, quantity: u32) -> ReservationCommand {\n    ReservationCommand::try_from(ReservationRequest { item_id, quantity })\n        .expect(\"test request should be valid\")\n}\n\nfn item_id(value: i64) -> ItemId {\n    ItemId::new(value).expect(\"test item id should be positive\")\n}\n\nfn quantity(value: u32) -> Quantity {\n    Quantity::new(value).expect(\"test quantity should be positive\")\n}\n\n#[test]\nfn accepts_matching_observation_with_sufficient_stock() {\n    let command = command(1, 3);\n    let observation = InventoryObservation::new(item_id(1), 5);\n\n    let intent = decide(&command, &observation).expect(\"policy should accept request\");\n\n    assert_eq!(intent.item_id(), item_id(1));\n    assert_eq!(intent.quantity(), quantity(3));\n}\n\n#[test]\nfn rejects_an_observation_for_another_item() {\n    let command = command(1, 3);\n    let observation = InventoryObservation::new(item_id(2), 5);\n\n    assert_eq!(\n        decide(&command, &observation),\n        Err(PolicyRejection::ObservationMismatch)\n    );\n}\n\n#[test]\nfn rejects_quantity_above_observed_stock() {\n    let command = command(1, 6);\n    let observation = InventoryObservation::new(item_id(1), 5);\n\n    assert_eq!(\n        decide(&command, &observation),\n        Err(PolicyRejection::InsufficientObservedInventory)\n    );\n}\n\n#[test]\nfn policy_leaves_command_and_observation_unchanged() {\n    let command = command(1, 3);\n    let observation = InventoryObservation::new(item_id(1), 5);\n    let original_command = command;\n    let original_observation = observation;\n\n    let _ = decide(&command, &observation);\n\n    assert_eq!(command, original_command);\n    assert_eq!(observation, original_observation);\n}\n"
+      }
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Policy reads two immutable values. Check identity before comparing quantity with observed availability."
+      },
+      {
+        "level": 2,
+        "body": "The intent is built from the command's item and quantity. It must not include the observation or its stock value."
+      },
+      {
+        "level": 3,
+        "body": "Return ObservationMismatch first, then InsufficientObservedInventory; otherwise construct ReservationIntent with the command fields.",
+        "solutionCode": "use super::{InventoryObservation, PolicyRejection, ReservationCommand, ReservationIntent};\n\npub fn decide(\n    command: &ReservationCommand,\n    observation: &InventoryObservation,\n) -> Result<ReservationIntent, PolicyRejection> {\n    if command.item_id != observation.item_id {\n        return Err(PolicyRejection::ObservationMismatch);\n    }\n\n    if command.quantity.value() > observation.available {\n        return Err(PolicyRejection::InsufficientObservedInventory);\n    }\n\n    Ok(ReservationIntent {\n        item_id: command.item_id,\n        quantity: command.quantity,\n    })\n}\n"
+      }
+    ],
+    "completionExplanation": "The order for 3 fits the observed 5, so policy returns an intent. Nothing is reserved yet. Next, wire that proposal through the application service without letting a missing item or rejected request reach commit.",
+    "validation": {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "advanced"
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "id": "orchestrate-reservation-104",
+    "arcId": "intent-to-durable-outcome",
+    "arcTitle": "Intent to durable outcome",
+    "order": 104,
+    "day": 2,
+    "arcLength": 7,
+    "title": "Orchestrate a reservation use case",
+    "conceptId": "intent-usecase-orchestration",
+    "difficulty": "advanced",
+    "estimatedMinutes": 9,
+    "scenario": "The same fulfillment order asks for 3 of item 1. The service must load stock, apply policy, then ask the repository to commit; a missing item or rejected order must stop before any write.",
+    "instructions": "Implement reserve in src/application/reservations.rs. Observe the requested item first; map repository failures to Storage and a missing row to ItemNotFound. Run the pure policy and map rejection to PolicyRejected. Only accepted intent may reach commit. Map storage failure, return the committed receipt, and map UnavailableAtCommit without retrying. Do not call commit after missing or rejected observation.",
+    "files": [
+      {
+        "path": "src/application/reservations.rs",
+        "role": "editable",
+        "content": "use crate::{\n    application::{ReservationError, ReservationRepository},\n    domain::ReservationCommand,\n};\n\npub async fn reserve(\n    repository: &impl ReservationRepository,\n    command: ReservationCommand,\n) -> Result<crate::application::ReservationReceipt, ReservationError> {\n    let _ = (repository, command);\n    todo!(\"observe, decide, then commit\")\n}\n"
+      },
+      {
+        "path": "src/lib.rs",
+        "role": "readonly",
+        "content": "pub mod adapter;\npub mod application;\npub mod domain;\npub mod infrastructure;\n"
+      },
+      {
+        "path": "src/domain.rs",
+        "role": "readonly",
+        "content": "use std::num::{NonZeroI64, NonZeroU32};\n\npub mod policy;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ItemId(NonZeroI64);\n\nimpl ItemId {\n    pub fn new(value: i64) -> Option<Self> {\n        NonZeroI64::new(value).filter(|value| value.get() > 0).map(Self)\n    }\n\n    pub fn value(self) -> i64 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Quantity(NonZeroU32);\n\nimpl Quantity {\n    pub fn new(value: u32) -> Option<Self> {\n        NonZeroU32::new(value).map(Self)\n    }\n\n    pub fn value(self) -> u32 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationRequest {\n    pub item_id: i64,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ReservationRequestError {\n    InvalidItemId,\n    ZeroQuantity,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationCommand {\n    item_id: ItemId,\n    quantity: Quantity,\n}\n\nimpl ReservationCommand {\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn quantity(&self) -> Quantity {\n        self.quantity\n    }\n}\n\nimpl TryFrom<ReservationRequest> for ReservationCommand {\n    type Error = ReservationRequestError;\n\n    fn try_from(request: ReservationRequest) -> Result<Self, Self::Error> {\n        let item_id = ItemId::new(request.item_id).ok_or(ReservationRequestError::InvalidItemId)?;\n        let quantity = Quantity::new(request.quantity).ok_or(ReservationRequestError::ZeroQuantity)?;\n        Ok(Self { item_id, quantity })\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct InventoryObservation {\n    item_id: ItemId,\n    available: u32,\n}\n\nimpl InventoryObservation {\n    pub fn new(item_id: ItemId, available: u32) -> Self {\n        Self { item_id, available }\n    }\n\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn available(&self) -> u32 {\n        self.available\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationIntent {\n    item_id: ItemId,\n    quantity: Quantity,\n}\n\nimpl ReservationIntent {\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn quantity(&self) -> Quantity {\n        self.quantity\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PolicyRejection {\n    ObservationMismatch,\n    InsufficientObservedInventory,\n}\n"
+      },
+      {
+        "path": "src/domain/policy.rs",
+        "role": "readonly",
+        "content": "use super::{InventoryObservation, PolicyRejection, ReservationCommand, ReservationIntent};\n\npub fn decide(\n    command: &ReservationCommand,\n    observation: &InventoryObservation,\n) -> Result<ReservationIntent, PolicyRejection> {\n    if command.item_id != observation.item_id {\n        return Err(PolicyRejection::ObservationMismatch);\n    }\n\n    if command.quantity.value() > observation.available {\n        return Err(PolicyRejection::InsufficientObservedInventory);\n    }\n\n    Ok(ReservationIntent {\n        item_id: command.item_id,\n        quantity: command.quantity,\n    })\n}\n"
+      },
+      {
+        "path": "src/application.rs",
+        "role": "readonly",
+        "content": "use std::{future::Future, num::NonZeroI64};\n\nuse crate::domain::{\n    InventoryObservation, ItemId, PolicyRejection, Quantity, ReservationIntent,\n};\n\npub mod reservations;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationId(NonZeroI64);\n\nimpl ReservationId {\n    pub fn new(value: i64) -> Option<Self> {\n        NonZeroI64::new(value).filter(|value| value.get() > 0).map(Self)\n    }\n\n    pub fn value(self) -> i64 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationReceipt {\n    reservation_id: ReservationId,\n    item_id: ItemId,\n    quantity: Quantity,\n}\n\nimpl ReservationReceipt {\n    pub fn new(\n        reservation_id: ReservationId,\n        item_id: ItemId,\n        quantity: Quantity,\n    ) -> Self {\n        Self {\n            reservation_id,\n            item_id,\n            quantity,\n        }\n    }\n\n    pub fn reservation_id(&self) -> ReservationId {\n        self.reservation_id\n    }\n\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn quantity(&self) -> Quantity {\n        self.quantity\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum StorageFailure {\n    Database,\n    InvalidStoredData,\n    CommitOutcomeUnknown,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CommitOutcome {\n    Committed(ReservationReceipt),\n    UnavailableAtCommit,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ReservationError {\n    ItemNotFound,\n    PolicyRejected(PolicyRejection),\n    UnavailableAtCommit,\n    Storage(StorageFailure),\n}\n\npub trait ReservationRepository: Send + Sync {\n    fn observe(\n        &self,\n        item_id: ItemId,\n    ) -> impl Future<Output = Result<Option<InventoryObservation>, StorageFailure>> + Send;\n\n    fn commit(\n        &self,\n        intent: ReservationIntent,\n    ) -> impl Future<Output = Result<CommitOutcome, StorageFailure>> + Send;\n}\n"
+      },
+      {
+        "path": "src/infrastructure.rs",
+        "role": "readonly",
+        "content": "pub mod controlled_repository;\npub mod inventory_row;\npub mod sqlite_repository;\n"
+      },
+      {
+        "path": "src/infrastructure/controlled_repository.rs",
+        "role": "readonly",
+        "content": "// The controlled repository is implemented in a later lesson.\n"
+      },
+      {
+        "path": "src/infrastructure/inventory_row.rs",
+        "role": "readonly",
+        "content": "// The SQLx row adapter is implemented in a later lesson.\n"
+      },
+      {
+        "path": "src/infrastructure/sqlite_repository.rs",
+        "role": "readonly",
+        "content": "// The SQLite repository is implemented in later lessons.\n"
+      },
+      {
+        "path": "src/adapter.rs",
+        "role": "readonly",
+        "content": "pub mod reservation_response;\n"
+      },
+      {
+        "path": "src/adapter/reservation_response.rs",
+        "role": "readonly",
+        "content": "// Response mapping is implemented in a later lesson.\n"
+      },
+      {
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use std::{future::Future, sync::Mutex};\n\nuse rust_daily_lesson::{\n    application::{\n        CommitOutcome, ReservationError, ReservationRepository, StorageFailure,\n        reservations::reserve,\n    },\n    domain::{\n        InventoryObservation, ItemId, PolicyRejection, Quantity, ReservationCommand,\n        ReservationRequest,\n    },\n};\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\nenum Call {\n    Observe(ItemId),\n    Commit(ItemId, Quantity),\n}\n\nstruct RecordingRepository {\n    observation: Option<InventoryObservation>,\n    commit_result: Result<CommitOutcome, StorageFailure>,\n    calls: Mutex<Vec<Call>>,\n}\n\nimpl RecordingRepository {\n    fn new(\n        observation: Option<InventoryObservation>,\n        commit_result: Result<CommitOutcome, StorageFailure>,\n    ) -> Self {\n        Self {\n            observation,\n            commit_result,\n            calls: Mutex::new(Vec::new()),\n        }\n    }\n\n    fn calls(&self) -> Vec<Call> {\n        self.calls.lock().expect(\"call log lock should work\").clone()\n    }\n}\n\nimpl ReservationRepository for RecordingRepository {\n    fn observe(\n        &self,\n        item_id: ItemId,\n    ) -> impl Future<Output = Result<Option<InventoryObservation>, StorageFailure>> + Send {\n        self.calls\n            .lock()\n            .expect(\"call log lock should work\")\n            .push(Call::Observe(item_id));\n        let observation = self.observation;\n        async move { Ok(observation) }\n    }\n\n    fn commit(\n        &self,\n        intent: rust_daily_lesson::domain::ReservationIntent,\n    ) -> impl Future<Output = Result<CommitOutcome, StorageFailure>> + Send {\n        self.calls\n            .lock()\n            .expect(\"call log lock should work\")\n            .push(Call::Commit(intent.item_id(), intent.quantity()));\n        let result = self.commit_result;\n        async move { result }\n    }\n}\n\nfn item_id(value: i64) -> ItemId {\n    ItemId::new(value).expect(\"test item id should be positive\")\n}\n\nfn quantity(value: u32) -> Quantity {\n    Quantity::new(value).expect(\"test quantity should be positive\")\n}\n\nfn command(item: i64, amount: u32) -> ReservationCommand {\n    ReservationCommand::try_from(ReservationRequest {\n        item_id: item,\n        quantity: amount,\n    })\n    .expect(\"test request should be valid\")\n}\n\nfn no_commit() -> Result<CommitOutcome, StorageFailure> {\n    Ok(CommitOutcome::UnavailableAtCommit)\n}\n\n#[tokio::test]\nasync fn missing_item_stops_after_observation() {\n    let repository = RecordingRepository::new(None, no_commit());\n\n    let result = reserve(&repository, command(1, 3)).await;\n\n    assert_eq!(result, Err(ReservationError::ItemNotFound));\n    assert_eq!(repository.calls(), [Call::Observe(item_id(1))]);\n}\n\n#[tokio::test]\nasync fn policy_rejection_stops_before_commit() {\n    let repository = RecordingRepository::new(\n        Some(InventoryObservation::new(item_id(1), 2)),\n        no_commit(),\n    );\n\n    let result = reserve(&repository, command(1, 3)).await;\n\n    assert_eq!(\n        result,\n        Err(ReservationError::PolicyRejected(\n            PolicyRejection::InsufficientObservedInventory\n        ))\n    );\n    assert_eq!(repository.calls(), [Call::Observe(item_id(1))]);\n}\n\n#[tokio::test]\nasync fn accepted_intent_is_committed_once_and_outcome_is_preserved() {\n    let repository = RecordingRepository::new(\n        Some(InventoryObservation::new(item_id(1), 5)),\n        no_commit(),\n    );\n\n    let result = reserve(&repository, command(1, 3)).await;\n\n    assert_eq!(result, Err(ReservationError::UnavailableAtCommit));\n    assert_eq!(\n        repository.calls(),\n        [Call::Observe(item_id(1)), Call::Commit(item_id(1), quantity(3))]\n    );\n}\n\n#[tokio::test]\nasync fn storage_failure_is_preserved() {\n    let repository = RecordingRepository::new(\n        Some(InventoryObservation::new(item_id(1), 5)),\n        Err(StorageFailure::CommitOutcomeUnknown),\n    );\n\n    let result = reserve(&repository, command(1, 3)).await;\n\n    assert_eq!(\n        result,\n        Err(ReservationError::Storage(StorageFailure::CommitOutcomeUnknown))\n    );\n    assert_eq!(repository.calls().len(), 2);\n}\n"
+      }
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Order operations as observe, pure decide, then commit. Missing data and policy rejection are terminal before commit."
+      },
+      {
+        "level": 2,
+        "body": "Use `?` only after mapping repository failures to ReservationError::Storage. Convert Option with ItemNotFound, and convert policy errors with PolicyRejected."
+      },
+      {
+        "level": 3,
+        "body": "Match CommitOutcome after one commit call: return its receipt or map UnavailableAtCommit. Do not retry or perform a compensating write.",
+        "solutionCode": "use crate::{\n    application::{CommitOutcome, ReservationError, ReservationRepository},\n    domain::{ReservationCommand, policy::decide},\n};\n\npub async fn reserve(\n    repository: &impl ReservationRepository,\n    command: ReservationCommand,\n) -> Result<crate::application::ReservationReceipt, ReservationError> {\n    let observation = repository\n        .observe(command.item_id())\n        .await\n        .map_err(ReservationError::Storage)?\n        .ok_or(ReservationError::ItemNotFound)?;\n    let intent = decide(&command, &observation).map_err(ReservationError::PolicyRejected)?;\n\n    match repository\n        .commit(intent)\n        .await\n        .map_err(ReservationError::Storage)?\n    {\n        CommitOutcome::Committed(receipt) => Ok(receipt),\n        CommitOutcome::UnavailableAtCommit => Err(ReservationError::UnavailableAtCommit),\n    }\n}\n"
+      }
+    ],
+    "completionExplanation": "The order now follows one path: observe, decide, commit once. The earlier stock read still cannot reserve anything by itself—a competing checkout may change availability before commit. Next, make that race deterministic and enforce the commit-time rule.",
+    "validation": {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "advanced"
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "id": "recheck-at-commit-105",
+    "arcId": "intent-to-durable-outcome",
+    "arcTitle": "Intent to durable outcome",
+    "order": 105,
+    "day": 3,
+    "arcLength": 7,
+    "title": "Recheck availability at commit",
+    "conceptId": "intent-commit-time-authority",
+    "difficulty": "advanced",
+    "estimatedMinutes": 10,
+    "scenario": "While the first customer order waits, another checkout takes 3 of item 1's 5 units. The first order's old observation still says 5, but only 2 remain; the repository must reject its request for 3. If 4 remain instead, the order should still succeed.",
+    "instructions": "Implement src/infrastructure/controlled_repository.rs. observe returns the configured earlier observation. In commit, lock state, count the attempt, recheck current availability, and return UnavailableAtCommit without changing stock when it is insufficient. When sufficient, validate the next reservation ID before atomically decrementing stock and advancing the ID; return a receipt built from the committed intent. Keep item mismatch and poisoned-lock failures explicit.",
+    "files": [
+      {
+        "path": "src/infrastructure/controlled_repository.rs",
+        "role": "editable",
+        "content": "use std::sync::Mutex;\n\nuse crate::{\n    application::{\n        CommitOutcome, ReservationId, ReservationReceipt, ReservationRepository, StorageFailure,\n    },\n    domain::{InventoryObservation, ItemId, ReservationIntent},\n};\n\nstruct State {\n    available: u32,\n    next_reservation_id: i64,\n    commit_calls: usize,\n}\n\npub struct ControlledRepository {\n    item_id: ItemId,\n    observed_available: u32,\n    state: Mutex<State>,\n}\n\nimpl ControlledRepository {\n    pub fn new(item_id: ItemId, observed_available: u32, current_available: u32) -> Self {\n        todo!(\"initialize observed facts and current commit state\")\n    }\n\n    pub fn current_available(&self) -> u32 {\n        todo!(\"read current stock\")\n    }\n\n    pub fn commit_calls(&self) -> usize {\n        todo!(\"report commit attempts\")\n    }\n}\n\nimpl ReservationRepository for ControlledRepository {\n    fn observe(\n        &self,\n        item_id: ItemId,\n    ) -> impl std::future::Future<Output = Result<Option<InventoryObservation>, StorageFailure>> + Send\n    {\n        async move { todo!(\"return the earlier observation\") }\n    }\n\n    fn commit(\n        &self,\n        intent: ReservationIntent,\n    ) -> impl std::future::Future<Output = Result<CommitOutcome, StorageFailure>> + Send {\n        async move {\n            let _ = intent;\n            todo!(\"recheck and reserve current stock atomically\")\n        }\n    }\n}\n"
+      },
+      {
+        "path": "src/application/reservations.rs",
+        "role": "readonly",
+        "content": "use crate::{\n    application::{CommitOutcome, ReservationError, ReservationRepository},\n    domain::{ReservationCommand, policy::decide},\n};\n\npub async fn reserve(\n    repository: &impl ReservationRepository,\n    command: ReservationCommand,\n) -> Result<crate::application::ReservationReceipt, ReservationError> {\n    let observation = repository\n        .observe(command.item_id())\n        .await\n        .map_err(ReservationError::Storage)?\n        .ok_or(ReservationError::ItemNotFound)?;\n    let intent = decide(&command, &observation).map_err(ReservationError::PolicyRejected)?;\n\n    match repository\n        .commit(intent)\n        .await\n        .map_err(ReservationError::Storage)?\n    {\n        CommitOutcome::Committed(receipt) => Ok(receipt),\n        CommitOutcome::UnavailableAtCommit => Err(ReservationError::UnavailableAtCommit),\n    }\n}\n"
+      },
+      {
+        "path": "src/lib.rs",
+        "role": "readonly",
+        "content": "pub mod adapter;\npub mod application;\npub mod domain;\npub mod infrastructure;\n"
+      },
+      {
+        "path": "src/domain.rs",
+        "role": "readonly",
+        "content": "use std::num::{NonZeroI64, NonZeroU32};\n\npub mod policy;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ItemId(NonZeroI64);\n\nimpl ItemId {\n    pub fn new(value: i64) -> Option<Self> {\n        NonZeroI64::new(value).filter(|value| value.get() > 0).map(Self)\n    }\n\n    pub fn value(self) -> i64 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Quantity(NonZeroU32);\n\nimpl Quantity {\n    pub fn new(value: u32) -> Option<Self> {\n        NonZeroU32::new(value).map(Self)\n    }\n\n    pub fn value(self) -> u32 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationRequest {\n    pub item_id: i64,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ReservationRequestError {\n    InvalidItemId,\n    ZeroQuantity,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationCommand {\n    item_id: ItemId,\n    quantity: Quantity,\n}\n\nimpl ReservationCommand {\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn quantity(&self) -> Quantity {\n        self.quantity\n    }\n}\n\nimpl TryFrom<ReservationRequest> for ReservationCommand {\n    type Error = ReservationRequestError;\n\n    fn try_from(request: ReservationRequest) -> Result<Self, Self::Error> {\n        let item_id = ItemId::new(request.item_id).ok_or(ReservationRequestError::InvalidItemId)?;\n        let quantity = Quantity::new(request.quantity).ok_or(ReservationRequestError::ZeroQuantity)?;\n        Ok(Self { item_id, quantity })\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct InventoryObservation {\n    item_id: ItemId,\n    available: u32,\n}\n\nimpl InventoryObservation {\n    pub fn new(item_id: ItemId, available: u32) -> Self {\n        Self { item_id, available }\n    }\n\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn available(&self) -> u32 {\n        self.available\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationIntent {\n    item_id: ItemId,\n    quantity: Quantity,\n}\n\nimpl ReservationIntent {\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn quantity(&self) -> Quantity {\n        self.quantity\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PolicyRejection {\n    ObservationMismatch,\n    InsufficientObservedInventory,\n}\n"
+      },
+      {
+        "path": "src/domain/policy.rs",
+        "role": "readonly",
+        "content": "use super::{InventoryObservation, PolicyRejection, ReservationCommand, ReservationIntent};\n\npub fn decide(\n    command: &ReservationCommand,\n    observation: &InventoryObservation,\n) -> Result<ReservationIntent, PolicyRejection> {\n    if command.item_id != observation.item_id {\n        return Err(PolicyRejection::ObservationMismatch);\n    }\n\n    if command.quantity.value() > observation.available {\n        return Err(PolicyRejection::InsufficientObservedInventory);\n    }\n\n    Ok(ReservationIntent {\n        item_id: command.item_id,\n        quantity: command.quantity,\n    })\n}\n"
+      },
+      {
+        "path": "src/application.rs",
+        "role": "readonly",
+        "content": "use std::{future::Future, num::NonZeroI64};\n\nuse crate::domain::{\n    InventoryObservation, ItemId, PolicyRejection, Quantity, ReservationIntent,\n};\n\npub mod reservations;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationId(NonZeroI64);\n\nimpl ReservationId {\n    pub fn new(value: i64) -> Option<Self> {\n        NonZeroI64::new(value).filter(|value| value.get() > 0).map(Self)\n    }\n\n    pub fn value(self) -> i64 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationReceipt {\n    reservation_id: ReservationId,\n    item_id: ItemId,\n    quantity: Quantity,\n}\n\nimpl ReservationReceipt {\n    pub fn new(\n        reservation_id: ReservationId,\n        item_id: ItemId,\n        quantity: Quantity,\n    ) -> Self {\n        Self {\n            reservation_id,\n            item_id,\n            quantity,\n        }\n    }\n\n    pub fn reservation_id(&self) -> ReservationId {\n        self.reservation_id\n    }\n\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn quantity(&self) -> Quantity {\n        self.quantity\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum StorageFailure {\n    Database,\n    InvalidStoredData,\n    CommitOutcomeUnknown,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CommitOutcome {\n    Committed(ReservationReceipt),\n    UnavailableAtCommit,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ReservationError {\n    ItemNotFound,\n    PolicyRejected(PolicyRejection),\n    UnavailableAtCommit,\n    Storage(StorageFailure),\n}\n\npub trait ReservationRepository: Send + Sync {\n    fn observe(\n        &self,\n        item_id: ItemId,\n    ) -> impl Future<Output = Result<Option<InventoryObservation>, StorageFailure>> + Send;\n\n    fn commit(\n        &self,\n        intent: ReservationIntent,\n    ) -> impl Future<Output = Result<CommitOutcome, StorageFailure>> + Send;\n}\n"
+      },
+      {
+        "path": "src/infrastructure.rs",
+        "role": "readonly",
+        "content": "pub mod controlled_repository;\npub mod inventory_row;\npub mod sqlite_repository;\n"
+      },
+      {
+        "path": "src/infrastructure/inventory_row.rs",
+        "role": "readonly",
+        "content": "// The SQLx row adapter is implemented in a later lesson.\n"
+      },
+      {
+        "path": "src/infrastructure/sqlite_repository.rs",
+        "role": "readonly",
+        "content": "// The SQLite repository is implemented in later lessons.\n"
+      },
+      {
+        "path": "src/adapter.rs",
+        "role": "readonly",
+        "content": "pub mod reservation_response;\n"
+      },
+      {
+        "path": "src/adapter/reservation_response.rs",
+        "role": "readonly",
+        "content": "// Response mapping is implemented in a later lesson.\n"
+      },
+      {
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{\n    application::{ReservationError, reservations::reserve},\n    domain::{ItemId, Quantity, ReservationCommand, ReservationRequest},\n    infrastructure::controlled_repository::ControlledRepository,\n};\n\nfn item_id(value: i64) -> ItemId {\n    ItemId::new(value).expect(\"test item id should be positive\")\n}\n\nfn command(item: i64, amount: u32) -> ReservationCommand {\n    ReservationCommand::try_from(ReservationRequest {\n        item_id: item,\n        quantity: amount,\n    })\n    .expect(\"test request should be valid\")\n}\n\n#[tokio::test]\nasync fn commit_uses_current_stock_and_returns_receipt() {\n    let repository = ControlledRepository::new(item_id(1), 5, 4);\n\n    let receipt = reserve(&repository, command(1, 3))\n        .await\n        .expect(\"current stock should cover request\");\n\n    assert_eq!(receipt.reservation_id().value(), 1);\n    assert_eq!(receipt.item_id(), item_id(1));\n    assert_eq!(receipt.quantity(), Quantity::new(3).expect(\"positive quantity\"));\n    assert_eq!(repository.current_available(), 1);\n    assert_eq!(repository.commit_calls(), 1);\n}\n\n#[tokio::test]\nasync fn stale_observation_does_not_authorize_commit() {\n    let repository = ControlledRepository::new(item_id(1), 5, 2);\n\n    let result = reserve(&repository, command(1, 3)).await;\n\n    assert_eq!(result, Err(ReservationError::UnavailableAtCommit));\n    assert_eq!(repository.current_available(), 2);\n    assert_eq!(repository.commit_calls(), 1);\n}\n\n#[tokio::test]\nasync fn missing_item_never_attempts_commit() {\n    let repository = ControlledRepository::new(item_id(2), 4, 4);\n\n    let result = reserve(&repository, command(1, 1)).await;\n\n    assert_eq!(result, Err(ReservationError::ItemNotFound));\n    assert_eq!(repository.current_available(), 4);\n    assert_eq!(repository.commit_calls(), 0);\n}\n"
+      }
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Observation and commit state are separate by design. observe returns the configured snapshot; commit must inspect the mutex-protected current quantity."
+      },
+      {
+        "level": 2,
+        "body": "Inside commit, check item identity and quantity before mutation. Validate both reservation ID and its increment before decrementing stock."
+      },
+      {
+        "level": 3,
+        "body": "Hold one state lock across availability check, ID allocation, and stock update. Insufficient stock returns UnavailableAtCommit and leaves both stock and ID unchanged.",
+        "solutionCode": "use std::sync::Mutex;\n\nuse crate::{\n    application::{\n        CommitOutcome, ReservationId, ReservationReceipt, ReservationRepository, StorageFailure,\n    },\n    domain::{InventoryObservation, ItemId, ReservationIntent},\n};\n\nstruct State {\n    available: u32,\n    next_reservation_id: i64,\n    commit_calls: usize,\n}\n\npub struct ControlledRepository {\n    item_id: ItemId,\n    observed_available: u32,\n    state: Mutex<State>,\n}\n\nimpl ControlledRepository {\n    pub fn new(item_id: ItemId, observed_available: u32, current_available: u32) -> Self {\n        Self {\n            item_id,\n            observed_available,\n            state: Mutex::new(State {\n                available: current_available,\n                next_reservation_id: 1,\n                commit_calls: 0,\n            }),\n        }\n    }\n\n    pub fn current_available(&self) -> u32 {\n        self.state\n            .lock()\n            .expect(\"controlled repository lock should work\")\n            .available\n    }\n\n    pub fn commit_calls(&self) -> usize {\n        self.state\n            .lock()\n            .expect(\"controlled repository lock should work\")\n            .commit_calls\n    }\n}\n\nimpl ReservationRepository for ControlledRepository {\n    fn observe(\n        &self,\n        item_id: ItemId,\n    ) -> impl std::future::Future<Output = Result<Option<InventoryObservation>, StorageFailure>> + Send\n    {\n        let observation = (item_id == self.item_id)\n            .then(|| InventoryObservation::new(self.item_id, self.observed_available));\n        async move { Ok(observation) }\n    }\n\n    fn commit(\n        &self,\n        intent: ReservationIntent,\n    ) -> impl std::future::Future<Output = Result<CommitOutcome, StorageFailure>> + Send {\n        async move {\n            let mut state = self\n                .state\n                .lock()\n                .map_err(|_| StorageFailure::Database)?;\n            state.commit_calls += 1;\n\n            if intent.item_id() != self.item_id {\n                return Err(StorageFailure::InvalidStoredData);\n            }\n\n            let requested = intent.quantity().value();\n            if state.available < requested {\n                return Ok(CommitOutcome::UnavailableAtCommit);\n            }\n\n            let reservation_id = ReservationId::new(state.next_reservation_id)\n                .ok_or(StorageFailure::InvalidStoredData)?;\n            let next_reservation_id = state\n                .next_reservation_id\n                .checked_add(1)\n                .ok_or(StorageFailure::InvalidStoredData)?;\n\n            state.available -= requested;\n            state.next_reservation_id = next_reservation_id;\n\n            Ok(CommitOutcome::Committed(ReservationReceipt::new(\n                reservation_id,\n                intent.item_id(),\n                intent.quantity(),\n            )))\n        }\n    }\n}\n"
+      }
+    ],
+    "completionExplanation": "The competing checkout wins: current stock is 2, so the earlier approval cannot consume it. When current stock is 4, the same order for 3 remains valid despite the changed observation. Next, move this rule from controlled memory into a SQLite repository without trusting raw database values.",
+    "validation": {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 10000,
+      "dependencySet": "advanced"
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "id": "decode-inventory-row-106",
+    "arcId": "intent-to-durable-outcome",
+    "arcTitle": "Intent to durable outcome",
+    "order": 106,
+    "day": 4,
+    "arcLength": 7,
+    "title": "Decode persisted inventory safely",
+    "conceptId": "intent-sqlite-row-decoding",
+    "difficulty": "advanced",
+    "estimatedMinutes": 10,
+    "scenario": "The fulfillment service reads item 1's inventory row before deciding whether the customer's order for 3 can proceed. Schema checks help, but old or damaged data can still be malformed; reject it at the persistence boundary before policy treats it as valid stock.",
+    "instructions": "Implement InventoryRow conversion in src/infrastructure/inventory_row.rs. Keep InventoryRow private with signed i64 columns. Derive SQLx FromRow, then implement TryFrom<InventoryRow> for InventoryObservation. Require a positive ItemId and available value that fits u32; reject negative or oversized availability. Map row decoding and conversion failures to InvalidStoredData. Use supplied migration and in-memory SQLite tests; do not change schema or tests.",
+    "files": [
+      {
+        "path": "src/infrastructure/inventory_row.rs",
+        "role": "editable",
+        "content": "use sqlx::{FromRow, sqlite::SqliteRow};\n\nuse crate::{application::StorageFailure, domain::InventoryObservation};\n\n#[derive(FromRow)]\nstruct InventoryRow {\n    item_id: i64,\n    available: i64,\n}\n\nimpl TryFrom<InventoryRow> for InventoryObservation {\n    type Error = StorageFailure;\n\n    fn try_from(row: InventoryRow) -> Result<Self, Self::Error> {\n        todo!(\"validate persisted fields before constructing the observation\")\n    }\n}\n\npub fn decode_inventory_row(\n    row: SqliteRow,\n) -> Result<InventoryObservation, StorageFailure> {\n    let row = InventoryRow::from_row(&row).map_err(|_| StorageFailure::InvalidStoredData)?;\n    row.try_into()\n}\n"
+      },
+      {
+        "path": "src/infrastructure/controlled_repository.rs",
+        "role": "readonly",
+        "content": "use std::sync::Mutex;\n\nuse crate::{\n    application::{\n        CommitOutcome, ReservationId, ReservationReceipt, ReservationRepository, StorageFailure,\n    },\n    domain::{InventoryObservation, ItemId, ReservationIntent},\n};\n\nstruct State {\n    available: u32,\n    next_reservation_id: i64,\n    commit_calls: usize,\n}\n\npub struct ControlledRepository {\n    item_id: ItemId,\n    observed_available: u32,\n    state: Mutex<State>,\n}\n\nimpl ControlledRepository {\n    pub fn new(item_id: ItemId, observed_available: u32, current_available: u32) -> Self {\n        Self {\n            item_id,\n            observed_available,\n            state: Mutex::new(State {\n                available: current_available,\n                next_reservation_id: 1,\n                commit_calls: 0,\n            }),\n        }\n    }\n\n    pub fn current_available(&self) -> u32 {\n        self.state\n            .lock()\n            .expect(\"controlled repository lock should work\")\n            .available\n    }\n\n    pub fn commit_calls(&self) -> usize {\n        self.state\n            .lock()\n            .expect(\"controlled repository lock should work\")\n            .commit_calls\n    }\n}\n\nimpl ReservationRepository for ControlledRepository {\n    fn observe(\n        &self,\n        item_id: ItemId,\n    ) -> impl std::future::Future<Output = Result<Option<InventoryObservation>, StorageFailure>> + Send\n    {\n        let observation = (item_id == self.item_id)\n            .then(|| InventoryObservation::new(self.item_id, self.observed_available));\n        async move { Ok(observation) }\n    }\n\n    fn commit(\n        &self,\n        intent: ReservationIntent,\n    ) -> impl std::future::Future<Output = Result<CommitOutcome, StorageFailure>> + Send {\n        async move {\n            let mut state = self\n                .state\n                .lock()\n                .map_err(|_| StorageFailure::Database)?;\n            state.commit_calls += 1;\n\n            if intent.item_id() != self.item_id {\n                return Err(StorageFailure::InvalidStoredData);\n            }\n\n            let requested = intent.quantity().value();\n            if state.available < requested {\n                return Ok(CommitOutcome::UnavailableAtCommit);\n            }\n\n            let reservation_id = ReservationId::new(state.next_reservation_id)\n                .ok_or(StorageFailure::InvalidStoredData)?;\n            let next_reservation_id = state\n                .next_reservation_id\n                .checked_add(1)\n                .ok_or(StorageFailure::InvalidStoredData)?;\n\n            state.available -= requested;\n            state.next_reservation_id = next_reservation_id;\n\n            Ok(CommitOutcome::Committed(ReservationReceipt::new(\n                reservation_id,\n                intent.item_id(),\n                intent.quantity(),\n            )))\n        }\n    }\n}\n"
+      },
+      {
+        "path": "src/application/reservations.rs",
+        "role": "readonly",
+        "content": "use crate::{\n    application::{CommitOutcome, ReservationError, ReservationRepository},\n    domain::{ReservationCommand, policy::decide},\n};\n\npub async fn reserve(\n    repository: &impl ReservationRepository,\n    command: ReservationCommand,\n) -> Result<crate::application::ReservationReceipt, ReservationError> {\n    let observation = repository\n        .observe(command.item_id())\n        .await\n        .map_err(ReservationError::Storage)?\n        .ok_or(ReservationError::ItemNotFound)?;\n    let intent = decide(&command, &observation).map_err(ReservationError::PolicyRejected)?;\n\n    match repository\n        .commit(intent)\n        .await\n        .map_err(ReservationError::Storage)?\n    {\n        CommitOutcome::Committed(receipt) => Ok(receipt),\n        CommitOutcome::UnavailableAtCommit => Err(ReservationError::UnavailableAtCommit),\n    }\n}\n"
+      },
+      {
+        "path": "src/lib.rs",
+        "role": "readonly",
+        "content": "pub mod adapter;\npub mod application;\npub mod domain;\npub mod infrastructure;\n"
+      },
+      {
+        "path": "src/domain.rs",
+        "role": "readonly",
+        "content": "use std::num::{NonZeroI64, NonZeroU32};\n\npub mod policy;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ItemId(NonZeroI64);\n\nimpl ItemId {\n    pub fn new(value: i64) -> Option<Self> {\n        NonZeroI64::new(value).filter(|value| value.get() > 0).map(Self)\n    }\n\n    pub fn value(self) -> i64 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Quantity(NonZeroU32);\n\nimpl Quantity {\n    pub fn new(value: u32) -> Option<Self> {\n        NonZeroU32::new(value).map(Self)\n    }\n\n    pub fn value(self) -> u32 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationRequest {\n    pub item_id: i64,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ReservationRequestError {\n    InvalidItemId,\n    ZeroQuantity,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationCommand {\n    item_id: ItemId,\n    quantity: Quantity,\n}\n\nimpl ReservationCommand {\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn quantity(&self) -> Quantity {\n        self.quantity\n    }\n}\n\nimpl TryFrom<ReservationRequest> for ReservationCommand {\n    type Error = ReservationRequestError;\n\n    fn try_from(request: ReservationRequest) -> Result<Self, Self::Error> {\n        let item_id = ItemId::new(request.item_id).ok_or(ReservationRequestError::InvalidItemId)?;\n        let quantity = Quantity::new(request.quantity).ok_or(ReservationRequestError::ZeroQuantity)?;\n        Ok(Self { item_id, quantity })\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct InventoryObservation {\n    item_id: ItemId,\n    available: u32,\n}\n\nimpl InventoryObservation {\n    pub fn new(item_id: ItemId, available: u32) -> Self {\n        Self { item_id, available }\n    }\n\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn available(&self) -> u32 {\n        self.available\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationIntent {\n    item_id: ItemId,\n    quantity: Quantity,\n}\n\nimpl ReservationIntent {\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn quantity(&self) -> Quantity {\n        self.quantity\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PolicyRejection {\n    ObservationMismatch,\n    InsufficientObservedInventory,\n}\n"
+      },
+      {
+        "path": "src/domain/policy.rs",
+        "role": "readonly",
+        "content": "use super::{InventoryObservation, PolicyRejection, ReservationCommand, ReservationIntent};\n\npub fn decide(\n    command: &ReservationCommand,\n    observation: &InventoryObservation,\n) -> Result<ReservationIntent, PolicyRejection> {\n    if command.item_id != observation.item_id {\n        return Err(PolicyRejection::ObservationMismatch);\n    }\n\n    if command.quantity.value() > observation.available {\n        return Err(PolicyRejection::InsufficientObservedInventory);\n    }\n\n    Ok(ReservationIntent {\n        item_id: command.item_id,\n        quantity: command.quantity,\n    })\n}\n"
+      },
+      {
+        "path": "src/application.rs",
+        "role": "readonly",
+        "content": "use std::{future::Future, num::NonZeroI64};\n\nuse crate::domain::{\n    InventoryObservation, ItemId, PolicyRejection, Quantity, ReservationIntent,\n};\n\npub mod reservations;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationId(NonZeroI64);\n\nimpl ReservationId {\n    pub fn new(value: i64) -> Option<Self> {\n        NonZeroI64::new(value).filter(|value| value.get() > 0).map(Self)\n    }\n\n    pub fn value(self) -> i64 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationReceipt {\n    reservation_id: ReservationId,\n    item_id: ItemId,\n    quantity: Quantity,\n}\n\nimpl ReservationReceipt {\n    pub fn new(\n        reservation_id: ReservationId,\n        item_id: ItemId,\n        quantity: Quantity,\n    ) -> Self {\n        Self {\n            reservation_id,\n            item_id,\n            quantity,\n        }\n    }\n\n    pub fn reservation_id(&self) -> ReservationId {\n        self.reservation_id\n    }\n\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn quantity(&self) -> Quantity {\n        self.quantity\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum StorageFailure {\n    Database,\n    InvalidStoredData,\n    CommitOutcomeUnknown,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CommitOutcome {\n    Committed(ReservationReceipt),\n    UnavailableAtCommit,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ReservationError {\n    ItemNotFound,\n    PolicyRejected(PolicyRejection),\n    UnavailableAtCommit,\n    Storage(StorageFailure),\n}\n\npub trait ReservationRepository: Send + Sync {\n    fn observe(\n        &self,\n        item_id: ItemId,\n    ) -> impl Future<Output = Result<Option<InventoryObservation>, StorageFailure>> + Send;\n\n    fn commit(\n        &self,\n        intent: ReservationIntent,\n    ) -> impl Future<Output = Result<CommitOutcome, StorageFailure>> + Send;\n}\n"
+      },
+      {
+        "path": "src/infrastructure.rs",
+        "role": "readonly",
+        "content": "pub mod controlled_repository;\npub mod inventory_row;\npub mod sqlite_repository;\n"
+      },
+      {
+        "path": "src/infrastructure/sqlite_repository.rs",
+        "role": "readonly",
+        "content": "// The SQLite repository is implemented in later lessons.\n"
+      },
+      {
+        "path": "src/adapter.rs",
+        "role": "readonly",
+        "content": "pub mod reservation_response;\n"
+      },
+      {
+        "path": "src/adapter/reservation_response.rs",
+        "role": "readonly",
+        "content": "// Response mapping is implemented in a later lesson.\n"
+      },
+      {
+        "path": "testdata/migrations/0001_inventory.sql",
+        "role": "readonly",
+        "content": "CREATE TABLE inventory (\n    item_id INTEGER NOT NULL PRIMARY KEY CHECK (item_id > 0),\n    available INTEGER NOT NULL CHECK (available >= 0)\n);\n\nCREATE TABLE reservations (\n    reservation_id INTEGER PRIMARY KEY AUTOINCREMENT,\n    item_id INTEGER NOT NULL REFERENCES inventory(item_id) DEFERRABLE INITIALLY DEFERRED,\n    quantity INTEGER NOT NULL CHECK (quantity > 0)\n);\n\nCREATE INDEX reservations_item_id_idx ON reservations(item_id);\n"
+      },
+      {
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{\n    application::StorageFailure,\n    domain::{ItemId, InventoryObservation},\n    infrastructure::inventory_row::decode_inventory_row,\n};\nuse sqlx::sqlite::{SqliteConnectOptions, SqlitePool, SqlitePoolOptions, SqliteRow};\n\nasync fn pool() -> SqlitePool {\n    let options = SqliteConnectOptions::new()\n        .filename(\":memory:\")\n        .foreign_keys(true);\n    let pool = SqlitePoolOptions::new()\n        .max_connections(1)\n        .connect_with(options)\n        .await\n        .expect(\"in-memory SQLite should open\");\n    sqlx::migrate!(\"./testdata/migrations\")\n        .run(&pool)\n        .await\n        .expect(\"inventory migrations should apply\");\n    pool\n}\n\nasync fn row(pool: &SqlitePool, item_id: i64, available: i64) -> SqliteRow {\n    sqlx::query(\"SELECT ? AS item_id, ? AS available\")\n        .bind(item_id)\n        .bind(available)\n        .fetch_one(pool)\n        .await\n        .expect(\"row query should succeed\")\n}\n\n#[tokio::test]\nasync fn decodes_valid_integer_columns_into_domain_values() {\n    let pool = pool().await;\n    let row = row(&pool, 7, 4).await;\n\n    let observation = decode_inventory_row(row).expect(\"stored values should decode\");\n\n    assert_eq!(observation, InventoryObservation::new(ItemId::new(7).unwrap(), 4));\n}\n\n#[tokio::test]\nasync fn rejects_non_positive_stored_item_ids() {\n    let pool = pool().await;\n    let row = row(&pool, 0, 4).await;\n\n    assert_eq!(\n        decode_inventory_row(row),\n        Err(StorageFailure::InvalidStoredData)\n    );\n}\n\n#[tokio::test]\nasync fn rejects_negative_and_out_of_range_stock() {\n    let pool = pool().await;\n    let negative = row(&pool, 7, -1).await;\n    let too_large = row(&pool, 7, i64::from(u32::MAX) + 1).await;\n\n    assert_eq!(\n        decode_inventory_row(negative),\n        Err(StorageFailure::InvalidStoredData)\n    );\n    assert_eq!(\n        decode_inventory_row(too_large),\n        Err(StorageFailure::InvalidStoredData)\n    );\n}\n\n#[tokio::test]\nasync fn maps_missing_columns_to_invalid_stored_data() {\n    let pool = pool().await;\n    let row = sqlx::query(\"SELECT 7 AS item_id\")\n        .fetch_one(&pool)\n        .await\n        .expect(\"row query should succeed\");\n\n    assert_eq!(\n        decode_inventory_row(row),\n        Err(StorageFailure::InvalidStoredData)\n    );\n}\n"
+      }
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Keep SQLx's signed, runtime-decoded columns in a private InventoryRow. The domain value should contain validated ItemId and u32 availability."
+      },
+      {
+        "level": 2,
+        "body": "Derive FromRow, convert item_id with ItemId::new, and convert available with u32::try_from. Any decode or conversion error becomes InvalidStoredData."
+      },
+      {
+        "level": 3,
+        "body": "Implement TryFrom<InventoryRow> for InventoryObservation, then decode SqliteRow through InventoryRow::from_row and call try_into.",
+        "solutionCode": "use sqlx::{FromRow, sqlite::SqliteRow};\n\nuse crate::{\n    application::StorageFailure,\n    domain::{InventoryObservation, ItemId},\n};\n\n#[derive(FromRow)]\nstruct InventoryRow {\n    item_id: i64,\n    available: i64,\n}\n\nimpl TryFrom<InventoryRow> for InventoryObservation {\n    type Error = StorageFailure;\n\n    fn try_from(row: InventoryRow) -> Result<Self, Self::Error> {\n        let item_id = ItemId::new(row.item_id).ok_or(StorageFailure::InvalidStoredData)?;\n        let available = u32::try_from(row.available)\n            .map_err(|_| StorageFailure::InvalidStoredData)?;\n        Ok(InventoryObservation::new(item_id, available))\n    }\n}\n\npub fn decode_inventory_row(\n    row: SqliteRow,\n) -> Result<InventoryObservation, StorageFailure> {\n    let row = InventoryRow::from_row(&row).map_err(|_| StorageFailure::InvalidStoredData)?;\n    row.try_into()\n}\n"
+      }
+    ],
+    "completionExplanation": "Malformed inventory data now stops at the row adapter; valid rows become domain observations for the same fulfillment flow. Next, decrement stock and insert the reservation together so neither write can commit alone.",
+    "validation": {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 20000,
+      "dependencySet": "advanced-db"
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "id": "commit-with-sqlite-107",
+    "arcId": "intent-to-durable-outcome",
+    "arcTitle": "Intent to durable outcome",
+    "order": 107,
+    "day": 5,
+    "arcLength": 7,
+    "title": "Commit reservation with SQLite",
+    "conceptId": "intent-atomic-sqlite-commit",
+    "difficulty": "advanced",
+    "estimatedMinutes": 10,
+    "scenario": "The original order requests 3 from item 1's 5 units. Replace the controlled repository with SQLite: stock must fall to 2 and the reservation record must appear together. The transaction must prevent either write from succeeding alone. These isolated in-memory tests verify atomicity and commit behavior; they do not test process-crash recovery or persistence across restarts.",
+    "instructions": "Implement SqliteReservationRepository in src/infrastructure/sqlite_repository.rs. observe selects the item row and delegates validation to decode_inventory_row. commit owns one SQLx transaction: conditionally subtract quantity with `available >= quantity`, return UnavailableAtCommit only if a zero-row update is rolled back successfully, insert a reservation with RETURNING reservation_id, validate the ID, then commit. Until transaction rollback is confirmed, classify an in-transaction failure conservatively as CommitOutcomeUnknown; lesson 6 will refine statement-failure mapping. Do not release a receipt before commit.",
+    "files": [
+      {
+        "path": "src/infrastructure/sqlite_repository.rs",
+        "role": "editable",
+        "content": "use std::future::Future;\n\nuse sqlx::SqlitePool;\n\nuse crate::{\n    application::{CommitOutcome, ReservationRepository, StorageFailure},\n    domain::{InventoryObservation, ItemId, ReservationIntent},\n};\n\npub struct SqliteReservationRepository {\n    pool: SqlitePool,\n}\n\nimpl SqliteReservationRepository {\n    pub fn new(pool: SqlitePool) -> Self {\n        Self { pool }\n    }\n}\n\nimpl ReservationRepository for SqliteReservationRepository {\n    fn observe(\n        &self,\n        item_id: ItemId,\n    ) -> impl Future<Output = Result<Option<InventoryObservation>, StorageFailure>> + Send {\n        async move {\n            let _ = item_id;\n            todo!(\"select and decode inventory\")\n        }\n    }\n\n    fn commit(\n        &self,\n        intent: ReservationIntent,\n    ) -> impl Future<Output = Result<CommitOutcome, StorageFailure>> + Send {\n        async move {\n            let _ = intent;\n            todo!(\"guarded decrement and reservation insert in one transaction\")\n        }\n    }\n}\n"
+      },
+      {
+        "path": "src/infrastructure/inventory_row.rs",
+        "role": "readonly",
+        "content": "use sqlx::{FromRow, sqlite::SqliteRow};\n\nuse crate::{\n    application::StorageFailure,\n    domain::{InventoryObservation, ItemId},\n};\n\n#[derive(FromRow)]\nstruct InventoryRow {\n    item_id: i64,\n    available: i64,\n}\n\nimpl TryFrom<InventoryRow> for InventoryObservation {\n    type Error = StorageFailure;\n\n    fn try_from(row: InventoryRow) -> Result<Self, Self::Error> {\n        let item_id = ItemId::new(row.item_id).ok_or(StorageFailure::InvalidStoredData)?;\n        let available = u32::try_from(row.available)\n            .map_err(|_| StorageFailure::InvalidStoredData)?;\n        Ok(InventoryObservation::new(item_id, available))\n    }\n}\n\npub fn decode_inventory_row(\n    row: SqliteRow,\n) -> Result<InventoryObservation, StorageFailure> {\n    let row = InventoryRow::from_row(&row).map_err(|_| StorageFailure::InvalidStoredData)?;\n    row.try_into()\n}\n"
+      },
+      {
+        "path": "src/infrastructure/controlled_repository.rs",
+        "role": "readonly",
+        "content": "use std::sync::Mutex;\n\nuse crate::{\n    application::{\n        CommitOutcome, ReservationId, ReservationReceipt, ReservationRepository, StorageFailure,\n    },\n    domain::{InventoryObservation, ItemId, ReservationIntent},\n};\n\nstruct State {\n    available: u32,\n    next_reservation_id: i64,\n    commit_calls: usize,\n}\n\npub struct ControlledRepository {\n    item_id: ItemId,\n    observed_available: u32,\n    state: Mutex<State>,\n}\n\nimpl ControlledRepository {\n    pub fn new(item_id: ItemId, observed_available: u32, current_available: u32) -> Self {\n        Self {\n            item_id,\n            observed_available,\n            state: Mutex::new(State {\n                available: current_available,\n                next_reservation_id: 1,\n                commit_calls: 0,\n            }),\n        }\n    }\n\n    pub fn current_available(&self) -> u32 {\n        self.state\n            .lock()\n            .expect(\"controlled repository lock should work\")\n            .available\n    }\n\n    pub fn commit_calls(&self) -> usize {\n        self.state\n            .lock()\n            .expect(\"controlled repository lock should work\")\n            .commit_calls\n    }\n}\n\nimpl ReservationRepository for ControlledRepository {\n    fn observe(\n        &self,\n        item_id: ItemId,\n    ) -> impl std::future::Future<Output = Result<Option<InventoryObservation>, StorageFailure>> + Send\n    {\n        let observation = (item_id == self.item_id)\n            .then(|| InventoryObservation::new(self.item_id, self.observed_available));\n        async move { Ok(observation) }\n    }\n\n    fn commit(\n        &self,\n        intent: ReservationIntent,\n    ) -> impl std::future::Future<Output = Result<CommitOutcome, StorageFailure>> + Send {\n        async move {\n            let mut state = self\n                .state\n                .lock()\n                .map_err(|_| StorageFailure::Database)?;\n            state.commit_calls += 1;\n\n            if intent.item_id() != self.item_id {\n                return Err(StorageFailure::InvalidStoredData);\n            }\n\n            let requested = intent.quantity().value();\n            if state.available < requested {\n                return Ok(CommitOutcome::UnavailableAtCommit);\n            }\n\n            let reservation_id = ReservationId::new(state.next_reservation_id)\n                .ok_or(StorageFailure::InvalidStoredData)?;\n            let next_reservation_id = state\n                .next_reservation_id\n                .checked_add(1)\n                .ok_or(StorageFailure::InvalidStoredData)?;\n\n            state.available -= requested;\n            state.next_reservation_id = next_reservation_id;\n\n            Ok(CommitOutcome::Committed(ReservationReceipt::new(\n                reservation_id,\n                intent.item_id(),\n                intent.quantity(),\n            )))\n        }\n    }\n}\n"
+      },
+      {
+        "path": "src/application/reservations.rs",
+        "role": "readonly",
+        "content": "use crate::{\n    application::{CommitOutcome, ReservationError, ReservationRepository},\n    domain::{ReservationCommand, policy::decide},\n};\n\npub async fn reserve(\n    repository: &impl ReservationRepository,\n    command: ReservationCommand,\n) -> Result<crate::application::ReservationReceipt, ReservationError> {\n    let observation = repository\n        .observe(command.item_id())\n        .await\n        .map_err(ReservationError::Storage)?\n        .ok_or(ReservationError::ItemNotFound)?;\n    let intent = decide(&command, &observation).map_err(ReservationError::PolicyRejected)?;\n\n    match repository\n        .commit(intent)\n        .await\n        .map_err(ReservationError::Storage)?\n    {\n        CommitOutcome::Committed(receipt) => Ok(receipt),\n        CommitOutcome::UnavailableAtCommit => Err(ReservationError::UnavailableAtCommit),\n    }\n}\n"
+      },
+      {
+        "path": "src/lib.rs",
+        "role": "readonly",
+        "content": "pub mod adapter;\npub mod application;\npub mod domain;\npub mod infrastructure;\n"
+      },
+      {
+        "path": "src/domain.rs",
+        "role": "readonly",
+        "content": "use std::num::{NonZeroI64, NonZeroU32};\n\npub mod policy;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ItemId(NonZeroI64);\n\nimpl ItemId {\n    pub fn new(value: i64) -> Option<Self> {\n        NonZeroI64::new(value).filter(|value| value.get() > 0).map(Self)\n    }\n\n    pub fn value(self) -> i64 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Quantity(NonZeroU32);\n\nimpl Quantity {\n    pub fn new(value: u32) -> Option<Self> {\n        NonZeroU32::new(value).map(Self)\n    }\n\n    pub fn value(self) -> u32 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationRequest {\n    pub item_id: i64,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ReservationRequestError {\n    InvalidItemId,\n    ZeroQuantity,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationCommand {\n    item_id: ItemId,\n    quantity: Quantity,\n}\n\nimpl ReservationCommand {\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn quantity(&self) -> Quantity {\n        self.quantity\n    }\n}\n\nimpl TryFrom<ReservationRequest> for ReservationCommand {\n    type Error = ReservationRequestError;\n\n    fn try_from(request: ReservationRequest) -> Result<Self, Self::Error> {\n        let item_id = ItemId::new(request.item_id).ok_or(ReservationRequestError::InvalidItemId)?;\n        let quantity = Quantity::new(request.quantity).ok_or(ReservationRequestError::ZeroQuantity)?;\n        Ok(Self { item_id, quantity })\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct InventoryObservation {\n    item_id: ItemId,\n    available: u32,\n}\n\nimpl InventoryObservation {\n    pub fn new(item_id: ItemId, available: u32) -> Self {\n        Self { item_id, available }\n    }\n\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn available(&self) -> u32 {\n        self.available\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationIntent {\n    item_id: ItemId,\n    quantity: Quantity,\n}\n\nimpl ReservationIntent {\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn quantity(&self) -> Quantity {\n        self.quantity\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PolicyRejection {\n    ObservationMismatch,\n    InsufficientObservedInventory,\n}\n"
+      },
+      {
+        "path": "src/domain/policy.rs",
+        "role": "readonly",
+        "content": "use super::{InventoryObservation, PolicyRejection, ReservationCommand, ReservationIntent};\n\npub fn decide(\n    command: &ReservationCommand,\n    observation: &InventoryObservation,\n) -> Result<ReservationIntent, PolicyRejection> {\n    if command.item_id != observation.item_id {\n        return Err(PolicyRejection::ObservationMismatch);\n    }\n\n    if command.quantity.value() > observation.available {\n        return Err(PolicyRejection::InsufficientObservedInventory);\n    }\n\n    Ok(ReservationIntent {\n        item_id: command.item_id,\n        quantity: command.quantity,\n    })\n}\n"
+      },
+      {
+        "path": "src/application.rs",
+        "role": "readonly",
+        "content": "use std::{future::Future, num::NonZeroI64};\n\nuse crate::domain::{\n    InventoryObservation, ItemId, PolicyRejection, Quantity, ReservationIntent,\n};\n\npub mod reservations;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationId(NonZeroI64);\n\nimpl ReservationId {\n    pub fn new(value: i64) -> Option<Self> {\n        NonZeroI64::new(value).filter(|value| value.get() > 0).map(Self)\n    }\n\n    pub fn value(self) -> i64 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationReceipt {\n    reservation_id: ReservationId,\n    item_id: ItemId,\n    quantity: Quantity,\n}\n\nimpl ReservationReceipt {\n    pub fn new(\n        reservation_id: ReservationId,\n        item_id: ItemId,\n        quantity: Quantity,\n    ) -> Self {\n        Self {\n            reservation_id,\n            item_id,\n            quantity,\n        }\n    }\n\n    pub fn reservation_id(&self) -> ReservationId {\n        self.reservation_id\n    }\n\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn quantity(&self) -> Quantity {\n        self.quantity\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum StorageFailure {\n    Database,\n    InvalidStoredData,\n    CommitOutcomeUnknown,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CommitOutcome {\n    Committed(ReservationReceipt),\n    UnavailableAtCommit,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ReservationError {\n    ItemNotFound,\n    PolicyRejected(PolicyRejection),\n    UnavailableAtCommit,\n    Storage(StorageFailure),\n}\n\npub trait ReservationRepository: Send + Sync {\n    fn observe(\n        &self,\n        item_id: ItemId,\n    ) -> impl Future<Output = Result<Option<InventoryObservation>, StorageFailure>> + Send;\n\n    fn commit(\n        &self,\n        intent: ReservationIntent,\n    ) -> impl Future<Output = Result<CommitOutcome, StorageFailure>> + Send;\n}\n"
+      },
+      {
+        "path": "src/infrastructure.rs",
+        "role": "readonly",
+        "content": "pub mod controlled_repository;\npub mod inventory_row;\npub mod sqlite_repository;\n"
+      },
+      {
+        "path": "src/adapter.rs",
+        "role": "readonly",
+        "content": "pub mod reservation_response;\n"
+      },
+      {
+        "path": "src/adapter/reservation_response.rs",
+        "role": "readonly",
+        "content": "// Response mapping is implemented in a later lesson.\n"
+      },
+      {
+        "path": "testdata/migrations/0001_inventory.sql",
+        "role": "readonly",
+        "content": "CREATE TABLE inventory (\n    item_id INTEGER NOT NULL PRIMARY KEY CHECK (item_id > 0),\n    available INTEGER NOT NULL CHECK (available >= 0)\n);\n\nCREATE TABLE reservations (\n    reservation_id INTEGER PRIMARY KEY AUTOINCREMENT,\n    item_id INTEGER NOT NULL REFERENCES inventory(item_id) DEFERRABLE INITIALLY DEFERRED,\n    quantity INTEGER NOT NULL CHECK (quantity > 0)\n);\n\nCREATE INDEX reservations_item_id_idx ON reservations(item_id);\n"
+      },
+      {
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{\n    application::{CommitOutcome, ReservationRepository, reservations::reserve},\n    domain::{ItemId, ReservationCommand, ReservationIntent, ReservationRequest, policy::decide},\n    infrastructure::sqlite_repository::SqliteReservationRepository,\n};\nuse sqlx::sqlite::{SqliteConnectOptions, SqlitePool, SqlitePoolOptions};\n\nasync fn pool() -> SqlitePool {\n    let options = SqliteConnectOptions::new()\n        .filename(\":memory:\")\n        .foreign_keys(true);\n    let pool = SqlitePoolOptions::new()\n        .max_connections(1)\n        .connect_with(options)\n        .await\n        .expect(\"in-memory SQLite should open\");\n    sqlx::migrate!(\"./testdata/migrations\")\n        .run(&pool)\n        .await\n        .expect(\"inventory migrations should apply\");\n    pool\n}\n\nasync fn seed(pool: &SqlitePool, item_id: i64, available: i64) {\n    sqlx::query(\"INSERT INTO inventory (item_id, available) VALUES (?, ?)\")\n        .bind(item_id)\n        .bind(available)\n        .execute(pool)\n        .await\n        .expect(\"inventory seed should insert\");\n}\n\nasync fn available(pool: &SqlitePool, item_id: i64) -> i64 {\n    sqlx::query_scalar(\"SELECT available FROM inventory WHERE item_id = ?\")\n        .bind(item_id)\n        .fetch_one(pool)\n        .await\n        .expect(\"inventory row should exist\")\n}\n\nasync fn reservation_count(pool: &SqlitePool) -> i64 {\n    sqlx::query_scalar(\"SELECT COUNT(*) FROM reservations\")\n        .fetch_one(pool)\n        .await\n        .expect(\"reservation count should query\")\n}\n\nfn command(item: i64, amount: u32) -> ReservationCommand {\n    ReservationCommand::try_from(ReservationRequest {\n        item_id: item,\n        quantity: amount,\n    })\n    .expect(\"test request should be valid\")\n}\n\nfn item_id(value: i64) -> ItemId {\n    ItemId::new(value).expect(\"test item id should be positive\")\n}\n\n#[tokio::test]\nasync fn observation_reads_and_decodes_persisted_inventory() {\n    let pool = pool().await;\n    seed(&pool, 1, 5).await;\n    let repository = SqliteReservationRepository::new(pool);\n\n    let observation = repository\n        .observe(item_id(1))\n        .await\n        .expect(\"database read should succeed\");\n\n    assert_eq!(observation.unwrap().available(), 5);\n}\n\n#[tokio::test]\nasync fn successful_commit_decrements_stock_and_inserts_receipt_row() {\n    let pool = pool().await;\n    seed(&pool, 1, 5).await;\n    let repository = SqliteReservationRepository::new(pool.clone());\n\n    let receipt = reserve(&repository, command(1, 3))\n        .await\n        .expect(\"reservation should commit\");\n\n    assert_eq!(receipt.reservation_id().value(), 1);\n    assert_eq!(receipt.item_id(), item_id(1));\n    assert_eq!(receipt.quantity().value(), 3);\n    assert_eq!(available(&pool, 1).await, 2);\n    assert_eq!(reservation_count(&pool).await, 1);\n}\n\n#[tokio::test]\nasync fn conditional_update_rejects_stale_intent_without_writes() {\n    let pool = pool().await;\n    seed(&pool, 1, 5).await;\n    let repository = SqliteReservationRepository::new(pool.clone());\n    let command = command(1, 3);\n    let observation = repository\n        .observe(command.item_id())\n        .await\n        .expect(\"observation should load\")\n        .expect(\"inventory row should exist\");\n    let intent: ReservationIntent = decide(&command, &observation).expect(\"initial stock is enough\");\n    sqlx::query(\"UPDATE inventory SET available = 2 WHERE item_id = 1\")\n        .execute(&pool)\n        .await\n        .expect(\"simulate intervening stock change\");\n\n    let outcome = repository\n        .commit(intent)\n        .await\n        .expect(\"stale stock is a domain outcome, not a storage failure\");\n\n    assert_eq!(outcome, CommitOutcome::UnavailableAtCommit);\n    assert_eq!(available(&pool, 1).await, 2);\n    assert_eq!(reservation_count(&pool).await, 0);\n}\n"
+      }
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "observe uses `fetch_optional`, then transposes row decoding. Commit needs one transaction for the guarded UPDATE and reservation INSERT."
+      },
+      {
+        "level": 2,
+        "body": "The UPDATE predicate is commit authority: match item ID and require `available >= requested`. If no row changes, explicitly roll back before returning UnavailableAtCommit."
+      },
+      {
+        "level": 3,
+        "body": "Insert with RETURNING inside the same transaction; construct the receipt from intent and generated ID. Treat failures after begin as unknown until rollback is confirmed.",
+        "solutionCode": "use std::future::Future;\n\nuse sqlx::{Row, SqlitePool};\n\nuse crate::{\n    application::{\n        CommitOutcome, ReservationId, ReservationReceipt, ReservationRepository, StorageFailure,\n    },\n    domain::{InventoryObservation, ItemId, ReservationIntent},\n    infrastructure::inventory_row::decode_inventory_row,\n};\n\npub struct SqliteReservationRepository {\n    pool: SqlitePool,\n}\n\nimpl SqliteReservationRepository {\n    pub fn new(pool: SqlitePool) -> Self {\n        Self { pool }\n    }\n}\n\nimpl ReservationRepository for SqliteReservationRepository {\n    fn observe(\n        &self,\n        item_id: ItemId,\n    ) -> impl Future<Output = Result<Option<InventoryObservation>, StorageFailure>> + Send {\n        async move {\n            let row = sqlx::query(\"SELECT item_id, available FROM inventory WHERE item_id = ?\")\n                .bind(item_id.value())\n                .fetch_optional(&self.pool)\n                .await\n                .map_err(|_| StorageFailure::Database)?;\n\n            row.map(decode_inventory_row).transpose()\n        }\n    }\n\n    fn commit(\n        &self,\n        intent: ReservationIntent,\n    ) -> impl Future<Output = Result<CommitOutcome, StorageFailure>> + Send {\n        async move {\n            let mut transaction = self\n                .pool\n                .begin()\n                .await\n                .map_err(|_| StorageFailure::Database)?;\n            let item_id = intent.item_id().value();\n            let quantity = i64::from(intent.quantity().value());\n            let update = sqlx::query(\n                \"UPDATE inventory SET available = available - ? \\\n                 WHERE item_id = ? AND available >= ?\",\n            )\n            .bind(quantity)\n            .bind(item_id)\n            .bind(quantity)\n            .execute(&mut *transaction)\n            .await\n            .map_err(|_| StorageFailure::CommitOutcomeUnknown)?;\n\n            if update.rows_affected() == 0 {\n                return match transaction.rollback().await {\n                    Ok(()) => Ok(CommitOutcome::UnavailableAtCommit),\n                    Err(_) => Err(StorageFailure::CommitOutcomeUnknown),\n                };\n            }\n\n            let row = sqlx::query(\n                \"INSERT INTO reservations (item_id, quantity) VALUES (?, ?) \\\n                 RETURNING reservation_id\",\n            )\n            .bind(item_id)\n            .bind(quantity)\n            .fetch_one(&mut *transaction)\n            .await\n            .map_err(|_| StorageFailure::CommitOutcomeUnknown)?;\n            let raw_reservation_id = row\n                .try_get::<i64, _>(\"reservation_id\")\n                .map_err(|_| StorageFailure::CommitOutcomeUnknown)?;\n            let reservation_id = ReservationId::new(raw_reservation_id)\n                .ok_or(StorageFailure::CommitOutcomeUnknown)?;\n            let receipt = ReservationReceipt::new(\n                reservation_id,\n                intent.item_id(),\n                intent.quantity(),\n            );\n\n            transaction\n                .commit()\n                .await\n                .map_err(|_| StorageFailure::CommitOutcomeUnknown)?;\n\n            Ok(CommitOutcome::Committed(receipt))\n        }\n    }\n}\n"
+      }
+    ],
+    "completionExplanation": "The successful transaction commits both results together: stock 2 and one reservation receipt. A stale order changes neither. This in-memory test does not establish survival across process restarts. Next, distinguish a statement failure with confirmed rollback from a COMMIT failure whose transaction outcome may be unknown.",
+    "validation": {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 25000,
+      "dependencySet": "advanced-db"
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "id": "classify-commit-failures-108",
+    "arcId": "intent-to-durable-outcome",
+    "arcTitle": "Intent to durable outcome",
+    "order": 108,
+    "day": 6,
+    "arcLength": 7,
+    "title": "Classify transaction failures",
+    "conceptId": "intent-transaction-error-semantics",
+    "difficulty": "advanced",
+    "estimatedMinutes": 10,
+    "scenario": "A trigger rejects the reservation insert after SQLite has tentatively reduced stock; confirmed rollback should restore the original 5. Separately, a deferred constraint can fail at COMMIT, where the service cannot safely promise whether the transaction committed. Those outcomes need different errors—and neither should trigger a blind retry.",
+    "instructions": "Update commit in src/infrastructure/sqlite_repository.rs. Explicitly roll back after UPDATE, INSERT, or stored-ID validation failure; map the original Database or InvalidStoredData error only when rollback succeeds, otherwise return CommitOutcomeUnknown. A zero-row conditional update returns UnavailableAtCommit only after successful rollback. Map an error from transaction.commit() to CommitOutcomeUnknown. Do not retry. Use supplied triggers to verify statement rollback and deferred-constraint commit failure.",
+    "files": [
+      {
+        "path": "src/infrastructure/sqlite_repository.rs",
+        "role": "editable",
+        "content": "use std::future::Future;\n\nuse sqlx::{Row, SqlitePool};\n\nuse crate::{\n    application::{\n        CommitOutcome, ReservationId, ReservationReceipt, ReservationRepository, StorageFailure,\n    },\n    domain::{InventoryObservation, ItemId, ReservationIntent},\n    infrastructure::inventory_row::decode_inventory_row,\n};\n\npub struct SqliteReservationRepository {\n    pool: SqlitePool,\n}\n\nimpl SqliteReservationRepository {\n    pub fn new(pool: SqlitePool) -> Self {\n        Self { pool }\n    }\n}\n\nimpl ReservationRepository for SqliteReservationRepository {\n    fn observe(\n        &self,\n        item_id: ItemId,\n    ) -> impl Future<Output = Result<Option<InventoryObservation>, StorageFailure>> + Send {\n        async move {\n            let row = sqlx::query(\"SELECT item_id, available FROM inventory WHERE item_id = ?\")\n                .bind(item_id.value())\n                .fetch_optional(&self.pool)\n                .await\n                .map_err(|_| StorageFailure::Database)?;\n\n            row.map(decode_inventory_row).transpose()\n        }\n    }\n\n    fn commit(\n        &self,\n        intent: ReservationIntent,\n    ) -> impl Future<Output = Result<CommitOutcome, StorageFailure>> + Send {\n        async move {\n            let mut transaction = self\n                .pool\n                .begin()\n                .await\n                .map_err(|_| StorageFailure::Database)?;\n            let item_id = intent.item_id().value();\n            let quantity = i64::from(intent.quantity().value());\n            let update = sqlx::query(\n                \"UPDATE inventory SET available = available - ? \\\n                 WHERE item_id = ? AND available >= ?\",\n            )\n            .bind(quantity)\n            .bind(item_id)\n            .bind(quantity)\n            .execute(&mut *transaction)\n            .await\n            .map_err(|_| StorageFailure::CommitOutcomeUnknown)?;\n\n            if update.rows_affected() == 0 {\n                return match transaction.rollback().await {\n                    Ok(()) => Ok(CommitOutcome::UnavailableAtCommit),\n                    Err(_) => Err(StorageFailure::CommitOutcomeUnknown),\n                };\n            }\n\n            let row = sqlx::query(\n                \"INSERT INTO reservations (item_id, quantity) VALUES (?, ?) \\\n                 RETURNING reservation_id\",\n            )\n            .bind(item_id)\n            .bind(quantity)\n            .fetch_one(&mut *transaction)\n            .await\n            .map_err(|_| StorageFailure::CommitOutcomeUnknown)?;\n            let raw_reservation_id = row\n                .try_get::<i64, _>(\"reservation_id\")\n                .map_err(|_| StorageFailure::CommitOutcomeUnknown)?;\n            let reservation_id = ReservationId::new(raw_reservation_id)\n                .ok_or(StorageFailure::CommitOutcomeUnknown)?;\n            let receipt = ReservationReceipt::new(\n                reservation_id,\n                intent.item_id(),\n                intent.quantity(),\n            );\n\n            transaction\n                .commit()\n                .await\n                .map_err(|_| StorageFailure::CommitOutcomeUnknown)?;\n\n            Ok(CommitOutcome::Committed(receipt))\n        }\n    }\n}\n"
+      },
+      {
+        "path": "src/infrastructure/inventory_row.rs",
+        "role": "readonly",
+        "content": "use sqlx::{FromRow, sqlite::SqliteRow};\n\nuse crate::{\n    application::StorageFailure,\n    domain::{InventoryObservation, ItemId},\n};\n\n#[derive(FromRow)]\nstruct InventoryRow {\n    item_id: i64,\n    available: i64,\n}\n\nimpl TryFrom<InventoryRow> for InventoryObservation {\n    type Error = StorageFailure;\n\n    fn try_from(row: InventoryRow) -> Result<Self, Self::Error> {\n        let item_id = ItemId::new(row.item_id).ok_or(StorageFailure::InvalidStoredData)?;\n        let available = u32::try_from(row.available)\n            .map_err(|_| StorageFailure::InvalidStoredData)?;\n        Ok(InventoryObservation::new(item_id, available))\n    }\n}\n\npub fn decode_inventory_row(\n    row: SqliteRow,\n) -> Result<InventoryObservation, StorageFailure> {\n    let row = InventoryRow::from_row(&row).map_err(|_| StorageFailure::InvalidStoredData)?;\n    row.try_into()\n}\n"
+      },
+      {
+        "path": "src/infrastructure/controlled_repository.rs",
+        "role": "readonly",
+        "content": "use std::sync::Mutex;\n\nuse crate::{\n    application::{\n        CommitOutcome, ReservationId, ReservationReceipt, ReservationRepository, StorageFailure,\n    },\n    domain::{InventoryObservation, ItemId, ReservationIntent},\n};\n\nstruct State {\n    available: u32,\n    next_reservation_id: i64,\n    commit_calls: usize,\n}\n\npub struct ControlledRepository {\n    item_id: ItemId,\n    observed_available: u32,\n    state: Mutex<State>,\n}\n\nimpl ControlledRepository {\n    pub fn new(item_id: ItemId, observed_available: u32, current_available: u32) -> Self {\n        Self {\n            item_id,\n            observed_available,\n            state: Mutex::new(State {\n                available: current_available,\n                next_reservation_id: 1,\n                commit_calls: 0,\n            }),\n        }\n    }\n\n    pub fn current_available(&self) -> u32 {\n        self.state\n            .lock()\n            .expect(\"controlled repository lock should work\")\n            .available\n    }\n\n    pub fn commit_calls(&self) -> usize {\n        self.state\n            .lock()\n            .expect(\"controlled repository lock should work\")\n            .commit_calls\n    }\n}\n\nimpl ReservationRepository for ControlledRepository {\n    fn observe(\n        &self,\n        item_id: ItemId,\n    ) -> impl std::future::Future<Output = Result<Option<InventoryObservation>, StorageFailure>> + Send\n    {\n        let observation = (item_id == self.item_id)\n            .then(|| InventoryObservation::new(self.item_id, self.observed_available));\n        async move { Ok(observation) }\n    }\n\n    fn commit(\n        &self,\n        intent: ReservationIntent,\n    ) -> impl std::future::Future<Output = Result<CommitOutcome, StorageFailure>> + Send {\n        async move {\n            let mut state = self\n                .state\n                .lock()\n                .map_err(|_| StorageFailure::Database)?;\n            state.commit_calls += 1;\n\n            if intent.item_id() != self.item_id {\n                return Err(StorageFailure::InvalidStoredData);\n            }\n\n            let requested = intent.quantity().value();\n            if state.available < requested {\n                return Ok(CommitOutcome::UnavailableAtCommit);\n            }\n\n            let reservation_id = ReservationId::new(state.next_reservation_id)\n                .ok_or(StorageFailure::InvalidStoredData)?;\n            let next_reservation_id = state\n                .next_reservation_id\n                .checked_add(1)\n                .ok_or(StorageFailure::InvalidStoredData)?;\n\n            state.available -= requested;\n            state.next_reservation_id = next_reservation_id;\n\n            Ok(CommitOutcome::Committed(ReservationReceipt::new(\n                reservation_id,\n                intent.item_id(),\n                intent.quantity(),\n            )))\n        }\n    }\n}\n"
+      },
+      {
+        "path": "src/application/reservations.rs",
+        "role": "readonly",
+        "content": "use crate::{\n    application::{CommitOutcome, ReservationError, ReservationRepository},\n    domain::{ReservationCommand, policy::decide},\n};\n\npub async fn reserve(\n    repository: &impl ReservationRepository,\n    command: ReservationCommand,\n) -> Result<crate::application::ReservationReceipt, ReservationError> {\n    let observation = repository\n        .observe(command.item_id())\n        .await\n        .map_err(ReservationError::Storage)?\n        .ok_or(ReservationError::ItemNotFound)?;\n    let intent = decide(&command, &observation).map_err(ReservationError::PolicyRejected)?;\n\n    match repository\n        .commit(intent)\n        .await\n        .map_err(ReservationError::Storage)?\n    {\n        CommitOutcome::Committed(receipt) => Ok(receipt),\n        CommitOutcome::UnavailableAtCommit => Err(ReservationError::UnavailableAtCommit),\n    }\n}\n"
+      },
+      {
+        "path": "src/lib.rs",
+        "role": "readonly",
+        "content": "pub mod adapter;\npub mod application;\npub mod domain;\npub mod infrastructure;\n"
+      },
+      {
+        "path": "src/domain.rs",
+        "role": "readonly",
+        "content": "use std::num::{NonZeroI64, NonZeroU32};\n\npub mod policy;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ItemId(NonZeroI64);\n\nimpl ItemId {\n    pub fn new(value: i64) -> Option<Self> {\n        NonZeroI64::new(value).filter(|value| value.get() > 0).map(Self)\n    }\n\n    pub fn value(self) -> i64 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Quantity(NonZeroU32);\n\nimpl Quantity {\n    pub fn new(value: u32) -> Option<Self> {\n        NonZeroU32::new(value).map(Self)\n    }\n\n    pub fn value(self) -> u32 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationRequest {\n    pub item_id: i64,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ReservationRequestError {\n    InvalidItemId,\n    ZeroQuantity,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationCommand {\n    item_id: ItemId,\n    quantity: Quantity,\n}\n\nimpl ReservationCommand {\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn quantity(&self) -> Quantity {\n        self.quantity\n    }\n}\n\nimpl TryFrom<ReservationRequest> for ReservationCommand {\n    type Error = ReservationRequestError;\n\n    fn try_from(request: ReservationRequest) -> Result<Self, Self::Error> {\n        let item_id = ItemId::new(request.item_id).ok_or(ReservationRequestError::InvalidItemId)?;\n        let quantity = Quantity::new(request.quantity).ok_or(ReservationRequestError::ZeroQuantity)?;\n        Ok(Self { item_id, quantity })\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct InventoryObservation {\n    item_id: ItemId,\n    available: u32,\n}\n\nimpl InventoryObservation {\n    pub fn new(item_id: ItemId, available: u32) -> Self {\n        Self { item_id, available }\n    }\n\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn available(&self) -> u32 {\n        self.available\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationIntent {\n    item_id: ItemId,\n    quantity: Quantity,\n}\n\nimpl ReservationIntent {\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn quantity(&self) -> Quantity {\n        self.quantity\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PolicyRejection {\n    ObservationMismatch,\n    InsufficientObservedInventory,\n}\n"
+      },
+      {
+        "path": "src/domain/policy.rs",
+        "role": "readonly",
+        "content": "use super::{InventoryObservation, PolicyRejection, ReservationCommand, ReservationIntent};\n\npub fn decide(\n    command: &ReservationCommand,\n    observation: &InventoryObservation,\n) -> Result<ReservationIntent, PolicyRejection> {\n    if command.item_id != observation.item_id {\n        return Err(PolicyRejection::ObservationMismatch);\n    }\n\n    if command.quantity.value() > observation.available {\n        return Err(PolicyRejection::InsufficientObservedInventory);\n    }\n\n    Ok(ReservationIntent {\n        item_id: command.item_id,\n        quantity: command.quantity,\n    })\n}\n"
+      },
+      {
+        "path": "src/application.rs",
+        "role": "readonly",
+        "content": "use std::{future::Future, num::NonZeroI64};\n\nuse crate::domain::{\n    InventoryObservation, ItemId, PolicyRejection, Quantity, ReservationIntent,\n};\n\npub mod reservations;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationId(NonZeroI64);\n\nimpl ReservationId {\n    pub fn new(value: i64) -> Option<Self> {\n        NonZeroI64::new(value).filter(|value| value.get() > 0).map(Self)\n    }\n\n    pub fn value(self) -> i64 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationReceipt {\n    reservation_id: ReservationId,\n    item_id: ItemId,\n    quantity: Quantity,\n}\n\nimpl ReservationReceipt {\n    pub fn new(\n        reservation_id: ReservationId,\n        item_id: ItemId,\n        quantity: Quantity,\n    ) -> Self {\n        Self {\n            reservation_id,\n            item_id,\n            quantity,\n        }\n    }\n\n    pub fn reservation_id(&self) -> ReservationId {\n        self.reservation_id\n    }\n\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn quantity(&self) -> Quantity {\n        self.quantity\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum StorageFailure {\n    Database,\n    InvalidStoredData,\n    CommitOutcomeUnknown,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CommitOutcome {\n    Committed(ReservationReceipt),\n    UnavailableAtCommit,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ReservationError {\n    ItemNotFound,\n    PolicyRejected(PolicyRejection),\n    UnavailableAtCommit,\n    Storage(StorageFailure),\n}\n\npub trait ReservationRepository: Send + Sync {\n    fn observe(\n        &self,\n        item_id: ItemId,\n    ) -> impl Future<Output = Result<Option<InventoryObservation>, StorageFailure>> + Send;\n\n    fn commit(\n        &self,\n        intent: ReservationIntent,\n    ) -> impl Future<Output = Result<CommitOutcome, StorageFailure>> + Send;\n}\n"
+      },
+      {
+        "path": "src/infrastructure.rs",
+        "role": "readonly",
+        "content": "pub mod controlled_repository;\npub mod inventory_row;\npub mod sqlite_repository;\n"
+      },
+      {
+        "path": "src/adapter.rs",
+        "role": "readonly",
+        "content": "pub mod reservation_response;\n"
+      },
+      {
+        "path": "src/adapter/reservation_response.rs",
+        "role": "readonly",
+        "content": "// Response mapping is implemented in a later lesson.\n"
+      },
+      {
+        "path": "testdata/migrations/0001_inventory.sql",
+        "role": "readonly",
+        "content": "CREATE TABLE inventory (\n    item_id INTEGER NOT NULL PRIMARY KEY CHECK (item_id > 0),\n    available INTEGER NOT NULL CHECK (available >= 0)\n);\n\nCREATE TABLE reservations (\n    reservation_id INTEGER PRIMARY KEY AUTOINCREMENT,\n    item_id INTEGER NOT NULL REFERENCES inventory(item_id) DEFERRABLE INITIALLY DEFERRED,\n    quantity INTEGER NOT NULL CHECK (quantity > 0)\n);\n\nCREATE INDEX reservations_item_id_idx ON reservations(item_id);\n"
+      },
+      {
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{\n    application::{\n        ReservationError, StorageFailure, reservations::reserve,\n    },\n    domain::{ReservationCommand, ReservationRequest},\n    infrastructure::sqlite_repository::SqliteReservationRepository,\n};\nuse sqlx::sqlite::{SqliteConnectOptions, SqlitePool, SqlitePoolOptions};\n\nasync fn pool() -> SqlitePool {\n    let options = SqliteConnectOptions::new()\n        .filename(\":memory:\")\n        .foreign_keys(true);\n    let pool = SqlitePoolOptions::new()\n        .max_connections(1)\n        .connect_with(options)\n        .await\n        .expect(\"in-memory SQLite should open\");\n    sqlx::migrate!(\"./testdata/migrations\")\n        .run(&pool)\n        .await\n        .expect(\"inventory migrations should apply\");\n    pool\n}\n\nasync fn seed(pool: &SqlitePool) {\n    sqlx::query(\"INSERT INTO inventory (item_id, available) VALUES (1, 5)\")\n        .execute(pool)\n        .await\n        .expect(\"inventory seed should insert\");\n}\n\nasync fn available(pool: &SqlitePool) -> i64 {\n    sqlx::query_scalar(\"SELECT available FROM inventory WHERE item_id = 1\")\n        .fetch_one(pool)\n        .await\n        .expect(\"inventory should remain present\")\n}\n\nasync fn reservation_count(pool: &SqlitePool) -> i64 {\n    sqlx::query_scalar(\"SELECT COUNT(*) FROM reservations\")\n        .fetch_one(pool)\n        .await\n        .expect(\"reservation count should query\")\n}\n\nfn command() -> ReservationCommand {\n    ReservationCommand::try_from(ReservationRequest {\n        item_id: 1,\n        quantity: 3,\n    })\n    .expect(\"test request should be valid\")\n}\n\n#[tokio::test]\nasync fn statement_failure_rolls_back_stock_and_maps_to_database_error() {\n    let pool = pool().await;\n    seed(&pool).await;\n    sqlx::query(\n        \"CREATE TRIGGER reject_reservation BEFORE INSERT ON reservations \\\n         BEGIN SELECT RAISE(ABORT, 'injected insert failure'); END\",\n    )\n    .execute(&pool)\n    .await\n    .expect(\"failure trigger should install\");\n    let repository = SqliteReservationRepository::new(pool.clone());\n\n    let result = reserve(&repository, command()).await;\n\n    assert_eq!(\n        result,\n        Err(ReservationError::Storage(StorageFailure::Database))\n    );\n    assert_eq!(available(&pool).await, 5);\n    assert_eq!(reservation_count(&pool).await, 0);\n}\n\n#[tokio::test]\nasync fn deferred_commit_failure_is_unknown_and_not_retried() {\n    let pool = pool().await;\n    seed(&pool).await;\n    sqlx::query(\n        \"CREATE TRIGGER inject_deferred_foreign_key_failure \\\n         AFTER INSERT ON reservations \\\n         BEGIN INSERT INTO reservations (item_id, quantity) VALUES (999, 1); END\",\n    )\n    .execute(&pool)\n    .await\n    .expect(\"deferred constraint trigger should install\");\n    let repository = SqliteReservationRepository::new(pool.clone());\n\n    let result = reserve(&repository, command()).await;\n\n    assert_eq!(\n        result,\n        Err(ReservationError::Storage(\n            StorageFailure::CommitOutcomeUnknown\n        ))\n    );\n    // Unknown outcome: do not infer commit or rollback.\n}\n"
+      }
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Do not classify transaction-time errors as Database just because the failing statement ran before COMMIT. First wait for rollback; rollback failure keeps outcome unknown."
+      },
+      {
+        "level": 2,
+        "body": "A small rollback helper can consume the transaction and preserve a supplied result only when rollback succeeds. Use it for statement errors, invalid returned IDs, and the zero-row unavailable outcome."
+      },
+      {
+        "level": 3,
+        "body": "Map update/insert errors to Database and invalid returned IDs to InvalidStoredData through confirmed rollback. Leave COMMIT errors as CommitOutcomeUnknown and never retry.",
+        "solutionCode": "use std::future::Future;\n\nuse sqlx::{Row, Sqlite, SqlitePool, Transaction};\n\nuse crate::{\n    application::{\n        CommitOutcome, ReservationId, ReservationReceipt, ReservationRepository, StorageFailure,\n    },\n    domain::{InventoryObservation, ItemId, ReservationIntent},\n    infrastructure::inventory_row::decode_inventory_row,\n};\n\npub struct SqliteReservationRepository {\n    pool: SqlitePool,\n}\n\nimpl SqliteReservationRepository {\n    pub fn new(pool: SqlitePool) -> Self {\n        Self { pool }\n    }\n}\n\nasync fn rollback_with<T>(\n    transaction: Transaction<'_, Sqlite>,\n    outcome: Result<T, StorageFailure>,\n) -> Result<T, StorageFailure> {\n    match transaction.rollback().await {\n        Ok(()) => outcome,\n        Err(_) => Err(StorageFailure::CommitOutcomeUnknown),\n    }\n}\n\nimpl ReservationRepository for SqliteReservationRepository {\n    fn observe(\n        &self,\n        item_id: ItemId,\n    ) -> impl Future<Output = Result<Option<InventoryObservation>, StorageFailure>> + Send {\n        async move {\n            let row = sqlx::query(\"SELECT item_id, available FROM inventory WHERE item_id = ?\")\n                .bind(item_id.value())\n                .fetch_optional(&self.pool)\n                .await\n                .map_err(|_| StorageFailure::Database)?;\n\n            row.map(decode_inventory_row).transpose()\n        }\n    }\n\n    fn commit(\n        &self,\n        intent: ReservationIntent,\n    ) -> impl Future<Output = Result<CommitOutcome, StorageFailure>> + Send {\n        async move {\n            let mut transaction = self\n                .pool\n                .begin()\n                .await\n                .map_err(|_| StorageFailure::Database)?;\n            let item_id = intent.item_id().value();\n            let quantity = i64::from(intent.quantity().value());\n            let update = match sqlx::query(\n                \"UPDATE inventory SET available = available - ? \\\n                 WHERE item_id = ? AND available >= ?\",\n            )\n            .bind(quantity)\n            .bind(item_id)\n            .bind(quantity)\n            .execute(&mut *transaction)\n            .await\n            {\n                Ok(update) => update,\n                Err(_) => {\n                    return rollback_with(transaction, Err(StorageFailure::Database)).await;\n                }\n            };\n\n            if update.rows_affected() == 0 {\n                return rollback_with(\n                    transaction,\n                    Ok(CommitOutcome::UnavailableAtCommit),\n                )\n                .await;\n            }\n\n            let row = match sqlx::query(\n                \"INSERT INTO reservations (item_id, quantity) VALUES (?, ?) \\\n                 RETURNING reservation_id\",\n            )\n            .bind(item_id)\n            .bind(quantity)\n            .fetch_one(&mut *transaction)\n            .await\n            {\n                Ok(row) => row,\n                Err(_) => {\n                    return rollback_with(transaction, Err(StorageFailure::Database)).await;\n                }\n            };\n            let raw_reservation_id = match row.try_get::<i64, _>(\"reservation_id\") {\n                Ok(reservation_id) => reservation_id,\n                Err(_) => {\n                    return rollback_with(\n                        transaction,\n                        Err(StorageFailure::InvalidStoredData),\n                    )\n                    .await;\n                }\n            };\n            let reservation_id = match ReservationId::new(raw_reservation_id) {\n                Some(reservation_id) => reservation_id,\n                None => {\n                    return rollback_with(\n                        transaction,\n                        Err(StorageFailure::InvalidStoredData),\n                    )\n                    .await;\n                }\n            };\n            let receipt = ReservationReceipt::new(\n                reservation_id,\n                intent.item_id(),\n                intent.quantity(),\n            );\n\n            transaction\n                .commit()\n                .await\n                .map_err(|_| StorageFailure::CommitOutcomeUnknown)?;\n\n            Ok(CommitOutcome::Committed(receipt))\n        }\n    }\n}\n"
+      }
+    ],
+    "completionExplanation": "The insert failure is a known failure only after rollback succeeds. A COMMIT error remains CommitOutcomeUnknown, so the service must not tell the customer the order definitely failed or silently submit it again. The final lesson follows the successful path to its HTTP response—and what happens if that response is lost.",
+    "validation": {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 25000,
+      "dependencySet": "advanced-db"
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "id": "map-the-response-boundary-109",
+    "arcId": "intent-to-durable-outcome",
+    "arcTitle": "Intent to durable outcome",
+    "order": 109,
+    "day": 7,
+    "arcLength": 7,
+    "title": "Map the response after commit",
+    "conceptId": "intent-response-publication-boundary",
+    "difficulty": "advanced",
+    "estimatedMinutes": 10,
+    "scenario": "SQLite has committed the 3-unit order: item 1 now has 2 units and one reservation record. Simulate the server mapping that result to HTTP, then the customer's connection dropping. The response may be lost, but the warehouse must not undo the reservation or submit it again. This in-memory test checks post-commit behavior, not survival across process restarts.",
+    "instructions": "Implement map_reservation_result in src/adapter/reservation_response.rs. Map committed receipts to 201 with reservation facts; not found to 404; policy rejection and commit-time unavailability to distinct 409 problem codes; known storage failures to 500; and CommitOutcomeUnknown to 503 with its own problem code. Do not expose SQL details, retry, or connect response delivery to the repository transaction. The delivery-failure test must leave the committed row and stock decrement intact. Also compare this HTTP path with a system where bounded egress acceptance is part of mutation correctness: explain why it must encode all immutable output and reserve full capacity before one commit, then enqueue once at its ordered output position using a one-shot receipt; enqueue acceptance is not client delivery, and later transport failure must not roll back or replay.",
+    "files": [
+      {
+        "path": "src/adapter/reservation_response.rs",
+        "role": "editable",
+        "content": "use crate::application::{ReservationError, ReservationReceipt};\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationHttpResponse {\n    pub status: u16,\n    pub body: ResponseBody,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ResponseBody {\n    Created {\n        reservation_id: i64,\n        item_id: i64,\n        quantity: u32,\n    },\n    Problem(ProblemCode),\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ProblemCode {\n    ItemNotFound,\n    ObservationMismatch,\n    InsufficientObservedInventory,\n    UnavailableAtCommit,\n    StorageFailure,\n    ReservationOutcomeUnknown,\n}\n\npub fn map_reservation_result(\n    result: Result<ReservationReceipt, ReservationError>,\n) -> ReservationHttpResponse {\n    let _ = result;\n    todo!(\"map committed outcomes and semantic failures to HTTP response values\")\n}\n"
+      },
+      {
+        "path": "src/infrastructure/sqlite_repository.rs",
+        "role": "readonly",
+        "content": "use std::future::Future;\n\nuse sqlx::{Row, Sqlite, SqlitePool, Transaction};\n\nuse crate::{\n    application::{\n        CommitOutcome, ReservationId, ReservationReceipt, ReservationRepository, StorageFailure,\n    },\n    domain::{InventoryObservation, ItemId, ReservationIntent},\n    infrastructure::inventory_row::decode_inventory_row,\n};\n\npub struct SqliteReservationRepository {\n    pool: SqlitePool,\n}\n\nimpl SqliteReservationRepository {\n    pub fn new(pool: SqlitePool) -> Self {\n        Self { pool }\n    }\n}\n\nasync fn rollback_with<T>(\n    transaction: Transaction<'_, Sqlite>,\n    outcome: Result<T, StorageFailure>,\n) -> Result<T, StorageFailure> {\n    match transaction.rollback().await {\n        Ok(()) => outcome,\n        Err(_) => Err(StorageFailure::CommitOutcomeUnknown),\n    }\n}\n\nimpl ReservationRepository for SqliteReservationRepository {\n    fn observe(\n        &self,\n        item_id: ItemId,\n    ) -> impl Future<Output = Result<Option<InventoryObservation>, StorageFailure>> + Send {\n        async move {\n            let row = sqlx::query(\"SELECT item_id, available FROM inventory WHERE item_id = ?\")\n                .bind(item_id.value())\n                .fetch_optional(&self.pool)\n                .await\n                .map_err(|_| StorageFailure::Database)?;\n\n            row.map(decode_inventory_row).transpose()\n        }\n    }\n\n    fn commit(\n        &self,\n        intent: ReservationIntent,\n    ) -> impl Future<Output = Result<CommitOutcome, StorageFailure>> + Send {\n        async move {\n            let mut transaction = self\n                .pool\n                .begin()\n                .await\n                .map_err(|_| StorageFailure::Database)?;\n            let item_id = intent.item_id().value();\n            let quantity = i64::from(intent.quantity().value());\n            let update = match sqlx::query(\n                \"UPDATE inventory SET available = available - ? \\\n                 WHERE item_id = ? AND available >= ?\",\n            )\n            .bind(quantity)\n            .bind(item_id)\n            .bind(quantity)\n            .execute(&mut *transaction)\n            .await\n            {\n                Ok(update) => update,\n                Err(_) => {\n                    return rollback_with(transaction, Err(StorageFailure::Database)).await;\n                }\n            };\n\n            if update.rows_affected() == 0 {\n                return rollback_with(\n                    transaction,\n                    Ok(CommitOutcome::UnavailableAtCommit),\n                )\n                .await;\n            }\n\n            let row = match sqlx::query(\n                \"INSERT INTO reservations (item_id, quantity) VALUES (?, ?) \\\n                 RETURNING reservation_id\",\n            )\n            .bind(item_id)\n            .bind(quantity)\n            .fetch_one(&mut *transaction)\n            .await\n            {\n                Ok(row) => row,\n                Err(_) => {\n                    return rollback_with(transaction, Err(StorageFailure::Database)).await;\n                }\n            };\n            let raw_reservation_id = match row.try_get::<i64, _>(\"reservation_id\") {\n                Ok(reservation_id) => reservation_id,\n                Err(_) => {\n                    return rollback_with(\n                        transaction,\n                        Err(StorageFailure::InvalidStoredData),\n                    )\n                    .await;\n                }\n            };\n            let reservation_id = match ReservationId::new(raw_reservation_id) {\n                Some(reservation_id) => reservation_id,\n                None => {\n                    return rollback_with(\n                        transaction,\n                        Err(StorageFailure::InvalidStoredData),\n                    )\n                    .await;\n                }\n            };\n            let receipt = ReservationReceipt::new(\n                reservation_id,\n                intent.item_id(),\n                intent.quantity(),\n            );\n\n            transaction\n                .commit()\n                .await\n                .map_err(|_| StorageFailure::CommitOutcomeUnknown)?;\n\n            Ok(CommitOutcome::Committed(receipt))\n        }\n    }\n}\n"
+      },
+      {
+        "path": "src/infrastructure/inventory_row.rs",
+        "role": "readonly",
+        "content": "use sqlx::{FromRow, sqlite::SqliteRow};\n\nuse crate::{\n    application::StorageFailure,\n    domain::{InventoryObservation, ItemId},\n};\n\n#[derive(FromRow)]\nstruct InventoryRow {\n    item_id: i64,\n    available: i64,\n}\n\nimpl TryFrom<InventoryRow> for InventoryObservation {\n    type Error = StorageFailure;\n\n    fn try_from(row: InventoryRow) -> Result<Self, Self::Error> {\n        let item_id = ItemId::new(row.item_id).ok_or(StorageFailure::InvalidStoredData)?;\n        let available = u32::try_from(row.available)\n            .map_err(|_| StorageFailure::InvalidStoredData)?;\n        Ok(InventoryObservation::new(item_id, available))\n    }\n}\n\npub fn decode_inventory_row(\n    row: SqliteRow,\n) -> Result<InventoryObservation, StorageFailure> {\n    let row = InventoryRow::from_row(&row).map_err(|_| StorageFailure::InvalidStoredData)?;\n    row.try_into()\n}\n"
+      },
+      {
+        "path": "src/infrastructure/controlled_repository.rs",
+        "role": "readonly",
+        "content": "use std::sync::Mutex;\n\nuse crate::{\n    application::{\n        CommitOutcome, ReservationId, ReservationReceipt, ReservationRepository, StorageFailure,\n    },\n    domain::{InventoryObservation, ItemId, ReservationIntent},\n};\n\nstruct State {\n    available: u32,\n    next_reservation_id: i64,\n    commit_calls: usize,\n}\n\npub struct ControlledRepository {\n    item_id: ItemId,\n    observed_available: u32,\n    state: Mutex<State>,\n}\n\nimpl ControlledRepository {\n    pub fn new(item_id: ItemId, observed_available: u32, current_available: u32) -> Self {\n        Self {\n            item_id,\n            observed_available,\n            state: Mutex::new(State {\n                available: current_available,\n                next_reservation_id: 1,\n                commit_calls: 0,\n            }),\n        }\n    }\n\n    pub fn current_available(&self) -> u32 {\n        self.state\n            .lock()\n            .expect(\"controlled repository lock should work\")\n            .available\n    }\n\n    pub fn commit_calls(&self) -> usize {\n        self.state\n            .lock()\n            .expect(\"controlled repository lock should work\")\n            .commit_calls\n    }\n}\n\nimpl ReservationRepository for ControlledRepository {\n    fn observe(\n        &self,\n        item_id: ItemId,\n    ) -> impl std::future::Future<Output = Result<Option<InventoryObservation>, StorageFailure>> + Send\n    {\n        let observation = (item_id == self.item_id)\n            .then(|| InventoryObservation::new(self.item_id, self.observed_available));\n        async move { Ok(observation) }\n    }\n\n    fn commit(\n        &self,\n        intent: ReservationIntent,\n    ) -> impl std::future::Future<Output = Result<CommitOutcome, StorageFailure>> + Send {\n        async move {\n            let mut state = self\n                .state\n                .lock()\n                .map_err(|_| StorageFailure::Database)?;\n            state.commit_calls += 1;\n\n            if intent.item_id() != self.item_id {\n                return Err(StorageFailure::InvalidStoredData);\n            }\n\n            let requested = intent.quantity().value();\n            if state.available < requested {\n                return Ok(CommitOutcome::UnavailableAtCommit);\n            }\n\n            let reservation_id = ReservationId::new(state.next_reservation_id)\n                .ok_or(StorageFailure::InvalidStoredData)?;\n            let next_reservation_id = state\n                .next_reservation_id\n                .checked_add(1)\n                .ok_or(StorageFailure::InvalidStoredData)?;\n\n            state.available -= requested;\n            state.next_reservation_id = next_reservation_id;\n\n            Ok(CommitOutcome::Committed(ReservationReceipt::new(\n                reservation_id,\n                intent.item_id(),\n                intent.quantity(),\n            )))\n        }\n    }\n}\n"
+      },
+      {
+        "path": "src/application/reservations.rs",
+        "role": "readonly",
+        "content": "use crate::{\n    application::{CommitOutcome, ReservationError, ReservationRepository},\n    domain::{ReservationCommand, policy::decide},\n};\n\npub async fn reserve(\n    repository: &impl ReservationRepository,\n    command: ReservationCommand,\n) -> Result<crate::application::ReservationReceipt, ReservationError> {\n    let observation = repository\n        .observe(command.item_id())\n        .await\n        .map_err(ReservationError::Storage)?\n        .ok_or(ReservationError::ItemNotFound)?;\n    let intent = decide(&command, &observation).map_err(ReservationError::PolicyRejected)?;\n\n    match repository\n        .commit(intent)\n        .await\n        .map_err(ReservationError::Storage)?\n    {\n        CommitOutcome::Committed(receipt) => Ok(receipt),\n        CommitOutcome::UnavailableAtCommit => Err(ReservationError::UnavailableAtCommit),\n    }\n}\n"
+      },
+      {
+        "path": "src/lib.rs",
+        "role": "readonly",
+        "content": "pub mod adapter;\npub mod application;\npub mod domain;\npub mod infrastructure;\n"
+      },
+      {
+        "path": "src/domain.rs",
+        "role": "readonly",
+        "content": "use std::num::{NonZeroI64, NonZeroU32};\n\npub mod policy;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ItemId(NonZeroI64);\n\nimpl ItemId {\n    pub fn new(value: i64) -> Option<Self> {\n        NonZeroI64::new(value).filter(|value| value.get() > 0).map(Self)\n    }\n\n    pub fn value(self) -> i64 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Quantity(NonZeroU32);\n\nimpl Quantity {\n    pub fn new(value: u32) -> Option<Self> {\n        NonZeroU32::new(value).map(Self)\n    }\n\n    pub fn value(self) -> u32 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationRequest {\n    pub item_id: i64,\n    pub quantity: u32,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ReservationRequestError {\n    InvalidItemId,\n    ZeroQuantity,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationCommand {\n    item_id: ItemId,\n    quantity: Quantity,\n}\n\nimpl ReservationCommand {\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn quantity(&self) -> Quantity {\n        self.quantity\n    }\n}\n\nimpl TryFrom<ReservationRequest> for ReservationCommand {\n    type Error = ReservationRequestError;\n\n    fn try_from(request: ReservationRequest) -> Result<Self, Self::Error> {\n        let item_id = ItemId::new(request.item_id).ok_or(ReservationRequestError::InvalidItemId)?;\n        let quantity = Quantity::new(request.quantity).ok_or(ReservationRequestError::ZeroQuantity)?;\n        Ok(Self { item_id, quantity })\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct InventoryObservation {\n    item_id: ItemId,\n    available: u32,\n}\n\nimpl InventoryObservation {\n    pub fn new(item_id: ItemId, available: u32) -> Self {\n        Self { item_id, available }\n    }\n\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn available(&self) -> u32 {\n        self.available\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationIntent {\n    item_id: ItemId,\n    quantity: Quantity,\n}\n\nimpl ReservationIntent {\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn quantity(&self) -> Quantity {\n        self.quantity\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum PolicyRejection {\n    ObservationMismatch,\n    InsufficientObservedInventory,\n}\n"
+      },
+      {
+        "path": "src/domain/policy.rs",
+        "role": "readonly",
+        "content": "use super::{InventoryObservation, PolicyRejection, ReservationCommand, ReservationIntent};\n\npub fn decide(\n    command: &ReservationCommand,\n    observation: &InventoryObservation,\n) -> Result<ReservationIntent, PolicyRejection> {\n    if command.item_id != observation.item_id {\n        return Err(PolicyRejection::ObservationMismatch);\n    }\n\n    if command.quantity.value() > observation.available {\n        return Err(PolicyRejection::InsufficientObservedInventory);\n    }\n\n    Ok(ReservationIntent {\n        item_id: command.item_id,\n        quantity: command.quantity,\n    })\n}\n"
+      },
+      {
+        "path": "src/application.rs",
+        "role": "readonly",
+        "content": "use std::{future::Future, num::NonZeroI64};\n\nuse crate::domain::{\n    InventoryObservation, ItemId, PolicyRejection, Quantity, ReservationIntent,\n};\n\npub mod reservations;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationId(NonZeroI64);\n\nimpl ReservationId {\n    pub fn new(value: i64) -> Option<Self> {\n        NonZeroI64::new(value).filter(|value| value.get() > 0).map(Self)\n    }\n\n    pub fn value(self) -> i64 {\n        self.0.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationReceipt {\n    reservation_id: ReservationId,\n    item_id: ItemId,\n    quantity: Quantity,\n}\n\nimpl ReservationReceipt {\n    pub fn new(\n        reservation_id: ReservationId,\n        item_id: ItemId,\n        quantity: Quantity,\n    ) -> Self {\n        Self {\n            reservation_id,\n            item_id,\n            quantity,\n        }\n    }\n\n    pub fn reservation_id(&self) -> ReservationId {\n        self.reservation_id\n    }\n\n    pub fn item_id(&self) -> ItemId {\n        self.item_id\n    }\n\n    pub fn quantity(&self) -> Quantity {\n        self.quantity\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum StorageFailure {\n    Database,\n    InvalidStoredData,\n    CommitOutcomeUnknown,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum CommitOutcome {\n    Committed(ReservationReceipt),\n    UnavailableAtCommit,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ReservationError {\n    ItemNotFound,\n    PolicyRejected(PolicyRejection),\n    UnavailableAtCommit,\n    Storage(StorageFailure),\n}\n\npub trait ReservationRepository: Send + Sync {\n    fn observe(\n        &self,\n        item_id: ItemId,\n    ) -> impl Future<Output = Result<Option<InventoryObservation>, StorageFailure>> + Send;\n\n    fn commit(\n        &self,\n        intent: ReservationIntent,\n    ) -> impl Future<Output = Result<CommitOutcome, StorageFailure>> + Send;\n}\n"
+      },
+      {
+        "path": "src/infrastructure.rs",
+        "role": "readonly",
+        "content": "pub mod controlled_repository;\npub mod inventory_row;\npub mod sqlite_repository;\n"
+      },
+      {
+        "path": "src/adapter.rs",
+        "role": "readonly",
+        "content": "pub mod reservation_response;\n"
+      },
+      {
+        "path": "testdata/migrations/0001_inventory.sql",
+        "role": "readonly",
+        "content": "CREATE TABLE inventory (\n    item_id INTEGER NOT NULL PRIMARY KEY CHECK (item_id > 0),\n    available INTEGER NOT NULL CHECK (available >= 0)\n);\n\nCREATE TABLE reservations (\n    reservation_id INTEGER PRIMARY KEY AUTOINCREMENT,\n    item_id INTEGER NOT NULL REFERENCES inventory(item_id) DEFERRABLE INITIALLY DEFERRED,\n    quantity INTEGER NOT NULL CHECK (quantity > 0)\n);\n\nCREATE INDEX reservations_item_id_idx ON reservations(item_id);\n"
+      },
+      {
+        "path": "tests/public.rs",
+        "role": "test",
+        "content": "use rust_daily_lesson::{\n    adapter::reservation_response::{\n        ProblemCode, ReservationHttpResponse, ResponseBody, map_reservation_result,\n    },\n    application::{\n        ReservationError, ReservationRepository, StorageFailure, reservations::reserve,\n    },\n    domain::{ItemId, PolicyRejection, ReservationCommand, ReservationRequest},\n    infrastructure::sqlite_repository::SqliteReservationRepository,\n};\nuse sqlx::sqlite::{SqliteConnectOptions, SqlitePool, SqlitePoolOptions};\n\nasync fn pool() -> SqlitePool {\n    let options = SqliteConnectOptions::new()\n        .filename(\":memory:\")\n        .foreign_keys(true);\n    let pool = SqlitePoolOptions::new()\n        .max_connections(1)\n        .connect_with(options)\n        .await\n        .expect(\"in-memory SQLite should open\");\n    sqlx::migrate!(\"./testdata/migrations\")\n        .run(&pool)\n        .await\n        .expect(\"inventory migrations should apply\");\n    pool\n}\n\nasync fn seed(pool: &SqlitePool) {\n    sqlx::query(\"INSERT INTO inventory (item_id, available) VALUES (1, 5)\")\n        .execute(pool)\n        .await\n        .expect(\"inventory seed should insert\");\n}\n\nasync fn available(pool: &SqlitePool) -> i64 {\n    sqlx::query_scalar(\"SELECT available FROM inventory WHERE item_id = 1\")\n        .fetch_one(pool)\n        .await\n        .expect(\"inventory row should remain present\")\n}\n\nasync fn reservation_count(pool: &SqlitePool) -> i64 {\n    sqlx::query_scalar(\"SELECT COUNT(*) FROM reservations\")\n        .fetch_one(pool)\n        .await\n        .expect(\"reservation count should query\")\n}\n\nfn command() -> ReservationCommand {\n    ReservationCommand::try_from(ReservationRequest {\n        item_id: 1,\n        quantity: 3,\n    })\n    .expect(\"test request should be valid\")\n}\n\nfn item_id() -> ItemId {\n    ItemId::new(1).expect(\"test item id should be positive\")\n}\n\n#[tokio::test]\nasync fn maps_committed_receipt_to_created_response() {\n    let pool = pool().await;\n    seed(&pool).await;\n    let repository = SqliteReservationRepository::new(pool);\n    let receipt = reserve(&repository, command())\n        .await\n        .expect(\"reservation should commit\");\n\n    assert_eq!(\n        map_reservation_result(Ok(receipt)),\n        ReservationHttpResponse {\n            status: 201,\n            body: ResponseBody::Created {\n                reservation_id: 1,\n                item_id: 1,\n                quantity: 3,\n            },\n        }\n    );\n}\n\n#[test]\nfn maps_semantic_errors_without_exposing_storage_details() {\n    let cases = [\n        (ReservationError::ItemNotFound, 404, ProblemCode::ItemNotFound),\n        (\n            ReservationError::PolicyRejected(PolicyRejection::ObservationMismatch),\n            409,\n            ProblemCode::ObservationMismatch,\n        ),\n        (\n            ReservationError::PolicyRejected(\n                PolicyRejection::InsufficientObservedInventory,\n            ),\n            409,\n            ProblemCode::InsufficientObservedInventory,\n        ),\n        (\n            ReservationError::UnavailableAtCommit,\n            409,\n            ProblemCode::UnavailableAtCommit,\n        ),\n        (\n            ReservationError::Storage(StorageFailure::Database),\n            500,\n            ProblemCode::StorageFailure,\n        ),\n        (\n            ReservationError::Storage(StorageFailure::InvalidStoredData),\n            500,\n            ProblemCode::StorageFailure,\n        ),\n        (\n            ReservationError::Storage(StorageFailure::CommitOutcomeUnknown),\n            503,\n            ProblemCode::ReservationOutcomeUnknown,\n        ),\n    ];\n\n    for (error, status, code) in cases {\n        assert_eq!(\n            map_reservation_result(Err(error)),\n            ReservationHttpResponse {\n                status,\n                body: ResponseBody::Problem(code),\n            }\n        );\n    }\n}\n\nfn fail_delivery(_response: ReservationHttpResponse) -> Result<(), &'static str> {\n    Err(\"client connection closed\")\n}\n\n#[tokio::test]\nasync fn response_delivery_failure_does_not_undo_or_replay_commit() {\n    let pool = pool().await;\n    seed(&pool).await;\n    let repository = SqliteReservationRepository::new(pool.clone());\n    let receipt = reserve(&repository, command())\n        .await\n        .expect(\"reservation should commit before response mapping\");\n    let response = map_reservation_result(Ok(receipt));\n\n    assert_eq!(fail_delivery(response), Err(\"client connection closed\"));\n    assert_eq!(available(&pool).await, 2);\n    assert_eq!(reservation_count(&pool).await, 1);\n    assert!(repository.observe(item_id()).await.unwrap().is_some());\n}\n"
+      }
+    ],
+    "hints": [
+      {
+        "level": 1,
+        "body": "Keep the response mapper pure. It receives a completed application result and should not know about SQLx, transactions, or transport delivery."
+      },
+      {
+        "level": 2,
+        "body": "Map each semantic error to a stable problem code. In particular, CommitOutcomeUnknown is not the same as a known storage failure and must not invite an automatic retry."
+      },
+      {
+        "level": 3,
+        "body": "Return 201 from receipt getters; use 404 for missing item, 409 for policy/commit availability, 500 for known storage errors, and 503 with ReservationOutcomeUnknown for uncertain commit. For bounded egress, encode complete immutable output and reserve full capacity before commit; enqueue once at its ordered output position with a one-shot receipt, but do not equate acceptance with client delivery.",
+        "solutionCode": "use crate::{\n    application::{ReservationError, ReservationReceipt, StorageFailure},\n    domain::PolicyRejection,\n};\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationHttpResponse {\n    pub status: u16,\n    pub body: ResponseBody,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ResponseBody {\n    Created {\n        reservation_id: i64,\n        item_id: i64,\n        quantity: u32,\n    },\n    Problem(ProblemCode),\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ProblemCode {\n    ItemNotFound,\n    ObservationMismatch,\n    InsufficientObservedInventory,\n    UnavailableAtCommit,\n    StorageFailure,\n    ReservationOutcomeUnknown,\n}\n\npub fn map_reservation_result(\n    result: Result<ReservationReceipt, ReservationError>,\n) -> ReservationHttpResponse {\n    match result {\n        Ok(receipt) => ReservationHttpResponse {\n            status: 201,\n            body: ResponseBody::Created {\n                reservation_id: receipt.reservation_id().value(),\n                item_id: receipt.item_id().value(),\n                quantity: receipt.quantity().value(),\n            },\n        },\n        Err(ReservationError::ItemNotFound) => problem(404, ProblemCode::ItemNotFound),\n        Err(ReservationError::PolicyRejected(PolicyRejection::ObservationMismatch)) => {\n            problem(409, ProblemCode::ObservationMismatch)\n        }\n        Err(ReservationError::PolicyRejected(\n            PolicyRejection::InsufficientObservedInventory,\n        )) => problem(409, ProblemCode::InsufficientObservedInventory),\n        Err(ReservationError::UnavailableAtCommit) => {\n            problem(409, ProblemCode::UnavailableAtCommit)\n        }\n        Err(ReservationError::Storage(StorageFailure::Database | StorageFailure::InvalidStoredData)) => {\n            problem(500, ProblemCode::StorageFailure)\n        }\n        Err(ReservationError::Storage(StorageFailure::CommitOutcomeUnknown)) => {\n            problem(503, ProblemCode::ReservationOutcomeUnknown)\n        }\n    }\n}\n\nfn problem(status: u16, code: ProblemCode) -> ReservationHttpResponse {\n    ReservationHttpResponse {\n        status,\n        body: ResponseBody::Problem(code),\n    }\n}\n"
+      }
+    ],
+    "completionExplanation": "The response uses the receipt already returned by commit. A simulated delivery failure does not undo the committed state in this in-memory database; persistence across restart is not tested. HTTP delivery is not a transaction participant. In a bounded-egress design, preflight full output acceptance before commit, then enqueue once; enqueue still does not guarantee client delivery, and later failure does not justify rollback or replay.",
+    "validation": {
+      "mode": "backend-cargo-test",
+      "timeoutMs": 25000,
+      "dependencySet": "advanced-db"
+    }
   }
 ]

@@ -1,0 +1,29 @@
+[package]
+name = "rust_daily_lesson"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+anyhow = "1"
+tokio = { version = "1", features = ["macros", "rt", "sync", "time"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["fmt"] }
+actix-web = { version = "4", default-features = false }
+actix-rt = "2"
+http = "1"
+proptest = { version = "1", default-features = false, features = ["std"] }
+sqlx = { version = "=0.8.6", default-features = false, features = ["sqlite", "runtime-tokio", "macros", "migrate"] }
+
+[profile.dev]
+debug = 0
+incremental = false
+
+[profile.test]
+debug = 0
+incremental = false

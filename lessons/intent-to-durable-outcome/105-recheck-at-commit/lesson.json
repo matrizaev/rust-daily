@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 2,
+  "id": "recheck-at-commit-105",
+  "arcId": "intent-to-durable-outcome",
+  "arcTitle": "Intent to durable outcome",
+  "order": 105,
+  "day": 3,
+  "arcLength": 7,
+  "title": "Recheck availability at commit",
+  "conceptId": "intent-commit-time-authority",
+  "difficulty": "advanced",
+  "estimatedMinutes": 10,
+  "scenario": "While the first customer order waits, another checkout takes 3 of item 1's 5 units. The first order's old observation still says 5, but only 2 remain; the repository must reject its request for 3. If 4 remain instead, the order should still succeed.",
+
+  "instructions": "Implement src/infrastructure/controlled_repository.rs. observe returns the configured earlier observation. In commit, lock state, count the attempt, recheck current availability, and return UnavailableAtCommit without changing stock when it is insufficient. When sufficient, validate the next reservation ID before atomically decrementing stock and advancing the ID; return a receipt built from the committed intent. Keep item mismatch and poisoned-lock failures explicit.",
+  "files": [
+    {
+      "path": "src/infrastructure/controlled_repository.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/infrastructure/controlled_repository.rs"
+    },
+    {
+      "path": "src/application/reservations.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/application/reservations.rs"
+    },
+    {
+      "path": "src/lib.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "src/domain.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/domain.rs"
+    },
+    {
+      "path": "src/domain/policy.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/domain/policy.rs"
+    },
+    {
+      "path": "src/application.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/application.rs"
+    },
+    {
+      "path": "src/infrastructure.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/infrastructure.rs"
+    },
+    {
+      "path": "src/infrastructure/inventory_row.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/infrastructure/inventory_row.rs"
+    },
+    {
+      "path": "src/infrastructure/sqlite_repository.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/infrastructure/sqlite_repository.rs"
+    },
+    {
+      "path": "src/adapter.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/adapter.rs"
+    },
+    {
+      "path": "src/adapter/reservation_response.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/adapter/reservation_response.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Observation and commit state are separate by design. observe returns the configured snapshot; commit must inspect the mutex-protected current quantity."
+    },
+    {
+      "level": 2,
+      "body": "Inside commit, check item identity and quantity before mutation. Validate both reservation ID and its increment before decrementing stock."
+    },
+    {
+      "level": 3,
+      "body": "Hold one state lock across availability check, ID allocation, and stock update. Insufficient stock returns UnavailableAtCommit and leaves both stock and ID unchanged.",
+      "solutionCode": "use std::sync::Mutex;\n\nuse crate::{\n    application::{\n        CommitOutcome, ReservationId, ReservationReceipt, ReservationRepository, StorageFailure,\n    },\n    domain::{InventoryObservation, ItemId, ReservationIntent},\n};\n\nstruct State {\n    available: u32,\n    next_reservation_id: i64,\n    commit_calls: usize,\n}\n\npub struct ControlledRepository {\n    item_id: ItemId,\n    observed_available: u32,\n    state: Mutex<State>,\n}\n\nimpl ControlledRepository {\n    pub fn new(item_id: ItemId, observed_available: u32, current_available: u32) -> Self {\n        Self {\n            item_id,\n            observed_available,\n            state: Mutex::new(State {\n                available: current_available,\n                next_reservation_id: 1,\n                commit_calls: 0,\n            }),\n        }\n    }\n\n    pub fn current_available(&self) -> u32 {\n        self.state\n            .lock()\n            .expect(\"controlled repository lock should work\")\n            .available\n    }\n\n    pub fn commit_calls(&self) -> usize {\n        self.state\n            .lock()\n            .expect(\"controlled repository lock should work\")\n            .commit_calls\n    }\n}\n\nimpl ReservationRepository for ControlledRepository {\n    fn observe(\n        &self,\n        item_id: ItemId,\n    ) -> impl std::future::Future<Output = Result<Option<InventoryObservation>, StorageFailure>> + Send\n    {\n        let observation = (item_id == self.item_id)\n            .then(|| InventoryObservation::new(self.item_id, self.observed_available));\n        async move { Ok(observation) }\n    }\n\n    fn commit(\n        &self,\n        intent: ReservationIntent,\n    ) -> impl std::future::Future<Output = Result<CommitOutcome, StorageFailure>> + Send {\n        async move {\n            let mut state = self\n                .state\n                .lock()\n                .map_err(|_| StorageFailure::Database)?;\n            state.commit_calls += 1;\n\n            if intent.item_id() != self.item_id {\n                return Err(StorageFailure::InvalidStoredData);\n            }\n\n            let requested = intent.quantity().value();\n            if state.available < requested {\n                return Ok(CommitOutcome::UnavailableAtCommit);\n            }\n\n            let reservation_id = ReservationId::new(state.next_reservation_id)\n                .ok_or(StorageFailure::InvalidStoredData)?;\n            let next_reservation_id = state\n                .next_reservation_id\n                .checked_add(1)\n                .ok_or(StorageFailure::InvalidStoredData)?;\n\n            state.available -= requested;\n            state.next_reservation_id = next_reservation_id;\n\n            Ok(CommitOutcome::Committed(ReservationReceipt::new(\n                reservation_id,\n                intent.item_id(),\n                intent.quantity(),\n            )))\n        }\n    }\n}\n"
+    }
+  ],
+  "completionExplanation": "The competing checkout wins: current stock is 2, so the earlier approval cannot consume it. When current stock is 4, the same order for 3 remains valid despite the changed observation. Next, move this rule from controlled memory into a SQLite repository without trusting raw database values.",
+  "validation": {
+    "mode": "backend-cargo-test",
+    "timeoutMs": 10000,
+    "dependencySet": "advanced",
+    "testFiles": [
+      {
+        "path": "tests/public.rs",
+        "sourcePath": "tests/public.rs"
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

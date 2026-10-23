@@ -46,7 +46,7 @@ export type StructuralCheck =
     };
 
 /** Backend dependency set requested by a lesson validation step. */
-export type DependencySet = "std" | "advanced";
+export type DependencySet = "std" | "advanced" | "advanced-db";
 
 /** Authored negative compile case checked by the backend runner. */
 export type CompileFailCase = {

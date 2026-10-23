@@ -3,6 +3,8 @@
 use serde::{Deserialize, Serialize};
 
 const ADVANCED_CARGO_TOML: &str = include_str!("../../docker/dependency-cache/Cargo.toml");
+const ADVANCED_DB_CARGO_TOML: &str =
+    include_str!("../../docker/dependency-cache/advanced-db/Cargo.toml");
 
 const STD_CARGO_TOML: &str = r#"[package]
 name = "rust_daily_lesson"
@@ -28,6 +30,9 @@ pub enum DependencySet {
     Std,
     /// Curated ecosystem crates cached in the runner image.
     Advanced,
+    /// Advanced crates plus SQLx SQLite support cached in the runner image.
+    #[serde(rename = "advanced-db")]
+    AdvancedDb,
 }
 
 impl DependencySet {
@@ -36,6 +41,7 @@ impl DependencySet {
         match self {
             Self::Std => STD_CARGO_TOML,
             Self::Advanced => ADVANCED_CARGO_TOML,
+            Self::AdvancedDb => ADVANCED_DB_CARGO_TOML,
         }
     }
 
@@ -50,6 +56,10 @@ impl DependencySet {
                 program: "run-advanced-lesson-cargo",
                 args: vec!["test".to_string()],
             },
+            Self::AdvancedDb => CargoTestCommand {
+                program: "run-advanced-db-lesson-cargo",
+                args: vec!["test".to_string()],
+            },
         }
     }
 
@@ -62,6 +72,10 @@ impl DependencySet {
             },
             Self::Advanced => CargoTestCommand {
                 program: "run-advanced-lesson-cargo",
+                args: vec!["check".to_string(), "--lib".to_string()],
+            },
+            Self::AdvancedDb => CargoTestCommand {
+                program: "run-advanced-db-lesson-cargo",
                 args: vec!["check".to_string(), "--lib".to_string()],
             },
         }
@@ -80,6 +94,14 @@ impl DependencySet {
             },
             Self::Advanced => CargoTestCommand {
                 program: "run-advanced-lesson-cargo",
+                args: vec![
+                    "check".to_string(),
+                    "--test".to_string(),
+                    test_name.to_string(),
+                ],
+            },
+            Self::AdvancedDb => CargoTestCommand {
+                program: "run-advanced-db-lesson-cargo",
                 args: vec![
                     "check".to_string(),
                     "--test".to_string(),
@@ -105,6 +127,8 @@ mod tests {
 
     const DOCKER_DEPENDENCY_CACHE_MANIFEST: &str =
         include_str!("../../docker/dependency-cache/Cargo.toml");
+    const DOCKER_ADVANCED_DB_DEPENDENCY_CACHE_MANIFEST: &str =
+        include_str!("../../docker/dependency-cache/advanced-db/Cargo.toml");
 
     #[test]
     fn advanced_dependency_set_uses_runner_cache_manifest() {
@@ -117,6 +141,19 @@ mod tests {
                 .cargo_toml()
                 .contains(r#"name = "rust_daily_lesson""#)
         );
+    }
+
+    #[test]
+    fn advanced_db_dependency_set_uses_runner_cache_manifest() {
+        assert_eq!(
+            DependencySet::AdvancedDb.cargo_toml(),
+            DOCKER_ADVANCED_DB_DEPENDENCY_CACHE_MANIFEST
+        );
+        let manifest = DependencySet::AdvancedDb.cargo_toml();
+        assert!(manifest.contains(r#"version = "=0.8.6""#));
+        for feature in ["sqlite", "runtime-tokio", "macros", "migrate"] {
+            assert!(manifest.contains(&format!("\"{feature}\"")));
+        }
     }
 
     #[test]
@@ -149,6 +186,21 @@ mod tests {
 
         let check_test = DependencySet::Advanced.check_test_command("case_name");
         assert_eq!(check_test.program, "run-advanced-lesson-cargo");
+        assert_eq!(check_test.args, ["check", "--test", "case_name"]);
+    }
+
+    #[test]
+    fn advanced_db_dependency_set_uses_cached_runner_commands() {
+        let test = DependencySet::AdvancedDb.test_command();
+        assert_eq!(test.program, "run-advanced-db-lesson-cargo");
+        assert_eq!(test.args, ["test"]);
+
+        let check_lib = DependencySet::AdvancedDb.check_lib_command();
+        assert_eq!(check_lib.program, "run-advanced-db-lesson-cargo");
+        assert_eq!(check_lib.args, ["check", "--lib"]);
+
+        let check_test = DependencySet::AdvancedDb.check_test_command("case_name");
+        assert_eq!(check_test.program, "run-advanced-db-lesson-cargo");
         assert_eq!(check_test.args, ["check", "--test", "case_name"]);
     }
 }

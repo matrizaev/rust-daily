@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 2,
+  "id": "commit-with-sqlite-107",
+  "arcId": "intent-to-durable-outcome",
+  "arcTitle": "Intent to durable outcome",
+  "order": 107,
+  "day": 5,
+  "arcLength": 7,
+  "title": "Commit reservation with SQLite",
+  "conceptId": "intent-atomic-sqlite-commit",
+  "difficulty": "advanced",
+  "estimatedMinutes": 10,
+  "scenario": "The original order requests 3 from item 1's 5 units. Replace the controlled repository with SQLite: stock must fall to 2 and the reservation record must appear together. The transaction must prevent either write from succeeding alone. These isolated in-memory tests verify atomicity and commit behavior; they do not test process-crash recovery or persistence across restarts.",
+
+  "instructions": "Implement SqliteReservationRepository in src/infrastructure/sqlite_repository.rs. observe selects the item row and delegates validation to decode_inventory_row. commit owns one SQLx transaction: conditionally subtract quantity with `available >= quantity`, return UnavailableAtCommit only if a zero-row update is rolled back successfully, insert a reservation with RETURNING reservation_id, validate the ID, then commit. Until transaction rollback is confirmed, classify an in-transaction failure conservatively as CommitOutcomeUnknown; lesson 6 will refine statement-failure mapping. Do not release a receipt before commit.",
+  "files": [
+    { "path": "src/infrastructure/sqlite_repository.rs", "role": "editable", "sourcePath": "starter/src/infrastructure/sqlite_repository.rs" },
+    { "path": "src/infrastructure/inventory_row.rs", "role": "readonly", "sourcePath": "starter/src/infrastructure/inventory_row.rs" },
+    { "path": "src/infrastructure/controlled_repository.rs", "role": "readonly", "sourcePath": "starter/src/infrastructure/controlled_repository.rs" },
+    { "path": "src/application/reservations.rs", "role": "readonly", "sourcePath": "starter/src/application/reservations.rs" },
+    { "path": "src/lib.rs", "role": "readonly", "sourcePath": "starter/src/lib.rs" },
+    { "path": "src/domain.rs", "role": "readonly", "sourcePath": "starter/src/domain.rs" },
+    { "path": "src/domain/policy.rs", "role": "readonly", "sourcePath": "starter/src/domain/policy.rs" },
+    { "path": "src/application.rs", "role": "readonly", "sourcePath": "starter/src/application.rs" },
+    { "path": "src/infrastructure.rs", "role": "readonly", "sourcePath": "starter/src/infrastructure.rs" },
+    { "path": "src/adapter.rs", "role": "readonly", "sourcePath": "starter/src/adapter.rs" },
+    { "path": "src/adapter/reservation_response.rs", "role": "readonly", "sourcePath": "starter/src/adapter/reservation_response.rs" },
+    { "path": "testdata/migrations/0001_inventory.sql", "role": "readonly", "sourcePath": "starter/testdata/migrations/0001_inventory.sql" },
+    { "path": "tests/public.rs", "role": "test", "sourcePath": "tests/public.rs" }
+  ],
+  "hints": [
+    { "level": 1, "body": "observe uses `fetch_optional`, then transposes row decoding. Commit needs one transaction for the guarded UPDATE and reservation INSERT." },
+    { "level": 2, "body": "The UPDATE predicate is commit authority: match item ID and require `available >= requested`. If no row changes, explicitly roll back before returning UnavailableAtCommit." },
+    {
+      "level": 3,
+      "body": "Insert with RETURNING inside the same transaction; construct the receipt from intent and generated ID. Treat failures after begin as unknown until rollback is confirmed.",
+      "solutionCode": "use std::future::Future;\n\nuse sqlx::{Row, SqlitePool};\n\nuse crate::{\n    application::{\n        CommitOutcome, ReservationId, ReservationReceipt, ReservationRepository, StorageFailure,\n    },\n    domain::{InventoryObservation, ItemId, ReservationIntent},\n    infrastructure::inventory_row::decode_inventory_row,\n};\n\npub struct SqliteReservationRepository {\n    pool: SqlitePool,\n}\n\nimpl SqliteReservationRepository {\n    pub fn new(pool: SqlitePool) -> Self {\n        Self { pool }\n    }\n}\n\nimpl ReservationRepository for SqliteReservationRepository {\n    fn observe(\n        &self,\n        item_id: ItemId,\n    ) -> impl Future<Output = Result<Option<InventoryObservation>, StorageFailure>> + Send {\n        async move {\n            let row = sqlx::query(\"SELECT item_id, available FROM inventory WHERE item_id = ?\")\n                .bind(item_id.value())\n                .fetch_optional(&self.pool)\n                .await\n                .map_err(|_| StorageFailure::Database)?;\n\n            row.map(decode_inventory_row).transpose()\n        }\n    }\n\n    fn commit(\n        &self,\n        intent: ReservationIntent,\n    ) -> impl Future<Output = Result<CommitOutcome, StorageFailure>> + Send {\n        async move {\n            let mut transaction = self\n                .pool\n                .begin()\n                .await\n                .map_err(|_| StorageFailure::Database)?;\n            let item_id = intent.item_id().value();\n            let quantity = i64::from(intent.quantity().value());\n            let update = sqlx::query(\n                \"UPDATE inventory SET available = available - ? \\\n                 WHERE item_id = ? AND available >= ?\",\n            )\n            .bind(quantity)\n            .bind(item_id)\n            .bind(quantity)\n            .execute(&mut *transaction)\n            .await\n            .map_err(|_| StorageFailure::CommitOutcomeUnknown)?;\n\n            if update.rows_affected() == 0 {\n                return match transaction.rollback().await {\n                    Ok(()) => Ok(CommitOutcome::UnavailableAtCommit),\n                    Err(_) => Err(StorageFailure::CommitOutcomeUnknown),\n                };\n            }\n\n            let row = sqlx::query(\n                \"INSERT INTO reservations (item_id, quantity) VALUES (?, ?) \\\n                 RETURNING reservation_id\",\n            )\n            .bind(item_id)\n            .bind(quantity)\n            .fetch_one(&mut *transaction)\n            .await\n            .map_err(|_| StorageFailure::CommitOutcomeUnknown)?;\n            let raw_reservation_id = row\n                .try_get::<i64, _>(\"reservation_id\")\n                .map_err(|_| StorageFailure::CommitOutcomeUnknown)?;\n            let reservation_id = ReservationId::new(raw_reservation_id)\n                .ok_or(StorageFailure::CommitOutcomeUnknown)?;\n            let receipt = ReservationReceipt::new(\n                reservation_id,\n                intent.item_id(),\n                intent.quantity(),\n            );\n\n            transaction\n                .commit()\n                .await\n                .map_err(|_| StorageFailure::CommitOutcomeUnknown)?;\n\n            Ok(CommitOutcome::Committed(receipt))\n        }\n    }\n}\n"
+    }
+  ],
+  "completionExplanation": "The successful transaction commits both results together: stock 2 and one reservation receipt. A stale order changes neither. This in-memory test does not establish survival across process restarts. Next, distinguish a statement failure with confirmed rollback from a COMMIT failure whose transaction outcome may be unknown.",
+  "validation": {
+    "mode": "backend-cargo-test",
+    "timeoutMs": 25000,
+    "dependencySet": "advanced-db",
+    "testFiles": [
+      { "path": "tests/public.rs", "sourcePath": "tests/public.rs" }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}
