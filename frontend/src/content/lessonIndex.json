@@ -347,7 +347,7 @@
     "conceptId": "api-structs",
     "difficulty": "easy",
     "estimatedMinutes": 5,
-    "scenario": "A small client library needs a request type that can be passed around after setup."
+    "scenario": "A warehouse inventory client needs to represent outbound calls such as `GET /items` and `POST /reservations`. Keep method, path, and optional body together so transport receives complete request context for body-free and payload-bearing calls."
   },
   {
     "schemaVersion": 2,
@@ -361,7 +361,7 @@
     "conceptId": "builder-setters",
     "difficulty": "medium",
     "estimatedMinutes": 8,
-    "scenario": "A request builder should support chained calls without exposing all its intermediate fields."
+    "scenario": "Callers assemble inventory API requests in stages. Consuming setters let them chain method and path without exposing an incomplete Request to transport."
   },
   {
     "schemaVersion": 2,
@@ -375,7 +375,7 @@
     "conceptId": "builder-default",
     "difficulty": "easy",
     "estimatedMinutes": 6,
-    "scenario": "Callers should be able to create an empty builder using the standard Default trait."
+    "scenario": "Inventory routing may provide method and path in separate steps. Default gives callers an empty builder before both values are known, without inventing placeholder request data."
   },
   {
     "schemaVersion": 2,
@@ -389,7 +389,7 @@
     "conceptId": "builder-result",
     "difficulty": "medium",
     "estimatedMinutes": 9,
-    "scenario": "A builder can be incomplete. build should report missing required fields instead of creating a bad Request."
+    "scenario": "Before inventory transport sends a request, method and path must both exist. Return a specific error for incomplete requests rather than handing transport a malformed call; GET `/items` may have no body."
   },
   {
     "schemaVersion": 2,
@@ -403,7 +403,7 @@
     "conceptId": "tryfrom-request",
     "difficulty": "medium",
     "estimatedMinutes": 8,
-    "scenario": "A small input DTO can be converted into a validated Request using the same fallible conversion pattern as parser code."
+    "scenario": "The inventory adapter receives partial request data from another layer. Convert it into Request only after validating method and path, while preserving an optional body, so incomplete input cannot reach transport."
   },
   {
     "schemaVersion": 2,
@@ -417,7 +417,7 @@
     "conceptId": "doc-examples",
     "difficulty": "easy",
     "estimatedMinutes": 7,
-    "scenario": "The request API is small enough that one doc example can show its intended usage better than a long paragraph."
+    "scenario": "New inventory-client maintainers need a copyable `GET /items` example that builds a complete request and handles Result. The docs should show normal body-free usage without hiding the builder's failure path."
   },
   {
     "schemaVersion": 2,
@@ -1187,7 +1187,7 @@
     "conceptId": "percentage-newtype",
     "difficulty": "easy",
     "estimatedMinutes": 6,
-    "scenario": "Pricing discounts and rollout allocations both accept percentages from outside the service. They should not flow through the codebase as arbitrary integers."
+    "scenario": "The promotion API accepts discount percentages from campaign managers. Bound values to 0–100 before they reach price calculations, or invalid campaign data could produce impossible prices."
   },
   {
     "schemaVersion": 2,
@@ -1201,7 +1201,7 @@
     "conceptId": "percentage-valid-table-tests",
     "difficulty": "medium",
     "estimatedMinutes": 8,
-    "scenario": "A discount policy has meaningful boundary cases: no discount, a common midpoint, and the maximum allowed percentage. Reviewers should see those examples together."
+    "scenario": "The promotion service needs visible accepted boundaries for price calculation: 0% means no discount, 50% is a common promotion, and 100% is maximum discount. Reviewers should see allowed campaign rates together."
   },
   {
     "schemaVersion": 2,
@@ -1215,7 +1215,7 @@
     "conceptId": "percentage-invalid-table-tests",
     "difficulty": "medium",
     "estimatedMinutes": 8,
-    "scenario": "Bad dashboard or API input should be rejected before it can create impossible discount or rollout settings. The rejection examples need to be as visible as accepted examples."
+    "scenario": "The campaign API can send discounts above 100%, which must be rejected before price calculation. Keep invalid rates visible beside accepted examples so reviewers can verify the boundary."
   },
   {
     "schemaVersion": 2,
@@ -1229,7 +1229,7 @@
     "conceptId": "percentage-display-tests",
     "difficulty": "easy",
     "estimatedMinutes": 7,
-    "scenario": "Admin screens and audit messages render percentage values for humans. Formatting is public behavior, not a throwaway detail."
+    "scenario": "Promotion admin and price-audit screens display discount rates. Stable `Display` formatting keeps operators and support staff from misreading bare integers."
   },
   {
     "schemaVersion": 2,
@@ -1243,7 +1243,7 @@
     "conceptId": "percentage-doc-example",
     "difficulty": "easy",
     "estimatedMinutes": 7,
-    "scenario": "Other teams will copy the public percentage API into pricing and rollout code. The docs should show fallible construction without teaching unwrap as normal usage."
+    "scenario": "Other teams integrate the promotion API and parse campaign discount rates. An executable example should show fallible construction so malformed input returns an error instead of encouraging panic-based handling."
   },
   {
     "schemaVersion": 2,
@@ -1257,7 +1257,7 @@
     "conceptId": "percentage-named-test-cases",
     "difficulty": "medium",
     "estimatedMinutes": 8,
-    "scenario": "When a percentage boundary breaks, maintainers need to know whether the failure came from zero, maximum, or out-of-range policy input. Named examples and generated ranges make that diagnosis faster."
+    "scenario": "When discount validation regresses, maintainers need to distinguish no discount, a typical promotion, maximum discount, and invalid input. Named cases and generated ranges make diagnosis faster."
   },
   {
     "schemaVersion": 2,

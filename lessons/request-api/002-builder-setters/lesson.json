@@ -10,7 +10,7 @@
   "conceptId": "builder-setters",
   "difficulty": "medium",
   "estimatedMinutes": 8,
-  "scenario": "A request builder should support chained calls without exposing all its intermediate fields.",
+  "scenario": "Callers assemble inventory API requests in stages. Consuming setters let them chain method and path without exposing an incomplete Request to transport.",
   "instructions": "Keep the Request type, then add RequestBuilder with optional method and path fields. Implement RequestBuilder::new() -> Self and RequestBuilder::method(mut self, method: impl Into<String>) -> Self.",
   "files": [
     {

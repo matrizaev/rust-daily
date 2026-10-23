@@ -10,7 +10,7 @@
   "conceptId": "api-structs",
   "difficulty": "easy",
   "estimatedMinutes": 5,
-  "scenario": "A small client library needs a request type that can be passed around after setup.",
+  "scenario": "A warehouse inventory client needs to represent outbound calls such as `GET /items` and `POST /reservations`. Keep method, path, and optional body together so transport receives complete request context for body-free and payload-bearing calls.",
   "instructions": "Define Request with method: String, path: String, and body: Option<String>.",
   "files": [
     {

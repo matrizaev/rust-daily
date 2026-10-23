@@ -37,7 +37,7 @@
     "pillar": "traits",
     "orderStart": 25,
     "targetLessonCount": 6,
-    "description": "Design a small request builder with consuming setters, Default, Result, TryFrom, and doc examples."
+    "description": "Build validated requests for a warehouse inventory client with consuming setters, Default, Result, TryFrom, and doc examples."
   },
   {
     "id": "email-address-value-object",
@@ -117,7 +117,7 @@
     "pillar": "testing",
     "orderStart": 85,
     "targetLessonCount": 6,
-    "description": "Use table-driven tests, executable docs, and properties to protect bounded domain values used by pricing and rollout policy."
+    "description": "Use table-driven tests, executable docs, and properties to protect discount percentages accepted by promotion and pricing policy."
   },
   {
     "id": "asteroids-domain",
