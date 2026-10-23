@@ -7,17 +7,17 @@ LABEL org.opencontainers.image.source-hash=$RUNNER_SOURCE_HASH
 
 WORKDIR /workspace
 
-RUN mkdir -p /tmp/dependency-cache/src /tmp/dependency-cache/advanced-db/src /opt/rust-daily-target
+RUN mkdir -p /tmp/dependency-cache/advanced/src /tmp/dependency-cache/advanced-db/src /opt/rust-daily-target
 
-COPY docker/dependency-cache/Cargo.toml /tmp/dependency-cache/Cargo.toml
-COPY docker/dependency-cache/src/lib.rs /tmp/dependency-cache/src/lib.rs
+COPY docker/dependency-cache/advanced/Cargo.toml /tmp/dependency-cache/advanced/Cargo.toml
+COPY docker/dependency-cache/advanced/src/lib.rs /tmp/dependency-cache/advanced/src/lib.rs
 COPY docker/dependency-cache/advanced-db/Cargo.toml /tmp/dependency-cache/advanced-db/Cargo.toml
 COPY docker/dependency-cache/advanced-db/src/lib.rs /tmp/dependency-cache/advanced-db/src/lib.rs
 
 RUN CARGO_TARGET_DIR=/opt/rust-daily-target \
-        cargo test --manifest-path /tmp/dependency-cache/Cargo.toml --no-run \
+        cargo test --manifest-path /tmp/dependency-cache/advanced/Cargo.toml --no-run \
     && CARGO_TARGET_DIR=/opt/rust-daily-target \
-        cargo check --manifest-path /tmp/dependency-cache/Cargo.toml --lib \
+        cargo check --manifest-path /tmp/dependency-cache/advanced/Cargo.toml --lib \
     && CARGO_TARGET_DIR=/opt/rust-daily-target \
         cargo test --manifest-path /tmp/dependency-cache/advanced-db/Cargo.toml --no-run \
     && CARGO_TARGET_DIR=/opt/rust-daily-target \

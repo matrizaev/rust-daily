@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-const ADVANCED_CARGO_TOML: &str = include_str!("../../docker/dependency-cache/Cargo.toml");
+const ADVANCED_CARGO_TOML: &str = include_str!("../../docker/dependency-cache/advanced/Cargo.toml");
 const ADVANCED_DB_CARGO_TOML: &str =
     include_str!("../../docker/dependency-cache/advanced-db/Cargo.toml");
 
@@ -125,8 +125,8 @@ pub struct CargoTestCommand {
 mod tests {
     use super::DependencySet;
 
-    const DOCKER_DEPENDENCY_CACHE_MANIFEST: &str =
-        include_str!("../../docker/dependency-cache/Cargo.toml");
+    const DOCKER_ADVANCED_DEPENDENCY_CACHE_MANIFEST: &str =
+        include_str!("../../docker/dependency-cache/advanced/Cargo.toml");
     const DOCKER_ADVANCED_DB_DEPENDENCY_CACHE_MANIFEST: &str =
         include_str!("../../docker/dependency-cache/advanced-db/Cargo.toml");
 
@@ -134,7 +134,7 @@ mod tests {
     fn advanced_dependency_set_uses_runner_cache_manifest() {
         assert_eq!(
             DependencySet::Advanced.cargo_toml(),
-            DOCKER_DEPENDENCY_CACHE_MANIFEST
+            DOCKER_ADVANCED_DEPENDENCY_CACHE_MANIFEST
         );
         assert!(
             DependencySet::Advanced

@@ -284,8 +284,12 @@ RUNNER_SOURCE_HASH="$(
   sha256sum docker/rust-runner.Dockerfile \
     docker/run-advanced-lesson-cargo.sh \
     docker/run-advanced-lesson-tests.sh \
-    docker/dependency-cache/Cargo.toml \
-    docker/dependency-cache/src/lib.rs \
+    docker/run-advanced-db-lesson-cargo.sh \
+    docker/run-advanced-db-lesson-tests.sh \
+    docker/dependency-cache/advanced/Cargo.toml \
+    docker/dependency-cache/advanced/src/lib.rs \
+    docker/dependency-cache/advanced-db/Cargo.toml \
+    docker/dependency-cache/advanced-db/src/lib.rs \
     | sha256sum \
     | cut -d' ' -f1
 )"
@@ -301,13 +305,14 @@ sudo -H -u www-data12 podman image inspect \
   --format '{{ index .Labels "org.opencontainers.image.source-hash" }}'
 ```
 
-The image caches all `advanced` lesson crates and their compiled test
-artifacts under `/opt/rust-daily-target`. Each advanced run mounts a disposable
-anonymous volume at that path, which Podman seeds from the image before Cargo
-runs offline. Its `org.opencontainers.image.source-hash` label must match the
-hash of the runner Dockerfile, test script, and dependency-cache
-manifest/source files; deployment rebuilds the image on mismatch before
-restarting the backend.
+The image caches all `advanced` and `advanced-db` lesson crates and their
+compiled test artifacts under `/opt/rust-daily-target`. Each `advanced` or
+`advanced-db` run mounts a disposable anonymous volume at that path, which
+Podman seeds from the image before Cargo runs offline. Its
+`org.opencontainers.image.source-hash` label must match the hash of the runner
+Dockerfile, runner scripts, and both
+dependency-cache manifest/source trees; deployment rebuilds the image on
+mismatch before restarting the backend.
 
 Rootless Podman requires subordinate ID ranges:
 

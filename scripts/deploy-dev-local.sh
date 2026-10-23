@@ -42,7 +42,7 @@ trap 'rm -f "$cloudflare_real_ip_conf"' EXIT
 } > "$cloudflare_real_ip_conf"
 grep -q '^set_real_ip_from ' "$cloudflare_real_ip_conf"
 
-runner_source_hash="$(sha256sum docker/rust-runner.Dockerfile docker/run-advanced-lesson-cargo.sh docker/run-advanced-lesson-tests.sh docker/dependency-cache/Cargo.toml docker/dependency-cache/src/lib.rs | sha256sum | cut -d' ' -f1)"
+runner_source_hash="$(sha256sum docker/rust-runner.Dockerfile docker/run-advanced-lesson-cargo.sh docker/run-advanced-lesson-tests.sh docker/run-advanced-db-lesson-cargo.sh docker/run-advanced-db-lesson-tests.sh docker/dependency-cache/advanced/Cargo.toml docker/dependency-cache/advanced/src/lib.rs docker/dependency-cache/advanced-db/Cargo.toml docker/dependency-cache/advanced-db/src/lib.rs | sha256sum | cut -d' ' -f1)"
 git_sha="$(git rev-parse HEAD)"
 
 echo "Uploading artifacts to $REMOTE"

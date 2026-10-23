@@ -239,7 +239,7 @@ append_dependencies() {
     std)
       ;;
     advanced)
-      cp "$repo_root/docker/dependency-cache/Cargo.toml" "$crate_dir/Cargo.toml"
+      cp "$repo_root/docker/dependency-cache/advanced/Cargo.toml" "$crate_dir/Cargo.toml"
       return
       ;;
     advanced-db)

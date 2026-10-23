@@ -52,7 +52,7 @@ describe("dependency set metadata", () => {
 
   it("keeps advanced crate names aligned with the runner manifest", () => {
     const advancedDependencyManifest = readFileSync(
-      "../docker/dependency-cache/Cargo.toml",
+      "../docker/dependency-cache/advanced/Cargo.toml",
       "utf8",
     );
 
