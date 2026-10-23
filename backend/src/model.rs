@@ -1350,6 +1350,17 @@ mod tests {
     }
 
     #[test]
+    fn advanced_db_dependency_set_deserializes_from_frontend_payload() {
+        let request = serde_json::from_str::<RunRequest>(
+            r#"{"dependencySet":"advanced-db","files":[{"path":"src/lib.rs","content":""},{"path":"tests/lesson.rs","content":""}]}"#,
+        )
+        .expect("request should deserialize");
+        let validated = validate(request).expect("request should validate");
+
+        assert_eq!(validated.dependency_set(), DependencySet::AdvancedDb);
+    }
+
+    #[test]
     fn validation_accepts_required_paths() {
         assert!(validate(valid_request()).is_ok());
     }

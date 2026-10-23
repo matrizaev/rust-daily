@@ -12,14 +12,14 @@ pub struct Request {
 ///
 /// let request = RequestBuilder::default()
 ///     .method("GET")
-///     .path("/health")
+///     .path("/items")
 ///     .build();
 ///
 /// assert_eq!(
 ///     request,
 ///     Ok(Request {
 ///         method: "GET".to_owned(),
-///         path: "/health".to_owned(),
+///         path: "/items".to_owned(),
 ///         body: None,
 ///     })
 /// );

@@ -10,7 +10,7 @@
   "conceptId": "builder-default",
   "difficulty": "easy",
   "estimatedMinutes": 6,
-  "scenario": "Callers should be able to create an empty builder using the standard Default trait.",
+  "scenario": "Inventory routing may provide method and path in separate steps. Default gives callers an empty builder before both values are known, without inventing placeholder request data.",
   "instructions": "Derive Default for RequestBuilder. Option fields already default to None, so the empty builder does not need a manual impl.",
   "files": [
     {

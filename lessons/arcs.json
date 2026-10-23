@@ -37,7 +37,7 @@
     "pillar": "traits",
     "orderStart": 25,
     "targetLessonCount": 6,
-    "description": "Design a small request builder with consuming setters, Default, Result, TryFrom, and doc examples."
+    "description": "Build validated requests for a warehouse inventory client with consuming setters, Default, Result, TryFrom, and doc examples."
   },
   {
     "id": "email-address-value-object",
@@ -117,7 +117,7 @@
     "pillar": "testing",
     "orderStart": 85,
     "targetLessonCount": 6,
-    "description": "Use table-driven tests, executable docs, and properties to protect bounded domain values used by pricing and rollout policy."
+    "description": "Use table-driven tests, executable docs, and properties to protect discount percentages accepted by promotion and pricing policy."
   },
   {
     "id": "asteroids-domain",
@@ -134,5 +134,13 @@
     "orderStart": 98,
     "targetLessonCount": 5,
     "description": "Stage a state-changing operation so raw input is validated, all state-dependent failures are resolved before mutation, prepared work holds the authority it needs, and commit is consuming and infallible."
+  },
+  {
+    "id": "intent-to-durable-outcome",
+    "title": "Intent to durable outcome",
+    "pillar": "architecture",
+    "orderStart": 103,
+    "targetLessonCount": 7,
+    "description": "Coordinate pure inventory policy, async application ports, commit-time authority, atomic SQLite persistence, semantic failure mapping, and post-commit response boundaries."
   }
 ]

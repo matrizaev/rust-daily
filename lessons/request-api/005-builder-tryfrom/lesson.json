@@ -10,7 +10,7 @@
   "conceptId": "tryfrom-request",
   "difficulty": "medium",
   "estimatedMinutes": 8,
-  "scenario": "A small input DTO can be converted into a validated Request using the same fallible conversion pattern as parser code.",
+  "scenario": "The inventory adapter receives partial request data from another layer. Convert it into Request only after validating method and path, while preserving an optional body, so incomplete input cannot reach transport.",
   "instructions": "The starter defines RawRequest with optional method, path, and body. Implement TryFrom<RawRequest> for Request, use BuildError as the associated error type, and preserve the optional body.",
   "files": [
     {
@@ -39,7 +39,7 @@
       "solutionCode": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Request {\n    pub method: String,\n    pub path: String,\n    pub body: Option<String>,\n}\n\n#[derive(Debug, Clone, Default, PartialEq, Eq)]\npub struct RequestBuilder {\n    method: Option<String>,\n    path: Option<String>,\n}\n\nimpl RequestBuilder {\n    pub fn new() -> Self {\n        Self::default()\n    }\n\n    pub fn method(mut self, method: impl Into<String>) -> Self {\n        self.method = Some(method.into());\n        self\n    }\n\n    pub fn path(mut self, path: impl Into<String>) -> Self {\n        self.path = Some(path.into());\n        self\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BuildError {\n    MissingMethod,\n    MissingPath,\n}\n\nimpl RequestBuilder {\n    pub fn build(self) -> Result<Request, BuildError> {\n        let method = self.method.ok_or(BuildError::MissingMethod)?;\n        let path = self.path.ok_or(BuildError::MissingPath)?;\n\n        Ok(Request {\n            method,\n            path,\n            body: None,\n        })\n    }\n}\n\npub struct RawRequest {\n    pub method: Option<String>,\n    pub path: Option<String>,\n    pub body: Option<String>,\n}\n\nimpl std::convert::TryFrom<RawRequest> for Request {\n    type Error = BuildError;\n\n    fn try_from(value: RawRequest) -> Result<Self, Self::Error> {\n        let method = value.method.ok_or(BuildError::MissingMethod)?;\n        let path = value.path.ok_or(BuildError::MissingPath)?;\n        let body = value.body;\n\n        Ok(Self { method, path, body })\n    }\n}"
     }
   ],
-  "completionExplanation": "TryFrom turns a possibly incomplete input type into a validated domain type. The conversion API clearly communicates that failure is possible.",
+  "completionExplanation": "TryFrom turns partial inventory request data into a validated Request before transport. Its error type makes missing method or path explicit while preserving an optional body.",
   "validation": {
     "mode": "all",
     "validations": [

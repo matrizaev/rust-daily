@@ -10,7 +10,7 @@
   "conceptId": "builder-result",
   "difficulty": "medium",
   "estimatedMinutes": 9,
-  "scenario": "A builder can be incomplete. build should report missing required fields instead of creating a bad Request.",
+  "scenario": "Before inventory transport sends a request, method and path must both exist. Return a specific error for incomplete requests rather than handing transport a malformed call; GET `/items` may have no body.",
   "instructions": "Add a path setter, define BuildError with MissingMethod and MissingPath, and implement build so missing required fields return the matching error. A built Request should keep body as None for now.",
   "files": [
     {

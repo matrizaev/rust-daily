@@ -43,8 +43,16 @@ done
 curl --fail --silent --show-error "$url/healthz" >/dev/null
 python3 scripts/play_run.py --url "$url" --case advanced-pass --http-timeout 20
 python3 scripts/play_run.py --url "$url" --case advanced-compile-fail-pass --http-timeout 20
+python3 scripts/play_run.py --url "$url" --case advanced-db-pass --http-timeout 45
 
-managed_containers="$(podman ps --all --quiet --filter label=io.rust-daily.managed=true)"
+managed_containers=""
+for _ in $(seq 1 50); do
+  managed_containers="$(podman ps --all --quiet --filter label=io.rust-daily.managed=true)"
+  if [ -z "$managed_containers" ]; then
+    break
+  fi
+  sleep 0.1
+done
 if [ -n "$managed_containers" ]; then
   printf '%s\n' "Managed containers remain after smoke: $managed_containers" >&2
   exit 1

@@ -36,6 +36,25 @@ export const DEPENDENCY_SET_DETAILS = {
       "proptest",
     ],
   },
+  "advanced-db": {
+    id: "advanced-db",
+    name: "Advanced database crates",
+    summary: "Advanced crates plus cached SQLx SQLite and migration support.",
+    availableCrates: [
+      "serde",
+      "serde_json",
+      "thiserror",
+      "anyhow",
+      "tokio",
+      "tracing",
+      "tracing-subscriber",
+      "actix-web",
+      "actix-rt",
+      "http",
+      "proptest",
+      "sqlx",
+    ],
+  },
 } satisfies Record<DependencySet, DependencySetDetails>;
 
 const validationSteps = (validation?: LessonValidation): LessonValidationStep[] => {

@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 2,
+  "id": "decide-inventory-facts-103",
+  "arcId": "intent-to-durable-outcome",
+  "arcTitle": "Intent to durable outcome",
+  "order": 103,
+  "day": 1,
+  "arcLength": 7,
+  "title": "Decide from immutable inventory facts",
+  "conceptId": "intent-pure-policy",
+  "difficulty": "advanced",
+  "estimatedMinutes": 8,
+  "scenario": "The warehouse fulfillment desk has 5 units of catalog item 1; a customer order asks for 3. A stock read can go stale before the write, so first isolate what policy can promise: approval against observed facts, not a completed reservation.",
+  "instructions": "In src/domain/policy.rs implement decide. Compare command and observation item IDs first; return ObservationMismatch when they differ. Otherwise reject a requested quantity above observed availability with InsufficientObservedInventory. For sufficient matching stock, return an intent containing the command item and quantity. Do not perform I/O or mutate either input.",
+  "files": [
+    {
+      "path": "src/lib.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "src/domain.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/domain.rs"
+    },
+    {
+      "path": "src/domain/policy.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/domain/policy.rs"
+    },
+    {
+      "path": "src/application.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/application.rs"
+    },
+    {
+      "path": "src/application/reservations.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/application/reservations.rs"
+    },
+    {
+      "path": "src/infrastructure.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/infrastructure.rs"
+    },
+    {
+      "path": "src/infrastructure/controlled_repository.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/infrastructure/controlled_repository.rs"
+    },
+    {
+      "path": "src/infrastructure/inventory_row.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/infrastructure/inventory_row.rs"
+    },
+    {
+      "path": "src/infrastructure/sqlite_repository.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/infrastructure/sqlite_repository.rs"
+    },
+    {
+      "path": "src/adapter.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/adapter.rs"
+    },
+    {
+      "path": "src/adapter/reservation_response.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/adapter/reservation_response.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Policy reads two immutable values. Check identity before comparing quantity with observed availability."
+    },
+    {
+      "level": 2,
+      "body": "The intent is built from the command's item and quantity. It must not include the observation or its stock value."
+    },
+    {
+      "level": 3,
+      "body": "Return ObservationMismatch first, then InsufficientObservedInventory; otherwise construct ReservationIntent with the command fields.",
+      "solutionCode": "use super::{InventoryObservation, PolicyRejection, ReservationCommand, ReservationIntent};\n\npub fn decide(\n    command: &ReservationCommand,\n    observation: &InventoryObservation,\n) -> Result<ReservationIntent, PolicyRejection> {\n    if command.item_id != observation.item_id {\n        return Err(PolicyRejection::ObservationMismatch);\n    }\n\n    if command.quantity.value() > observation.available {\n        return Err(PolicyRejection::InsufficientObservedInventory);\n    }\n\n    Ok(ReservationIntent {\n        item_id: command.item_id,\n        quantity: command.quantity,\n    })\n}\n"
+    }
+  ],
+  "completionExplanation": "The order for 3 fits the observed 5, so policy returns an intent. Nothing is reserved yet. Next, wire that proposal through the application service without letting a missing item or rejected request reach commit.",
+  "validation": {
+    "mode": "backend-cargo-test",
+    "timeoutMs": 10000,
+    "dependencySet": "advanced",
+    "testFiles": [
+      {
+        "path": "tests/public.rs",
+        "sourcePath": "tests/public.rs"
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 2,
+  "id": "decode-inventory-row-106",
+  "arcId": "intent-to-durable-outcome",
+  "arcTitle": "Intent to durable outcome",
+  "order": 106,
+  "day": 4,
+  "arcLength": 7,
+  "title": "Decode persisted inventory safely",
+  "conceptId": "intent-sqlite-row-decoding",
+  "difficulty": "advanced",
+  "estimatedMinutes": 10,
+  "scenario": "The fulfillment service reads item 1's inventory row before deciding whether the customer's order for 3 can proceed. Schema checks help, but old or damaged data can still be malformed; reject it at the persistence boundary before policy treats it as valid stock.",
+
+  "instructions": "Implement InventoryRow conversion in src/infrastructure/inventory_row.rs. Keep InventoryRow private with signed i64 columns. Derive SQLx FromRow, then implement TryFrom<InventoryRow> for InventoryObservation. Require a positive ItemId and available value that fits u32; reject negative or oversized availability. Map row decoding and conversion failures to InvalidStoredData. Use supplied migration and in-memory SQLite tests; do not change schema or tests.",
+  "files": [
+    { "path": "src/infrastructure/inventory_row.rs", "role": "editable", "sourcePath": "starter/src/infrastructure/inventory_row.rs" },
+    { "path": "src/infrastructure/controlled_repository.rs", "role": "readonly", "sourcePath": "starter/src/infrastructure/controlled_repository.rs" },
+    { "path": "src/application/reservations.rs", "role": "readonly", "sourcePath": "starter/src/application/reservations.rs" },
+    { "path": "src/lib.rs", "role": "readonly", "sourcePath": "starter/src/lib.rs" },
+    { "path": "src/domain.rs", "role": "readonly", "sourcePath": "starter/src/domain.rs" },
+    { "path": "src/domain/policy.rs", "role": "readonly", "sourcePath": "starter/src/domain/policy.rs" },
+    { "path": "src/application.rs", "role": "readonly", "sourcePath": "starter/src/application.rs" },
+    { "path": "src/infrastructure.rs", "role": "readonly", "sourcePath": "starter/src/infrastructure.rs" },
+    { "path": "src/infrastructure/sqlite_repository.rs", "role": "readonly", "sourcePath": "starter/src/infrastructure/sqlite_repository.rs" },
+    { "path": "src/adapter.rs", "role": "readonly", "sourcePath": "starter/src/adapter.rs" },
+    { "path": "src/adapter/reservation_response.rs", "role": "readonly", "sourcePath": "starter/src/adapter/reservation_response.rs" },
+    { "path": "testdata/migrations/0001_inventory.sql", "role": "readonly", "sourcePath": "starter/testdata/migrations/0001_inventory.sql" },
+    { "path": "tests/public.rs", "role": "test", "sourcePath": "tests/public.rs" }
+  ],
+  "hints": [
+    { "level": 1, "body": "Keep SQLx's signed, runtime-decoded columns in a private InventoryRow. The domain value should contain validated ItemId and u32 availability." },
+    { "level": 2, "body": "Derive FromRow, convert item_id with ItemId::new, and convert available with u32::try_from. Any decode or conversion error becomes InvalidStoredData." },
+    {
+      "level": 3,
+      "body": "Implement TryFrom<InventoryRow> for InventoryObservation, then decode SqliteRow through InventoryRow::from_row and call try_into.",
+      "solutionCode": "use sqlx::{FromRow, sqlite::SqliteRow};\n\nuse crate::{\n    application::StorageFailure,\n    domain::{InventoryObservation, ItemId},\n};\n\n#[derive(FromRow)]\nstruct InventoryRow {\n    item_id: i64,\n    available: i64,\n}\n\nimpl TryFrom<InventoryRow> for InventoryObservation {\n    type Error = StorageFailure;\n\n    fn try_from(row: InventoryRow) -> Result<Self, Self::Error> {\n        let item_id = ItemId::new(row.item_id).ok_or(StorageFailure::InvalidStoredData)?;\n        let available = u32::try_from(row.available)\n            .map_err(|_| StorageFailure::InvalidStoredData)?;\n        Ok(InventoryObservation::new(item_id, available))\n    }\n}\n\npub fn decode_inventory_row(\n    row: SqliteRow,\n) -> Result<InventoryObservation, StorageFailure> {\n    let row = InventoryRow::from_row(&row).map_err(|_| StorageFailure::InvalidStoredData)?;\n    row.try_into()\n}\n"
+    }
+  ],
+  "completionExplanation": "Malformed inventory data now stops at the row adapter; valid rows become domain observations for the same fulfillment flow. Next, decrement stock and insert the reservation together so neither write can commit alone.",
+  "validation": {
+    "mode": "backend-cargo-test",
+    "timeoutMs": 20000,
+    "dependencySet": "advanced-db",
+    "testFiles": [
+      { "path": "tests/public.rs", "sourcePath": "tests/public.rs" }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

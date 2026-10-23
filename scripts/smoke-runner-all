@@ -12,6 +12,7 @@ const CASES = [
   "compile-fail-wrong-diagnostic",
   "advanced-pass",
   "advanced-compile-fail-pass",
+  "advanced-db-pass",
 ];
 
 const usage = () => `Usage:

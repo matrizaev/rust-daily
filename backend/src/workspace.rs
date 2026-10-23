@@ -209,6 +209,25 @@ mod tests {
         .expect("test request should be valid")
     }
 
+    fn advanced_db_request() -> ValidatedRunRequest {
+        RunRequestValidation::new(
+            RunRequest::with_dependency_set(
+                vec![
+                    SubmittedFile::new("src/lib.rs", "pub fn answer() -> u64 { 42 }\n"),
+                    SubmittedFile::new("tests/lesson.rs", "#[test]\nfn answer_is_42() {}\n"),
+                    SubmittedFile::new(
+                        "testdata/migrations/0001_create_items.sql",
+                        "CREATE TABLE inventory_items (item_id INTEGER PRIMARY KEY);\n",
+                    ),
+                ],
+                DependencySet::AdvancedDb,
+            ),
+            roomy_limits(),
+        )
+        .try_into()
+        .expect("test request should be valid")
+    }
+
     fn multi_file_request() -> ValidatedRunRequest {
         RunRequestValidation::new(
             RunRequest::new(vec![
@@ -334,5 +353,26 @@ mod tests {
             r#"proptest = { version = "1", default-features = false, features = ["std"] }"#
         ));
         assert!(manifest.contains("[profile.test]"));
+    }
+
+    #[tokio::test]
+    async fn prepare_workspace_writes_advanced_db_manifest_and_migrations() {
+        let root = tempdir().expect("temp root should be created");
+        let workspace =
+            prepare_workspace(uuid::Uuid::new_v4(), &advanced_db_request(), root.path())
+                .await
+                .expect("workspace should be prepared");
+        let manifest = std::fs::read_to_string(workspace.path().join("Cargo.toml"))
+            .expect("manifest should be readable");
+        let migration = std::fs::read_to_string(
+            workspace
+                .path()
+                .join("testdata/migrations/0001_create_items.sql"),
+        )
+        .expect("migration should be readable");
+
+        assert_eq!(manifest, DependencySet::AdvancedDb.cargo_toml());
+        assert!(manifest.contains(r#"sqlx = { version = "=0.8.6""#));
+        assert!(migration.contains("CREATE TABLE inventory_items"));
     }
 }

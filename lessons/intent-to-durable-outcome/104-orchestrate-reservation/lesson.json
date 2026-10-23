@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 2,
+  "id": "orchestrate-reservation-104",
+  "arcId": "intent-to-durable-outcome",
+  "arcTitle": "Intent to durable outcome",
+  "order": 104,
+  "day": 2,
+  "arcLength": 7,
+  "title": "Orchestrate a reservation use case",
+  "conceptId": "intent-usecase-orchestration",
+  "difficulty": "advanced",
+  "estimatedMinutes": 9,
+  "scenario": "The same fulfillment order asks for 3 of item 1. The service must load stock, apply policy, then ask the repository to commit; a missing item or rejected order must stop before any write.",
+
+  "instructions": "Implement reserve in src/application/reservations.rs. Observe the requested item first; map repository failures to Storage and a missing row to ItemNotFound. Run the pure policy and map rejection to PolicyRejected. Only accepted intent may reach commit. Map storage failure, return the committed receipt, and map UnavailableAtCommit without retrying. Do not call commit after missing or rejected observation.",
+  "files": [
+    {
+      "path": "src/application/reservations.rs",
+      "role": "editable",
+      "sourcePath": "starter/src/application/reservations.rs"
+    },
+    {
+      "path": "src/lib.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/lib.rs"
+    },
+    {
+      "path": "src/domain.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/domain.rs"
+    },
+    {
+      "path": "src/domain/policy.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/domain/policy.rs"
+    },
+    {
+      "path": "src/application.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/application.rs"
+    },
+    {
+      "path": "src/infrastructure.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/infrastructure.rs"
+    },
+    {
+      "path": "src/infrastructure/controlled_repository.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/infrastructure/controlled_repository.rs"
+    },
+    {
+      "path": "src/infrastructure/inventory_row.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/infrastructure/inventory_row.rs"
+    },
+    {
+      "path": "src/infrastructure/sqlite_repository.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/infrastructure/sqlite_repository.rs"
+    },
+    {
+      "path": "src/adapter.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/adapter.rs"
+    },
+    {
+      "path": "src/adapter/reservation_response.rs",
+      "role": "readonly",
+      "sourcePath": "starter/src/adapter/reservation_response.rs"
+    },
+    {
+      "path": "tests/public.rs",
+      "role": "test",
+      "sourcePath": "tests/public.rs"
+    }
+  ],
+  "hints": [
+    {
+      "level": 1,
+      "body": "Order operations as observe, pure decide, then commit. Missing data and policy rejection are terminal before commit."
+    },
+    {
+      "level": 2,
+      "body": "Use `?` only after mapping repository failures to ReservationError::Storage. Convert Option with ItemNotFound, and convert policy errors with PolicyRejected."
+    },
+    {
+      "level": 3,
+      "body": "Match CommitOutcome after one commit call: return its receipt or map UnavailableAtCommit. Do not retry or perform a compensating write.",
+      "solutionCode": "use crate::{\n    application::{CommitOutcome, ReservationError, ReservationRepository},\n    domain::{ReservationCommand, policy::decide},\n};\n\npub async fn reserve(\n    repository: &impl ReservationRepository,\n    command: ReservationCommand,\n) -> Result<crate::application::ReservationReceipt, ReservationError> {\n    let observation = repository\n        .observe(command.item_id())\n        .await\n        .map_err(ReservationError::Storage)?\n        .ok_or(ReservationError::ItemNotFound)?;\n    let intent = decide(&command, &observation).map_err(ReservationError::PolicyRejected)?;\n\n    match repository\n        .commit(intent)\n        .await\n        .map_err(ReservationError::Storage)?\n    {\n        CommitOutcome::Committed(receipt) => Ok(receipt),\n        CommitOutcome::UnavailableAtCommit => Err(ReservationError::UnavailableAtCommit),\n    }\n}\n"
+    }
+  ],
+  "completionExplanation": "The order now follows one path: observe, decide, commit once. The earlier stock read still cannot reserve anything by itself—a competing checkout may change availability before commit. Next, make that race deterministic and enforce the commit-time rule.",
+  "validation": {
+    "mode": "backend-cargo-test",
+    "timeoutMs": 10000,
+    "dependencySet": "advanced",
+    "testFiles": [
+      {
+        "path": "tests/public.rs",
+        "sourcePath": "tests/public.rs"
+      }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}

@@ -336,7 +336,7 @@ fn start_container_command_spec(
         ))
         .args(["--tmpfs"])
         .arg(workspace_tmpfs);
-    if dependency_set == DependencySet::Advanced {
+    if dependency_set != DependencySet::Std {
         // An anonymous volume is seeded from the image's precompiled target
         // directory. Cleanup removes it with the container, keeping learner
         // writes isolated without charging the dependency cache to the
@@ -1490,35 +1490,39 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn advanced_request_mounts_disposable_target_volume() {
-        let root = tempfile::tempdir().expect("test root should be created");
-        let config = Arc::new(runner_settings(root.path().join("runs")));
-        let executor = FakeProcessExecutor::default();
-        let runner =
-            PodmanLessonRunner::new_with_executor(Arc::clone(&config), Arc::new(executor.clone()));
+    async fn cached_dependency_sets_mount_disposable_target_volumes() {
+        for dependency_set in [DependencySet::Advanced, DependencySet::AdvancedDb] {
+            let root = tempfile::tempdir().expect("test root should be created");
+            let config = Arc::new(runner_settings(root.path().join("runs")));
+            let executor = FakeProcessExecutor::default();
+            let runner = PodmanLessonRunner::new_with_executor(
+                Arc::clone(&config),
+                Arc::new(executor.clone()),
+            );
 
-        let result = run_for_test(
-            &runner,
-            validated_request_with_dependency_set(DependencySet::Advanced),
-            RunDeadline::after(config.timeout),
-            CancellationToken::new(),
-        )
-        .await;
-        let specs = executor
-            .specs
-            .lock()
-            .expect("fake executor lock should be available");
-        let start = args(&specs[0]);
+            let result = run_for_test(
+                &runner,
+                validated_request_with_dependency_set(dependency_set),
+                RunDeadline::after(config.timeout),
+                CancellationToken::new(),
+            )
+            .await;
+            let specs = executor
+                .specs
+                .lock()
+                .expect("fake executor lock should be available");
+            let start = args(&specs[0]);
 
-        assert_eq!(
-            result.expect("run should succeed").status,
-            RunStatus::Passed
-        );
-        assert!(has_pair(
-            &start,
-            "--mount",
-            "type=volume,destination=/opt/rust-daily-target"
-        ));
+            assert_eq!(
+                result.expect("run should succeed").status,
+                RunStatus::Passed
+            );
+            assert!(has_pair(
+                &start,
+                "--mount",
+                "type=volume,destination=/opt/rust-daily-target"
+            ));
+        }
     }
 
     #[tokio::test]

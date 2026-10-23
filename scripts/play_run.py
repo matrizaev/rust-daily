@@ -29,6 +29,50 @@ fn serde_json_works() {
 }
 """
 
+ADVANCED_DB_TEST = """#[tokio::test]
+async fn sqlite_migration_runs_with_cached_sqlx() {
+    let options = sqlx::sqlite::SqliteConnectOptions::new()
+        .filename(":memory:")
+        .foreign_keys(true);
+    let pool = sqlx::sqlite::SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect_with(options)
+        .await
+        .expect("in-memory SQLite connection should open");
+    sqlx::migrate!("./testdata/migrations")
+        .run(&pool)
+        .await
+        .expect("migration should run");
+
+    let available: i64 = sqlx::query_scalar(
+        "SELECT available FROM inventory_items WHERE item_id = 1",
+    )
+    .fetch_one(&pool)
+    .await
+    .expect("seeded item should exist");
+    let foreign_keys: i64 = sqlx::query_scalar("PRAGMA foreign_keys")
+        .fetch_one(&pool)
+        .await
+        .expect("foreign-key state should be readable");
+
+    assert_eq!(available, 5);
+    assert_eq!(foreign_keys, 1);
+}
+"""
+
+ADVANCED_DB_MIGRATION = """CREATE TABLE inventory_items (
+    item_id INTEGER PRIMARY KEY CHECK (item_id > 0),
+    available INTEGER NOT NULL CHECK (available >= 0)
+);
+
+CREATE TABLE reservations (
+    reservation_id INTEGER PRIMARY KEY,
+    item_id INTEGER NOT NULL REFERENCES inventory_items(item_id)
+);
+
+INSERT INTO inventory_items (item_id, available) VALUES (1, 5);
+"""
+
 ADVANCED_COMPILE_FAIL_PRIVATE_LIB = """#[derive(serde::Serialize)]
 pub struct UserId {
     value: u64,
@@ -129,6 +173,7 @@ EXPECTED_STATUSES = {
     "compile-fail-wrong-diagnostic": "failed",
     "advanced-pass": "passed",
     "advanced-compile-fail-pass": "passed",
+    "advanced-db-pass": "passed",
 }
 
 
@@ -165,6 +210,18 @@ def build_compile_fail_payload(
 
 
 def payload_for_case(case: str) -> dict[str, object]:
+    if case == "advanced-db-pass":
+        return {
+            "dependencySet": "advanced-db",
+            "files": [
+                {"path": "src/lib.rs", "content": "pub fn answer() -> u64 { 42 }\n"},
+                {"path": "tests/lesson.rs", "content": ADVANCED_DB_TEST},
+                {
+                    "path": "testdata/migrations/0001_inventory.sql",
+                    "content": ADVANCED_DB_MIGRATION,
+                },
+            ],
+        }
     if case == "advanced-compile-fail-pass":
         payload = build_compile_fail_payload(
             ADVANCED_COMPILE_FAIL_PRIVATE_LIB,

@@ -1,6 +1,6 @@
 import { writeSync } from "node:fs";
 
-export const KNOWN_DEPENDENCY_SETS = new Set(["std", "advanced"]);
+export const KNOWN_DEPENDENCY_SETS = new Set(["std", "advanced", "advanced-db"]);
 
 const MAX_RUNNER_PATH_BYTES = 240;
 const MAX_RUNNER_PATH_COMPONENT_BYTES = 120;

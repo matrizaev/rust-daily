@@ -119,10 +119,10 @@ export const parseArgs = (argv) => {
 export const usageText = () => `Usage:
   scripts/curriculum/scaffold-lesson --arc <arc-id> --lesson <nnn-slug> \\
     --title <title> --concept <concept-id> --difficulty <easy|medium|advanced> \\
-    --editable <src/file.rs> [--dependency-set <std|advanced>] [options]
+    --editable <src/file.rs> [--dependency-set <std|advanced|advanced-db>] [options]
 
 Required unless supplied by a preset:
-  --dependency-set <std|advanced>
+  --dependency-set <std|advanced|advanced-db>
 
 Common options:
   --preset <preset-id>

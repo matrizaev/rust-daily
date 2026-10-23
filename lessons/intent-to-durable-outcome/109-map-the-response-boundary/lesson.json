@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 2,
+  "id": "map-the-response-boundary-109",
+  "arcId": "intent-to-durable-outcome",
+  "arcTitle": "Intent to durable outcome",
+  "order": 109,
+  "day": 7,
+  "arcLength": 7,
+  "title": "Map the response after commit",
+  "conceptId": "intent-response-publication-boundary",
+  "difficulty": "advanced",
+  "estimatedMinutes": 10,
+  "scenario": "SQLite has committed the 3-unit order: item 1 now has 2 units and one reservation record. Simulate the server mapping that result to HTTP, then the customer's connection dropping. The response may be lost, but the warehouse must not undo the reservation or submit it again. This in-memory test checks post-commit behavior, not survival across process restarts.",
+
+  "instructions": "Implement map_reservation_result in src/adapter/reservation_response.rs. Map committed receipts to 201 with reservation facts; not found to 404; policy rejection and commit-time unavailability to distinct 409 problem codes; known storage failures to 500; and CommitOutcomeUnknown to 503 with its own problem code. Do not expose SQL details, retry, or connect response delivery to the repository transaction. The delivery-failure test must leave the committed row and stock decrement intact. Also compare this HTTP path with a system where bounded egress acceptance is part of mutation correctness: explain why it must encode all immutable output and reserve full capacity before one commit, then enqueue once at its ordered output position using a one-shot receipt; enqueue acceptance is not client delivery, and later transport failure must not roll back or replay.",
+  "files": [
+    { "path": "src/adapter/reservation_response.rs", "role": "editable", "sourcePath": "starter/src/adapter/reservation_response.rs" },
+    { "path": "src/infrastructure/sqlite_repository.rs", "role": "readonly", "sourcePath": "starter/src/infrastructure/sqlite_repository.rs" },
+    { "path": "src/infrastructure/inventory_row.rs", "role": "readonly", "sourcePath": "starter/src/infrastructure/inventory_row.rs" },
+    { "path": "src/infrastructure/controlled_repository.rs", "role": "readonly", "sourcePath": "starter/src/infrastructure/controlled_repository.rs" },
+    { "path": "src/application/reservations.rs", "role": "readonly", "sourcePath": "starter/src/application/reservations.rs" },
+    { "path": "src/lib.rs", "role": "readonly", "sourcePath": "starter/src/lib.rs" },
+    { "path": "src/domain.rs", "role": "readonly", "sourcePath": "starter/src/domain.rs" },
+    { "path": "src/domain/policy.rs", "role": "readonly", "sourcePath": "starter/src/domain/policy.rs" },
+    { "path": "src/application.rs", "role": "readonly", "sourcePath": "starter/src/application.rs" },
+    { "path": "src/infrastructure.rs", "role": "readonly", "sourcePath": "starter/src/infrastructure.rs" },
+    { "path": "src/adapter.rs", "role": "readonly", "sourcePath": "starter/src/adapter.rs" },
+    { "path": "testdata/migrations/0001_inventory.sql", "role": "readonly", "sourcePath": "starter/testdata/migrations/0001_inventory.sql" },
+    { "path": "tests/public.rs", "role": "test", "sourcePath": "tests/public.rs" }
+  ],
+  "hints": [
+    { "level": 1, "body": "Keep the response mapper pure. It receives a completed application result and should not know about SQLx, transactions, or transport delivery." },
+    { "level": 2, "body": "Map each semantic error to a stable problem code. In particular, CommitOutcomeUnknown is not the same as a known storage failure and must not invite an automatic retry." },
+    {
+      "level": 3,
+      "body": "Return 201 from receipt getters; use 404 for missing item, 409 for policy/commit availability, 500 for known storage errors, and 503 with ReservationOutcomeUnknown for uncertain commit. For bounded egress, encode complete immutable output and reserve full capacity before commit; enqueue once at its ordered output position with a one-shot receipt, but do not equate acceptance with client delivery.",
+      "solutionCode": "use crate::{\n    application::{ReservationError, ReservationReceipt, StorageFailure},\n    domain::PolicyRejection,\n};\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ReservationHttpResponse {\n    pub status: u16,\n    pub body: ResponseBody,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ResponseBody {\n    Created {\n        reservation_id: i64,\n        item_id: i64,\n        quantity: u32,\n    },\n    Problem(ProblemCode),\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ProblemCode {\n    ItemNotFound,\n    ObservationMismatch,\n    InsufficientObservedInventory,\n    UnavailableAtCommit,\n    StorageFailure,\n    ReservationOutcomeUnknown,\n}\n\npub fn map_reservation_result(\n    result: Result<ReservationReceipt, ReservationError>,\n) -> ReservationHttpResponse {\n    match result {\n        Ok(receipt) => ReservationHttpResponse {\n            status: 201,\n            body: ResponseBody::Created {\n                reservation_id: receipt.reservation_id().value(),\n                item_id: receipt.item_id().value(),\n                quantity: receipt.quantity().value(),\n            },\n        },\n        Err(ReservationError::ItemNotFound) => problem(404, ProblemCode::ItemNotFound),\n        Err(ReservationError::PolicyRejected(PolicyRejection::ObservationMismatch)) => {\n            problem(409, ProblemCode::ObservationMismatch)\n        }\n        Err(ReservationError::PolicyRejected(\n            PolicyRejection::InsufficientObservedInventory,\n        )) => problem(409, ProblemCode::InsufficientObservedInventory),\n        Err(ReservationError::UnavailableAtCommit) => {\n            problem(409, ProblemCode::UnavailableAtCommit)\n        }\n        Err(ReservationError::Storage(StorageFailure::Database | StorageFailure::InvalidStoredData)) => {\n            problem(500, ProblemCode::StorageFailure)\n        }\n        Err(ReservationError::Storage(StorageFailure::CommitOutcomeUnknown)) => {\n            problem(503, ProblemCode::ReservationOutcomeUnknown)\n        }\n    }\n}\n\nfn problem(status: u16, code: ProblemCode) -> ReservationHttpResponse {\n    ReservationHttpResponse {\n        status,\n        body: ResponseBody::Problem(code),\n    }\n}\n"
+    }
+  ],
+  "completionExplanation": "The response uses the receipt already returned by commit. A simulated delivery failure does not undo the committed state in this in-memory database; persistence across restart is not tested. HTTP delivery is not a transaction participant. In a bounded-egress design, preflight full output acceptance before commit, then enqueue once; enqueue still does not guarantee client delivery, and later failure does not justify rollback or replay.",
+  "validation": {
+    "mode": "backend-cargo-test",
+    "timeoutMs": 25000,
+    "dependencySet": "advanced-db",
+    "testFiles": [
+      { "path": "tests/public.rs", "sourcePath": "tests/public.rs" }
+    ]
+  },
+  "author": {
+    "solutionPath": "solution",
+    "notesPath": "notes.md"
+  }
+}
