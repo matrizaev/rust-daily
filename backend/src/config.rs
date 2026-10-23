@@ -917,7 +917,7 @@ runner:
         assert_eq!(settings.runner.tmp_tmpfs_bytes.get(), 33_554_432);
         assert_eq!(settings.runner.process_headroom_bytes.get(), 33_554_432);
         assert_eq!(settings.runner.core_ulimit.to_string(), "core=1:2");
-        assert_eq!(settings.validation.limits.max_files(), 8);
+        assert_eq!(settings.validation.limits.max_files(), 16);
         assert!(settings.observability.metrics_enabled);
         assert!(settings.observability.metrics_bearer_token.is_none());
     }
@@ -1477,7 +1477,7 @@ runner:
   workspace_root: /tmp/rust-daily-runs
   podman_path: podman
 validation:
-  max_files: 8
+  max_files: 16
   max_file_bytes: 65536
   max_total_bytes: 262144
   max_path_bytes: 240
@@ -1486,7 +1486,7 @@ validation:
   max_diagnostic_snippet_bytes: 512
   max_diagnostic_total_bytes: 8192
 api:
-  max_json_payload_bytes: 1600000
+  max_json_payload_bytes: 1700000
 observability:
   metrics_enabled: true
   metrics_bearer_token: null

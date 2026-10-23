@@ -403,13 +403,13 @@ const resultFromHttpError = async (
     return result(
       "failed",
       startedAt,
-      "This lesson payload is too large for the Rust runner.",
+      "Submitted project exceeds Rust runner limits.",
       "",
       [
         {
           name: "runner payload",
           message:
-            "The editable code or public test file exceeds the runner size limit.",
+            "Submitted files exceed runner file-count or content-size limits.",
         },
       ],
     );
