@@ -27,7 +27,7 @@ runner:
   podman_path: podman
 
 validation:
-  max_files: 8
+  max_files: 16
   max_file_bytes: 65536
   max_total_bytes: 262144
   max_path_bytes: 240
@@ -39,7 +39,7 @@ validation:
 api:
   # Upper bound allows JSON to escape every admitted input
   # byte as \u00XX. Settings loading rejects smaller values.
-  max_json_payload_bytes: 1600000
+  max_json_payload_bytes: 1700000
 
 observability:
   metrics_enabled: true

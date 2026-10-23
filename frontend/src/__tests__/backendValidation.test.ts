@@ -149,7 +149,13 @@ describe("runBackendValidation", () => {
     await expect(runBackendValidation(cargoRequest(), "http://runner")).resolves
       .toMatchObject({
         status: "failed",
-        summary: "This lesson payload is too large for the Rust runner.",
+        summary: "Submitted project exceeds Rust runner limits.",
+        failures: [
+          {
+            name: "runner payload",
+            message: "Submitted files exceed runner file-count or content-size limits.",
+          },
+        ],
       });
     await expect(runBackendValidation(cargoRequest(), "http://runner")).resolves
       .toMatchObject({
@@ -172,8 +178,14 @@ describe("runBackendValidation", () => {
     await expect(runBackendValidation(oversizedRequest, "http://runner")).resolves
       .toMatchObject({
         status: "failed",
-        summary: "This lesson payload is too large for the Rust runner.",
-    });
+        summary: "Submitted project exceeds Rust runner limits.",
+        failures: [
+          {
+            name: "runner payload",
+            message: "Submitted files exceed runner file-count or content-size limits.",
+          },
+        ],
+      });
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 
