@@ -5,6 +5,7 @@ import {
   Info,
   LoaderCircle,
 } from "lucide-react";
+import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import type { ValidationResult, ValidationStatus } from "../types/validation";
 
@@ -38,6 +39,12 @@ const statusLabel: Record<ValidationStatus, string> = {
 
 const panelTone = (state: ValidationPanelState) =>
   state.kind === "result" ? state.result.status : state.kind;
+
+const isFailureStatus = (status: ValidationStatus) =>
+  status === "failed" ||
+  status === "compile_error" ||
+  status === "timeout" ||
+  status === "internal_error";
 
 const statusIcon: Record<string, ReactNode> = {
   idle: <Info size={20} aria-hidden="true" />,
@@ -116,9 +123,18 @@ const ResultDetails = ({ state }: ValidationPanelProps) =>
 
 function ValidationPanel({ state }: ValidationPanelProps) {
   const tone = panelTone(state);
+  const panelRef = useRef<HTMLElement>(null);
+  const result = state.kind === "result" ? state.result : null;
+
+  useEffect(() => {
+    if (result && isFailureStatus(result.status)) {
+      panelRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [result]);
 
   return (
     <section
+      ref={panelRef}
       className={`validation-panel validation-${tone}`}
       aria-labelledby="validation-title"
       aria-live="polite"
