@@ -12,16 +12,16 @@ import type { ValidationResult, ValidationStatus } from "../types/validation";
 /** Validation panel state derived from the current lesson check lifecycle. */
 export type ValidationPanelState =
   | {
-      kind: "idle";
-    }
+    kind: "idle";
+  }
   | {
-      kind: "running";
-    }
+    kind: "running";
+  }
   | {
-      kind: "result";
-      result: ValidationResult;
-      stale: boolean;
-    };
+    kind: "result";
+    result: ValidationResult;
+    stale: boolean;
+  };
 
 type ValidationPanelProps = {
   state: ValidationPanelState;
