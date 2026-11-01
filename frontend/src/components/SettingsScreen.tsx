@@ -1,7 +1,11 @@
 import {
   ArrowLeft,
+  CheckCircle2,
+  CircleAlert,
   Download,
   FileX2,
+  Info,
+  LoaderCircle,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -23,6 +27,12 @@ import ProgressSummary from "./ProgressSummary";
 
 type ImportResult = {
   ok: boolean;
+  message: string;
+};
+
+type SettingsFeedback = {
+  section: "progress" | "local-data";
+  tone: "info" | "pending" | "success" | "error";
   message: string;
 };
 
@@ -65,6 +75,32 @@ const SettingsSection = ({
   </section>
 );
 
+const SettingsFeedbackMessage = ({
+  feedback,
+}: {
+  feedback: SettingsFeedback;
+}) => {
+  const Icon =
+    feedback.tone === "success"
+      ? CheckCircle2
+      : feedback.tone === "error"
+        ? CircleAlert
+        : feedback.tone === "pending"
+          ? LoaderCircle
+          : Info;
+
+  return (
+    <p
+      className="settings-feedback"
+      data-tone={feedback.tone}
+      role={feedback.tone === "error" ? "alert" : "status"}
+    >
+      <Icon size={18} aria-hidden="true" />
+      <span>{feedback.message}</span>
+    </p>
+  );
+};
+
 /** Settings and local-data management screen. */
 export function SettingsScreen({
   settings,
@@ -77,9 +113,7 @@ export function SettingsScreen({
   onSettingsChange,
 }: SettingsScreenProps) {
   const importInputRef = useRef<HTMLInputElement | null>(null);
-  const [status, setStatus] = useState(
-    "Drafts, progress, and settings stay in this browser unless you export progress.",
-  );
+  const [feedback, setFeedback] = useState<SettingsFeedback | null>(null);
 
   const updateSettings = (next: UserSettings) => {
     onSettingsChange(next);
@@ -101,24 +135,49 @@ export function SettingsScreen({
   };
 
   const handleExport = () => {
-    onExportProgress();
-    setStatus("Progress exported. Draft code was not included.");
+    try {
+      onExportProgress();
+      setFeedback({
+        section: "progress",
+        tone: "success",
+        message: "Progress export started. Draft code was not included.",
+      });
+    } catch {
+      setFeedback({
+        section: "progress",
+        tone: "error",
+        message: "Progress export could not be created.",
+      });
+    }
   };
 
   const handleImportClick = () => {
+    setFeedback({
+      section: "progress",
+      tone: "info",
+      message: "Choose a progress export JSON file to import.",
+    });
     importInputRef.current?.click();
   };
 
   const handleDeleteProgressClick = () => {
     if (!window.confirm("Delete all local progress for Rust Daily?")) {
+      setFeedback({
+        section: "local-data",
+        tone: "info",
+        message: "Progress deletion canceled. No data was changed.",
+      });
       return;
     }
 
-    setStatus(
-      onDeleteProgress()
+    const deleted = onDeleteProgress();
+    setFeedback({
+      section: "local-data",
+      tone: deleted ? "success" : "error",
+      message: deleted
         ? "Progress deleted."
         : "Progress could not be deleted because browser storage is unavailable.",
-    );
+    });
   };
 
   const handleImportChange = async (
@@ -131,19 +190,49 @@ export function SettingsScreen({
       return;
     }
 
-    setStatus("Importing progress...");
-    const result = await onImportProgress(file);
-    setStatus(result.message);
-    input.value = "";
+    setFeedback({
+      section: "progress",
+      tone: "pending",
+      message: "Importing progress...",
+    });
+    try {
+      const result = await onImportProgress(file);
+      setFeedback({
+        section: "progress",
+        tone: result.ok ? "success" : "error",
+        message: result.message,
+      });
+    } catch (error) {
+      setFeedback({
+        section: "progress",
+        tone: "error",
+        message:
+          error instanceof Error ? error.message : "Progress import failed.",
+      });
+    } finally {
+      input.value = "";
+    }
   };
 
   const handleDeleteDrafts = () => {
     if (!window.confirm("Delete all saved draft code for Rust Daily?")) {
+      setFeedback({
+        section: "local-data",
+        tone: "info",
+        message: "Draft deletion canceled. No data was changed.",
+      });
       return;
     }
 
     const count = onDeleteDrafts();
-    setStatus(`${count} draft ${count === 1 ? "entry" : "entries"} deleted.`);
+    setFeedback({
+      section: "local-data",
+      tone: count === 0 ? "info" : "success",
+      message:
+        count === 0
+          ? "No saved draft code was found."
+          : `${count} draft ${count === 1 ? "entry" : "entries"} deleted.`,
+    });
   };
 
   return (
@@ -229,24 +318,30 @@ export function SettingsScreen({
           title="Progress"
           description="Export or import progress only. Draft code is not part of the export."
         >
-          <div className="settings-actions">
-            <button className="primary-button" type="button" onClick={handleExport}>
-              <Download size={19} aria-hidden="true" />
-              Export progress
-            </button>
+          <div className="settings-control-group">
+            <div className="settings-actions">
+              <button className="primary-button" type="button" onClick={handleExport}>
+                <Download size={19} aria-hidden="true" />
+                Export progress
+              </button>
 
-            <button className="secondary-button" type="button" onClick={handleImportClick}>
-              <Upload size={19} aria-hidden="true" />
-              Import progress
-            </button>
+              <button className="secondary-button" type="button" onClick={handleImportClick}>
+                <Upload size={19} aria-hidden="true" />
+                Import progress
+              </button>
 
-            <input
-              accept="application/json,.json"
-              className="visually-hidden"
-              ref={importInputRef}
-              type="file"
-              onChange={handleImportChange}
-            />
+              <input
+                accept="application/json,.json"
+                aria-label="Progress export file"
+                className="visually-hidden"
+                ref={importInputRef}
+                type="file"
+                onChange={handleImportChange}
+              />
+            </div>
+            {feedback?.section === "progress" ? (
+              <SettingsFeedbackMessage feedback={feedback} />
+            ) : null}
           </div>
         </SettingsSection>
 
@@ -255,30 +350,31 @@ export function SettingsScreen({
           title="Local data"
           description="Delete data stored by this browser. These actions cannot be undone."
         >
-          <div className="settings-actions">
-            <button
-              className="danger-button"
-              type="button"
-              onClick={handleDeleteProgressClick}
-            >
-              <Trash2 size={19} aria-hidden="true" />
-              Delete progress
-            </button>
+          <div className="settings-control-group">
+            <div className="settings-actions">
+              <button
+                className="danger-button"
+                type="button"
+                onClick={handleDeleteProgressClick}
+              >
+                <Trash2 size={19} aria-hidden="true" />
+                Delete progress
+              </button>
 
-            <button
-              className="danger-button"
-              type="button"
-              onClick={handleDeleteDrafts}
-            >
-              <FileX2 size={19} aria-hidden="true" />
-              Delete drafts
-            </button>
+              <button
+                className="danger-button"
+                type="button"
+                onClick={handleDeleteDrafts}
+              >
+                <FileX2 size={19} aria-hidden="true" />
+                Delete drafts
+              </button>
+            </div>
+            {feedback?.section === "local-data" ? (
+              <SettingsFeedbackMessage feedback={feedback} />
+            ) : null}
           </div>
         </SettingsSection>
-
-        <p className="settings-status" aria-live="polite">
-          {status}
-        </p>
       </div>
     </main>
   );

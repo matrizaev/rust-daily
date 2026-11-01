@@ -1137,7 +1137,7 @@ p {
   font-size: 0.9rem;
 }
 
-.completion-panel > p {
+.completion-panel>p {
   color: var(--ink);
 }
 
@@ -1320,7 +1320,7 @@ p {
 
 .settings-overview,
 .settings-section,
-.settings-status {
+.settings-feedback {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
@@ -1343,7 +1343,7 @@ p {
 
 .settings-overview p,
 .settings-section p,
-.settings-status {
+.settings-feedback {
   margin-bottom: 0;
 }
 
@@ -1361,7 +1361,7 @@ p {
 }
 
 .settings-fieldset legend,
-.range-control > span {
+.range-control>span {
   margin-bottom: 8px;
   color: var(--ink);
   font-weight: 800;
@@ -1424,6 +1424,11 @@ p {
   gap: 12px;
 }
 
+.settings-control-group {
+  display: grid;
+  gap: 12px;
+}
+
 .danger-button {
   display: inline-flex;
   gap: 9px;
@@ -1439,10 +1444,30 @@ p {
   border-color: var(--danger-strong);
 }
 
-.settings-status {
-  padding: 16px 18px;
+.settings-feedback {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  background: var(--info-bg);
   color: var(--ink);
   font-weight: 700;
+}
+
+.settings-feedback svg {
+  flex: 0 0 auto;
+}
+
+.settings-feedback[data-tone="success"] {
+  border-color: var(--green);
+  background: var(--success-bg);
+  color: var(--green-strong);
+}
+
+.settings-feedback[data-tone="error"] {
+  border-color: var(--danger);
+  background: var(--danger-bg);
+  color: var(--danger-strong);
 }
 
 @media (max-width: 920px) {
