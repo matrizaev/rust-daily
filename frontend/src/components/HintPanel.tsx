@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { LessonHint } from "../types/lesson";
 
 type HintPanelProps = {
@@ -7,6 +8,19 @@ type HintPanelProps = {
 
 function HintPanel({ hints, revealedCount }: HintPanelProps) {
   const visibleHints = hints.slice(0, revealedCount);
+  const latestHintTextRef = useRef<HTMLParagraphElement>(null);
+  const previousRevealedCount = useRef(revealedCount);
+
+  useEffect(() => {
+    if (revealedCount > previousRevealedCount.current) {
+      latestHintTextRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+
+    previousRevealedCount.current = revealedCount;
+  }, [revealedCount]);
 
   return (
     <section className="hint-panel" aria-labelledby="hint-title">
@@ -19,9 +33,13 @@ function HintPanel({ hints, revealedCount }: HintPanelProps) {
 
       {visibleHints.length > 0 ? (
         <ol aria-live="polite">
-          {visibleHints.map((hint) => (
+          {visibleHints.map((hint, index) => (
             <li key={hint.level}>
-              <p>{hint.body}</p>
+              <p
+                ref={index === visibleHints.length - 1 ? latestHintTextRef : undefined}
+              >
+                {hint.body}
+              </p>
               {hint.solutionCode ? (
                 <pre className="hint-solution">
                   <code>{hint.solutionCode}</code>
