@@ -3,25 +3,21 @@ import type { Lesson } from "../types/lesson";
 import type { LessonCompletion } from "../types/progress";
 
 type CompletionPanelProps = {
-  completedNow: boolean;
-  completion: LessonCompletion | null;
+  visible: boolean;
+  title: string;
+  status: string;
   lesson: Lesson;
   onReturnHome: () => void;
 };
 
-const completionTitle = (completedNow: boolean) =>
-  completedNow ? "Lesson complete" : "Completed";
-
-const completionStatus = (completion: LessonCompletion | null) =>
-  completion ? `Completed on ${completion.localDate}.` : "";
-
 function CompletionPanel({
-  completedNow,
-  completion,
+  visible,
+  title,
+  status,
   lesson,
   onReturnHome,
 }: CompletionPanelProps) {
-  if (!completion) {
+  if (!visible) {
     return null;
   }
 
@@ -30,8 +26,8 @@ function CompletionPanel({
       <div className="completion-heading">
         <CheckCircle2 size={22} aria-hidden="true" />
         <div>
-          <h2 id="completion-title">{completionTitle(completedNow)}</h2>
-          <p>{completionStatus(completion)}</p>
+          <h2 id="completion-title">{title}</h2>
+          <p>{status}</p>
         </div>
       </div>
 

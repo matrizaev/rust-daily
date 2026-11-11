@@ -18,6 +18,7 @@ type UseLessonProgressOptions = {
   lesson: Lesson;
   onProgressChange: () => void;
   progress: ProgressStore;
+  recordProgress?: boolean;
   revealedHints: number;
 };
 
@@ -26,13 +27,18 @@ export const useLessonProgress = ({
   lesson,
   onProgressChange,
   progress,
+  recordProgress = true,
   revealedHints,
 }: UseLessonProgressOptions) => {
   const [completedNow, setCompletedNow] = useState(false);
   const [progressStorageError, setProgressStorageError] = useState<string | null>(null);
-  const completion = getLessonCompletion(progress, lesson.id);
+  const completion = recordProgress ? getLessonCompletion(progress, lesson.id) : null;
 
   useEffect(() => {
+    if (!recordProgress) {
+      return;
+    }
+
     const handleStorageResult = (event: Event) => {
       const result = (event as CustomEvent<ProgressWriteResult>).detail;
 
@@ -42,27 +48,38 @@ export const useLessonProgress = ({
     window.addEventListener(PROGRESS_STORAGE_EVENT, handleStorageResult);
 
     return () => window.removeEventListener(PROGRESS_STORAGE_EVENT, handleStorageResult);
-  }, []);
+  }, [recordProgress]);
 
   useEffect(() => {
-    ensureLessonAttempt(lesson.id);
-    onProgressChange();
+    if (recordProgress) {
+      ensureLessonAttempt(lesson.id);
+      onProgressChange();
+    }
     setCompletedNow(false);
-  }, [lesson.id, onProgressChange]);
+  }, [lesson.id, onProgressChange, recordProgress]);
 
   useEffect(() => {
-    if (revealedHints > 0) {
+    if (recordProgress && revealedHints > 0) {
       recordHintReveal(lesson.id, revealedHints);
       onProgressChange();
     }
-  }, [lesson.id, onProgressChange, revealedHints]);
+  }, [lesson.id, onProgressChange, recordProgress, revealedHints]);
 
   const recordValidation = useCallback(() => {
+    if (!recordProgress) {
+      return;
+    }
+
     recordValidationAttempt(lesson.id);
     onProgressChange();
-  }, [lesson.id, onProgressChange]);
+  }, [lesson.id, onProgressChange, recordProgress]);
 
   const recordCompletion = useCallback(() => {
+    if (!recordProgress) {
+      setCompletedNow(true);
+      return;
+    }
+
     const completionResult = recordLessonCompletion(lesson, concept);
 
     if (completionResult.completedNow) {
@@ -70,7 +87,7 @@ export const useLessonProgress = ({
     }
 
     onProgressChange();
-  }, [concept, lesson, onProgressChange]);
+  }, [concept, lesson, onProgressChange, recordProgress]);
 
   return {
     completedNow,

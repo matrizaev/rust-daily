@@ -21,14 +21,19 @@ type LessonScreenProps = {
   progress: ProgressStore;
   editorFontSize: number;
   nextLessonId: string | null;
+  isPlayground?: boolean;
+  isScratch?: boolean;
+  draftId?: string;
   onOpenLesson: (lessonId: string) => void;
   onOpenSettings: () => void;
   onProgressChange: () => void;
   onReturnHome: () => void;
 };
 
-const getFooterCheckCopy = () =>
-  "Checks run locally in your browser and on the configured Rust runner.";
+const getFooterCheckCopy = (isScratch: boolean) =>
+  isScratch
+    ? "The backend compiles this project only; no behavioral assertions are run."
+    : "Checks run locally in your browser and on the configured Rust runner.";
 
 const EditorLoadingFallback = () => (
   <div className="code-editor code-editor-loading" aria-live="polite">
@@ -39,10 +44,11 @@ const EditorLoadingFallback = () => (
 type LessonTopbarProps = Pick<
   LessonScreenProps,
   "lesson" | "onOpenSettings" | "onReturnHome"
->;
+> & { isPlayground: boolean };
 
 const LessonTopbar = ({
   lesson,
+  isPlayground,
   onOpenSettings,
   onReturnHome,
 }: LessonTopbarProps) => (
@@ -60,15 +66,17 @@ const LessonTopbar = ({
     </div>
 
     <div className="topbar-title">
-      <span>{lesson.arcTitle}</span>
+      <span>{isPlayground ? "Playground" : lesson.arcTitle}</span>
       <strong>
-        Arc step {lesson.day} of {lesson.arcLength}
+        {isPlayground ? "Ad-hoc lesson" : `Arc step ${lesson.day} of ${lesson.arcLength}`}
       </strong>
     </div>
   </header>
 );
 
-type LessonBriefProps = Pick<LessonScreenProps, "concept" | "lesson">;
+type LessonBriefProps = Pick<LessonScreenProps, "concept" | "lesson"> & {
+  isPlayground: boolean;
+};
 
 const DependencySetBlock = ({ lesson }: { lesson: Lesson }) => {
   const dependencySet = dependencySetDetailsForValidation(lesson.validation);
@@ -97,9 +105,9 @@ const DependencySetBlock = ({ lesson }: { lesson: Lesson }) => {
   );
 };
 
-const LessonBrief = ({ lesson, concept }: LessonBriefProps) => (
+const LessonBrief = ({ lesson, concept, isPlayground }: LessonBriefProps) => (
   <aside className="lesson-brief">
-    <p className="eyebrow">One concept</p>
+    <p className="eyebrow">{isPlayground ? "Playground lesson" : "One concept"}</p>
     <h1 id="lesson-title">{lesson.title}</h1>
     <p>{lesson.scenario}</p>
 
@@ -130,6 +138,37 @@ const WorkspaceFooter = ({
   </div>
 );
 
+export const LessonCompletion = ({
+  isPlayground,
+  lesson,
+  lessonProgress,
+  onReturnHome,
+}: {
+  isPlayground: boolean;
+  lesson: Lesson;
+  lessonProgress: ReturnType<typeof useLessonProgress>;
+  onReturnHome: () => void;
+}) => {
+  const { completedNow, completion } = lessonProgress;
+  const visible = completion !== null || (isPlayground && completedNow);
+  const title = isPlayground
+    ? "Checks passed"
+    : completedNow
+      ? "Lesson complete"
+      : "Completed";
+  const status = completion ? `Completed on ${completion.localDate}.` : "";
+
+  return (
+    <CompletionPanel
+      visible={visible}
+      title={title}
+      status={status}
+      lesson={lesson}
+      onReturnHome={onReturnHome}
+    />
+  );
+};
+
 const ReadonlyFilesPanel = ({ lesson }: { lesson: Lesson }) => {
   const readonlyFiles = lesson.files.filter((file) => file.role !== "editable");
 
@@ -156,6 +195,9 @@ export function LessonScreen(props: LessonScreenProps) {
   const {
     concept,
     lesson,
+    isPlayground = false,
+    isScratch = false,
+    draftId,
     editorFontSize,
     nextLessonId,
     onOpenLesson,
@@ -164,12 +206,13 @@ export function LessonScreen(props: LessonScreenProps) {
     onReturnHome,
     progress,
   } = props;
-  const draft = useLessonDraft(lesson);
+  const draft = useLessonDraft(lesson, draftId);
   const lessonProgress = useLessonProgress({
     concept,
     lesson,
     onProgressChange,
     progress,
+    recordProgress: !isPlayground,
     revealedHints: draft.revealedHints,
   });
   const validation = useLessonValidation({
@@ -180,20 +223,21 @@ export function LessonScreen(props: LessonScreenProps) {
     onValidationAttempt: lessonProgress.recordValidation,
   });
 
-  const footerCheckCopy = getFooterCheckCopy();
+  const footerCheckCopy = getFooterCheckCopy(isScratch);
   const checkStatus =
     validation.state.kind === "result" ? validation.state.result.status : null;
 
   return (
     <main className="app-shell lesson-shell">
       <LessonTopbar
+        isPlayground={isPlayground}
         lesson={lesson}
         onOpenSettings={onOpenSettings}
         onReturnHome={onReturnHome}
       />
 
       <section className="lesson-layout" aria-labelledby="lesson-title">
-        <LessonBrief concept={concept} lesson={lesson} />
+        <LessonBrief concept={concept} isPlayground={isPlayground} lesson={lesson} />
 
         <section className="coding-workspace" aria-label="Lesson editor">
           <LessonActions
@@ -201,7 +245,7 @@ export function LessonScreen(props: LessonScreenProps) {
             canRevealHint={draft.revealedHints < lesson.hints.length}
             checkStatus={checkStatus}
             isChecking={validation.isChecking}
-            nextLessonId={nextLessonId}
+            nextLessonId={isPlayground ? null : nextLessonId}
             onCheck={validation.handleCheck}
             onOpenLesson={onOpenLesson}
             onReset={draft.handleReset}
@@ -231,10 +275,10 @@ export function LessonScreen(props: LessonScreenProps) {
               : draft.saveStatus}
           />
           <ValidationPanel state={validation.state} />
-          <CompletionPanel
-            completedNow={lessonProgress.completedNow}
-            completion={lessonProgress.completion}
+          <LessonCompletion
+            isPlayground={isPlayground}
             lesson={lesson}
+            lessonProgress={lessonProgress}
             onReturnHome={onReturnHome}
           />
 

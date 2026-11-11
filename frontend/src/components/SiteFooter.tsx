@@ -1,4 +1,5 @@
 const footerLinks = [
+  { href: "#playground", label: "Playground" },
   { href: "#about", label: "About" },
   { href: "#contact", label: "Contact" },
   { href: "#privacy", label: "Privacy Policy" },
@@ -9,7 +10,7 @@ const footerLinks = [
 export function SiteFooter() {
   return (
     <footer className="site-footer">
-      <nav aria-label="Site information">
+      <nav aria-label="Site navigation">
         {footerLinks.map((link) => (
           <a href={link.href} key={link.href}>
             {link.label}

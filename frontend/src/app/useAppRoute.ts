@@ -7,6 +7,24 @@ import {
   type AppRoute,
 } from "./routes";
 
+const routeTitles = {
+  settings: "Settings",
+  lesson: "Lesson",
+  playground: "Playground",
+} as const;
+
+const pageTitleForRoute = (route: AppRoute) => {
+  if (route.kind === "home") {
+    return HOME_PAGE_TITLE;
+  }
+
+  if (route.kind === "info") {
+    return `${getInfoPageTitle(route.page)} | Rust Daily`;
+  }
+
+  return `${routeTitles[route.kind]} | Rust Daily`;
+};
+
 export const useAppRoute = (lessons: LessonIndexEntry[]) => {
   const [route, setRoute] = useState<AppRoute>(() => getRouteFromHash(lessons));
 
@@ -21,14 +39,7 @@ export const useAppRoute = (lessons: LessonIndexEntry[]) => {
   }, [lessons]);
 
   useEffect(() => {
-    document.title =
-      route.kind === "info"
-        ? `${getInfoPageTitle(route.page)} | Rust Daily`
-        : route.kind === "settings"
-          ? "Settings | Rust Daily"
-          : route.kind === "lesson"
-            ? "Lesson | Rust Daily"
-            : HOME_PAGE_TITLE;
+    document.title = pageTitleForRoute(route);
     window.scrollTo({ top: 0 });
   }, [route]);
 
