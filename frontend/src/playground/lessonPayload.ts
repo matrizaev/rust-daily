@@ -38,102 +38,142 @@ const isSupportedProjectPath = (path: string) =>
 const isPositiveTimeout = (value: unknown) =>
     typeof value === "number" && Number.isFinite(value) && value > 0;
 
-const validationStepChecks: Partial<Record<string, (value: Record<string, unknown>) => boolean>> = {
-    "browser-rust": (value) => Array.isArray(value.checks),
-    structural: (value) => {
-        const isStringArray = (items: unknown): items is string[] =>
-            Array.isArray(items) && items.every((item) => typeof item === "string");
-        const isStructuralCheck = (check: unknown): boolean => {
-            if (!isRecord(check)) {
-                return false;
-            }
+const isStringArray = (items: unknown): items is string[] =>
+    Array.isArray(items) && items.every((item) => typeof item === "string");
 
-            switch (check.type) {
-                case "enum_unit_variants":
-                    return typeof check.enumName === "string" &&
-                        isStringArray(check.requiredVariants);
-                case "struct_fields":
-                    return typeof check.structName === "string" &&
-                        Array.isArray(check.requiredFields) &&
-                        check.requiredFields.every((field) =>
-                            isRecord(field) && typeof field.name === "string" &&
-                            isStringArray(field.typeIncludes));
-                case "tuple_struct_fields":
-                    return typeof check.structName === "string" &&
-                        isStringArray(check.requiredTypes);
-                case "impl_trait_for_type":
-                case "derived_trait_for_type":
-                    return typeof check.traitName === "string" &&
-                        typeof check.typeName === "string";
-                case "impl_method":
-                    return typeof check.implFor === "string" &&
-                        typeof check.methodName === "string" &&
-                        isStringArray(check.requiredSignatureIncludes);
-                case "function_signature":
-                    return typeof check.functionName === "string" &&
-                        isStringArray(check.requiredSignatureIncludes);
-                case "source_includes":
-                    return isStringArray(check.requiredSnippets) &&
-                        (check.forbiddenSnippets === undefined ||
-                            isStringArray(check.forbiddenSnippets));
-                default:
-                    return false;
-            }
-        };
+const isStructuralField = (field: unknown) =>
+    isRecord(field) && typeof field.name === "string" && isStringArray(field.typeIncludes);
 
-        return Array.isArray(value.checks) && value.checks.length > 0 &&
-            value.checks.every(isStructuralCheck);
-    },
-    "backend-cargo-test": (value) =>
-        (value.testCode === undefined || typeof value.testCode === "string") &&
-        (value.testFiles === undefined ||
-            (Array.isArray(value.testFiles) && value.testFiles.every((file) =>
-                isRecord(file) &&
-                isSafeRelativePath(file.path) &&
-                isSupportedProjectPath(file.path) &&
-                typeof file.content === "string",
-            ))),
-    "backend-compile-fail": (value) => {
-        if (!Array.isArray(value.cases) || value.cases.length === 0 || value.cases.length > 4) {
-            return false;
-        }
+type StructuralCheckValidator = (value: Record<string, unknown>) => boolean;
 
-        const names = new Set<string>();
-        const paths = new Set<string>();
-        return value.cases.every((entry) => {
-            if (
-                !isRecord(entry) ||
-                typeof entry.name !== "string" ||
-                !/^[A-Za-z0-9_-]{1,80}$/.test(entry.name) ||
-                !isSafeRelativePath(entry.path) ||
-                !entry.path.startsWith("compile_fail/") ||
-                !entry.path.endsWith(".rs") ||
-                typeof entry.content !== "string" ||
-                !Array.isArray(entry.expectedDiagnostics) ||
-                entry.expectedDiagnostics.length === 0 ||
-                !entry.expectedDiagnostics.every(isNonEmptyString) ||
-                (entry.forbiddenDiagnostics !== undefined &&
-                    (!Array.isArray(entry.forbiddenDiagnostics) ||
-                        !entry.forbiddenDiagnostics.every(isNonEmptyString))) ||
-                names.has(entry.name) || paths.has(entry.path)
-            ) {
-                return false;
-            }
-
-            names.add(entry.name);
-            paths.add(entry.path);
-            return true;
-        });
-    },
+const structuralCheckValidators: Partial<Record<string, StructuralCheckValidator>> = {
+    enum_unit_variants: (check) =>
+        typeof check.enumName === "string" && isStringArray(check.requiredVariants),
+    struct_fields: (check) =>
+        typeof check.structName === "string" &&
+        Array.isArray(check.requiredFields) &&
+        check.requiredFields.every(isStructuralField),
+    tuple_struct_fields: (check) =>
+        typeof check.structName === "string" && isStringArray(check.requiredTypes),
+    impl_trait_for_type: (check) =>
+        typeof check.traitName === "string" && typeof check.typeName === "string",
+    derived_trait_for_type: (check) =>
+        typeof check.traitName === "string" && typeof check.typeName === "string",
+    impl_method: (check) =>
+        typeof check.implFor === "string" &&
+        typeof check.methodName === "string" &&
+        isStringArray(check.requiredSignatureIncludes),
+    function_signature: (check) =>
+        typeof check.functionName === "string" &&
+        isStringArray(check.requiredSignatureIncludes),
+    source_includes: (check) =>
+        isStringArray(check.requiredSnippets) &&
+        (check.forbiddenSnippets === undefined || isStringArray(check.forbiddenSnippets)),
 };
 
-const isValidationStep = (value: unknown) => {
+const isStructuralCheck = (check: unknown) => {
+    if (!isRecord(check) || typeof check.type !== "string") {
+        return false;
+    }
+
+    if (!Object.prototype.hasOwnProperty.call(structuralCheckValidators, check.type)) {
+        return false;
+    }
+
+    return structuralCheckValidators[check.type]?.(check) ?? false;
+};
+
+const isBackendTestFile = (file: unknown) =>
+    isRecord(file) &&
+    isSafeRelativePath(file.path) &&
+    isSupportedProjectPath(file.path) &&
+    typeof file.content === "string";
+
+const hasValidTestCode = (testCode: unknown) =>
+    testCode === undefined || typeof testCode === "string";
+
+const hasValidTestFiles = (testFiles: unknown) =>
+    testFiles === undefined ||
+    (Array.isArray(testFiles) && testFiles.every(isBackendTestFile));
+
+type CompileFailCase = Record<string, unknown> & { name: string; path: string };
+
+const hasValidCompileFailIdentity = (
+    entry: Record<string, unknown>,
+): entry is CompileFailCase =>
+    typeof entry.name === "string" &&
+    /^[A-Za-z0-9_-]{1,80}$/.test(entry.name) &&
+    isSafeRelativePath(entry.path) &&
+    entry.path.startsWith("compile_fail/") &&
+    entry.path.endsWith(".rs");
+
+const isNonEmptyStringArray = (value: unknown) =>
+    Array.isArray(value) && value.length > 0 && value.every(isNonEmptyString);
+
+const hasValidCompileFailDiagnostics = (entry: Record<string, unknown>) =>
+    isNonEmptyStringArray(entry.expectedDiagnostics) &&
+    (entry.forbiddenDiagnostics === undefined ||
+        (Array.isArray(entry.forbiddenDiagnostics) &&
+            entry.forbiddenDiagnostics.every(isNonEmptyString)));
+
+const isCompileFailCase = (
+    entry: unknown,
+    names: Set<string>,
+    paths: Set<string>,
+) => {
     if (
-        !isRecord(value) ||
-        typeof value.mode !== "string" ||
-        !VALIDATION_MODES.has(value.mode) ||
-        value.mode === "all"
+        !isRecord(entry) ||
+        !hasValidCompileFailIdentity(entry) ||
+        typeof entry.content !== "string" ||
+        !hasValidCompileFailDiagnostics(entry) ||
+        names.has(entry.name) ||
+        paths.has(entry.path)
     ) {
+        return false;
+    }
+
+    names.add(entry.name);
+    paths.add(entry.path);
+    return true;
+};
+
+const isBackendCompileFail = (value: Record<string, unknown>) => {
+    if (!Array.isArray(value.cases) || value.cases.length === 0 || value.cases.length > 4) {
+        return false;
+    }
+
+    const names = new Set<string>();
+    const paths = new Set<string>();
+    return value.cases.every((entry) => isCompileFailCase(entry, names, paths));
+};
+
+const validationStepChecks: Partial<Record<string, (value: Record<string, unknown>) => boolean>> = {
+    "browser-rust": (value) => Array.isArray(value.checks),
+    structural: (value) => Array.isArray(value.checks) &&
+        value.checks.length > 0 &&
+        value.checks.every(isStructuralCheck),
+    "backend-cargo-test": (value) =>
+        hasValidTestCode(value.testCode) && hasValidTestFiles(value.testFiles),
+    "backend-compile-fail": isBackendCompileFail,
+};
+
+const BACKEND_VALIDATION_MODES = new Set(["backend-cargo-test", "backend-compile-fail"]);
+const DEPENDENCY_SETS = new Set(["std", "advanced", "advanced-db"]);
+
+const hasValidDependencySet = (value: Record<string, unknown>) =>
+    !BACKEND_VALIDATION_MODES.has(String(value.mode)) ||
+    value.dependencySet === undefined ||
+    (typeof value.dependencySet === "string" && DEPENDENCY_SETS.has(value.dependencySet));
+
+const hasValidValidationMode = (
+    value: Record<string, unknown>,
+): value is Record<string, unknown> & { mode: string } =>
+    typeof value.mode === "string" &&
+    VALIDATION_MODES.has(value.mode) &&
+    value.mode !== "all";
+
+const isValidationStep = (value: unknown) => {
+    if (!isRecord(value) || !hasValidValidationMode(value)) {
         return false;
     }
 
@@ -141,16 +181,8 @@ const isValidationStep = (value: unknown) => {
         return true;
     }
 
-    if (
-        (value.mode === "backend-cargo-test" || value.mode === "backend-compile-fail") &&
-        value.dependencySet !== undefined &&
-        (typeof value.dependencySet !== "string" ||
-            !["std", "advanced", "advanced-db"].includes(value.dependencySet))
-    ) {
-        return false;
-    }
-
-    return isPositiveTimeout(value.timeoutMs) &&
+    return hasValidDependencySet(value) &&
+        isPositiveTimeout(value.timeoutMs) &&
         (validationStepChecks[value.mode]?.(value) ?? false);
 };
 
