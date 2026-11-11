@@ -6,6 +6,10 @@ import { useNavigationActions } from "./app/useNavigationActions";
 import { useProgressState } from "./app/useProgressState";
 import { usePwaState } from "./app/usePwaState";
 import { useSettingsState } from "./app/useSettingsState";
+import {
+  usePlaygroundLesson,
+  type PlaygroundLessonState,
+} from "./playground/usePlaygroundLesson";
 import conceptsData from "./content/concepts.json";
 import DailyHome from "./components/DailyHome";
 import {
@@ -138,9 +142,64 @@ const InfoRoute = ({
   </>
 );
 
+const getPlaygroundStatusCopy = (
+  state: Exclude<PlaygroundLessonState, { kind: "ready" }>,
+) => {
+  if (state.kind === "loading") {
+    return { title: "Opening Playground lesson", body: "Preparing the lesson workspace.", showReturnHome: false };
+  }
+
+  if (state.kind === "invalid") {
+    return { title: "Lesson unavailable", body: state.message, showReturnHome: true };
+  }
+
+  return {
+    title: "Opening Playground",
+    body: "Preparing the scratch workspace.",
+    showReturnHome: false,
+  };
+};
+
+const PlaygroundStatusRoute = ({
+  navigation,
+  pwa,
+  state,
+}: {
+  navigation: NavigationActions;
+  pwa: PwaState;
+  state: Exclude<PlaygroundLessonState, { kind: "ready" }>;
+}) => {
+  const { title, body, showReturnHome } = getPlaygroundStatusCopy(state);
+
+  return (
+    <>
+      <PwaBanner pwa={pwa} />
+      <main className="app-shell daily-shell">
+        <section className="daily-overview" aria-live="polite">
+          <p className="eyebrow">Playground</p>
+          <h1>{title}</h1>
+          <p>{body}</p>
+          {showReturnHome ? (
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={navigation.handleReturnHome}
+            >
+              Return home
+            </button>
+          ) : null}
+        </section>
+      </main>
+    </>
+  );
+};
+
 const LessonRoute = ({
   activeConcept,
   activeLesson,
+  draftId,
+  isPlayground = false,
+  isScratch = false,
   navigation,
   progressState,
   pwa,
@@ -148,6 +207,9 @@ const LessonRoute = ({
 }: {
   activeConcept: Concept | null;
   activeLesson: Lesson;
+  draftId?: string;
+  isPlayground?: boolean;
+  isScratch?: boolean;
   navigation: NavigationActions;
   progressState: ProgressState;
   pwa: PwaState;
@@ -167,7 +229,10 @@ const LessonRoute = ({
         concept={activeConcept}
         editorFontSize={settings.editorFontSize}
         lesson={activeLesson}
-        nextLessonId={nextLessonId(activeLesson.id)}
+        nextLessonId={isPlayground ? null : nextLessonId(activeLesson.id)}
+        isPlayground={isPlayground}
+        isScratch={isScratch}
+        draftId={draftId}
         onOpenLesson={navigation.handleOpenLesson}
         onOpenSettings={navigation.handleOpenSettings}
         onProgressChange={progressState.handleProgressChange}
@@ -235,6 +300,44 @@ const getInfoRoute = (
   return <InfoRoute navigation={navigation} page={route.page} pwa={pwa} />;
 };
 
+const PlaygroundRoute = ({
+  navigation,
+  playgroundLesson,
+  progressState,
+  pwa,
+  settings,
+}: {
+  navigation: NavigationActions;
+  playgroundLesson: PlaygroundLessonState;
+  progressState: ProgressState;
+  pwa: PwaState;
+  settings: UserSettings;
+}) => {
+  if (playgroundLesson.kind !== "ready") {
+    return (
+      <PlaygroundStatusRoute
+        navigation={navigation}
+        pwa={pwa}
+        state={playgroundLesson}
+      />
+    );
+  }
+
+  return (
+    <LessonRoute
+      activeConcept={null}
+      activeLesson={playgroundLesson.lesson}
+      draftId={playgroundLesson.draftId}
+      isPlayground
+      isScratch={playgroundLesson.isScratch}
+      navigation={navigation}
+      progressState={progressState}
+      pwa={pwa}
+      settings={settings}
+    />
+  );
+};
+
 const AppRouteView = ({
   activeConcept,
   activeLesson,
@@ -245,6 +348,7 @@ const AppRouteView = ({
   navigation,
   progressState,
   pwa,
+  playgroundLesson,
   route,
   settings,
 }: {
@@ -257,6 +361,7 @@ const AppRouteView = ({
   navigation: NavigationActions;
   progressState: ProgressState;
   pwa: PwaState;
+  playgroundLesson: PlaygroundLessonState;
   route: AppRoute;
   settings: UserSettings;
 }) => {
@@ -275,6 +380,18 @@ const AppRouteView = ({
     {
       matches: infoRoute !== null,
       element: infoRoute,
+    },
+    {
+      matches: route.kind === "playground",
+      element: (
+        <PlaygroundRoute
+          navigation={navigation}
+          playgroundLesson={playgroundLesson}
+          progressState={progressState}
+          pwa={pwa}
+          settings={settings}
+        />
+      ),
     },
     {
       matches: route.kind === "settings",
@@ -321,6 +438,7 @@ const AppRouteView = ({
 
 function App() {
   const [route, setRoute] = useAppRoute(lessons);
+  const playgroundLesson = usePlaygroundLesson(route);
   const pwa = usePwaState();
   const { settings, handleSettingsChange } = useSettingsState();
   const progressState = useProgressState();
@@ -356,6 +474,7 @@ function App() {
         navigation={navigation}
         progressState={progressState}
         pwa={pwa}
+        playgroundLesson={playgroundLesson}
         route={route}
         settings={settings}
       />

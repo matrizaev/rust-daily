@@ -42,8 +42,8 @@ const draftRecordToState = (lesson: Lesson, draft: DraftRecord): DraftState => {
   };
 };
 
-const getDraftState = (lesson: Lesson): DraftState => {
-  const result = readDraft(lesson.id);
+const getDraftState = (lesson: Lesson, draftId: string): DraftState => {
+  const result = readDraft(draftId);
 
   if (!result.ok) {
     return {
@@ -61,29 +61,34 @@ const formatSavedAt = (savedAt: string | null, saveError: string | null) =>
   saveError
     ? `Draft not saved locally: ${saveError}.`
     :
-  savedAt
-    ? `Draft saved ${new Intl.DateTimeFormat(undefined, {
+    savedAt
+      ? `Draft saved ${new Intl.DateTimeFormat(undefined, {
         hour: "numeric",
         minute: "2-digit",
       }).format(new Date(savedAt))}`
-    : "Draft will save locally";
+      : "Draft will save locally";
 
 const draftPersistenceState = (
   result: { ok: true; record?: DraftRecord | null } | { ok: false; reason: string },
 ) => result.ok
-  ? { savedAt: result.record?.updatedAt ?? null, error: null }
-  : { savedAt: null, error: result.reason };
+    ? { savedAt: result.record?.updatedAt ?? null, error: null }
+    : { savedAt: null, error: result.reason };
 
-const persistDraft = (lesson: Lesson, filePath: string, code: string) => {
+const persistDraft = (
+  lesson: Lesson,
+  draftId: string,
+  filePath: string,
+  code: string,
+) => {
   if (code === getPrimaryEditableFile(lesson).content) {
-    return draftPersistenceState(clearDraft(lesson.id));
+    return draftPersistenceState(clearDraft(draftId));
   }
 
-  return draftPersistenceState(saveDraft(lesson.id, code, filePath));
+  return draftPersistenceState(saveDraft(draftId, code, filePath));
 };
 
-export const useLessonDraft = (lesson: Lesson) => {
-  const initialDraft = useMemo(() => getDraftState(lesson), [lesson]);
+export const useLessonDraft = (lesson: Lesson, draftId = lesson.id) => {
+  const initialDraft = useMemo(() => getDraftState(lesson, draftId), [draftId, lesson]);
 
   const [code, setCode] = useState(initialDraft.code);
   const [filePath, setFilePath] = useState(initialDraft.filePath);
@@ -92,36 +97,36 @@ export const useLessonDraft = (lesson: Lesson) => {
   const [saveError, setSaveError] = useState<string | null>(initialDraft.saveError);
 
   useEffect(() => {
-    const nextDraft = getDraftState(lesson);
+    const nextDraft = getDraftState(lesson, draftId);
 
     setCode(nextDraft.code);
     setFilePath(nextDraft.filePath);
     setLastSavedAt(nextDraft.lastSavedAt);
     setSaveError(nextDraft.saveError);
     setRevealedHints(0);
-  }, [lesson]);
+  }, [draftId, lesson]);
 
   useEffect(() => {
     const saveTimer = window.setTimeout(() => {
-      const result = persistDraft(lesson, filePath, code);
+      const result = persistDraft(lesson, draftId, filePath, code);
 
       setLastSavedAt(result.savedAt);
       setSaveError(result.error);
     }, SAVE_DELAY_MS);
 
     return () => window.clearTimeout(saveTimer);
-  }, [code, filePath, lesson]);
+  }, [code, draftId, filePath, lesson]);
 
   const handleReset = useCallback(() => {
     const editableFile = getPrimaryEditableFile(lesson);
-    const result = clearDraft(lesson.id);
+    const result = clearDraft(draftId);
 
     setCode(editableFile.content);
     setFilePath(editableFile.path);
     setLastSavedAt(null);
     setSaveError(result.ok ? null : result.reason);
     setRevealedHints(0);
-  }, [lesson]);
+  }, [draftId, lesson]);
 
   const handleRevealHint = useCallback(() => {
     setRevealedHints((current) => Math.min(current + 1, lesson.hints.length));
