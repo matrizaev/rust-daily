@@ -1,6 +1,7 @@
 import { ArrowLeft, Package, Settings } from "lucide-react";
 import { Suspense, lazy } from "react";
 import CompletionPanel from "./CompletionPanel";
+import { EditableFileHeader } from "./EditableFileHeader";
 import HintPanel from "./HintPanel";
 import LessonActions from "./LessonActions";
 import ValidationPanel from "./ValidationPanel";
@@ -252,9 +253,7 @@ export function LessonScreen(props: LessonScreenProps) {
             onRevealHint={draft.handleRevealHint}
           />
 
-          <div className="editor-file-header" aria-label="Editable file">
-            <span>{draft.filePath}</span>
-          </div>
+          <EditableFileHeader filePath={draft.filePath} content={draft.code} />
 
           <Suspense fallback={<EditorLoadingFallback />}>
             <CodeEditor
