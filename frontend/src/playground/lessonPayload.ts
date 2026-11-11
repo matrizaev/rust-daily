@@ -40,12 +40,91 @@ const isPositiveTimeout = (value: unknown) =>
 
 const validationStepChecks: Partial<Record<string, (value: Record<string, unknown>) => boolean>> = {
     "browser-rust": (value) => Array.isArray(value.checks),
-    structural: (value) => Array.isArray(value.checks) && value.checks.length > 0,
+    structural: (value) => {
+        const isStringArray = (items: unknown): items is string[] =>
+            Array.isArray(items) && items.every((item) => typeof item === "string");
+        const isStructuralCheck = (check: unknown): boolean => {
+            if (!isRecord(check)) {
+                return false;
+            }
+
+            switch (check.type) {
+                case "enum_unit_variants":
+                    return typeof check.enumName === "string" &&
+                        isStringArray(check.requiredVariants);
+                case "struct_fields":
+                    return typeof check.structName === "string" &&
+                        Array.isArray(check.requiredFields) &&
+                        check.requiredFields.every((field) =>
+                            isRecord(field) && typeof field.name === "string" &&
+                            isStringArray(field.typeIncludes));
+                case "tuple_struct_fields":
+                    return typeof check.structName === "string" &&
+                        isStringArray(check.requiredTypes);
+                case "impl_trait_for_type":
+                case "derived_trait_for_type":
+                    return typeof check.traitName === "string" &&
+                        typeof check.typeName === "string";
+                case "impl_method":
+                    return typeof check.implFor === "string" &&
+                        typeof check.methodName === "string" &&
+                        isStringArray(check.requiredSignatureIncludes);
+                case "function_signature":
+                    return typeof check.functionName === "string" &&
+                        isStringArray(check.requiredSignatureIncludes);
+                case "source_includes":
+                    return isStringArray(check.requiredSnippets) &&
+                        (check.forbiddenSnippets === undefined ||
+                            isStringArray(check.forbiddenSnippets));
+                default:
+                    return false;
+            }
+        };
+
+        return Array.isArray(value.checks) && value.checks.length > 0 &&
+            value.checks.every(isStructuralCheck);
+    },
     "backend-cargo-test": (value) =>
         (value.testCode === undefined || typeof value.testCode === "string") &&
-        (value.testFiles === undefined || Array.isArray(value.testFiles)),
-    "backend-compile-fail": (value) =>
-        Array.isArray(value.cases) && value.cases.length > 0 && value.cases.length <= 4,
+        (value.testFiles === undefined ||
+            (Array.isArray(value.testFiles) && value.testFiles.every((file) =>
+                isRecord(file) &&
+                isSafeRelativePath(file.path) &&
+                isSupportedProjectPath(file.path) &&
+                typeof file.content === "string",
+            ))),
+    "backend-compile-fail": (value) => {
+        if (!Array.isArray(value.cases) || value.cases.length === 0 || value.cases.length > 4) {
+            return false;
+        }
+
+        const names = new Set<string>();
+        const paths = new Set<string>();
+        return value.cases.every((entry) => {
+            if (
+                !isRecord(entry) ||
+                typeof entry.name !== "string" ||
+                !/^[A-Za-z0-9_-]{1,80}$/.test(entry.name) ||
+                !isSafeRelativePath(entry.path) ||
+                !entry.path.startsWith("compile_fail/") ||
+                !entry.path.endsWith(".rs") ||
+                typeof entry.content !== "string" ||
+                !Array.isArray(entry.expectedDiagnostics) ||
+                entry.expectedDiagnostics.length === 0 ||
+                !entry.expectedDiagnostics.every(isNonEmptyString) ||
+                (entry.forbiddenDiagnostics !== undefined &&
+                    (!Array.isArray(entry.forbiddenDiagnostics) ||
+                        !entry.forbiddenDiagnostics.every(isNonEmptyString))) ||
+                names.has(entry.name) || paths.has(entry.path)
+            ) {
+                return false;
+            }
+
+            names.add(entry.name);
+            paths.add(entry.path);
+            return true;
+        });
+    },
 };
 
 const isValidationStep = (value: unknown) => {
@@ -60,6 +139,15 @@ const isValidationStep = (value: unknown) => {
 
     if (value.mode === "self-check") {
         return true;
+    }
+
+    if (
+        (value.mode === "backend-cargo-test" || value.mode === "backend-compile-fail") &&
+        value.dependencySet !== undefined &&
+        (typeof value.dependencySet !== "string" ||
+            !["std", "advanced", "advanced-db"].includes(value.dependencySet))
+    ) {
+        return false;
     }
 
     return isPositiveTimeout(value.timeoutMs) &&
