@@ -9,6 +9,8 @@ Create a complete public Rust Daily lesson payload from the user's request and
 turn it into a link that opens the lesson in Playground. This workflow does not
 add the lesson to any curriculum. This skill is self-contained: it must work
 without access to a Rust Daily source checkout or its documentation.
+When installing or sharing this skill, keep `link.mjs` alongside `SKILL.md`;
+the script needs Node.js 18 or newer but no repository files or dependencies.
 
 ## Payload Contract
 
@@ -69,7 +71,7 @@ changed by recipients.
   `testFiles`, or `testCode`. If there is no explicit backend mode, Playground
   adds a default compile-smoke test: it checks that the library compiles but
   asserts no lesson behavior. This default also applies to structural-only and
-  self-check-only lessons.
+  self-check-only lessons, so every lesson must include `src/lib.rs`.
 - `structural`: finite positive `timeoutMs` and one or more checks. Checks run
   against the single editable file only, not readonly or test files. They are
   small text/regex source-matching functions, not a Rust parser, compiler, or
@@ -141,34 +143,106 @@ Do not use `browser-rust`: unsupported by Playground. Do not invent validation
 modes or fields. Public tests are inspectable and editable by link recipients;
 they are practice checks, not tamper-resistant grading.
 
+## Example Payload
+
+Adapt this complete example to the requested lesson. It uses a serializer and
+reuses the starter source so the editable file matches `starterCode` exactly:
+
+```sh
+payload=$(mktemp)
+node > "$payload" <<'NODE'
+const starter = `pub fn timeout_seconds(configured: Option<u64>) -> u64 {
+    todo!()
+}
+`;
+const tests = `use rust_daily_lesson::timeout_seconds;
+
+#[test]
+fn configured_timeout_is_used() {
+    assert_eq!(timeout_seconds(Some(45)), 45);
+    assert_eq!(timeout_seconds(Some(0)), 0);
+}
+
+#[test]
+fn missing_timeout_defaults_to_30() {
+    assert_eq!(timeout_seconds(None), 30);
+}
+`;
+const lesson = {
+  schemaVersion: 2,
+  id: "default-request-timeout",
+  arcId: "playground",
+  arcTitle: "Playground",
+  order: 1,
+  day: 1,
+  arcLength: 1,
+  title: "Handle a missing request timeout",
+  conceptId: "option",
+  difficulty: "easy",
+  estimatedMinutes: 5,
+  scenario: "A service needs a default request timeout when none is configured.",
+  instructions: "Return the configured timeout, or 30 seconds if it is missing. Preserve an explicitly configured zero.",
+  starterCode: starter,
+  files: [
+    { path: "src/lib.rs", role: "editable", content: starter },
+    { path: "tests/lesson.rs", role: "test", content: tests },
+  ],
+  hints: [
+    { level: 1, body: "Option is either Some(value) or None." },
+    { level: 2, body: "Try match or Option::unwrap_or." },
+  ],
+  completionExplanation: "Use the value in Some, or a default when it is None.",
+  validation: { mode: "backend-cargo-test", timeoutMs: 10000, dependencySet: "std" },
+};
+process.stdout.write(JSON.stringify(lesson));
+NODE
+```
+
+Pass `"$payload"` as the lesson path in the procedure below, and remove it after
+generating and verifying the link.
+
 ## Procedure
 
 1. Use the self-contained payload contract above. Do not require or assume
    repository files are available.
-2. Ask only for lesson-defining details that are missing, such as the Rust
-   concept or expected learner level. Choose a focused production-shaped task
-   that can be completed in 5-10 minutes.
+2. Honor the requested concept and level. If a simple lesson is requested without
+   a concept, default to beginner-level `Option` and missing values; if the level
+   is unspecified, default to `easy`. Ask only when the request cannot reasonably
+   be resolved with these defaults. Choose a focused production-shaped task that
+   can be completed in 5-10 minutes.
 3. Author one complete public lesson object that satisfies the contract.
    Include exactly one editable file, only necessary read-only context or test
    files, and one to three progressive hints. Use a meaningful `conceptId`;
    the app may display it directly when no concept metadata is available.
-4. Serialize the complete object as compact UTF-8 JSON. Confirm the decoded
-   JSON is no larger than 32 KiB. If it is too large, reduce unnecessary lesson
-   context or tests and validate the lesson again; never truncate or silently
-   omit required content.
-5. Encode the UTF-8 JSON bytes as unpadded base64url. In Node.js,
-   `Buffer.from(json, "utf8").toString("base64url")` performs this encoding;
-   equivalently, use standard Base64, replace `+` with `-` and `/` with `_`,
-   and remove trailing `=` characters. Construct the link as:
+4. Save the complete payload as a UTF-8 JSON file in a temporary location,
+   using a JSON serializer rather than constructing JSON or a link by hand.
+   Run the bundled script from this skill's directory (Node.js 18 or newer):
 
-   ```text
-   https://borrowquest.site/#playground?lesson=<base64url-payload>
+   ```sh
+   node /path/to/playground-lesson/link.mjs generate /path/to/lesson.json
    ```
 
-   Use another origin only when the user explicitly supplies one. The payload
-   alphabet is URL-safe and is placed in the hash fragment without additional
-   URL encoding.
-6. Return the share link and a concise lesson summary. Include the raw JSON
+   Replace the paths with the actual skill and payload paths. The script
+   validates the public payload, serializes it compactly, enforces the 32 KiB
+   UTF-8 limit, generates an unpadded base64url link, and verifies a round trip
+   before printing the complete link to stdout. Errors go to stderr and result
+   in a nonzero exit; correct the payload and rerun. Do not truncate or edit
+   the generated link. The default origin is `https://borrowquest.site`; use
+   `--origin https://example.com` only when the user explicitly supplies an
+   origin.
+5. Verify the exact link you intend to return, including any existing link
+   being revised, using the same bundled script:
+
+   ```sh
+   node /path/to/playground-lesson/link.mjs verify 'https://borrowquest.site/#playground?lesson=...'
+   ```
+
+   Alternatively, pass `-` in place of the link to read it from standard input.
+   Verification checks the route, encoding, size, JSON, and payload contract;
+   it does not compile Rust, run tests, or guarantee the deployed site is
+   reachable. Never return a link if either command fails. Remove temporary
+   payload files when finished.
+6. Return the verified share link and a concise lesson summary. Include the raw JSON
    only when requested. Remind the user that lesson source and tests are
    embedded in the link and must not contain secrets or private material.
 
