@@ -1,10 +1,23 @@
 import assert from "node:assert/strict";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { spawnSync } from "node:child_process";
-import { test } from "node:test";
+import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { decodePlaygroundLesson } from "../../../frontend/src/playground/lessonPayload.ts";
 
-const script = fileURLToPath(new URL("./link.mjs", import.meta.url));
+const skillPath = fileURLToPath(new URL("./SKILL.md", import.meta.url));
+const skill = readFileSync(skillPath, "utf8");
+const embeddedTool = skill.match(
+  /<!-- link-tool:start -->\r?\n```js\r?\n([\s\S]*?)\r?\n```\r?\n<!-- link-tool:end -->/,
+);
+assert.ok(embeddedTool, "SKILL.md must contain the embedded link tool");
+const tempDir = mkdtempSync(join(tmpdir(), "rust-daily-link-test-"));
+const script = join(tempDir, "link.mjs");
+writeFileSync(script, embeddedTool[1]);
+after(() => rmSync(tempDir, { recursive: true, force: true }));
+
 const run = (args, input) => spawnSync(process.execPath, [script, ...args], { input, encoding: "utf8" });
 const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
 const urlFor = (value) => `https://borrowquest.site/#playground?lesson=${encode(value)}`;
