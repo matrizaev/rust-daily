@@ -47,6 +47,12 @@ Create one JSON object with the complete public lesson fields:
 - `validation`: the check configuration described below; required for a valid
    shared lesson.
 
+For lessons authored with this skill, include exactly three hints. Hint 3 must
+include `solutionCode` containing the complete intended solution for the
+editable file. This lets `--test-solution` run the authored answer against the
+lesson's backend checks without adding solution-only fields to the public
+payload.
+
 Each file's `path`, `role`, and `content` must be strings. Include exactly one
 `editable` file: learner's source file. A `readonly` file supplies context that
 learners can read but not edit. A `test` file supplies Rust tests to backend
@@ -190,6 +196,14 @@ const lesson = {
   hints: [
     { level: 1, body: "Option is either Some(value) or None." },
     { level: 2, body: "Try match or Option::unwrap_or." },
+    {
+      level: 3,
+      body: "One complete solution is to use unwrap_or with the default.",
+      solutionCode: `pub fn timeout_seconds(configured: Option<u64>) -> u64 {
+    configured.unwrap_or(30)
+}
+`,
+    },
   ],
   completionExplanation: "Use the value in Some, or a default when it is None.",
   validation: {
@@ -371,7 +385,7 @@ function validateLesson(lesson) {
   });
   requireCondition(editable === 1, "lesson.files must contain exactly one editable file");
   requireCondition(paths.has("src/lib.rs"), "lesson.files must include src/lib.rs for backend validation");
-  requireCondition(Array.isArray(lesson.hints) && lesson.hints.length >= 1 && lesson.hints.length <= 3, "lesson.hints must contain one to three hints");
+  requireCondition(Array.isArray(lesson.hints) && lesson.hints.length === 3, "lesson.hints must contain exactly three hints");
   lesson.hints.forEach((hint, index) => {
     const path = `lesson.hints[${index}]`;
     object(hint, path, ["level", "body"], ["solutionCode"]);
@@ -379,6 +393,7 @@ function validateLesson(lesson) {
     string(hint.body, `${path}.body`, true);
     if (hint.solutionCode !== undefined) string(hint.solutionCode, `${path}.solutionCode`);
   });
+  string(lesson.hints[2].solutionCode, "lesson.hints[2].solutionCode", true);
   validation(lesson.validation, "lesson.validation", lesson.files);
 }
 
@@ -387,6 +402,13 @@ function parseOrigin(value) {
   requireCondition(["http:", "https:"].includes(url.protocol) && !url.username && !url.password &&
     url.pathname === "/" && !url.search && !url.hash, "origin must be an HTTP(S) origin without a path, credentials, query, or fragment");
   return url.origin;
+}
+
+function parseBackendUrl(value) {
+  const url = new URL(value);
+  requireCondition(["http:", "https:"].includes(url.protocol) && !url.username && !url.password &&
+    !url.search && !url.hash, "backend URL must use HTTP(S) without credentials, query, or fragment");
+  return `${url.origin}${url.pathname.replace(/\/+$/, "")}`;
 }
 
 function verifyLink(link) {
@@ -405,9 +427,108 @@ function verifyLink(link) {
   return lesson;
 }
 
-function main(args) {
+function validationSteps(validation) {
+  return validation.mode === "all" ? validation.validations : [validation];
+}
+
+function runFiles(lesson, solutionCode) {
+  return lesson.files.map((file) => ({
+    path: file.path,
+    content: file.role === "editable" ? solutionCode : file.content,
+  }));
+}
+
+function addCargoTestFiles(files, validation) {
+  const seenPaths = new Set(files.map((file) => file.path));
+  for (const file of validation.testFiles ?? []) {
+    if (!seenPaths.has(file.path)) {
+      files.push({ path: file.path, content: file.content });
+      seenPaths.add(file.path);
+    }
+  }
+  const hasTestFile = files.some((file) => file.path.startsWith("tests/") && file.path.endsWith(".rs"));
+  if (!hasTestFile && typeof validation.testCode === "string" && !seenPaths.has("tests/lesson.rs")) {
+    files.push({ path: "tests/lesson.rs", content: validation.testCode });
+  }
+  return files;
+}
+
+function backendRunRequests(lesson, solutionCode) {
+  const steps = validationSteps(lesson.validation);
+  const backendSteps = steps.filter((step) =>
+    step.mode === "backend-cargo-test" || step.mode === "backend-compile-fail");
+  if (backendSteps.length === 0) {
+    return [{
+      mode: "cargo-test",
+      dependencySet: "std",
+      files: runFiles(lesson, solutionCode),
+    }];
+  }
+  return backendSteps.map((step) => {
+    const files = runFiles(lesson, solutionCode);
+    if (step.mode === "backend-cargo-test") {
+      addCargoTestFiles(files, step);
+      return {
+        mode: "cargo-test",
+        dependencySet: step.dependencySet ?? "std",
+        files,
+      };
+    }
+    return {
+      mode: "compile-fail",
+      dependencySet: step.dependencySet ?? "std",
+      files,
+      compileFailCases: step.cases,
+    };
+  });
+}
+
+async function testSolution(lesson, backendUrl) {
+  const solutionCode = lesson.hints[2].solutionCode;
+  const requests = backendRunRequests(lesson, solutionCode);
+  const hasStructuralChecks = validationSteps(lesson.validation).some((step) => step.mode === "structural");
+  if (hasStructuralChecks) {
+    console.error("Note: browser structural checks are not run by --test-solution.");
+  }
+
+  for (const [index, request] of requests.entries()) {
+    let response;
+    try {
+      response = await fetch(`${backendUrl}/run`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+        signal: AbortSignal.timeout(65_000),
+      });
+    } catch (error) {
+      throw new Error(`Could not reach lesson backend at ${backendUrl}/run: ${error.message}`);
+    }
+    const responseText = await response.text();
+    let outcome;
+    try {
+      outcome = JSON.parse(responseText);
+    } catch {
+      throw new Error(`Lesson backend returned invalid JSON (HTTP ${response.status}).`);
+    }
+    if (!response.ok) {
+      throw new Error(`Lesson backend rejected the solution (HTTP ${response.status}): ${responseText.slice(0, 2000)}`);
+    }
+    requireCondition(outcome !== null && typeof outcome === "object" &&
+      ["passed", "failed", "compile_error", "timed_out"].includes(outcome.status) &&
+      typeof outcome.stdout === "string" && typeof outcome.stderr === "string" &&
+      typeof outcome.duration_ms === "number" && Number.isFinite(outcome.duration_ms),
+    "lesson backend returned an invalid run result");
+    if (outcome.status !== "passed") {
+      const details = [outcome.stderr, outcome.stdout].filter(Boolean).join("\n");
+      throw new Error(`Solution check ${index + 1} ${outcome.status}${details ? `:\n${details}` : "."}`);
+    }
+  }
+  console.error(`Solution passed ${requests.length} backend check${requests.length === 1 ? "" : "s"}.`);
+}
+
+async function main(args) {
   const [command, input, ...options] = args;
-  requireCondition((command === "generate" || command === "verify") && input, "usage: node link.mjs generate <lesson.json|-> [--origin <origin>] | verify <url|->");
+  requireCondition((command === "generate" || command === "verify") && input, "usage: node link.mjs generate <lesson.json|-> [--origin <origin>] [--test-solution] [--backend-url <url>] | verify <url|->");
   if (command === "verify") {
     requireCondition(options.length === 0, "verify does not accept additional arguments");
     const link = input === "-" ? readFileSync(0, "utf8").trim() : input;
@@ -415,10 +536,24 @@ function main(args) {
     console.log("Valid Playground link.");
     return;
   }
-  requireCondition(options.length === 0 || (options.length === 2 && options[0] === "--origin"), "expected --origin <origin>");
-  const origin = parseOrigin(options.length ? options[1] : DEFAULT_ORIGIN);
+  let origin = DEFAULT_ORIGIN;
+  let backendUrl;
+  let shouldTestSolution = false;
+  for (let index = 0; index < options.length; index++) {
+    if (options[index] === "--origin" && options[index + 1]) {
+      origin = parseOrigin(options[++index]);
+    } else if (options[index] === "--backend-url" && options[index + 1]) {
+      backendUrl = parseBackendUrl(options[++index]);
+    } else if (options[index] === "--test-solution" && !shouldTestSolution) {
+      shouldTestSolution = true;
+    } else {
+      throw new Error("expected [--origin <origin>] [--test-solution] [--backend-url <url>]");
+    }
+  }
+  requireCondition(!backendUrl || shouldTestSolution, "--backend-url requires --test-solution");
   const lesson = JSON.parse(readFileSync(input === "-" ? 0 : input, "utf8"));
   validateLesson(lesson);
+  if (shouldTestSolution) await testSolution(lesson, backendUrl ?? origin);
   const json = JSON.stringify(lesson);
   const bytes = Buffer.from(json, "utf8");
   requireCondition(bytes.length <= MAX_BYTES, `lesson is ${bytes.length} bytes; maximum is ${MAX_BYTES}`);
@@ -427,12 +562,10 @@ function main(args) {
   console.log(link);
 }
 
-try {
-  main(process.argv.slice(2));
-} catch (error) {
+main(process.argv.slice(2)).catch((error) => {
   console.error(`Error: ${error.message}`);
   process.exitCode = 1;
-}
+});
 ```
 <!-- link-tool:end -->
 
@@ -473,6 +606,13 @@ try {
    printf '%s\n' "$link"
    ```
 
+   To test the complete intended solution from hint 3 before emitting the link,
+   add `--test-solution`:
+
+   ```sh
+   link=$(node "$tool" generate /path/to/lesson.json --test-solution)
+   ```
+
    Replace the paths with the actual skill and payload paths. The script
    validates the public payload, serializes it compactly, enforces the 32 KiB
    UTF-8 limit, generates an unpadded base64url link, and verifies a round trip
@@ -481,6 +621,14 @@ try {
    the generated link. The default origin is `https://borrowquest.site`; use
    `--origin https://example.com` only when the user explicitly supplies an
    origin.
+   `--test-solution` runs the complete intended source from hint 3 against the
+   lesson's backend validation before emitting a link. The backend URL defaults
+   to the link origin (the normal same-origin deployment setup); pass
+   `--backend-url http://127.0.0.1:8080` for a local backend or when the API is
+   hosted separately. Only backend checks are submitted; browser structural
+   checks are reported as skipped. If the lesson has no backend mode, the
+   script follows the default compile-smoke behavior, which proves compilation
+   but not lesson behavior.
 5. Verification checks the route, encoding, size, JSON, and payload contract;
    it does not compile Rust, run tests, or guarantee the deployed site is
    reachable. Never return a link if generation or verification fails. Remove

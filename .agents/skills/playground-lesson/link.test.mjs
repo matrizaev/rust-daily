@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { spawn, spawnSync } from "node:child_process";
+import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { spawnSync } from "node:child_process";
 import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { decodePlaygroundLesson } from "../../../frontend/src/playground/lessonPayload.ts";
@@ -19,6 +20,15 @@ writeFileSync(script, embeddedTool[1]);
 after(() => rmSync(tempDir, { recursive: true, force: true }));
 
 const run = (args, input) => spawnSync(process.execPath, [script, ...args], { input, encoding: "utf8" });
+const runAsync = (args) => new Promise((resolve, reject) => {
+  const child = spawn(process.execPath, [script, ...args]);
+  let stdout = "";
+  let stderr = "";
+  child.stdout.setEncoding("utf8").on("data", (chunk) => { stdout += chunk; });
+  child.stderr.setEncoding("utf8").on("data", (chunk) => { stderr += chunk; });
+  child.on("error", reject);
+  child.on("close", (status) => resolve({ status, stdout, stderr }));
+});
 const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
 const urlFor = (value) => `https://borrowquest.site/#playground?lesson=${encode(value)}`;
 const payloadFrom = (link) => new URLSearchParams(new URL(link).hash.slice("#playground?".length)).get("lesson");
@@ -39,7 +49,15 @@ const lesson = {
   instructions: "Add the score type.",
   starterCode: "pub struct Score(pub u32);\n",
   files: [{ path: "src/lib.rs", role: "editable", content: "pub struct Score(pub u32);\n" }],
-  hints: [{ level: 1, body: "Use a tuple struct." }],
+  hints: [
+    { level: 1, body: "Use a tuple struct." },
+    { level: 2, body: "Give the tuple field the score's numeric type." },
+    {
+      level: 3,
+      body: "A tuple struct creates a distinct type.",
+      solutionCode: "pub struct Score(pub u32);\n",
+    },
+  ],
   completionExplanation: "The score now has a distinct type.",
   validation: { mode: "structural", timeoutMs: 1000, checks: [{ type: "source_includes", requiredSnippets: ["struct Score"] }] },
 };
@@ -73,6 +91,103 @@ test("accepts supported backend and combined validation configurations", () => {
   }
 });
 
+test("tests the level-three solution through the backend before emitting a link", async (t) => {
+  let submitted;
+  let outcomeStatus = "passed";
+  const server = createServer(async (request, response) => {
+    const chunks = [];
+    for await (const chunk of request) chunks.push(chunk);
+    submitted = {
+      method: request.method,
+      url: request.url,
+      body: JSON.parse(Buffer.concat(chunks).toString("utf8")),
+    };
+    response.writeHead(200, { "Content-Type": "application/json" });
+    response.end(JSON.stringify({
+      status: outcomeStatus,
+      stdout: "",
+      stderr: outcomeStatus === "passed" ? "" : "assertion failed",
+      duration_ms: 4,
+    }));
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  t.after(() => new Promise((resolve, reject) => {
+    server.close((error) => error ? reject(error) : resolve());
+  }));
+  const address = server.address();
+  assert.ok(address && typeof address === "object");
+  const backendUrl = `http://127.0.0.1:${address.port}`;
+  const lessonFile = join(tempDir, "backend-lesson.json");
+  const backendLesson = {
+    ...lesson,
+    files: [
+      ...lesson.files,
+      { path: "tests/lesson.rs", role: "test", content: "#[test] fn works() {}" },
+    ],
+    validation: { mode: "backend-cargo-test", timeoutMs: 10000, dependencySet: "std" },
+  };
+  writeFileSync(lessonFile, JSON.stringify(backendLesson));
+
+  const result = await runAsync([
+    "generate",
+    lessonFile,
+    "--origin",
+    "https://playground.example",
+    "--backend-url",
+    backendUrl,
+    "--test-solution",
+  ]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /^https:\/\/playground\.example\/#playground\?lesson=/);
+  assert.match(result.stderr, /Solution passed 1 backend check/);
+  assert.equal(submitted.method, "POST");
+  assert.equal(submitted.url, "/run");
+  assert.equal(submitted.body.mode, "cargo-test");
+  assert.equal(submitted.body.dependencySet, "std");
+  assert.deepEqual(submitted.body.files, [
+    { path: "src/lib.rs", content: backendLesson.hints[2].solutionCode },
+    { path: "tests/lesson.rs", content: "#[test] fn works() {}" },
+  ]);
+
+  outcomeStatus = "failed";
+  const failed = await runAsync([
+    "generate",
+    lessonFile,
+    "--origin",
+    backendUrl,
+    "--test-solution",
+  ]);
+  assert.notEqual(failed.status, 0);
+  assert.equal(failed.stdout, "");
+  assert.match(failed.stderr, /Solution check 1 failed:.*assertion failed/s);
+
+  outcomeStatus = "passed";
+  const compileFailLesson = {
+    ...backendLesson,
+    validation: {
+      mode: "backend-compile-fail",
+      timeoutMs: 10000,
+      cases: [{
+        name: "private-score-field",
+        path: "compile_fail/private_score_field.rs",
+        content: "use rust_daily_lesson::Score;\nfn main() { let _ = Score(1).0; }\n",
+        expectedDiagnostics: ["private field"],
+      }],
+    },
+  };
+  writeFileSync(lessonFile, JSON.stringify(compileFailLesson));
+  const compileFail = await runAsync([
+    "generate",
+    lessonFile,
+    "--origin",
+    backendUrl,
+    "--test-solution",
+  ]);
+  assert.equal(compileFail.status, 0, compileFail.stderr);
+  assert.equal(submitted.body.mode, "compile-fail");
+  assert.equal(submitted.body.compileFailCases[0].name, "private-score-field");
+});
+
 test("rejects malformed, corrupted and structurally invalid links", () => {
   const invalidLessons = [
     { ...lesson, starterCode: "different" },
@@ -81,6 +196,14 @@ test("rejects malformed, corrupted and structurally invalid links", () => {
     { ...lesson, validation: { mode: "structural", timeoutMs: 1, checks: [{ type: "toString" }] } },
     { ...lesson, validation: { mode: "backend-cargo-test", timeoutMs: 1 } },
     { ...lesson, hints: [{ level: 2, body: "hint" }] },
+    {
+      ...lesson,
+      hints: [
+        { level: 1, body: "hint one" },
+        { level: 2, body: "hint two" },
+        { level: 3, body: "hint three" },
+      ],
+    },
   ];
   for (const value of invalidLessons) {
     const result = run(["generate", "-"], JSON.stringify(value));
